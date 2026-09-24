@@ -9,7 +9,9 @@ use App\Http\Controllers\KursController;
 use App\Http\Controllers\MaterialController;
 use App\Http\Controllers\NotizenController;
 use App\Http\Controllers\ProfilController;
+use App\Http\Controllers\PushController;
 use App\Http\Controllers\ReflexionController;
+use App\Http\Controllers\TelegramController;
 use App\Http\Controllers\TermineController;
 use App\Tenancy\Branding;
 use Illuminate\Support\Facades\Route;
@@ -19,6 +21,9 @@ Route::get('/manifest.webmanifest', fn (Branding $branding) => response()
     ->json($branding->manifest())
     ->header('Content-Type', 'application/manifest+json')
 )->name('manifest');
+
+// Eingehende Webhooks (ohne Anmeldung, je Mandant ueber die Domain)
+Route::post('/hooks/telegram/{secret}', [TelegramController::class, 'webhook'])->name('hooks.telegram');
 
 // Anmelden
 Route::middleware('guest')->group(function () {
@@ -39,6 +44,11 @@ Route::middleware(['auth', 'membership'])->group(function () {
     Route::post('/profil', [ProfilController::class, 'save'])->name('profil.speichern');
     Route::post('/profil/benachrichtigungen', [ProfilController::class, 'notifications'])->name('profil.benachrichtigungen');
     Route::post('/profil/passwort', [ProfilController::class, 'password'])->name('profil.passwort');
+    Route::get('/push/schluessel', [PushController::class, 'schluessel'])->name('push.schluessel');
+    Route::post('/push/abo', [PushController::class, 'abo'])->name('push.abo');
+    Route::delete('/push/abo', [PushController::class, 'weg'])->name('push.weg');
+    Route::post('/telegram/verbinden', [TelegramController::class, 'verbinden'])->name('telegram.verbinden');
+    Route::post('/telegram/trennen', [TelegramController::class, 'trennen'])->name('telegram.trennen');
 
     // Kursraum
     Route::get('/kurse', [KursController::class, 'index'])->name('kurse.index');

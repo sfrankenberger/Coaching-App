@@ -256,3 +256,38 @@
     form.querySelector('[data-aufnahme-stopp]').addEventListener('click', function () { stopp(false); });
     form.querySelector('[data-aufnahme-abbruch]').addEventListener('click', function () { stopp(true); });
 })();
+
+/* ---------- Push-Nachrichten einschalten ---------- */
+(function () {
+    var box = document.querySelector('[data-push]');
+    if (!box) return;
+    var an = box.querySelector('[data-push-an]'), aus = box.querySelector('[data-push-aus]'), status = box.querySelector('[data-push-status]');
+    var csrf = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
+    if (!('serviceWorker' in navigator) || !('PushManager' in window) || !('Notification' in window)) {
+        an.hidden = true; status.textContent = 'Dieser Browser kann keine Push-Nachrichten. Auf dem iPhone: zuerst den Bereich auf den Startbildschirm legen und von dort öffnen.';
+        return;
+    }
+    function b64(s) { var p = '='.repeat((4 - s.length % 4) % 4); var r = (s + p).replace(/-/g, '+').replace(/_/g, '/'); var raw = atob(r); return Uint8Array.from(raw, function (c) { return c.charCodeAt(0); }); }
+    an.addEventListener('click', function () {
+        status.textContent = 'Einen Moment ...';
+        Notification.requestPermission().then(function (perm) {
+            if (perm !== 'granted') { status.textContent = 'Push wurde nicht erlaubt. Du kannst es in den Einstellungen des Browsers ändern.'; return; }
+            return navigator.serviceWorker.register('/sw.js').then(function () { return navigator.serviceWorker.ready; })
+                .then(function (reg) {
+                    return fetch(box.dataset.schluessel, { credentials: 'same-origin', headers: { 'Accept': 'application/json' } }).then(function (r) { return r.json(); })
+                        .then(function (j) { if (!j.publicKey) throw new Error(j.fehler || 'Kein Schlüssel'); return reg.pushManager.subscribe({ userVisibleOnly: true, applicationServerKey: b64(j.publicKey) }); });
+                })
+                .then(function (sub) {
+                    return fetch(box.dataset.abo, { method: 'POST', credentials: 'same-origin', headers: { 'Content-Type': 'application/json', 'Accept': 'application/json', 'X-CSRF-TOKEN': csrf }, body: JSON.stringify(sub.toJSON()) }).then(function (r) { return r.json(); });
+                })
+                .then(function (j) { status.textContent = 'Push ist an. ' + (j.anzahl || 1) + ' Gerät' + (j.anzahl > 1 ? 'e' : '') + ' angemeldet.'; aus.hidden = false; });
+        }).catch(function (e) { status.textContent = 'Das hat nicht geklappt: ' + e.message; });
+    });
+    aus.addEventListener('click', function () {
+        navigator.serviceWorker.ready.then(function (reg) { return reg.pushManager.getSubscription(); }).then(function (sub) {
+            var endpoint = sub ? sub.endpoint : '';
+            if (sub) sub.unsubscribe();
+            return fetch(box.dataset.abo, { method: 'DELETE', credentials: 'same-origin', headers: { 'Content-Type': 'application/json', 'Accept': 'application/json', 'X-CSRF-TOKEN': csrf }, body: JSON.stringify({ endpoint: endpoint }) }).then(function (r) { return r.json(); });
+        }).then(function (j) { status.textContent = j.anzahl ? j.anzahl + ' Gerät(e) angemeldet' : 'Push ist aus.'; if (!j.anzahl) aus.hidden = true; }).catch(function () {});
+    });
+})();

@@ -20,6 +20,34 @@
         </form>
     </x-karte>
 
+    <x-karte titel="Damit du nichts verpasst">
+        <p class="hinweis mb-3">Push-Nachrichten kommen direkt aufs Handy, wenn du diesen Bereich auf den Startbildschirm gelegt hast. Ein paar pro Woche, nicht mehr. Ohne Push bekommst du abends eine Sammelmail, wenn etwas Neues da ist.</p>
+        <div class="flex flex-wrap items-center gap-2" data-push data-schluessel="{{ route('push.schluessel') }}" data-abo="{{ route('push.abo') }}">
+            <button type="button" class="knopf" data-push-an>Push einschalten</button>
+            <button type="button" class="knopf knopf-leise" data-push-aus @if (! $pushGeraete) hidden @endif>Auf diesem Gerät ausschalten</button>
+            <span class="hinweis" data-push-status>{{ $pushGeraete ? $pushGeraete.' '.($pushGeraete === 1 ? 'Gerät' : 'Geräte').' angemeldet' : 'Noch kein Gerät angemeldet' }}</span>
+        </div>
+        @if ($telegram !== false)
+            <div class="mt-4 border-t border-line pt-3">
+                <b class="block">Telegram</b>
+                <p class="hinweis mb-2">Verbinde Telegram, und du bekommst Erinnerungen und Nachrichten auch dort. Antworten kannst du direkt im Telegram-Chat.</p>
+                @if ($telegram?->active)
+                    <div class="flex flex-wrap items-center gap-2">
+                        <span class="text-md text-success font-semibold">✓ Verbunden{{ $telegram->username ? ' als @'.$telegram->username : '' }}</span>
+                        <form method="post" action="{{ route('telegram.trennen') }}">@csrf<button class="knopf knopf-leise" style="min-height:36px;padding:6px 12px">Trennen</button></form>
+                    </div>
+                @elseif ($telegram?->code)
+                    <div class="flex flex-wrap items-center gap-2">
+                        <a href="https://t.me/{{ $telegramBot }}?start={{ $telegram->code }}" target="_blank" rel="noopener" class="knopf">Bot öffnen und «Start» tippen</a>
+                        <span class="hinweis">Code: {{ $telegram->code }}</span>
+                    </div>
+                @else
+                    <form method="post" action="{{ route('telegram.verbinden') }}">@csrf<button class="knopf knopf-leise">Telegram verbinden</button></form>
+                @endif
+            </div>
+        @endif
+    </x-karte>
+
     <x-karte titel="Was dich erreicht">
         <p class="hinweis mb-3">Jedes einzeln abschaltbar. Was hier aus ist, kommt weder als Push noch als Mail.</p>
         <form method="post" action="{{ route('profil.benachrichtigungen') }}" class="eingabe">

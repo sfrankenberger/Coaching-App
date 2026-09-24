@@ -14,3 +14,10 @@ Schedule::command('queue:work --stop-when-empty --max-time=50 --tries=3')
 
 // Verbrauchte und abgelaufene Anmelde-Links aufraeumen
 Schedule::call(fn () => MagicLink::prune())->daily()->name('login-tokens-aufraeumen');
+
+// Benachrichtigungen (Zeiten in der Zeitzone des Servers, Mandanten-Zeitzone im Lauf selbst)
+Schedule::command('benachrichtigungen:runde termine')->everyTenMinutes()->withoutOverlapping();
+Schedule::command('benachrichtigungen:runde nachfassen')->everyTenMinutes()->withoutOverlapping();
+Schedule::command('benachrichtigungen:runde aufgaben --wann=morgen')->dailyAt('08:00');
+Schedule::command('benachrichtigungen:runde aufgaben --wann=abend')->dailyAt('18:00');
+Schedule::command('benachrichtigungen:runde abendmail')->dailyAt('19:30');

@@ -3,9 +3,25 @@
 namespace App\Filament\Coach\Resources\Materials\Pages;
 
 use App\Filament\Coach\Resources\Materials\MaterialResource;
+use App\Models\Resourceable;
+use App\Observers\ResourceableObserver;
 use Filament\Resources\Pages\CreateRecord;
 
 class CreateMaterial extends CreateRecord
 {
     protected static string $resource = MaterialResource::class;
+
+    /** Neu fuer Personen freigegebenes Material: die Person erfaehrt es. */
+    protected function afterCreate(): void
+    {
+        $vorher = $this->vorher ?? [];
+        $jetzt = $this->record->users()->pluck('users.id')->all();
+        foreach (array_diff($jetzt, $vorher) as $uid) {
+            // Filament haengt ueber die Pivot-Tabelle an, ohne Modell-Ereignis: darum hier explizit
+            $link = Resourceable::where('resource_id', $this->record->id)->where('resourceable_type', 'user')->where('resourceable_id', $uid)->first();
+            if ($link) {
+                app(ResourceableObserver::class)->created($link->fill(['shared_by' => $link->shared_by ?: auth()->id()]));
+            }
+        }
+    }
 }

@@ -30,6 +30,8 @@ class Membership extends Pivot
             'role' => Role::class,
             'joined_at' => 'datetime',
             'settings' => 'array',
+            'digest_sent_at' => 'datetime',
+            'last_seen_at' => 'datetime',
         ];
     }
 

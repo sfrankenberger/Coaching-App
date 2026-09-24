@@ -2,6 +2,9 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\PushSubscription;
+use App\Models\TelegramLink;
+use App\Tenancy\CurrentTenant;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
@@ -10,7 +13,14 @@ class ProfilController extends Controller
 {
     public function show(Request $request): View
     {
-        return view('profil', ['mitgliedschaft' => $request->user()->membershipIn()]);
+        $tenant = app(CurrentTenant::class)->get();
+
+        return view('profil', [
+            'mitgliedschaft' => $request->user()->membershipIn(),
+            'pushGeraete' => PushSubscription::where('user_id', $request->user()->id)->count(),
+            'telegram' => TelegramController::configured($tenant) ? TelegramLink::where('user_id', $request->user()->id)->first() : false,
+            'telegramBot' => $tenant?->setting('telegram.bot_username'),
+        ]);
     }
 
     public function save(Request $request): RedirectResponse

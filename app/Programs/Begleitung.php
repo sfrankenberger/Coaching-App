@@ -4,6 +4,7 @@ namespace App\Programs;
 
 use App\Models\Event;
 use App\Models\Resource;
+use App\Models\Resourceable;
 use App\Models\User;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Collection;
@@ -68,6 +69,15 @@ class Begleitung
     public function canViewResource(User $user, Resource $resource): bool
     {
         return $this->resourcesQuery($user)->whereKey($resource->id)->exists();
+    }
+
+    /** Material direkt fuer eine Person freigeben (loest die Benachrichtigung aus). */
+    public function share(Resource $resource, int $userId, ?int $sharedBy = null): Resourceable
+    {
+        return Resourceable::firstOrCreate(
+            ['resource_id' => $resource->id, 'resourceable_type' => 'user', 'resourceable_id' => $userId],
+            ['shared_by' => $sharedBy],
+        );
     }
 
     /** Aufzeichnungen als Materialzeilen (Termine mit recording_url). */
