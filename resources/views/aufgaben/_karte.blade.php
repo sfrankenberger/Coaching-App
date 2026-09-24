@@ -17,8 +17,8 @@
             </span>
             @if ($t->body)<p class="text-md text-ink-soft mt-1 whitespace-pre-line">{{ $t->body }}</p>@endif
             @if ($t->is_daily && ! $t->isDone())
-                <div class="mt-2 flex items-center gap-1" data-tage="{{ route('aufgaben.tag', $t) }}">
-                    <span class="hinweis mr-1">Diese Woche <b>{{ count($done) }} von 7</b></span>
+                <div class="mt-2 flex flex-wrap items-center gap-1" data-tage="{{ route('aufgaben.tag', $t) }}">
+                    <span class="hinweis w-full">Diese Woche <b>{{ count($done) }} von 7</b></span>
                     @foreach ($tage as $k => $l)
                         <form method="post" action="{{ route('aufgaben.tag', $t) }}" class="inline">@csrf<input type="hidden" name="tag" value="{{ $k }}"><button @class(['size-7 rounded-md border text-xs', 'bg-primary text-primary-contrast border-primary' => in_array($k, $done, true), 'border-line bg-page' => ! in_array($k, $done, true)]) aria-label="{{ $k }}">{{ $l }}</button></form>
                     @endforeach

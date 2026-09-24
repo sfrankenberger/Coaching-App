@@ -40,6 +40,9 @@ class TenantSeeder extends Seeder
                     'club_product_id' => 1524,                             // WooCommerce-Produkt des Clubs
                     'program_types' => ['1849' => 'hybrid', '1112' => 'club'],
                     'workbook_dir' => '/var/www/vhosts/leawernli.ch/httpdocs/wp-content/novamira-daten',
+                    'uploads_dir' => '/var/www/vhosts/leawernli.ch/httpdocs/wp-content/uploads',
+                    'uploads_url' => 'https://leawernli.ch/wp-content/uploads',
+                    'event_timestamps_are_local' => true,
                     'meta' => [
                         'phone' => 'lea_telefon',
                         'reminders_off' => 'lea_te_aus',
@@ -52,6 +55,10 @@ class TenantSeeder extends Seeder
                         'unit_todos' => 'lea_todos_',
                         'workbook_answers' => 'lea_wb_antworten',
                         'workbook_shared' => 'lea_wb_geteilt',
+                        'attended' => 'lea_live_dabei',
+                        'watched' => 'lea_angeschaut',
+                        'foreign_tasks_done' => 'lea_af_fremd_fertig',
+                        'chat_seen' => 'lea_ch_gesehen_',
                     ],
                 ]],
             ],

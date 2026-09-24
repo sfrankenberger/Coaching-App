@@ -2,6 +2,7 @@
 
 namespace App\Console\Commands;
 
+use App\Import\WordPress\BegleitungImport;
 use App\Import\WordPress\ProgramsImport;
 use App\Import\WordPress\UsersImport;
 use App\Import\WordPress\WordPressSource;
@@ -18,7 +19,7 @@ use Illuminate\Console\Command;
 class ImportWordPress extends Command
 {
     protected $signature = 'import:wordpress {tenant : Kuerzel des Mandanten}
-        {--only=users : Was importiert wird, kommagetrennt (users, programs)}
+        {--only=users : Was importiert wird, kommagetrennt (users, programs, begleitung) oder alles}
         {--with-guests : Auch Konten ohne Kurszugang als Gast anlegen}
         {--dry-run : Nur zeigen, nichts schreiben}';
 
@@ -34,13 +35,17 @@ class ImportWordPress extends Command
         }
 
         $parts = array_filter(array_map('trim', explode(',', (string) $this->option('only'))));
+        if ($parts === ['alles'] || $parts === ['all']) {
+            $parts = ['users', 'programs', 'begleitung'];
+        }
 
         return $current->run($tenant, function () use ($tenant, $parts) {
             foreach ($parts as $part) {
                 match ($part) {
                     'users' => $this->users($tenant),
                     'programs', 'kurse' => $this->programs($tenant),
-                    default => $this->warn("Unbekannter Teil: {$part} (moeglich: users, programs)"),
+                    'begleitung', 'termine' => $this->begleitung($tenant),
+                    default => $this->warn("Unbekannter Teil: {$part} (moeglich: users, programs, begleitung, alles)"),
                 };
             }
 
@@ -72,6 +77,21 @@ class ImportWordPress extends Command
 
         $this->table(['Programme', 'Schritte', 'Einheiten', 'Uebungsteile', 'Fortschritt', 'Antworten', 'Zugaenge', 'Mitglieder'], [[
             $stats['programme'], $stats['schritte'], $stats['einheiten'], $stats['uebungsteile'], $stats['fortschritt'], $stats['antworten'], $stats['zugaenge'], $stats['mitglieder'],
+        ]]);
+        foreach ($stats['hinweise'] as $h) {
+            $this->warn('  '.$h);
+        }
+    }
+
+    protected function begleitung(Tenant $tenant): void
+    {
+        $this->info('Termine, Material, Aufgaben, Notizen, Reflexionen, Journal, Chats, Wochen'.($this->option('dry-run') ? ' (Probelauf)' : ''));
+
+        $import = new BegleitungImport($tenant, new WordPressSource, (bool) $this->option('dry-run'));
+        $stats = $import->run(fn (string $line) => $this->line('  '.$line, verbosity: 'v'));
+
+        $this->table(['Termine', 'Teilnahmen', 'Material', 'Zuordnungen', 'Aufgaben', 'Notizen', 'Reflexionen', 'Journal', 'Kommentare', 'Gespraeche', 'Nachrichten', 'Wochen'], [[
+            $stats['termine'], $stats['teilnahmen'], $stats['material'], $stats['zuordnungen'], $stats['aufgaben'], $stats['notizen'], $stats['reflexionen'], $stats['journal'], $stats['kommentare'], $stats['gespraeche'], $stats['nachrichten'], $stats['wochen'],
         ]]);
         foreach ($stats['hinweise'] as $h) {
             $this->warn('  '.$h);
