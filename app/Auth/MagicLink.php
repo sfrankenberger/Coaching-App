@@ -23,7 +23,7 @@ class MagicLink
     /**
      * Erzeugt einen Token fuer die Person und gibt die vollstaendige URL zurueck.
      */
-    public function create(User $user, ?string $weiter = null, ?string $ip = null): string
+    public function create(User $user, ?string $weiter = null, ?string $ip = null, ?int $minuten = null): string
     {
         $tenant = $this->current->getOrFail();
         $plain = Str::random(48);
@@ -34,7 +34,7 @@ class MagicLink
             'token_hash' => hash('sha256', $plain),
             'weiter' => $this->cleanWeiter($weiter),
             'ip' => $ip,
-            'expires_at' => now()->addMinutes(self::MINUTEN),
+            'expires_at' => now()->addMinutes($minuten ?? self::MINUTEN),
         ]);
 
         return route('anmelden.token', ['token' => $plain]);

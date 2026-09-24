@@ -9,12 +9,14 @@ use App\Models\Event;
 use App\Models\JournalEntry;
 use App\Models\Message;
 use App\Models\Note;
+use App\Models\PodcastEpisode;
 use App\Models\Post;
 use App\Models\Program;
 use App\Models\ProgramStep;
 use App\Models\Reflection;
 use App\Models\Resourceable;
 use App\Models\Task;
+use App\Models\Topic;
 use App\Models\Unit;
 use App\Models\User;
 use App\Observers\EventObserver;
@@ -55,6 +57,8 @@ class AppServiceProvider extends ServiceProvider
             'message' => Message::class,
             'comment' => Comment::class,
             'post' => Post::class,
+            'episode' => PodcastEpisode::class,
+            'topic' => Topic::class,
         ]);
 
         // Zugriff auf Programme an genau einer Stelle

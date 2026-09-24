@@ -1,9 +1,11 @@
 <?php
 
 use App\Http\Controllers\AufgabenController;
+use App\Http\Controllers\Auth\BridgeController;
 use App\Http\Controllers\Auth\LoginController;
 use App\Http\Controllers\Auth\SocialController;
 use App\Http\Controllers\GespraechController;
+use App\Http\Controllers\Hooks\WooCommerceController;
 use App\Http\Controllers\JournalController;
 use App\Http\Controllers\KursController;
 use App\Http\Controllers\MaterialController;
@@ -24,6 +26,10 @@ Route::get('/manifest.webmanifest', fn (Branding $branding) => response()
 
 // Eingehende Webhooks (ohne Anmeldung, je Mandant ueber die Domain)
 Route::post('/hooks/telegram/{secret}', [TelegramController::class, 'webhook'])->name('hooks.telegram');
+Route::post('/hooks/woocommerce', WooCommerceController::class)->name('hooks.woocommerce');
+
+// Bruecke aus dem alten Mitgliederbereich (signierter Link, 60 Sekunden, einmalig)
+Route::get('/sso', BridgeController::class)->name('sso');
 
 // Anmelden
 Route::middleware('guest')->group(function () {
