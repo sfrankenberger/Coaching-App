@@ -68,7 +68,7 @@ class OfferResource extends Resource
         return $table
             ->columns([
                 TextColumn::make('title')->label('Titel')->searchable()->sortable(),
-                TextColumn::make('type')->label('Art')->badge()->formatStateUsing(fn (string $state) => Offer::TYPES[$state] ?? $s),
+                TextColumn::make('type')->label('Art')->badge()->formatStateUsing(fn (string $state) => Offer::TYPES[$state] ?? $state),
                 TextColumn::make('programs.title')->label('Programme')->listWithLineBreaks()->limitList(3),
                 TextColumn::make('products.external_id')->label('Produkte')->badge(),
                 TextColumn::make('entitlements_count')->label('Zugänge')->counts('entitlements'),
