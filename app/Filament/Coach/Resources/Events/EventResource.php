@@ -64,6 +64,7 @@ class EventResource extends Resource
                 TextInput::make('zoom_url')->label('Zoom-Link')->url()->maxLength(500)->columnSpanFull(),
                 RichEditor::make('description')->label('Beschreibung')->columnSpanFull()->toolbarButtons(['bold', 'italic', 'bulletList', 'link', 'undo', 'redo']),
                 Toggle::make('is_published')->label('Sichtbar')->default(true),
+                Select::make('topics')->label('Themen')->relationship('topics', 'name')->multiple()->preload()->searchable()->columnSpanFull()->createOptionForm([TextInput::make('name')->label('Thema')->required()->maxLength(120)]),
             ])->columns(2),
 
             Section::make('Aufzeichnung')->schema([

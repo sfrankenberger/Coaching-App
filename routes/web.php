@@ -6,15 +6,18 @@ use App\Http\Controllers\Auth\LoginController;
 use App\Http\Controllers\Auth\SocialController;
 use App\Http\Controllers\GespraechController;
 use App\Http\Controllers\Hooks\WooCommerceController;
+use App\Http\Controllers\ImpulseController;
 use App\Http\Controllers\JournalController;
 use App\Http\Controllers\KursController;
 use App\Http\Controllers\MaterialController;
+use App\Http\Controllers\MerklisteController;
 use App\Http\Controllers\NotizenController;
 use App\Http\Controllers\ProfilController;
 use App\Http\Controllers\PushController;
 use App\Http\Controllers\ReflexionController;
 use App\Http\Controllers\TelegramController;
 use App\Http\Controllers\TermineController;
+use App\Http\Controllers\ThemenController;
 use App\Tenancy\Branding;
 use Illuminate\Support\Facades\Route;
 
@@ -77,6 +80,14 @@ Route::middleware(['auth', 'membership'])->group(function () {
     Route::get('/material', [MaterialController::class, 'index'])->name('material.index');
     Route::get('/material/{material}/datei', [MaterialController::class, 'datei'])->name('material.datei');
     Route::post('/merken', [MaterialController::class, 'merken'])->name('merken');
+    Route::get('/merkliste', [MerklisteController::class, 'index'])->name('merkliste');
+
+    // Impulse, Podcast, Themenfinder
+    Route::get('/impulse', [ImpulseController::class, 'index'])->name('impulse.index');
+    Route::get('/impulse/folge/{folge}', [ImpulseController::class, 'folge'])->name('impulse.folge');
+    Route::get('/impulse/{post:slug}', [ImpulseController::class, 'show'])->name('impulse.show');
+    Route::get('/themen', [ThemenController::class, 'index'])->name('themen.index');
+    Route::get('/themen/{thema:slug}', [ThemenController::class, 'show'])->name('themen.show');
 
     // Mein Journal: Aufgaben, Notizen, Reflexion
     Route::get('/journal', [JournalController::class, 'index'])->name('journal.index');

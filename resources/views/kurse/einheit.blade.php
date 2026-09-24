@@ -13,6 +13,12 @@
         @if ($unit->intro)
             <p class="text-ink-soft mt-2 whitespace-pre-line">{{ $unit->intro }}</p>
         @endif
+        <div class="mt-3 flex flex-wrap items-center gap-2">
+            <x-merken art="unit" :id="$unit->id" :an="\App\Models\Bookmark::where('user_id', auth()->id())->where('bookmarkable_type', 'unit')->where('bookmarkable_id', $unit->id)->exists()" :text="true" />
+            @foreach ($unit->topics as $t)
+                <a href="{{ route('themen.show', $t) }}" class="knopf knopf-leise no-underline" style="min-height:32px;padding:4px 12px">{{ $t->name }}</a>
+            @endforeach
+        </div>
     </x-karte>
 
     @if ($videos)

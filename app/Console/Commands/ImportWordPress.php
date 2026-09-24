@@ -3,6 +3,7 @@
 namespace App\Console\Commands;
 
 use App\Import\WordPress\BegleitungImport;
+use App\Import\WordPress\InhalteImport;
 use App\Import\WordPress\ProgramsImport;
 use App\Import\WordPress\UsersImport;
 use App\Import\WordPress\WordPressSource;
@@ -19,7 +20,7 @@ use Illuminate\Console\Command;
 class ImportWordPress extends Command
 {
     protected $signature = 'import:wordpress {tenant : Kuerzel des Mandanten}
-        {--only=users : Was importiert wird, kommagetrennt (users, programs, begleitung) oder alles}
+        {--only=users : Was importiert wird, kommagetrennt (users, programs, begleitung, inhalte) oder alles}
         {--with-guests : Auch Konten ohne Kurszugang als Gast anlegen}
         {--dry-run : Nur zeigen, nichts schreiben}';
 
@@ -36,7 +37,7 @@ class ImportWordPress extends Command
 
         $parts = array_filter(array_map('trim', explode(',', (string) $this->option('only'))));
         if ($parts === ['alles'] || $parts === ['all']) {
-            $parts = ['users', 'programs', 'begleitung'];
+            $parts = ['users', 'programs', 'begleitung', 'inhalte'];
         }
 
         return $current->run($tenant, function () use ($tenant, $parts) {
@@ -45,7 +46,8 @@ class ImportWordPress extends Command
                     'users' => $this->users($tenant),
                     'programs', 'kurse' => $this->programs($tenant),
                     'begleitung', 'termine' => $this->begleitung($tenant),
-                    default => $this->warn("Unbekannter Teil: {$part} (moeglich: users, programs, begleitung, alles)"),
+                    'inhalte', 'impulse' => $this->inhalte($tenant),
+                    default => $this->warn("Unbekannter Teil: {$part} (moeglich: users, programs, begleitung, inhalte, alles)"),
                 };
             }
 
@@ -92,6 +94,21 @@ class ImportWordPress extends Command
 
         $this->table(['Termine', 'Teilnahmen', 'Material', 'Zuordnungen', 'Aufgaben', 'Notizen', 'Reflexionen', 'Journal', 'Kommentare', 'Gespraeche', 'Nachrichten', 'Wochen'], [[
             $stats['termine'], $stats['teilnahmen'], $stats['material'], $stats['zuordnungen'], $stats['aufgaben'], $stats['notizen'], $stats['reflexionen'], $stats['journal'], $stats['kommentare'], $stats['gespraeche'], $stats['nachrichten'], $stats['wochen'],
+        ]]);
+        foreach ($stats['hinweise'] as $h) {
+            $this->warn('  '.$h);
+        }
+    }
+
+    protected function inhalte(Tenant $tenant): void
+    {
+        $this->info('Impulse, Podcast, Themen, Merklisten'.($this->option('dry-run') ? ' (Probelauf)' : ''));
+
+        $import = new InhalteImport($tenant, new WordPressSource, (bool) $this->option('dry-run'));
+        $stats = $import->run(fn (string $line) => $this->line('  '.$line, verbosity: 'v'));
+
+        $this->table(['Beitraege', 'Folgen', 'Themen', 'Zuordnungen', 'Profile', 'Merker'], [[
+            $stats['beitraege'], $stats['folgen'], $stats['themen'], $stats['zuordnungen'], $stats['profile'], $stats['merker'],
         ]]);
         foreach ($stats['hinweise'] as $h) {
             $this->warn('  '.$h);

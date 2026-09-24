@@ -6,7 +6,7 @@
     </x-karte>
 
     <div class="grid grid-cols-2 gap-2 my-2">
-        @foreach ([['kurse.index', 'Kurse', 'Wochen, Übungen, Fortschritt'], ['termine.index', 'Termine', 'Calls und Aufzeichnungen'], ['material.index', 'Material', 'PDFs, Audios, Links'], ['journal.index', 'Journal', 'Aufgaben, Notizen, Reflexion']] as [$r, $t, $x])
+        @foreach ([['kurse.index', 'Kurse', 'Wochen, Übungen, Fortschritt'], ['termine.index', 'Termine', 'Calls und Aufzeichnungen'], ['material.index', 'Material', 'PDFs, Audios, Links'], ['journal.index', 'Journal', 'Aufgaben, Notizen, Reflexion'], ['impulse.index', 'Impulse', 'Beiträge und Podcast'], ['themen.index', 'Themen', 'Finde, was dich gerade beschäftigt'], ['merkliste', 'Merkliste', 'Was du dir gemerkt hast']] as [$r, $t, $x])
             <a href="{{ route($r) }}" class="karte !mt-0 no-underline text-ink hover:border-primary">
                 <span class="block text-base font-semibold">{{ $t }}</span>
                 <span class="hinweis">{{ $x }}</span>

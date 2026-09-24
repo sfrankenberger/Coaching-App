@@ -47,6 +47,7 @@
                     <a href="{{ route('kurse.index') }}" @class(['aktiv' => request()->routeIs('kurse.*')])>Kurse</a>
                     <a href="{{ route('termine.index') }}" @class(['aktiv' => request()->routeIs('termine.*')])>Termine</a>
                     <a href="{{ route('material.index') }}" @class(['aktiv' => request()->routeIs('material.*')])>Material</a>
+                    <a href="{{ route('impulse.index') }}" @class(['aktiv' => request()->routeIs(['impulse.*', 'themen.*', 'merkliste'])])>Impulse</a>
                     <a href="{{ route('journal.index') }}" @class(['aktiv' => request()->routeIs(['journal.*', 'aufgaben.*', 'notizen.*', 'reflexion.*'])])>Journal</a>
                     <a href="{{ route('gespraech.index') }}" @class(['aktiv' => request()->routeIs('gespraech.*')])>Gespräch{{ $ungelesen ? ' ('.$ungelesen.')' : '' }}</a>
                     <a href="{{ route('profil') }}" @class(['aktiv' => request()->routeIs('profil*')])>Profil</a>

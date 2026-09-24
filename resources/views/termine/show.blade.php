@@ -13,6 +13,7 @@
             <div class="prose-app mt-3">{!! $event->description !!}</div>
         @endif
         <div class="mt-4 flex flex-wrap gap-2">
+            <x-merken art="event" :id="$event->id" :an="\App\Models\Bookmark::where('user_id', auth()->id())->where('bookmarkable_type', 'event')->where('bookmarkable_id', $event->id)->exists()" :text="true" />
             @if (! $event->isPast() && $event->zoom_url)
                 <a href="{{ $event->zoom_url }}" target="_blank" rel="noopener" class="knopf">{{ $live ? 'Jetzt beitreten' : 'Zoom öffnen' }}</a>
             @endif

@@ -59,6 +59,7 @@ class MaterialResource extends Resource
                 TextInput::make('image_url')->label('Vorschaubild (URL)')->url()->maxLength(500)->columnSpanFull(),
                 Textarea::make('description')->label('Beschreibung')->rows(3)->columnSpanFull(),
                 Toggle::make('is_archived')->label('Archiviert (nicht mehr anzeigen)'),
+                Select::make('topics')->label('Themen')->relationship('topics', 'name')->multiple()->preload()->searchable()->columnSpanFull()->createOptionForm([TextInput::make('name')->label('Thema')->required()->maxLength(120)]),
             ])->columns(2),
 
             Section::make('Wo es erscheint')->schema([

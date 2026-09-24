@@ -20,6 +20,7 @@ use App\Models\Topic;
 use App\Models\Unit;
 use App\Models\User;
 use App\Observers\EventObserver;
+use App\Observers\PostObserver;
 use App\Observers\ResourceableObserver;
 use App\Observers\TaskObserver;
 use App\Programs\ProgramAccess;
@@ -68,6 +69,7 @@ class AppServiceProvider extends ServiceProvider
         EventFacade::listen(MessageSent::class, BenachrichtigeBeiNachricht::class);
         Event::observe(EventObserver::class);
         Task::observe(TaskObserver::class);
+        Post::observe(PostObserver::class);
         Resourceable::observe(ResourceableObserver::class);
 
         // Apple kommt nicht mit Socialite selbst, sondern aus socialiteproviders/apple.

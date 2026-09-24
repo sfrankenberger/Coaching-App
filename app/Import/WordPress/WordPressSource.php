@@ -112,6 +112,40 @@ class WordPressSource
         return array_key_exists($key, $meta) ? self::unserialize($meta[$key]) : $default;
     }
 
+    /* ---------- Taxonomien ---------- */
+
+    /** Begriffe einer Taxonomie: [term_id => [name, slug, taxonomy_id]]. */
+    public function terms(string $taxonomy): array
+    {
+        if (! $this->hasTable('term_taxonomy')) {
+            return [];
+        }
+        $out = [];
+        $rows = $this->db()->table('term_taxonomy as tt')->join('terms as t', 't.term_id', '=', 'tt.term_id')
+            ->where('tt.taxonomy', $taxonomy)->select(['t.term_id', 't.name', 't.slug', 'tt.term_taxonomy_id', 'tt.description'])->orderBy('t.name')->get();
+        foreach ($rows as $r) {
+            $out[(int) $r->term_id] = ['name' => html_entity_decode($r->name, ENT_QUOTES, 'UTF-8'), 'slug' => $r->slug, 'taxonomy_id' => (int) $r->term_taxonomy_id, 'description' => (string) $r->description];
+        }
+
+        return $out;
+    }
+
+    /** Zuordnung Beitrag zu Begriffen einer Taxonomie: [post_id => [term_id, ...]]. */
+    public function objectTerms(string $taxonomy): array
+    {
+        if (! $this->hasTable('term_relationships')) {
+            return [];
+        }
+        $out = [];
+        $rows = $this->db()->table('term_relationships as tr')->join('term_taxonomy as tt', 'tt.term_taxonomy_id', '=', 'tr.term_taxonomy_id')
+            ->where('tt.taxonomy', $taxonomy)->select(['tr.object_id', 'tt.term_id'])->get();
+        foreach ($rows as $r) {
+            $out[(int) $r->object_id][] = (int) $r->term_id;
+        }
+
+        return $out;
+    }
+
     /* ---------- JetEngine-Relationen ---------- */
 
     /** Kinder einer Relation: child_object_ids zu einem Elternteil. */

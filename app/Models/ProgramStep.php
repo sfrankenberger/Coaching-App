@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Content\Concerns\HasTopics;
 use App\Tenancy\Concerns\BelongsToTenant;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -12,7 +13,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
  */
 class ProgramStep extends Model
 {
-    use BelongsToTenant;
+    use BelongsToTenant, HasTopics;
 
     protected $guarded = [];
 

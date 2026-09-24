@@ -53,6 +53,7 @@ class UnitsRelationManager extends RelationManager
                         ->toolbarButtons(['bold', 'italic', 'h2', 'h3', 'bulletList', 'orderedList', 'link', 'blockquote', 'undo', 'redo']),
                     Toggle::make('is_published')->label('Veröffentlicht')->default(true),
                     Toggle::make('is_core')->label('Kernübung')->visible(fn ($get) => $get('type') === 'exercise_set'),
+                    Select::make('topics')->label('Themen')->relationship('topics', 'name')->multiple()->preload()->searchable()->columnSpanFull()->createOptionForm([TextInput::make('name')->label('Thema')->required()->maxLength(120)]),
                 ])->columns(2),
 
                 Tab::make('Videos und Links')->schema([

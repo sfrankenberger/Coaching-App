@@ -291,3 +291,25 @@
         }).then(function (j) { status.textContent = j.anzahl ? j.anzahl + ' Gerät(e) angemeldet' : 'Push ist aus.'; if (!j.anzahl) aus.hidden = true; }).catch(function () {});
     });
 })();
+
+/* Merken: Lesezeichen ohne Neuladen umschalten */
+(function () {
+    var csrf = document.querySelector('meta[name="csrf-token"]');
+    csrf = csrf ? csrf.getAttribute('content') : '';
+    document.addEventListener('submit', function (e) {
+        var f = e.target.closest('form[data-merken]');
+        if (!f) return;
+        e.preventDefault();
+        var b = f.querySelector('button');
+        fetch(f.action, { method: 'POST', credentials: 'same-origin', headers: { 'Accept': 'application/json', 'X-CSRF-TOKEN': csrf }, body: new FormData(f) })
+            .then(function (r) { return r.json(); })
+            .then(function (j) {
+                var an = !!j.an;
+                b.dataset.an = an ? '1' : '0';
+                b.classList.toggle('text-primary', an); b.classList.toggle('border-primary', an); b.classList.toggle('text-muted', !an && !b.classList.contains('knopf'));
+                var svg = b.querySelector('svg'); if (svg) svg.setAttribute('fill', an ? 'currentColor' : 'none');
+                var t = b.querySelector('[data-merken-text]'); if (t) t.textContent = an ? 'Gemerkt' : 'Merken';
+            })
+            .catch(function () { f.submit(); });
+    });
+})();

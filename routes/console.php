@@ -21,3 +21,7 @@ Schedule::command('benachrichtigungen:runde nachfassen')->everyTenMinutes()->wit
 Schedule::command('benachrichtigungen:runde aufgaben --wann=morgen')->dailyAt('08:00');
 Schedule::command('benachrichtigungen:runde aufgaben --wann=abend')->dailyAt('18:00');
 Schedule::command('benachrichtigungen:runde abendmail')->dailyAt('19:30');
+
+// Inhalte: Feeds holen, geplante Beitraege melden
+Schedule::command('inhalte:feeds')->hourly()->withoutOverlapping();
+Schedule::command('inhalte:veroeffentlichen')->everyTenMinutes()->withoutOverlapping();

@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Content\Concerns\HasTopics;
 use App\Tenancy\Concerns\BelongsToTenant;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
@@ -14,7 +15,7 @@ use Illuminate\Support\Collection;
  */
 class Program extends Model
 {
-    use BelongsToTenant;
+    use BelongsToTenant, HasTopics;
 
     public const TYPES = [
         'hybrid' => 'Hybrid-Coaching (Gruppe, Wochen)',

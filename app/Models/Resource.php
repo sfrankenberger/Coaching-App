@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Content\Concerns\HasTopics;
 use App\Tenancy\Concerns\BelongsToTenant;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
@@ -13,7 +14,7 @@ use Illuminate\Database\Eloquent\Relations\MorphToMany;
  */
 class Resource extends Model
 {
-    use BelongsToTenant;
+    use BelongsToTenant, HasTopics;
 
     public const TYPES = [
         'pdf' => 'PDF',

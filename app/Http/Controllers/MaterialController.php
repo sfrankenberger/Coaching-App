@@ -75,7 +75,7 @@ class MaterialController extends Controller
     /** Merken oder Vergessen (Material, Termin, Einheit). */
     public function merken(Request $request): JsonResponse|RedirectResponse
     {
-        $data = $request->validate(['type' => ['required', 'in:resource,event,unit,post'], 'id' => ['required', 'integer']]);
+        $data = $request->validate(['type' => ['required', 'in:resource,event,unit,post,episode,program,step'], 'id' => ['required', 'integer']]);
         $user = $request->user();
 
         $b = Bookmark::where('user_id', $user->id)->where('bookmarkable_type', $data['type'])->where('bookmarkable_id', $data['id'])->first();

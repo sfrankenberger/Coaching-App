@@ -7,11 +7,14 @@ use App\Models\Answer;
 use App\Models\Event;
 use App\Models\Membership;
 use App\Models\Offer;
+use App\Models\PodcastEpisode;
+use App\Models\Post;
 use App\Models\Program;
 use App\Models\ProgramMember;
 use App\Models\Reflection;
 use App\Models\Task;
 use App\Models\Tenant;
+use App\Models\Topic;
 use App\Models\User;
 use App\Tenancy\CurrentTenant;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -111,6 +114,17 @@ class CoachPanelTest extends TestCase
         $this->actingAs($owner)->get('http://a.test/coach/materials/neu')->assertOk();
         $this->actingAs($owner)->get('http://a.test/coach/tasks')->assertOk();
         $this->actingAs($owner)->get('http://a.test/coach/tasks/neu')->assertOk();
+
+        $cur->run($this->a, function () {
+            Post::create(['title' => 'Impuls A', 'published_at' => now()]);
+            PodcastEpisode::create(['show' => 'Sendung', 'guid' => 'g', 'title' => 'Folge A', 'audio_url' => 'https://example.com/a.mp3']);
+            Topic::create(['name' => 'Thema A']);
+        });
+        $this->actingAs($owner)->get('http://a.test/coach/posts')->assertOk()->assertSee('Impuls A');
+        $this->actingAs($owner)->get('http://a.test/coach/posts/neu')->assertOk();
+        $this->actingAs($owner)->get('http://a.test/coach/podcast')->assertOk()->assertSee('Folge A');
+        $this->actingAs($owner)->get('http://a.test/coach/topics')->assertOk()->assertSee('Thema A');
+        $this->actingAs($owner)->get('http://a.test/coach/topics/neu')->assertOk();
 
         $anna = $this->person($this->a, Role::Member);
         $anna->update(['name' => 'Anna Dossier', 'phone' => '079 111 22 33']);
