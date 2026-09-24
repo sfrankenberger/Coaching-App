@@ -36,6 +36,10 @@ class TenantSeeder extends Seeder
                     'owner_ids' => [2],                                   // LEA_KR_LEA in lea-kursraum.php
                     'team_roles' => ['administrator', 'lea_redaktion'],
                     'course_relation_id' => 13,                            // JetEngine-Relation Teilnehmer zu Kurse
+                    'relations' => ['course_modules' => 9, 'module_units' => 10],
+                    'club_product_id' => 1524,                             // WooCommerce-Produkt des Clubs
+                    'program_types' => ['1849' => 'hybrid', '1112' => 'club'],
+                    'workbook_dir' => '/var/www/vhosts/leawernli.ch/httpdocs/wp-content/novamira-daten',
                     'meta' => [
                         'phone' => 'lea_telefon',
                         'reminders_off' => 'lea_te_aus',
@@ -43,6 +47,11 @@ class TenantSeeder extends Seeder
                         'task_reminders_off' => 'lea_ap_erinnerung_aus',
                         'onboarding_seen' => 'lea_willkommen_gesehen',
                         'access' => 'lea_zugaenge',
+                        'progress' => 'je_data_store_erledigt',
+                        'manual_courses' => 'lea_kurse_manuell',
+                        'unit_todos' => 'lea_todos_',
+                        'workbook_answers' => 'lea_wb_antworten',
+                        'workbook_shared' => 'lea_wb_geteilt',
                     ],
                 ]],
             ],

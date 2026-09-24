@@ -2,6 +2,7 @@
 
 namespace App\Console\Commands;
 
+use App\Import\WordPress\ProgramsImport;
 use App\Import\WordPress\UsersImport;
 use App\Import\WordPress\WordPressSource;
 use App\Models\Tenant;
@@ -17,7 +18,7 @@ use Illuminate\Console\Command;
 class ImportWordPress extends Command
 {
     protected $signature = 'import:wordpress {tenant : Kuerzel des Mandanten}
-        {--only=users : Was importiert wird (users)}
+        {--only=users : Was importiert wird, kommagetrennt (users, programs)}
         {--with-guests : Auch Konten ohne Kurszugang als Gast anlegen}
         {--dry-run : Nur zeigen, nichts schreiben}';
 
@@ -38,7 +39,8 @@ class ImportWordPress extends Command
             foreach ($parts as $part) {
                 match ($part) {
                     'users' => $this->users($tenant),
-                    default => $this->warn("Unbekannter Teil: {$part} (moeglich: users)"),
+                    'programs', 'kurse' => $this->programs($tenant),
+                    default => $this->warn("Unbekannter Teil: {$part} (moeglich: users, programs)"),
                 };
             }
 
@@ -58,6 +60,21 @@ class ImportWordPress extends Command
         ]]);
         foreach ($stats['rollen'] as $role => $n) {
             $this->line("  {$role}: {$n}");
+        }
+    }
+
+    protected function programs(Tenant $tenant): void
+    {
+        $this->info('Kurse, Module, Lektionen, Arbeitsbuecher, Fortschritt und Zugaenge'.($this->option('dry-run') ? ' (Probelauf)' : ''));
+
+        $import = new ProgramsImport($tenant, new WordPressSource, (bool) $this->option('dry-run'));
+        $stats = $import->run(fn (string $line) => $this->line('  '.$line, verbosity: 'v'));
+
+        $this->table(['Programme', 'Schritte', 'Einheiten', 'Uebungsteile', 'Fortschritt', 'Antworten', 'Zugaenge', 'Mitglieder'], [[
+            $stats['programme'], $stats['schritte'], $stats['einheiten'], $stats['uebungsteile'], $stats['fortschritt'], $stats['antworten'], $stats['zugaenge'], $stats['mitglieder'],
+        ]]);
+        foreach ($stats['hinweise'] as $h) {
+            $this->warn('  '.$h);
         }
     }
 }
