@@ -1,9 +1,15 @@
 <?php
 
+use App\Http\Controllers\AufgabenController;
 use App\Http\Controllers\Auth\LoginController;
 use App\Http\Controllers\Auth\SocialController;
+use App\Http\Controllers\JournalController;
 use App\Http\Controllers\KursController;
+use App\Http\Controllers\MaterialController;
+use App\Http\Controllers\NotizenController;
 use App\Http\Controllers\ProfilController;
+use App\Http\Controllers\ReflexionController;
+use App\Http\Controllers\TermineController;
 use App\Tenancy\Branding;
 use Illuminate\Support\Facades\Route;
 
@@ -43,4 +49,33 @@ Route::middleware(['auth', 'membership'])->group(function () {
     Route::post('/kurse/{program:slug}/einheit/{einheit}/erledigt', [KursController::class, 'erledigt'])->name('kurse.erledigt');
     Route::post('/kurse/{program:slug}/einheit/{einheit}/teilen', [KursController::class, 'teilen'])->name('kurse.teilen');
     Route::post('/kurse/{program:slug}/einheit/{einheit}/notiz', [KursController::class, 'notiz'])->name('kurse.notiz');
+
+    // Termine
+    Route::get('/termine', [TermineController::class, 'index'])->name('termine.index');
+    Route::get('/termine/{termin}', [TermineController::class, 'show'])->name('termine.show');
+    Route::post('/termine/{termin}/dabei', [TermineController::class, 'dabei'])->name('termine.dabei');
+    Route::post('/termine/{termin}/gesehen', [TermineController::class, 'gesehen'])->name('termine.gesehen');
+
+    // Material und Merkliste
+    Route::get('/material', [MaterialController::class, 'index'])->name('material.index');
+    Route::get('/material/{material}/datei', [MaterialController::class, 'datei'])->name('material.datei');
+    Route::post('/merken', [MaterialController::class, 'merken'])->name('merken');
+
+    // Mein Journal: Aufgaben, Notizen, Reflexion
+    Route::get('/journal', [JournalController::class, 'index'])->name('journal.index');
+    Route::get('/aufgaben', [AufgabenController::class, 'index'])->name('aufgaben.index');
+    Route::post('/aufgaben', [AufgabenController::class, 'store'])->name('aufgaben.store');
+    Route::post('/aufgaben/{aufgabe}', [AufgabenController::class, 'update'])->name('aufgaben.update');
+    Route::post('/aufgaben/{aufgabe}/haken', [AufgabenController::class, 'haken'])->name('aufgaben.haken');
+    Route::post('/aufgaben/{aufgabe}/tag', [AufgabenController::class, 'tag'])->name('aufgaben.tag');
+    Route::delete('/aufgaben/{aufgabe}', [AufgabenController::class, 'destroy'])->name('aufgaben.destroy');
+    Route::get('/notizen', [NotizenController::class, 'index'])->name('notizen.index');
+    Route::post('/notizen', [NotizenController::class, 'store'])->name('notizen.store');
+    Route::post('/notizen/{notiz}', [NotizenController::class, 'update'])->name('notizen.update');
+    Route::delete('/notizen/{notiz}', [NotizenController::class, 'destroy'])->name('notizen.destroy');
+    Route::get('/reflexion', [ReflexionController::class, 'index'])->name('reflexion.index');
+    Route::post('/reflexion', [ReflexionController::class, 'store'])->name('reflexion.store');
+    Route::post('/reflexion/{reflexion}/nachtrag', [ReflexionController::class, 'nachtrag'])->name('reflexion.nachtrag');
+    Route::post('/reflexion/{reflexion}/teilen', [ReflexionController::class, 'teilen'])->name('reflexion.teilen');
+    Route::delete('/reflexion/{reflexion}', [ReflexionController::class, 'destroy'])->name('reflexion.destroy');
 });

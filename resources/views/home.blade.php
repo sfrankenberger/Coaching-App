@@ -5,10 +5,14 @@
         <p class="text-ink-soft">Schön, dass du da bist. Hier entsteht dein Bereich. Kurse, Termine und Nachrichten kommen Schritt für Schritt dazu.</p>
     </x-karte>
 
-    <x-karte titel="Deine Kurse">
-        <p class="text-ink-soft mb-3">Kursraum, Wochen, Übungen und dein Fortschritt.</p>
-        <a href="{{ route('kurse.index') }}" class="knopf">Zu meinen Kursen</a>
-    </x-karte>
+    <div class="grid grid-cols-2 gap-2 my-2">
+        @foreach ([['kurse.index', 'Kurse', 'Wochen, Übungen, Fortschritt'], ['termine.index', 'Termine', 'Calls und Aufzeichnungen'], ['material.index', 'Material', 'PDFs, Audios, Links'], ['journal.index', 'Journal', 'Aufgaben, Notizen, Reflexion']] as [$r, $t, $x])
+            <a href="{{ route($r) }}" class="karte !mt-0 no-underline text-ink hover:border-primary">
+                <span class="block text-base font-semibold">{{ $t }}</span>
+                <span class="hinweis">{{ $x }}</span>
+            </a>
+        @endforeach
+    </div>
 
     <x-karte titel="Dein Zugang">
         <dl class="grid grid-cols-[auto_1fr] gap-x-4 gap-y-1 text-md">

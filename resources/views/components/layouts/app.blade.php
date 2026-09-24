@@ -44,6 +44,9 @@
                 <nav class="nav" aria-label="Hauptnavigation">
                     <a href="{{ route('home') }}" @class(['aktiv' => request()->routeIs('home')])>Start</a>
                     <a href="{{ route('kurse.index') }}" @class(['aktiv' => request()->routeIs('kurse.*')])>Kurse</a>
+                    <a href="{{ route('termine.index') }}" @class(['aktiv' => request()->routeIs('termine.*')])>Termine</a>
+                    <a href="{{ route('material.index') }}" @class(['aktiv' => request()->routeIs('material.*')])>Material</a>
+                    <a href="{{ route('journal.index') }}" @class(['aktiv' => request()->routeIs(['journal.*', 'aufgaben.*', 'notizen.*', 'reflexion.*'])])>Journal</a>
                     <a href="{{ route('profil') }}" @class(['aktiv' => request()->routeIs('profil*')])>Profil</a>
                     @if ($kannVerwalten)
                         <a href="/coach">Coach-Bereich</a>
@@ -77,16 +80,18 @@
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M2 8l10-4 10 4-10 4z"/><path d="M6 10v5c0 1.5 3 3 6 3s6-1.5 6-3v-5"/></svg>
                 Kurse
             </a>
+            <a href="{{ route('termine.index') }}" @class(['aktiv' => request()->routeIs('termine.*')])>
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18M8 3v4M16 3v4"/></svg>
+                Termine
+            </a>
+            <a href="{{ route('journal.index') }}" @class(['aktiv' => request()->routeIs(['journal.*', 'aufgaben.*', 'notizen.*', 'reflexion.*'])])>
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M5 4h11a3 3 0 0 1 3 3v13H8a3 3 0 0 1-3-3z"/><path d="M8 8h7M8 12h7"/></svg>
+                Journal
+            </a>
             <a href="{{ route('profil') }}" @class(['aktiv' => request()->routeIs('profil*')])>
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="4"/><path d="M4 21c0-4 3.6-7 8-7s8 3 8 7"/></svg>
                 Profil
             </a>
-            @if ($kannVerwalten)
-                <a href="/coach">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 6h16M4 12h16M4 18h10"/></svg>
-                    Coach
-                </a>
-            @endif
         </nav>
     @endauth
 

@@ -3,6 +3,7 @@
 namespace Tests\Feature;
 
 use App\Enums\Role;
+use App\Models\Event;
 use App\Models\Offer;
 use App\Models\Program;
 use App\Models\Tenant;
@@ -94,5 +95,16 @@ class CoachPanelTest extends TestCase
         $this->actingAs($owner)->get("http://a.test/coach/programs/{$program->id}/bearbeiten")->assertOk()->assertSee('Testkurs A');
         $this->actingAs($owner)->get('http://a.test/coach/offers')->assertOk()->assertSee('Paket A');
         $this->actingAs($owner)->get("http://a.test/coach/offers/{$offer->id}/bearbeiten")->assertOk();
+
+        $cur->run($this->a, function () use ($program) {
+            Event::create(['program_id' => $program->id, 'title' => 'Call Woche 1', 'starts_at' => now()->addDay()]);
+            \App\Models\Resource::create(['title' => 'Arbeitsblatt A', 'url' => 'https://example.com/a.pdf']);
+        });
+        $this->actingAs($owner)->get('http://a.test/coach/events')->assertOk()->assertSee('Call Woche 1');
+        $this->actingAs($owner)->get('http://a.test/coach/events/neu')->assertOk();
+        $this->actingAs($owner)->get('http://a.test/coach/materials')->assertOk()->assertSee('Arbeitsblatt A');
+        $this->actingAs($owner)->get('http://a.test/coach/materials/neu')->assertOk();
+        $this->actingAs($owner)->get('http://a.test/coach/tasks')->assertOk();
+        $this->actingAs($owner)->get('http://a.test/coach/tasks/neu')->assertOk();
     }
 }

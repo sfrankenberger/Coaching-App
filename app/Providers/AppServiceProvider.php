@@ -2,8 +2,16 @@
 
 namespace App\Providers;
 
+use App\Models\Comment;
+use App\Models\Event;
+use App\Models\JournalEntry;
+use App\Models\Message;
+use App\Models\Note;
+use App\Models\Post;
 use App\Models\Program;
 use App\Models\ProgramStep;
+use App\Models\Reflection;
+use App\Models\Task;
 use App\Models\Unit;
 use App\Models\User;
 use App\Programs\ProgramAccess;
@@ -31,6 +39,15 @@ class AppServiceProvider extends ServiceProvider
             'step' => ProgramStep::class,
             'unit' => Unit::class,
             'user' => User::class,
+            'event' => Event::class,
+            'resource' => \App\Models\Resource::class,
+            'task' => Task::class,
+            'note' => Note::class,
+            'reflection' => Reflection::class,
+            'journal' => JournalEntry::class,
+            'message' => Message::class,
+            'comment' => Comment::class,
+            'post' => Post::class,
         ]);
 
         // Zugriff auf Programme an genau einer Stelle
