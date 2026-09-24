@@ -7,8 +7,8 @@ use Illuminate\Database\Seeder;
 
 /**
  * Erster Mandant: Lea Wernli. Idempotent.
- * Farben und Schriften stammen aus dem Elementor-Kit von leawernli.ch (Kit 20)
- * und werden beim WordPress-Import (import:wordpress --branding) ueberschrieben.
+ * Farben, Schriften und Masse stammen aus dem bisherigen Mitgliederbereich auf leawernli.ch
+ * (lea-design, lea-ui, lea-willkommen). Alles Lea-Spezifische steht hier und nur hier.
  */
 class TenantSeeder extends Seeder
 {
@@ -22,13 +22,55 @@ class TenantSeeder extends Seeder
             'settings' => [
                 'shop' => ['driver' => 'woocommerce', 'url' => 'https://leawernli.ch'],
                 'website' => 'https://leawernli.ch',
+                'mail' => [
+                    'from_address' => 'hallo@leawernli.ch',
+                    'from_name' => 'Lea Wernli',
+                ],
+                // Zugangsdaten fuer Google/Apple kommen ueber die Plattform-Verwaltung in die DB, nie in Git.
+                'oauth' => [
+                    'google' => ['client_id' => null, 'client_secret' => null],
+                    'apple' => ['client_id' => null, 'client_secret' => null],
+                ],
+                // Wie der WordPress-Import Personen und Rollen zuordnet (import:wordpress lea --only=users).
+                'import' => ['wordpress' => [
+                    'owner_ids' => [2],                                   // LEA_KR_LEA in lea-kursraum.php
+                    'team_roles' => ['administrator', 'lea_redaktion'],
+                    'course_relation_id' => 13,                            // JetEngine-Relation Teilnehmer zu Kurse
+                    'meta' => [
+                        'phone' => 'lea_telefon',
+                        'reminders_off' => 'lea_te_aus',
+                        'evening_mail_off' => 'lea_am_aus',
+                        'task_reminders_off' => 'lea_ap_erinnerung_aus',
+                        'onboarding_seen' => 'lea_willkommen_gesehen',
+                        'access' => 'lea_zugaenge',
+                    ],
+                ]],
             ],
             'branding' => [
                 'app_name' => 'Lea Wernli',
+                'short_name' => 'Lea',
+                'primary' => '#B4795F',
+                'primary_contrast' => '#FFFFFF',
+                'text' => '#2E2D29',
+                'text_soft' => '#4A473F',
+                'muted' => '#86816F',
+                'bg' => '#F6F2EA',
                 'card_bg' => '#FFFDF8',
                 'card_border' => '#E4DFD2',
+                'success' => '#6E8B74',
+                'danger' => '#B5544F',
+                'font_heading' => 'Lora, Georgia, serif',
+                'font_body' => 'system-ui, -apple-system, "Segoe UI", Roboto, sans-serif',
+                'font_url' => 'https://fonts.googleapis.com/css2?family=Lora:wght@400;500&display=swap',
                 'radius' => 16,
+                'card_padding_y' => 14,
+                'card_padding_x' => 16,
+                'gap' => 8,
+                'page_width' => 720,
                 'font_scale' => [11, 12.5, 13.5, 15.5, 17, 20, 26, 32],
+                // App-Icons liegen noch in WordPress unter uploads/lea-app/, werden mit dem Import kopiert.
+                'icon_url' => null,
+                'logo_url' => null,
             ],
         ]);
 
