@@ -6,28 +6,17 @@
 - Pakete: livewire/livewire 4.4, filament/filament 5.8, laravel/socialite 5.31
 - Mandanten-Kern, Migrationen, Seeder für Mandant `lea`, Tests
 - Git-Repository initialisiert (lokal, noch ohne Remote)
-- Datenbank vorerst SQLite (`database/database.sqlite`)
+- MySQL-Datenbank `lea_app` (Plesk, Benutzer `lea_app`), migriert und geseedet
+- Subdomain `app.leawernli.ch` mit Dokumentstamm `/app.leawernli.ch/public`, PHP 8.4 FastCGI, Let's Encrypt
 - WordPress-DB als lesende Zweitverbindung `wordpress` in `.env`
 - DNS: `app.leawernli.ch` zeigt bereits auf den Server (85.214.17.182, Cloudflare ohne Proxy)
 - Crontab des Benutzers: Scheduler jede Minute
 
-## Was Sebastian in Plesk einmal machen muss (ca. 10 Minuten)
+## Plesk-Einrichtung (erledigt 24.09.2026)
 
-Diese Schritte brauchen Plesk-Adminrechte, die der Systembenutzer nicht hat.
+Subdomain, SSL, PHP 8.4 und Datenbank sind eingerichtet. Zur Sicherheit liegt zusaetzlich eine `.htaccess` im Projektordner, die alles nach `public/` umleitet, falls der Dokumentstamm je wieder auf den Projektordner zeigt. SSH fuer den Systembenutzer ist aus (/bin/false), gearbeitet wird ueber GitHub oder den Plesk-Root-Zugang.
 
-1. **Subdomain anlegen:** Websites & Domains → leawernli.ch → Subdomain hinzufügen
-   - Name: `app`
-   - Dokumentstamm: `/app.leawernli.ch/public` (Ordner existiert bereits, nicht überschreiben lassen)
-2. **PHP-Einstellungen der Subdomain:** PHP 8.4, FPM über nginx. `memory_limit` 256M, `upload_max_filesize` und `post_max_size` 64M (Sprachnachrichten, PDFs).
-3. **nginx-Zusatzanweisung** (Apache & nginx → Zusätzliche nginx-Anweisungen), damit Laravel-Routen funktionieren, falls nginx direkt ausliefert:
-   ```
-   location / { try_files $uri $uri/ /index.php?$query_string; }
-   ```
-   (Bei Apache-Proxy reicht die mitgelieferte `public/.htaccess`.)
-4. **SSL:** SSL/TLS-Zertifikate → Let's Encrypt für `app.leawernli.ch`.
-5. **Datenbank:** Datenbanken → Neu: Name `lea_app`, Benutzer `lea_app`. Zugangsdaten in `.env` eintragen (`DB_CONNECTION=mysql`, `DB_DATABASE`, `DB_USERNAME`, `DB_PASSWORD`), dann `php84 artisan migrate --seed`.
-6. **Cache-Ausnahme:** Die Subdomain nicht über LiteSpeed/QUIC.cloud cachen. Cloudflare-Proxy für `app` aus lassen (DNS only).
-7. **SSH für Claude Code:** Entweder SSH-Zugang für den Systembenutzer `leawernli.ch` (Plesk → Hosting-Zugriff → SSH: /bin/bash), oder Arbeit über ein privates GitHub-Repository (siehe unten).
+Cloudflare-Proxy fuer `app` aus lassen (DNS only), die Subdomain nicht ueber LiteSpeed/QUIC.cloud cachen.
 
 ## Arbeitsweise mit Claude Code
 

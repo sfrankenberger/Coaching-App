@@ -10,7 +10,7 @@ Jede Etappe endet mit einem Stand, den Lea anschauen kann.
 - [x] Mandanten-Kern: tenants, tenant_domains, memberships, Rollen, BelongsToTenant, IdentifyTenant, Tests
 - [x] Mandant `lea` mit Domain `app.leawernli.ch`
 - [x] Dokumentation, CLAUDE.md
-- [ ] Plesk: Subdomain, SSL, MySQL (Sebastian)
+- [x] Plesk: Subdomain, SSL, PHP 8.4, MySQL `lea_app`
 
 ## Etappe 1 - Anmelden und Hülle (Tage 1 bis 3)
 

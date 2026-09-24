@@ -1,0 +1,7 @@
+# Notbremse, falls der Dokumentstamm auf den Projektordner statt auf public/ zeigt.
+# Alles nach public/ umleiten, Projektdateien nie direkt ausliefern.
+<IfModule mod_rewrite.c>
+    RewriteEngine On
+    RewriteCond %{REQUEST_URI} !^/public/
+    RewriteRule ^(.*)$ public/$1 [L]
+</IfModule>

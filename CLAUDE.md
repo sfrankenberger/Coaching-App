@@ -16,7 +16,7 @@ Lies vor jeder grösseren Arbeit: `docs/01-ENTSCHEIDUNG.md`, `docs/02-ARCHITEKTU
 ## Server
 
 - Plesk-Server `srv.iksf.de` (Ubuntu 24, Strato). Systembenutzer `leawernli.ch`, Gruppe `psacln`.
-- Projektpfad: `/var/www/vhosts/leawernli.ch/app.leawernli.ch`, Webroot `public/`.
+- Projektpfad: `/var/www/vhosts/leawernli.ch/app.leawernli.ch`, Webroot `public/`. Datenbank MySQL `lea_app`.
 - PHP: immer **`/opt/plesk/php/8.4/bin/php`** (das `php` im PATH ist 8.3 CLI). Alias-Vorschlag: `alias php84=/opt/plesk/php/8.4/bin/php`.
 - Composer: `/opt/plesk/php/8.4/bin/php /opt/psa/var/modules/composer/composer.phar`
 - **Kein Node auf dem Server.** Tailwind über die Standalone-CLI (`bin/tailwindcss`), Filament und Livewire bringen fertige Assets mit. Wenn doch Vite nötig ist: lokal bauen und `public/build` committen.
