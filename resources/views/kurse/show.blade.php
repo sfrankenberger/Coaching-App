@@ -24,6 +24,14 @@
         @endif
     </x-karte>
 
+    @if ($program->isGroup() && ! $program->isWorkbook())
+        <a href="{{ route('kurse.austausch', $program) }}" class="karte flex items-center gap-3 no-underline text-ink hover:border-primary">
+            <span class="size-9 shrink-0 rounded-full bg-page grid place-items-center text-primary"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" class="size-5"><path d="M4 5h16v11H8l-4 4z"/></svg></span>
+            <span class="flex-1"><span class="block text-base">Austausch in der Gruppe</span><span class="hinweis">Fragen an alle, Erfahrungen teilen</span></span>
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" class="size-5 text-muted"><path d="m9 6 6 6-6 6"/></svg>
+        </a>
+    @endif
+
     @if ($freigabeOffen)
         <x-karte titel="Bevor du anfängst: Wer liest mit?">
             <p class="text-ink-soft mb-3">Alles, was du hier schreibst, ist zuerst nur für dich. Du kannst deine Antworten mit deiner Coachin teilen, damit sie vor eurem nächsten Gespräch weiss, wo du stehst. Du entscheidest das einmal jetzt und kannst es jederzeit ändern.</p>

@@ -3,6 +3,7 @@
 use App\Http\Controllers\AufgabenController;
 use App\Http\Controllers\Auth\LoginController;
 use App\Http\Controllers\Auth\SocialController;
+use App\Http\Controllers\GespraechController;
 use App\Http\Controllers\JournalController;
 use App\Http\Controllers\KursController;
 use App\Http\Controllers\MaterialController;
@@ -78,4 +79,14 @@ Route::middleware(['auth', 'membership'])->group(function () {
     Route::post('/reflexion/{reflexion}/nachtrag', [ReflexionController::class, 'nachtrag'])->name('reflexion.nachtrag');
     Route::post('/reflexion/{reflexion}/teilen', [ReflexionController::class, 'teilen'])->name('reflexion.teilen');
     Route::delete('/reflexion/{reflexion}', [ReflexionController::class, 'destroy'])->name('reflexion.destroy');
+
+    // Gespraeche (1:1 und Gruppe)
+    Route::get('/gespraech', [GespraechController::class, 'index'])->name('gespraech.index');
+    Route::get('/gespraech/{gespraech}', [GespraechController::class, 'show'])->name('gespraech.show');
+    Route::post('/gespraech/{gespraech}/senden', [GespraechController::class, 'senden'])->name('gespraech.senden');
+    Route::get('/gespraech/{gespraech}/neu', [GespraechController::class, 'neu'])->name('gespraech.neu');
+    Route::post('/gespraech/{gespraech}/gelesen', [GespraechController::class, 'gelesen'])->name('gespraech.gelesen');
+    Route::post('/nachricht/{nachricht}/reaktion', [GespraechController::class, 'reaktion'])->name('nachricht.reaktion');
+    Route::get('/nachricht/{nachricht}/{art}', [GespraechController::class, 'datei'])->name('nachricht.datei')->where('art', 'audio|datei');
+    Route::get('/kurse/{program:slug}/austausch', [GespraechController::class, 'gruppe'])->name('kurse.austausch');
 });

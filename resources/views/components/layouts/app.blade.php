@@ -3,6 +3,7 @@
     $appName = $branding->appName();
     $person = auth()->user();
     $kannVerwalten = $person?->canManageCurrentTenant();
+    $ungelesen = $person ? app(App\Chat\Chat::class)->unreadFor($person) : 0;
 @endphp
 <!doctype html>
 <html lang="{{ str_replace('_', '-', app()->getLocale()) }}">
@@ -47,6 +48,7 @@
                     <a href="{{ route('termine.index') }}" @class(['aktiv' => request()->routeIs('termine.*')])>Termine</a>
                     <a href="{{ route('material.index') }}" @class(['aktiv' => request()->routeIs('material.*')])>Material</a>
                     <a href="{{ route('journal.index') }}" @class(['aktiv' => request()->routeIs(['journal.*', 'aufgaben.*', 'notizen.*', 'reflexion.*'])])>Journal</a>
+                    <a href="{{ route('gespraech.index') }}" @class(['aktiv' => request()->routeIs('gespraech.*')])>Gespräch{{ $ungelesen ? ' ('.$ungelesen.')' : '' }}</a>
                     <a href="{{ route('profil') }}" @class(['aktiv' => request()->routeIs('profil*')])>Profil</a>
                     @if ($kannVerwalten)
                         <a href="/coach">Coach-Bereich</a>
@@ -71,6 +73,12 @@
     </main>
 
     @auth
+        @unless (request()->routeIs('gespraech.*'))
+            <a href="{{ route('gespraech.index') }}" class="chat-knopf" aria-label="Gespräch">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" class="size-6"><path d="M4 5h16v11H8l-4 4z"/></svg>
+                @if ($ungelesen)<span class="zahl">{{ $ungelesen }}</span>@endif
+            </a>
+        @endunless
         <nav class="leiste" aria-label="Navigation unten">
             <a href="{{ route('home') }}" @class(['aktiv' => request()->routeIs('home')])>
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 11 12 3l9 8"/><path d="M5 10v10h5v-6h4v6h5V10"/></svg>

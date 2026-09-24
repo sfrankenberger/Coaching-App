@@ -126,3 +126,133 @@
         }, 1500);
     });
 })();
+
+/* ---------- Gespraech: Senden ohne Neuladen, Nachfragen alle 5 Sekunden, Sprachnachricht ---------- */
+(function () {
+    var verlauf = document.getElementById('verlauf');
+    var form = document.querySelector('form[data-senden]');
+    if (!verlauf || !form) return;
+    var csrf = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
+    var ich = verlauf.dataset.ich;
+
+    function nachUnten() { window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' }); }
+    function tagTrenner() {
+        var letzter = '';
+        verlauf.querySelectorAll('.tag-trenner').forEach(function (t) { t.remove(); });
+        verlauf.querySelectorAll('[data-nachricht]').forEach(function (n) {
+            if (n.dataset.tag !== letzter) {
+                letzter = n.dataset.tag;
+                var d = document.createElement('div');
+                d.className = 'tag-trenner hinweis text-center my-1';
+                var p = letzter.split('-');
+                d.textContent = p[2] + '.' + p[1] + '.' + p[0];
+                n.parentNode.insertBefore(d, n);
+            }
+        });
+    }
+    function haken(bisIso) {
+        if (!bisIso) return;
+        var bis = new Date(bisIso).getTime();
+        verlauf.querySelectorAll('[data-haken]').forEach(function (h) {
+            if (new Date(h.dataset.zeit).getTime() <= bis) { h.textContent = '✓✓'; h.title = 'Gelesen'; }
+        });
+    }
+    function anhaengen(html) {
+        if (!html) return;
+        var leer = verlauf.querySelector('[data-leer]');
+        if (leer) leer.remove();
+        var box = document.createElement('div');
+        box.innerHTML = html;
+        while (box.firstChild) verlauf.appendChild(box.firstChild);
+        tagTrenner();
+        nachUnten();
+    }
+    tagTrenner();
+    nachUnten();
+
+    /* Nachfragen */
+    var laeuft = false;
+    function nachfragen() {
+        if (laeuft || document.hidden) return;
+        laeuft = true;
+        fetch(verlauf.dataset.verlauf + '?seit=' + verlauf.dataset.letzte, { credentials: 'same-origin', headers: { 'Accept': 'application/json' } })
+            .then(function (r) { return r.json(); })
+            .then(function (j) {
+                if (j.letzte && j.letzte != verlauf.dataset.letzte) { verlauf.dataset.letzte = j.letzte; anhaengen(j.html); }
+                haken(j.gelesen_bis);
+            })
+            .catch(function () {})
+            .finally(function () { laeuft = false; });
+    }
+    setInterval(nachfragen, 5000);
+    document.addEventListener('visibilitychange', function () { if (!document.hidden) nachfragen(); });
+
+    /* Senden */
+    var textarea = form.querySelector('textarea[name="body"]');
+    var dateiInput = form.querySelector('input[name="file"]');
+    var dateiName = form.querySelector('[data-datei-name]');
+    textarea.addEventListener('input', function () { textarea.style.height = 'auto'; textarea.style.height = Math.min(160, textarea.scrollHeight) + 'px'; });
+    textarea.addEventListener('keydown', function (e) { if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) { e.preventDefault(); form.requestSubmit(); } });
+    dateiInput.addEventListener('change', function () {
+        if (dateiInput.files.length) { dateiName.hidden = false; dateiName.textContent = '📎 ' + dateiInput.files[0].name; } else { dateiName.hidden = true; }
+    });
+    function senden(fd) {
+        return fetch(form.action, { method: 'POST', credentials: 'same-origin', headers: { 'Accept': 'application/json', 'X-CSRF-TOKEN': csrf }, body: fd })
+            .then(function (r) { return r.json().then(function (j) { if (!r.ok) throw new Error(j.fehler || 'Senden fehlgeschlagen'); return j; }); })
+            .then(function (j) { verlauf.dataset.letzte = j.id; anhaengen(j.html); });
+    }
+    form.addEventListener('submit', function (e) {
+        e.preventDefault();
+        var fd = new FormData(form);
+        if (!textarea.value.trim() && !dateiInput.files.length) return;
+        senden(fd).then(function () {
+            textarea.value = ''; textarea.style.height = 'auto'; dateiInput.value = ''; dateiName.hidden = true;
+        }).catch(function (err) { alert(err.message); });
+    });
+
+    /* Reaktionen ohne Neuladen */
+    verlauf.addEventListener('submit', function (e) {
+        var f = e.target.closest('form[data-reaktion]');
+        if (!f) return;
+        e.preventDefault();
+        fetch(f.action, { method: 'POST', credentials: 'same-origin', headers: { 'Accept': 'application/json', 'X-CSRF-TOKEN': csrf }, body: new FormData(f) })
+            .then(function (r) { return r.json(); })
+            .then(function (j) { var box = f.closest('[data-reaktionen]'); if (box && j.html) { var t = document.createElement('div'); t.innerHTML = j.html; box.replaceWith(t.firstElementChild); } });
+    });
+
+    /* Sprachnachricht */
+    var knopf = form.querySelector('[data-sprache]');
+    var leiste = form.querySelector('[data-aufnahme]');
+    var zeit = form.querySelector('[data-aufnahme-zeit]');
+    var rec = null, teile = [], start = 0, uhr = null, verwerfen = false;
+    if (!navigator.mediaDevices || !window.MediaRecorder) { knopf.hidden = true; }
+    function stopp(weg) {
+        verwerfen = !!weg;
+        if (rec && rec.state !== 'inactive') rec.stop();
+    }
+    knopf.addEventListener('click', function () {
+        if (rec && rec.state === 'recording') { stopp(false); return; }
+        navigator.mediaDevices.getUserMedia({ audio: true }).then(function (stream) {
+            var typ = ['audio/webm;codecs=opus', 'audio/webm', 'audio/mp4', 'audio/ogg'].find(function (t) { return MediaRecorder.isTypeSupported(t); }) || '';
+            rec = new MediaRecorder(stream, typ ? { mimeType: typ } : {});
+            teile = []; verwerfen = false; start = Date.now();
+            rec.ondataavailable = function (e) { if (e.data.size) teile.push(e.data); };
+            rec.onstop = function () {
+                stream.getTracks().forEach(function (t) { t.stop(); });
+                clearInterval(uhr); leiste.hidden = true; knopf.classList.remove('text-danger');
+                if (verwerfen || !teile.length) return;
+                var blob = new Blob(teile, { type: rec.mimeType || 'audio/webm' });
+                var fd = new FormData();
+                fd.append('_token', csrf);
+                fd.append('audio', blob, 'sprachnachricht.' + ((rec.mimeType || '').indexOf('mp4') >= 0 ? 'm4a' : 'webm'));
+                fd.append('sek', Math.round((Date.now() - start) / 1000));
+                senden(fd).catch(function (err) { alert(err.message); });
+            };
+            rec.start();
+            leiste.hidden = false; knopf.classList.add('text-danger');
+            uhr = setInterval(function () { var s = Math.round((Date.now() - start) / 1000); zeit.textContent = Math.floor(s / 60) + ':' + ('0' + (s % 60)).slice(-2); }, 500);
+        }).catch(function () { alert('Kein Zugriff auf das Mikrofon. Erlaube es in den Einstellungen des Browsers.'); });
+    });
+    form.querySelector('[data-aufnahme-stopp]').addEventListener('click', function () { stopp(false); });
+    form.querySelector('[data-aufnahme-abbruch]').addEventListener('click', function () { stopp(true); });
+})();

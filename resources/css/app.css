@@ -214,6 +214,38 @@
     .prose-app img, .prose-app iframe { max-width: 100%; height: auto; border-radius: 12px; }
     .prose-app table { display: block; overflow-x: auto; max-width: 100%; }
 
+    /* Schwebender Knopf zum Gespraech, ueber der Leiste unten */
+    .chat-knopf {
+        position: fixed;
+        right: 16px;
+        bottom: calc(76px + env(safe-area-inset-bottom));
+        z-index: 45;
+        display: grid;
+        place-items: center;
+        width: 52px;
+        height: 52px;
+        border-radius: 50%;
+        background: var(--c-primary);
+        color: var(--c-primary-contrast);
+        box-shadow: 0 6px 18px color-mix(in srgb, var(--c-text) 25%, transparent);
+    }
+    @media (min-width: 640px) { .chat-knopf { bottom: 24px; } }
+    .chat-knopf .zahl {
+        position: absolute;
+        top: -4px;
+        right: -4px;
+        min-width: 20px;
+        height: 20px;
+        padding: 0 5px;
+        border-radius: 999px;
+        background: var(--c-danger);
+        color: #fff;
+        font-size: 11px;
+        font-weight: 700;
+        line-height: 20px;
+        text-align: center;
+    }
+
     .schleier {
         position: fixed;
         inset: 0;
