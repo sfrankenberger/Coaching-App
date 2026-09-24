@@ -14,13 +14,16 @@ Jede Etappe endet mit einem Stand, den Lea anschauen kann.
 
 ## Etappe 1 - Anmelden und Hülle (Tage 1 bis 3)
 
-- [ ] Seitenhülle als Blade-Layout mit Branding aus `tenants.branding` (CSS-Variablen), Kartenmass und Schriftleiter aus 04
-- [ ] Tailwind-Standalone einrichten, `bin/build-css`
-- [ ] Anmeldung: Magic Link als Standard, Passwort optional, Google und Apple über Socialite (Zugangsdaten je Mandant in settings)
-- [ ] Passkeys (WebAuthn), RP-ID konfigurierbar je Mandant; Übernahme aus `secure_passkeys_webauthns` prüfen
-- [ ] PWA: Manifest je Mandant, Service Worker, App-Icons (liegen in WordPress unter `uploads/lea-app/`)
-- [ ] Filament-Panel `coach` (Pfad `/coach`) mit Zugriff nur für owner/team, Panel `plattform` nur für Plattform-Admin
-- [ ] Import 1: Personen und Rollen (`php84 artisan import:wordpress lea --only=users`)
+- [x] Seitenhülle als Blade-Layout (`components/layouts/app`, `auth`) mit Branding aus `tenants.branding` als CSS-Variablen (`App\Tenancy\Branding`), Kartenmass und Schriftleiter aus 04, Leiste unten auf dem Handy
+- [x] Tailwind-Standalone eingerichtet, `bin/build-css` (laedt die CLI bei Bedarf, baut `public/css/app.css`)
+- [x] Anmeldung: Magic Link als Standard (15 Minuten, einmalig, je Mandant), Passwort optional (im Profil setzbar), Google und Apple über Socialite (Zugangsdaten je Mandant in `settings.oauth`, Knopf erscheint nur mit Zugangsdaten)
+- [x] Profil: Name, Handynummer, drei Schalter "Was dich erreicht", Passwort
+- [ ] Passkeys (WebAuthn), RP-ID konfigurierbar je Mandant; Übernahme aus `secure_passkeys_webauthns` prüfen (nächster Schritt)
+- [x] PWA: Manifest je Mandant (`/manifest.webmanifest`), Service Worker ohne Cache. Offen: App-Icons aus `uploads/lea-app/` nach `storage/app/tenants/1/` kopieren und in `branding.icon_url` eintragen
+- [x] Filament-Panel `coach` (`/coach`, nur owner/team, Ressource Personen) und `plattform` (`/plattform`, nur Plattform-Admin, Ressource Mandanten). Anmeldung läuft über die App, nicht über Filament
+- [x] Import 1: Personen und Rollen (`php84 artisan import:wordpress lea --only=users`, wiederholbar, `--dry-run`, `--with-guests`)
+
+Stand nach Etappe 1: Lea kann sich per Link anmelden, sieht Start und Profil, im Coach-Bereich die importierten Personen. Zum Testen auf dem Server: Deploy, `.env` ergänzen (`WP_DB_*`), Import laufen lassen, Sebastian als Plattform-Admin setzen (siehe 05).
 
 ## Etappe 2 - Kursraum (Tage 4 bis 8)
 

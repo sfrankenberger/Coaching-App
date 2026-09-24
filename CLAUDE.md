@@ -31,7 +31,13 @@ php84 artisan migrate
 php84 artisan db:seed
 php84 artisan test
 php84 artisan tenant:create <slug> "<Name>" <domain> --owner-email=...
+php84 artisan user:platform-admin <email>              # Plattform-Admin (nur Sebastian)
+php84 artisan import:wordpress lea --only=users --dry-run -v
+php84 artisan filament:assets                          # nach Filament-Updates, laeuft im Deploy
+bin/build-css                                          # Tailwind bauen (bin/build-css --watch beim Entwickeln)
 ```
+
+Anmeldung: Magic Link (`App\Auth\MagicLink`, Tabelle `login_tokens`), Passwort optional, Google/Apple je Mandant. Seitenhülle: `resources/views/components/layouts/app.blade.php`, Branding-Variablen aus `App\Tenancy\Branding`. Coach-Bereich: Filament-Panel `coach` unter `app/Filament/Coach`, Plattform unter `app/Filament/Plattform`. Filament-Routen laufen nicht über die `web`-Gruppe, darum steht `IdentifyTenant` in jedem Panel als erste Middleware.
 
 ## Harte Regeln für Mandantenfähigkeit
 

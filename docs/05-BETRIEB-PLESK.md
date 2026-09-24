@@ -25,9 +25,27 @@ Cloudflare-Proxy fuer `app` aus lassen (DNS only), die Subdomain nicht ueber Lit
 1. Privates Repository anlegen (z. B. `sfrankenberger/coaching-app`), auf dem Server `git remote add origin ...` und pushen (Deploy-Key für den Server).
 2. Lokal klonen, mit Laravel Herd laufen lassen (`lea.localhost` ist im Seeder schon als Domain eingetragen, `TENANCY_FALLBACK=lea` für lokal).
 3. Claude Code arbeitet lokal, testet, committet, pusht.
-4. Auf dem Server `./deploy.sh` (pull, composer install --no-dev, migrate --force, optimize, Tailwind bauen).
+4. Auf dem Server `./deploy.sh` (pull, composer install --no-dev, migrate --force, Tailwind bauen, `filament:assets`, optimize).
 
 **Alternative: Claude Code direkt auf dem Server per SSH.** Schneller für den Anfang, aber ohne lokale Tests und mit Risiko für die Live-Seite. Nur, wenn SSH für den Benutzer freigeschaltet ist.
+
+## Erste Schritte nach dem ersten Deploy (Etappe 1)
+
+```bash
+PHP=/opt/plesk/php/8.4/bin/php
+cd /var/www/vhosts/leawernli.ch/app.leawernli.ch
+./deploy.sh                                   # pull, composer, migrate, CSS, Filament-Assets
+$PHP artisan db:seed                          # Mandant lea mit Branding und Import-Zuordnung (idempotent)
+$PHP artisan user:platform-admin mail@sfrankenberger.com --name="Sebastian"
+$PHP artisan import:wordpress lea --only=users --dry-run -v   # erst schauen
+$PHP artisan import:wordpress lea --only=users                # dann schreiben
+```
+
+In der `.env` muessen dafuer stehen: `WP_DB_DATABASE`, `WP_DB_USERNAME`, `WP_DB_PASSWORD`, `WP_DB_PREFIX=sWmOBXK94_` (nur lesend), `MAIL_*` fuer Mailgun, `TENANCY_FALLBACK` leer, `APP_LOCALE=de_CH`, `APP_FALLBACK_LOCALE=de` (sonst spricht Filament Englisch), `REDIS_PREFIX=lea_app_`.
+
+Anmelden: `https://app.leawernli.ch/anmelden`, Mailadresse eingeben, Link aus der Mail klicken. Wer keine Mitgliedschaft im Mandanten hat, bekommt keinen Link (die Seite verraet das nicht). Google/Apple: Client-ID und Secret unter `/plattform` beim Mandanten in `settings.oauth.google` bzw. `settings.oauth.apple` eintragen, Redirect-URL ist `https://app.leawernli.ch/anmelden/dienst/google/zurueck` bzw. `.../apple/zurueck`.
+
+Import-Zuordnung (in `tenants.settings.import.wordpress`, vom Seeder gesetzt): WordPress-ID 2 = owner, Rollen `administrator` und `lea_redaktion` = team, Kurszugang (`lea_zugaenge` gueltig oder Relation 13) = member, Rest = guest (nur mit `--with-guests`). Uebernommen werden Name, Mailadresse, Telefon (`lea_telefon`), die drei Schalter (`lea_te_aus`, `lea_am_aus`, `lea_ap_erinnerung_aus`) und ob die Einfuehrung gesehen wurde. Passwoerter werden nicht uebernommen, der Magic Link ersetzt sie. Der Import ist wiederholbar und ueberschreibt nichts, was die Person in der App selbst geaendert hat.
 
 ## Cron (bereits eingetragen)
 
