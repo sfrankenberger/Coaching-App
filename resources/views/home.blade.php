@@ -5,6 +5,11 @@
         <p class="text-ink-soft">Schön, dass du da bist. Hier entsteht dein Bereich. Kurse, Termine und Nachrichten kommen Schritt für Schritt dazu.</p>
     </x-karte>
 
+    <x-karte titel="Deine Kurse">
+        <p class="text-ink-soft mb-3">Kursraum, Wochen, Übungen und dein Fortschritt.</p>
+        <a href="{{ route('kurse.index') }}" class="knopf">Zu meinen Kursen</a>
+    </x-karte>
+
     <x-karte titel="Dein Zugang">
         <dl class="grid grid-cols-[auto_1fr] gap-x-4 gap-y-1 text-md">
             <dt class="text-muted">Rolle</dt>

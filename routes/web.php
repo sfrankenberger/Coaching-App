@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\Auth\LoginController;
 use App\Http\Controllers\Auth\SocialController;
+use App\Http\Controllers\KursController;
 use App\Http\Controllers\ProfilController;
 use App\Tenancy\Branding;
 use Illuminate\Support\Facades\Route;
@@ -31,4 +32,15 @@ Route::middleware(['auth', 'membership'])->group(function () {
     Route::post('/profil', [ProfilController::class, 'save'])->name('profil.speichern');
     Route::post('/profil/benachrichtigungen', [ProfilController::class, 'notifications'])->name('profil.benachrichtigungen');
     Route::post('/profil/passwort', [ProfilController::class, 'password'])->name('profil.passwort');
+
+    // Kursraum
+    Route::get('/kurse', [KursController::class, 'index'])->name('kurse.index');
+    Route::post('/kurse/antwort', [KursController::class, 'antwort'])->name('kurse.antwort');
+    Route::get('/kurse/{program:slug}', [KursController::class, 'show'])->name('kurse.show');
+    Route::post('/kurse/{program:slug}/freigabe', [KursController::class, 'freigabe'])->name('kurse.freigabe');
+    Route::get('/kurse/{program:slug}/schritt/{schritt}', [KursController::class, 'schritt'])->name('kurse.schritt');
+    Route::get('/kurse/{program:slug}/einheit/{einheit}', [KursController::class, 'einheit'])->name('kurse.einheit');
+    Route::post('/kurse/{program:slug}/einheit/{einheit}/erledigt', [KursController::class, 'erledigt'])->name('kurse.erledigt');
+    Route::post('/kurse/{program:slug}/einheit/{einheit}/teilen', [KursController::class, 'teilen'])->name('kurse.teilen');
+    Route::post('/kurse/{program:slug}/einheit/{einheit}/notiz', [KursController::class, 'notiz'])->name('kurse.notiz');
 });

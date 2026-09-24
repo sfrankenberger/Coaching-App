@@ -43,6 +43,7 @@
             @auth
                 <nav class="nav" aria-label="Hauptnavigation">
                     <a href="{{ route('home') }}" @class(['aktiv' => request()->routeIs('home')])>Start</a>
+                    <a href="{{ route('kurse.index') }}" @class(['aktiv' => request()->routeIs('kurse.*')])>Kurse</a>
                     <a href="{{ route('profil') }}" @class(['aktiv' => request()->routeIs('profil*')])>Profil</a>
                     @if ($kannVerwalten)
                         <a href="/coach">Coach-Bereich</a>
@@ -72,6 +73,10 @@
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 11 12 3l9 8"/><path d="M5 10v10h5v-6h4v6h5V10"/></svg>
                 Start
             </a>
+            <a href="{{ route('kurse.index') }}" @class(['aktiv' => request()->routeIs('kurse.*')])>
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M2 8l10-4 10 4-10 4z"/><path d="M6 10v5c0 1.5 3 3 6 3s6-1.5 6-3v-5"/></svg>
+                Kurse
+            </a>
             <a href="{{ route('profil') }}" @class(['aktiv' => request()->routeIs('profil*')])>
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="4"/><path d="M4 21c0-4 3.6-7 8-7s8 3 8 7"/></svg>
                 Profil
@@ -85,6 +90,7 @@
         </nav>
     @endauth
 
+    <script src="{{ asset('js/app.js') }}?v={{ filemtime(public_path('js/app.js')) }}" defer></script>
     <script>
         if ('serviceWorker' in navigator) {
             navigator.serviceWorker.register('/sw.js').catch(function () {});
