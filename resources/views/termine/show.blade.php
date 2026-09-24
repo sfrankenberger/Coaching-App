@@ -56,7 +56,23 @@
     @endif
 
     @if ($event->summary)
-        <x-karte titel="Zusammenfassung"><div class="prose-app whitespace-pre-line">{{ $event->summary }}</div></x-karte>
+        <x-karte titel="Zusammenfassung">
+            <div class="prose-app whitespace-pre-line">{{ $event->summary }}</div>
+            @if ($vorschlaege?->tasks)
+                <h3 class="mt-4 mb-1">Deine Aufgaben daraus</h3>
+                <ul class="divide-y divide-line">
+                    @foreach ($vorschlaege->tasks as $i => $t)
+                        <li class="flex items-start gap-3 py-2">
+                            <div class="min-w-0 flex-1">
+                                <span class="block text-base">{{ $t['titel'] }}</span>
+                                @if ($t['text'])<span class="hinweis block">{{ $t['text'] }}</span>@endif
+                            </div>
+                            <form method="post" action="{{ route('termine.aufgabe', $event) }}">@csrf<input type="hidden" name="nr" value="{{ $i }}"><button class="knopf knopf-leise" style="min-height:36px;padding:6px 12px">Als Aufgabe</button></form>
+                        </li>
+                    @endforeach
+                </ul>
+            @endif
+        </x-karte>
     @endif
 
     @if ($event->resources->isNotEmpty())

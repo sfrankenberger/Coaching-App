@@ -2,6 +2,8 @@
 
 namespace App\Http\Controllers;
 
+use App\Ai\Summarizer;
+use App\Models\AiSummary;
 use App\Models\Event;
 use App\Models\EventAttendee;
 use App\Models\Program;
@@ -47,7 +49,19 @@ class TermineController extends Controller
             'event' => $termin,
             'mein' => $termin->attendees->firstWhere('user_id', $user->id),
             'absagen' => $termin->attendees->where('status', 'declined'),
+            'vorschlaege' => $termin->user_id === $user->id ? AiSummary::where('summarizable_type', 'event')->where('summarizable_id', $termin->id)->where('status', 'done')->first() : null,
         ]);
+    }
+
+    /** Aus der KI-Zusammenfassung der eigenen 1:1-Sitzung eine Aufgabe uebernehmen. */
+    public function aufgabe(Request $request, Event $termin, Summarizer $summarizer): RedirectResponse
+    {
+        $user = $request->user();
+        abort_unless($termin->user_id === $user->id, 403);
+        $summary = AiSummary::where('summarizable_type', 'event')->where('summarizable_id', $termin->id)->where('status', 'done')->firstOrFail();
+        $n = $summarizer->createTasks($summary, [(int) $request->input('nr')], $user);
+
+        return back()->with('meldung', $n ? 'In deine Aufgaben übernommen.' : 'Die Aufgabe hast du schon.');
     }
 
     /** Abmelden oder doch dabei sein (nur Gruppentermine). */

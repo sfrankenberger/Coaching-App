@@ -75,6 +75,7 @@ Route::middleware(['auth', 'membership'])->group(function () {
     Route::get('/termine/{termin}', [TermineController::class, 'show'])->name('termine.show');
     Route::post('/termine/{termin}/dabei', [TermineController::class, 'dabei'])->name('termine.dabei');
     Route::post('/termine/{termin}/gesehen', [TermineController::class, 'gesehen'])->name('termine.gesehen');
+    Route::post('/termine/{termin}/aufgabe', [TermineController::class, 'aufgabe'])->name('termine.aufgabe');
 
     // Material und Merkliste
     Route::get('/material', [MaterialController::class, 'index'])->name('material.index');
