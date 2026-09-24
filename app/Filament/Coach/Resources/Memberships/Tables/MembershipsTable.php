@@ -3,7 +3,9 @@
 namespace App\Filament\Coach\Resources\Memberships\Tables;
 
 use App\Enums\Role;
+use App\Filament\Coach\Resources\Memberships\MembershipResource;
 use App\Models\Membership;
+use Filament\Actions\Action;
 use Filament\Actions\EditAction;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Filters\SelectFilter;
@@ -37,7 +39,10 @@ class MembershipsTable
                 SelectFilter::make('status')->label('Status')->options(Membership::statusLabels()),
             ])
             ->recordActions([
+                Action::make('dossier')->label('Dossier')->icon('heroicon-o-identification')
+                    ->url(fn (Membership $record) => MembershipResource::getUrl('dossier', ['record' => $record])),
                 EditAction::make(),
-            ]);
+            ])
+            ->recordUrl(fn (Membership $record) => MembershipResource::getUrl('dossier', ['record' => $record]));
     }
 }

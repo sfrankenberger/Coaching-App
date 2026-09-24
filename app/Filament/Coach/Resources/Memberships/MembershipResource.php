@@ -3,6 +3,7 @@
 namespace App\Filament\Coach\Resources\Memberships;
 
 use App\Filament\Coach\Resources\Memberships\Pages\CreateMembership;
+use App\Filament\Coach\Resources\Memberships\Pages\Dossier;
 use App\Filament\Coach\Resources\Memberships\Pages\EditMembership;
 use App\Filament\Coach\Resources\Memberships\Pages\ListMemberships;
 use App\Filament\Coach\Resources\Memberships\Schemas\MembershipForm;
@@ -54,6 +55,7 @@ class MembershipResource extends Resource
             'index' => ListMemberships::route('/'),
             'create' => CreateMembership::route('/neu'),
             'edit' => EditMembership::route('/{record}/bearbeiten'),
+            'dossier' => Dossier::route('/{record}/dossier'),
         ];
     }
 }

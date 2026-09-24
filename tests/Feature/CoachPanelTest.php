@@ -3,9 +3,14 @@
 namespace Tests\Feature;
 
 use App\Enums\Role;
+use App\Models\Answer;
 use App\Models\Event;
+use App\Models\Membership;
 use App\Models\Offer;
 use App\Models\Program;
+use App\Models\ProgramMember;
+use App\Models\Reflection;
+use App\Models\Task;
 use App\Models\Tenant;
 use App\Models\User;
 use App\Tenancy\CurrentTenant;
@@ -106,5 +111,19 @@ class CoachPanelTest extends TestCase
         $this->actingAs($owner)->get('http://a.test/coach/materials/neu')->assertOk();
         $this->actingAs($owner)->get('http://a.test/coach/tasks')->assertOk();
         $this->actingAs($owner)->get('http://a.test/coach/tasks/neu')->assertOk();
+
+        $anna = $this->person($this->a, Role::Member);
+        $anna->update(['name' => 'Anna Dossier', 'phone' => '079 111 22 33']);
+        $m = $cur->run($this->a, fn () => Membership::where('user_id', $anna->id)->first());
+        $cur->run($this->a, function () use ($anna, $program) {
+            ProgramMember::create(['program_id' => $program->id, 'user_id' => $anna->id, 'share_mode' => 'alles']);
+            $ex = $program->units()->first()->exercises()->first();
+            Answer::create(['user_id' => $anna->id, 'exercise_id' => $ex->id, 'value' => ['v' => 'Mehr Ruhe im Alltag'], 'shared_with_coach' => true]);
+            Reflection::create(['user_id' => $anna->id, 'went_well' => 'Geteilte Reflexion', 'visibility' => 'coach', 'shared_at' => now()]);
+            Reflection::create(['user_id' => $anna->id, 'went_well' => 'Private Reflexion']);
+            Task::create(['user_id' => $anna->id, 'title' => 'Aufgabe von Anna']);
+        });
+        $this->actingAs($owner)->get("http://a.test/coach/memberships/{$m->id}/dossier")->assertOk()
+            ->assertSee('Anna Dossier')->assertSee('Mehr Ruhe im Alltag')->assertSee('Geteilte Reflexion')->assertDontSee('Private Reflexion')->assertSee('Aufgabe von Anna')->assertSee('wa.me/0791112233');
     }
 }
