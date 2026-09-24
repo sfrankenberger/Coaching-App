@@ -3,8 +3,11 @@
 namespace Tests\Feature;
 
 use App\Enums\Role;
+use App\Models\Offer;
+use App\Models\Program;
 use App\Models\Tenant;
 use App\Models\User;
+use App\Tenancy\CurrentTenant;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
@@ -69,5 +72,27 @@ class CoachPanelTest extends TestCase
 
         $admin = User::factory()->create(['is_platform_admin' => true]);
         $this->actingAs($admin)->get('http://a.test/plattform/tenants')->assertOk()->assertSee('A')->assertSee('B');
+    }
+
+    public function test_programme_und_angebote_im_coach_bereich(): void
+    {
+        $owner = $this->person($this->a, Role::Owner);
+        $cur = app(CurrentTenant::class);
+        [$program, $offer] = $cur->run($this->a, function () {
+            $p = Program::create(['slug' => 'testkurs', 'title' => 'Testkurs A']);
+            $s = $p->steps()->create(['title' => 'Woche 1', 'position' => 1]);
+            $u = $p->units()->create(['title' => 'Einheit 1', 'step_id' => $s->id, 'position' => 1]);
+            $u->exercises()->create(['type' => 'text', 'prompt' => 'Was willst du?', 'position' => 1]);
+            $o = Offer::create(['title' => 'Paket A']);
+
+            return [$p, $o];
+        });
+        $cur->run($this->b, fn () => Program::create(['slug' => 'kurs-b', 'title' => 'Kurs von B']));
+
+        $this->actingAs($owner)->get('http://a.test/coach/programs')->assertOk()->assertSee('Testkurs A')->assertDontSee('Kurs von B');
+        $this->actingAs($owner)->get('http://a.test/coach/programs/neu')->assertOk();
+        $this->actingAs($owner)->get("http://a.test/coach/programs/{$program->id}/bearbeiten")->assertOk()->assertSee('Testkurs A');
+        $this->actingAs($owner)->get('http://a.test/coach/offers')->assertOk()->assertSee('Paket A');
+        $this->actingAs($owner)->get("http://a.test/coach/offers/{$offer->id}/bearbeiten")->assertOk();
     }
 }

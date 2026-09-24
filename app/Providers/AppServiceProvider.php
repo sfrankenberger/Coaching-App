@@ -2,8 +2,15 @@
 
 namespace App\Providers;
 
+use App\Models\Program;
+use App\Models\ProgramStep;
+use App\Models\Unit;
+use App\Models\User;
+use App\Programs\ProgramAccess;
 use App\Tenancy\Branding;
 use App\Tenancy\CurrentTenant;
+use Illuminate\Database\Eloquent\Relations\Relation;
+use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\ServiceProvider;
 use Laravel\Socialite\Contracts\Factory as SocialiteFactory;
 use SocialiteProviders\Apple\Provider as AppleProvider;
@@ -18,6 +25,17 @@ class AppServiceProvider extends ServiceProvider
 
     public function boot(): void
     {
+        // Kurze Namen fuer polymorphe Beziehungen (notable, resourceable ...)
+        Relation::enforceMorphMap([
+            'program' => Program::class,
+            'step' => ProgramStep::class,
+            'unit' => Unit::class,
+            'user' => User::class,
+        ]);
+
+        // Zugriff auf Programme an genau einer Stelle
+        Gate::define('view-program', fn (User $user, Program $program) => app(ProgramAccess::class)->canView($user, $program));
+
         // Apple kommt nicht mit Socialite selbst, sondern aus socialiteproviders/apple.
         $this->app->make(SocialiteFactory::class)->extend('apple', function ($app) {
             $config = $app['config']['services.apple'] ?? [];
