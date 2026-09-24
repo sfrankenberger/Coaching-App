@@ -47,6 +47,39 @@ Anmelden: `https://app.leawernli.ch/anmelden`, Mailadresse eingeben, Link aus de
 
 Import-Zuordnung (in `tenants.settings.import.wordpress`, vom Seeder gesetzt): WordPress-ID 2 = owner, Rollen `administrator` und `lea_redaktion` = team, Kurszugang (`lea_zugaenge` gueltig oder Relation 13) = member, Rest = guest (nur mit `--with-guests`). Uebernommen werden Name, Mailadresse, Telefon (`lea_telefon`), die drei Schalter (`lea_te_aus`, `lea_am_aus`, `lea_ap_erinnerung_aus`) und ob die Einfuehrung gesehen wurde. Passwoerter werden nicht uebernommen, der Magic Link ersetzt sie. Der Import ist wiederholbar und ueberschreibt nichts, was die Person in der App selbst geaendert hat.
 
+## Etappen 2 bis 4 auf dem Server (nach dem Deploy)
+
+```bash
+PHP=/opt/plesk/php/8.4/bin/php
+cd /var/www/vhosts/leawernli.ch/app.leawernli.ch
+./deploy.sh
+$PHP artisan db:seed                                    # ergaenzt Feeds und Import-Zuordnung (idempotent)
+$PHP artisan import:wordpress lea --only=alles --dry-run # users, programs, begleitung, inhalte
+nohup nice -n 10 $PHP artisan import:wordpress lea --only=alles > storage/logs/import.log 2>&1 &
+$PHP artisan push:keys lea                              # Web Push (VAPID)
+$PHP artisan bridge:secret lea                          # SSO-Bruecke, Geheimnis in die wp-config.php (siehe 07)
+$PHP artisan inhalte:feeds lea                          # Feeds einmal von Hand, sonst stuendlich
+$PHP artisan themen:profil lea --limit=20               # Themenfinder per KI (braucht ANTHROPIC_API_KEY)
+```
+
+Zusaetzlich in der `.env`: `ANTHROPIC_API_KEY` (KI), `QUEUE_CONNECTION=database` (Worker laeuft im Scheduler). Der Import kopiert Dateien aus `wp-content/uploads` nach `storage/app/tenants/1/` (Pfad in `settings.import.wordpress.uploads_dir`), das dauert beim ersten Mal.
+
+Einstellungen je Mandant unter `/plattform` (JSON in `tenants.settings`):
+
+| Schluessel | Wofuer |
+|---|---|
+| `mail.from_address`, `mail.from_name`, `mail.reply_to` | Absender aller Mails |
+| `oauth.google`, `oauth.apple` | Anmeldung mit Google/Apple |
+| `push.vapid` | Web Push (von `push:keys` gesetzt) |
+| `telegram.bot_token`, `telegram.bot_username`, `telegram.webhook_secret` | Telegram-Bot; Webhook des Bots auf `https://app.leawernli.ch/hooks/telegram/{webhook_secret}` setzen |
+| `shop.webhook_secret` | WooCommerce-Webhook (siehe 07) |
+| `bridge.secret` | SSO-Bruecke (von `bridge:secret` gesetzt) |
+| `feeds` | RSS-Quellen fuer Impulse und Podcast |
+| `ai.anthropic_key`, `ai.model` | eigener KI-Schluessel des Mandanten (sonst Plattform) |
+| `import.wordpress` | Zuordnung fuer den Import |
+
+Scheduler-Laeufe (`routes/console.php`): Queue-Worker jede Minute, Termin-Erinnerungen und Nachfassen alle zehn Minuten, Aufgaben-Hinweise 8 und 18 Uhr, Abendmail 19:30, Feeds stuendlich, geplante Beitraege alle zehn Minuten. Zeiten gelten in der Zeitzone des Mandanten.
+
 ## Cron (bereits eingetragen)
 
 ```

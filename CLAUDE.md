@@ -32,10 +32,17 @@ php84 artisan db:seed
 php84 artisan test
 php84 artisan tenant:create <slug> "<Name>" <domain> --owner-email=...
 php84 artisan user:platform-admin <email>              # Plattform-Admin (nur Sebastian)
-php84 artisan import:wordpress lea --only=users --dry-run -v
+php84 artisan import:wordpress lea --only=users --dry-run -v   # auch programs, begleitung, inhalte, alles
+php84 artisan push:keys lea                            # VAPID-Schluessel fuer Web Push
+php84 artisan bridge:secret lea                        # Geheimnis der SSO-Bruecke (in WordPress eintragen)
+php84 artisan benachrichtigungen:runde termine         # Laeufe (termine, nachfassen, aufgaben, abendmail), sonst Scheduler
+php84 artisan inhalte:feeds lea                        # Impulse und Podcast per RSS, sonst stuendlich
+php84 artisan themen:profil lea --limit=20             # Themenfinder per KI
 php84 artisan filament:assets                          # nach Filament-Updates, laeuft im Deploy
 bin/build-css                                          # Tailwind bauen (bin/build-css --watch beim Entwickeln)
 ```
+
+Weitere Ordner: `app/Programs` (Zugriff, Fortschritt, Begleitung), `app/Chat`, `app/Notifications` (Notifier, Kanaele, Runden), `app/Shop` (Zugaenge, WooCommerce), `app/Content` (Feeds, Inhalte, Themen), `app/Ai` (Anthropic, Summarizer), `app/Import/WordPress`. Einstellungen je Mandant in `tenants.settings`: `mail`, `oauth`, `push.vapid`, `telegram`, `shop.webhook_secret`, `bridge.secret`, `feeds`, `ai`, `import.wordpress`.
 
 Anmeldung: Magic Link (`App\Auth\MagicLink`, Tabelle `login_tokens`), Passwort optional, Google/Apple je Mandant. Seitenhülle: `resources/views/components/layouts/app.blade.php`, Branding-Variablen aus `App\Tenancy\Branding`. Coach-Bereich: Filament-Panel `coach` unter `app/Filament/Coach`, Plattform unter `app/Filament/Plattform`. Filament-Routen laufen nicht über die `web`-Gruppe, darum steht `IdentifyTenant` in jedem Panel als erste Middleware.
 

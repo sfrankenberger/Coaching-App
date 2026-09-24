@@ -20,7 +20,13 @@ class TenantSeeder extends Seeder
             'timezone' => 'Europe/Zurich',
             'currency' => 'CHF',
             'settings' => [
-                'shop' => ['driver' => 'woocommerce', 'url' => 'https://leawernli.ch'],
+                // Woo-Webhook: Geheimnis ueber /plattform eintragen (webhook_secret), Ziel https://app.leawernli.ch/hooks/woocommerce
+                'shop' => ['driver' => 'woocommerce', 'url' => 'https://leawernli.ch', 'webhook_secret' => null],
+                // Impulse und Podcast per RSS (inhalte:feeds). Eigener Podcast bei Kajabi, Blog nur "Free"-Beitraege.
+                'feeds' => [
+                    ['type' => 'podcast', 'url' => 'https://app.kajabi.com/podcasts/2147743703/feed', 'show' => 'Abenteuer Leben', 'limit' => 30],
+                    ['type' => 'post', 'url' => 'https://leawernli.ch/?sichtbarkeit=free&feed=rss2', 'limit' => 20],
+                ],
                 'website' => 'https://leawernli.ch',
                 'mail' => [
                     'from_address' => 'hallo@leawernli.ch',
@@ -43,6 +49,12 @@ class TenantSeeder extends Seeder
                     'uploads_dir' => '/var/www/vhosts/leawernli.ch/httpdocs/wp-content/uploads',
                     'uploads_url' => 'https://leawernli.ch/wp-content/uploads',
                     'event_timestamps_are_local' => true,
+                    // Inhalte: Blog-Beitraege mit Sichtbarkeit "Free", Kategorie 89 = Neuigkeiten, Podcast-Serien aus "series"
+                    'post_visibility' => ['taxonomy' => 'sichtbarkeit', 'slug' => 'free'],
+                    'news_categories' => [89],
+                    'post_exclude_ids' => [],
+                    'podcast_series_taxonomy' => 'series',
+                    'topic_taxonomies' => ['thema', 'podcast_thema'],
                     'meta' => [
                         'phone' => 'lea_telefon',
                         'reminders_off' => 'lea_te_aus',

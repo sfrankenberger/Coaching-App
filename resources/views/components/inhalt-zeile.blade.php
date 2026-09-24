@@ -3,8 +3,6 @@
 <article class="karte flex items-center gap-3">
     @if ($z['bild'])
         <a href="{{ $z['url'] }}" class="shrink-0"><img src="{{ $z['bild'] }}" alt="" class="size-16 rounded-lg object-cover bg-page" loading="lazy"></a>
-    @else
-        <span class="hinweis uppercase w-12 shrink-0 text-center text-xs font-semibold">{{ \Illuminate\Support\Str::before($z['typ'], ' ·') }}</span>
     @endif
     <div class="min-w-0 flex-1">
         <a href="{{ $z['url'] }}" class="block text-base leading-snug no-underline text-ink">{{ $z['titel'] }}</a>
