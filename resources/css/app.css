@@ -1,9 +1,211 @@
 @import 'tailwindcss';
 
-@source '../../vendor/laravel/framework/src/Illuminate/Pagination/resources/views/*.blade.php';
-@source '../../storage/framework/views/*.php';
+@source '../views';
+@source '../../app';
 
-@theme {
-    --font-sans: 'Instrument Sans', ui-sans-serif, system-ui, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji',
-        'Segoe UI Symbol', 'Noto Color Emoji';
+/*
+ | Alle Farben, Schriften und Masse kommen als CSS-Variablen aus dem Branding
+ | des Mandanten (App\Tenancy\Branding, inline im <head>). Tailwind kennt sie
+ | hier nur als Verweis, damit ein Build fuer alle Mandanten reicht.
+ */
+@theme inline {
+    --color-primary: var(--c-primary);
+    --color-primary-contrast: var(--c-primary-contrast);
+    --color-ink: var(--c-text);
+    --color-ink-soft: var(--c-text-soft);
+    --color-muted: var(--c-muted);
+    --color-page: var(--c-bg);
+    --color-card: var(--c-card);
+    --color-line: var(--c-card-border);
+    --color-success: var(--c-success);
+    --color-danger: var(--c-danger);
+
+    --font-heading: var(--font-heading);
+    --font-sans: var(--font-body);
+
+    --radius-card: var(--radius);
+
+    --text-xs: var(--fs-xs);
+    --text-sm: var(--fs-sm);
+    --text-md: var(--fs-md);
+    --text-base: var(--fs-base);
+    --text-lg: var(--fs-lg);
+    --text-xl: var(--fs-xl);
+    --text-2xl: var(--fs-2xl);
+    --text-3xl: var(--fs-3xl);
+}
+
+@layer base {
+    html {
+        -webkit-text-size-adjust: 100%;
+        background: var(--c-bg);
+    }
+    body {
+        font-family: var(--font-body);
+        font-size: var(--fs-base);
+        line-height: 1.55;
+        color: var(--c-text);
+        background: var(--c-bg);
+        min-height: 100dvh;
+    }
+    h1, h2, h3 {
+        font-family: var(--font-heading);
+        font-weight: 400;
+        line-height: 1.25;
+        color: var(--c-text);
+    }
+    h1 { font-size: var(--fs-2xl); }
+    h2 { font-size: var(--fs-xl); }
+    h3 { font-size: var(--fs-lg); }
+    a { color: var(--c-primary); }
+    ::selection { background: color-mix(in srgb, var(--c-primary) 25%, transparent); }
+}
+
+@layer components {
+    /* Seitenmass: eine Spalte, Breite aus dem Branding, seitlich 16px Luft */
+    .seite {
+        width: 100%;
+        max-width: var(--page-width);
+        margin-inline: auto;
+        padding-inline: 16px;
+    }
+
+    /* Kartenmass: Hintergrund, Rahmen, Radius und Polster aus dem Branding */
+    .karte {
+        background: var(--c-card);
+        border: 1px solid var(--c-card-border);
+        border-radius: var(--radius);
+        padding: var(--card-py) var(--card-px);
+    }
+    .karte + .karte { margin-top: var(--gap); }
+
+    .knopf {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 8px;
+        min-height: 44px;
+        padding: 10px 20px;
+        border-radius: 999px;
+        border: 1.5px solid var(--c-primary);
+        background: var(--c-primary);
+        color: var(--c-primary-contrast);
+        font-size: var(--fs-md);
+        font-weight: 600;
+        line-height: 1.2;
+        cursor: pointer;
+        text-decoration: none;
+        transition: filter .15s, background .15s;
+    }
+    .knopf:hover { filter: brightness(.94); }
+    .knopf:disabled { opacity: .55; cursor: default; }
+    .knopf-leise {
+        background: transparent;
+        color: var(--c-text);
+        border-color: var(--c-card-border);
+    }
+    .knopf-leise:hover { border-color: var(--c-primary); color: var(--c-primary); filter: none; }
+    .knopf-breit { width: 100%; }
+
+    .feld {
+        width: 100%;
+        box-sizing: border-box;
+        border: 1px solid var(--c-card-border);
+        border-radius: 12px;
+        padding: 11px 13px;
+        font-size: var(--fs-base);
+        font-family: inherit;
+        background: #fff;
+        color: var(--c-text);
+    }
+    .feld:focus { outline: 0; border-color: var(--c-primary); box-shadow: 0 0 0 3px color-mix(in srgb, var(--c-primary) 18%, transparent); }
+    .feld-label {
+        display: block;
+        font-size: var(--fs-sm);
+        font-weight: 600;
+        color: var(--c-text-soft);
+        margin-bottom: 5px;
+    }
+    .hinweis { font-size: var(--fs-sm); color: var(--c-muted); }
+    .fehler { font-size: var(--fs-sm); color: var(--c-danger); font-weight: 600; }
+
+    .meldung {
+        border-radius: 12px;
+        padding: 10px 14px;
+        font-size: var(--fs-md);
+        border: 1px solid var(--c-card-border);
+        background: var(--c-card);
+    }
+    .meldung-gut { border-color: color-mix(in srgb, var(--c-success) 45%, transparent); color: var(--c-success); }
+    .meldung-schlecht { border-color: color-mix(in srgb, var(--c-danger) 45%, transparent); color: var(--c-danger); }
+
+    /* Eingaben zweizeilig: Feld oben, Knoepfe unten */
+    .eingabe { display: flex; flex-direction: column; gap: 10px; }
+    .eingabe-knoepfe { display: flex; gap: 8px; flex-wrap: wrap; justify-content: flex-end; }
+
+    .kopf {
+        position: sticky;
+        top: 0;
+        z-index: 40;
+        background: color-mix(in srgb, var(--c-bg) 88%, transparent);
+        backdrop-filter: blur(8px);
+        border-bottom: 1px solid color-mix(in srgb, var(--c-card-border) 70%, transparent);
+    }
+    .kopf-innen { display: flex; align-items: center; gap: 12px; min-height: 56px; }
+    .marke { display: inline-flex; align-items: center; gap: 10px; text-decoration: none; color: var(--c-text); font-family: var(--font-heading); font-size: var(--fs-lg); }
+    .marke img { height: 32px; width: auto; }
+
+    .nav { display: none; gap: 4px; margin-left: auto; }
+    .nav a {
+        text-decoration: none;
+        color: var(--c-text-soft);
+        font-size: var(--fs-md);
+        font-weight: 600;
+        padding: 8px 12px;
+        border-radius: 999px;
+    }
+    .nav a:hover, .nav a.aktiv { color: var(--c-primary); background: color-mix(in srgb, var(--c-primary) 10%, transparent); }
+    @media (min-width: 640px) { .nav { display: flex; } }
+
+    /* Mobil: Leiste unten mit Sicherheitsabstand fuer iPhone */
+    .leiste {
+        position: fixed;
+        inset-inline: 0;
+        bottom: 0;
+        z-index: 40;
+        display: grid;
+        grid-auto-flow: column;
+        grid-auto-columns: 1fr;
+        background: var(--c-card);
+        border-top: 1px solid var(--c-card-border);
+        padding-bottom: env(safe-area-inset-bottom);
+    }
+    .leiste a {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 3px;
+        padding: 8px 4px 6px;
+        text-decoration: none;
+        color: var(--c-muted);
+        font-size: var(--fs-xs);
+        font-weight: 600;
+        letter-spacing: .02em;
+    }
+    .leiste a svg { width: 22px; height: 22px; }
+    .leiste a.aktiv { color: var(--c-primary); }
+    @media (min-width: 640px) { .leiste { display: none; } }
+
+    .inhalt { padding-block: 20px calc(76px + env(safe-area-inset-bottom)); }
+    @media (min-width: 640px) { .inhalt { padding-bottom: 40px; } }
+
+    .schleier {
+        position: fixed;
+        inset: 0;
+        z-index: 50;
+        display: grid;
+        place-items: center;
+        padding: 16px;
+        background: color-mix(in srgb, var(--c-text) 55%, transparent);
+    }
 }

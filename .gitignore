@@ -27,3 +27,11 @@ Homestead.yaml
 Thumbs.db
 /database/*.sqlite
 /lea-app-tmp
+
+# Tailwind-Standalone-Binaerdatei (bin/build-css laedt sie bei Bedarf)
+/bin/tailwindcss
+
+# Von Filament publizierte Assets (php artisan filament:assets, laeuft im Deploy)
+/public/css/filament
+/public/js/filament
+/public/fonts/filament

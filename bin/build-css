@@ -1,0 +1,36 @@
+#!/usr/bin/env bash
+# Baut resources/css/app.css mit der Tailwind-Standalone-CLI nach public/css/app.css.
+# Kein Node noetig. Die Binaerdatei wird bei Bedarf geladen (bin/tailwindcss, nicht in Git).
+#
+#   bin/build-css          einmal bauen (minifiziert)
+#   bin/build-css --watch  beim Entwickeln mitlaufen lassen
+set -euo pipefail
+cd "$(dirname "$0")/.."
+
+CLI=bin/tailwindcss
+VERSION="${TAILWIND_VERSION:-latest}"
+
+if [ ! -x "$CLI" ]; then
+    case "$(uname -s)-$(uname -m)" in
+        Linux-x86_64)  DATEI=tailwindcss-linux-x64 ;;
+        Linux-aarch64) DATEI=tailwindcss-linux-arm64 ;;
+        Darwin-arm64)  DATEI=tailwindcss-macos-arm64 ;;
+        Darwin-x86_64) DATEI=tailwindcss-macos-x64 ;;
+        *) echo "Unbekannte Plattform, Tailwind-CLI bitte von Hand nach $CLI legen."; exit 1 ;;
+    esac
+    if [ "$VERSION" = "latest" ]; then
+        URL="https://github.com/tailwindlabs/tailwindcss/releases/latest/download/$DATEI"
+    else
+        URL="https://github.com/tailwindlabs/tailwindcss/releases/download/$VERSION/$DATEI"
+    fi
+    echo "Lade Tailwind-CLI: $URL"
+    curl -sSL -o "$CLI" "$URL"
+    chmod +x "$CLI"
+fi
+
+mkdir -p public/css
+if [ "${1:-}" = "--watch" ]; then
+    exec "$CLI" -i resources/css/app.css -o public/css/app.css --watch
+fi
+"$CLI" -i resources/css/app.css -o public/css/app.css --minify
+echo "CSS gebaut: public/css/app.css ($(wc -c < public/css/app.css) Bytes)"

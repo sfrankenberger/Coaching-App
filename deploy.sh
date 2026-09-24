@@ -9,6 +9,7 @@ git pull --ff-only
 $COMPOSER install --no-dev --no-interaction --prefer-dist --optimize-autoloader
 $PHP artisan migrate --force
 [ -x bin/build-css ] && bin/build-css
+$PHP artisan filament:assets
 $PHP artisan optimize:clear
 $PHP artisan optimize
 $PHP artisan filament:optimize || true
