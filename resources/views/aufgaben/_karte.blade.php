@@ -11,6 +11,7 @@
                 @if ($t->assigned_by && $t->assigner) Von {{ $t->assigner->vorname() }} · @endif
                 @if ($t->due_at) <span @class(['text-danger font-semibold' => $t->isOverdue()])>bis {{ $t->due_at->translatedFormat('j. F') }}{{ $t->due_time ? ', '.$t->due_time.' Uhr' : '' }}</span> · @endif
                 @if ($t->program) {{ $t->program->title }} · @endif
+                @if ($t->unit_id && $t->program && $t->unit) <a href="{{ route('kurse.einheit', [$t->program, $t->unit]) }}">zur Übung</a> · @endif
                 {{ \App\Models\Note::VISIBILITIES[$t->visibility] ?? '' }}
             </span>
             @if ($t->body)<p class="text-md text-ink-soft mt-1 whitespace-pre-line">{{ $t->body }}</p>@endif

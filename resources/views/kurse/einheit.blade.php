@@ -264,6 +264,24 @@
         </x-karte>
     @endif
 
+    @unless (auth()->user()->canManageCurrentTenant())
+        <details class="baustein">
+            <summary class="knopf knopf-anstoss" style="cursor:pointer"><i class="fa-solid fa-list-check"></i>Daraus eine Aufgabe machen</summary>
+            <form method="post" action="{{ route('aufgaben.store') }}" class="eingabe" style="margin-top:12px">
+                @csrf
+                <input type="hidden" name="program_id" value="{{ $program->id }}">
+                <input type="hidden" name="unit_id" value="{{ $unit->id }}">
+                @if ($unit->step_id)<input type="hidden" name="step_id" value="{{ $unit->step_id }}">@endif
+                <input type="hidden" name="zurueck" value="{{ url()->current() }}">
+                <input name="title" class="feld" maxlength="160" required placeholder="Was nimmst du dir aus dieser Übung vor?">
+                <div class="flex flex-wrap items-end gap-2">
+                    <label class="block"><span class="feld-label">Bis wann, freiwillig</span><input type="date" name="due_at" class="feld"></label>
+                    <button type="submit" class="knopf" style="margin-left:auto"><i class="fa-solid fa-plus"></i>Aufgabe anlegen</button>
+                </div>
+            </form>
+        </details>
+    @endunless
+
     <x-karte titel="Deine Notiz dazu" icon="note-sticky">
         <form method="post" action="{{ route('kurse.notiz', [$program, $unit]) }}" class="eingabe" data-notiz>
             @csrf

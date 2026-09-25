@@ -44,6 +44,16 @@ class Task extends Model
         return $this->belongsTo(User::class, 'assigned_by');
     }
 
+    public function unit(): BelongsTo
+    {
+        return $this->belongsTo(Unit::class);
+    }
+
+    public function step(): BelongsTo
+    {
+        return $this->belongsTo(ProgramStep::class, 'step_id');
+    }
+
     public function program(): BelongsTo
     {
         return $this->belongsTo(Program::class);
