@@ -31,3 +31,6 @@ Schedule::command('inhalte:veroeffentlichen')->everyTenMinutes()->withoutOverlap
 
 // Aufzeichnungen: nach jedem Termin auf Vimeo suchen, Abschrift und Zusammenfassung, dann melden
 Schedule::command('aufzeichnungen:wache')->everyFifteenMinutes()->withoutOverlapping(30)->runInBackground();
+
+// Zoom: wer war im Call, danach "live dabei"
+Schedule::command('zoom:anwesenheit')->hourlyAt(25)->withoutOverlapping(30)->runInBackground();

@@ -12,6 +12,8 @@ use App\Recordings\Freigabe;
 use App\Recordings\Vimeo;
 use App\Recordings\Wache;
 use App\Tenancy\CurrentTenant;
+use App\Zoom\Anwesenheit;
+use App\Zoom\Zoom;
 use Filament\Actions\Action;
 use Filament\Actions\DeleteAction;
 use Filament\Forms\Components\CheckboxList;
@@ -48,6 +50,21 @@ class EditEvent extends EditRecord
                     $this->fillForm();
                     Notification::make()->title($this->record->hasRecording() ? 'Stand: '.(Event::RECORDING_STATUS[$this->record->recording_status] ?? 'Link da') : 'Noch nichts gefunden')
                         ->body($b['zugeordnet'].' zugeordnet, '.$b['abschriften'].' Abschriften, '.$b['zusammenfassungen'].' Zusammenfassungen')->send();
+                }),
+            Action::make('zoom')->label('Zoom-Anwesenheit')->icon('heroicon-o-user-group')->color('gray')
+                ->visible(fn () => app(Zoom::class)->konfiguriert() && Zoom::nummer($this->record->zoom_url) && $this->record->starts_at->isPast())
+                ->requiresConfirmation()->modalHeading('Teilnehmerliste aus Zoom holen?')
+                ->modalDescription('Wer lange genug dabei war, wird als "live dabei" eingetragen. Was jemand selbst angegeben hat, bleibt.')
+                ->action(function () {
+                    $b = app(Anwesenheit::class)->abgleich($this->record);
+                    $teile = array_filter([
+                        $b['gesetzt'] ? 'Eingetragen: '.implode(', ', $b['gesetzt']) : null,
+                        $b['unsicher'] ? 'Über den Namen: '.implode(', ', $b['unsicher']) : null,
+                        $b['uebersprungen'] ? 'Übersprungen: '.implode(', ', $b['uebersprungen']) : null,
+                        $b['fremd'] ? 'Nicht zugeordnet: '.implode(', ', $b['fremd']) : null,
+                    ]);
+                    Notification::make()->title($b['fehler'] ?? 'Anwesenheit übernommen')->body(implode("\n", $teile) ?: null)
+                        ->{$b['fehler'] ? 'danger' : 'success'}()->persistent()->send();
                 }),
             Action::make('zusammenfassen')->label('Zusammenfassen (KI)')->icon('heroicon-o-sparkles')
                 ->visible(fn () => Anthropic::configured($tenant))
