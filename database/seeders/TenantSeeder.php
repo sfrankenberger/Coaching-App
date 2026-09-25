@@ -14,7 +14,7 @@ class TenantSeeder extends Seeder
 {
     public function run(): void
     {
-        $lea = Tenant::updateOrCreate(['slug' => 'lea'], [
+        $vorgaben = [
             'name' => 'Lea Wernli',
             'locale' => 'de_CH',
             'timezone' => 'Europe/Zurich',
@@ -24,6 +24,8 @@ class TenantSeeder extends Seeder
                 // Passkeys: RP-ID ist die Haupt-Domain, damit auf leawernli.ch angelegte Passkeys auch fuer app. gelten
                 'passkeys' => ['rp_id' => 'leawernli.ch', 'origins' => ['https://leawernli.ch']],
                 'coach_name' => 'Lea',
+                // Parallelbetrieb: Benachrichtigungen nur an freigegebene Adressen (im Coach-Bereich unter Einstellungen erweiterbar)
+                'notifications' => ['test_only' => true, 'test_emails' => ['mail@sfrankenberger.com']],
                 'shop' => ['driver' => 'woocommerce', 'url' => 'https://leawernli.ch', 'webhook_secret' => null],
                 // Impulse und Podcast per RSS (inhalte:feeds). Eigener Podcast bei Kajabi, Blog nur "Free"-Beitraege.
                 'feeds' => [
@@ -103,10 +105,34 @@ class TenantSeeder extends Seeder
                 'icon_url' => null,
                 'logo_url' => null,
             ],
-        ]);
+        ];
+
+        // Idempotent und schonend: Vorgaben nur dort, wo noch nichts steht. Was spaeter gesetzt
+        // wurde (Push-Schluessel, Bruecke, Freigaben, Aenderungen im Coach-Bereich), bleibt erhalten.
+        $lea = Tenant::firstOrNew(['slug' => 'lea']);
+        foreach (['name', 'locale', 'timezone', 'currency'] as $feld) {
+            $lea->{$feld} ??= $vorgaben[$feld];
+        }
+        $lea->settings = self::vorgabenErgaenzen($lea->settings ?? [], $vorgaben['settings']);
+        $lea->branding = self::vorgabenErgaenzen($lea->branding ?? [], $vorgaben['branding']);
+        $lea->save();
 
         foreach (['app.leawernli.ch' => true, 'lea.localhost' => false] as $domain => $primary) {
             $lea->domains()->updateOrCreate(['domain' => $domain], ['is_primary' => $primary]);
         }
+    }
+
+    /** Vorgaben rekursiv ergaenzen, vorhandene Werte gewinnen (Listen werden nicht gemischt). */
+    public static function vorgabenErgaenzen(array $ist, array $vorgabe): array
+    {
+        foreach ($vorgabe as $k => $v) {
+            if (! array_key_exists($k, $ist) || $ist[$k] === null) {
+                $ist[$k] = $v;
+            } elseif (is_array($v) && is_array($ist[$k]) && ! array_is_list($v)) {
+                $ist[$k] = self::vorgabenErgaenzen($ist[$k], $v);
+            }
+        }
+
+        return $ist;
     }
 }

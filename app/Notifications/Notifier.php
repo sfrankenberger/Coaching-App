@@ -52,6 +52,9 @@ class Notifier
         if (! $this->wants($membership, $nachricht->anlass)) {
             return [];
         }
+        if (! $this->allowedInTestMode($user)) {
+            return [];
+        }
 
         $channels = [];
         $push = PushSubscription::where('user_id', $user->id)->exists();
@@ -74,6 +77,27 @@ class Notifier
     {
         return PushSubscription::where('user_id', $user->id)->exists()
             || TelegramLink::where('user_id', $user->id)->where('active', true)->exists();
+    }
+
+    /**
+     * Testbetrieb (settings.notifications.test_only): solange die App parallel zum alten
+     * System laeuft, gehen Benachrichtigungen nur an die freigegebenen Adressen
+     * (settings.notifications.test_emails). So bekommt niemand etwas doppelt.
+     */
+    public function allowedInTestMode(User $user): bool
+    {
+        $tenant = $this->current->get();
+        if (! $tenant || ! $tenant->setting('notifications.test_only')) {
+            return true;
+        }
+        $erlaubt = array_map(fn ($e) => strtolower(trim((string) $e)), (array) $tenant->setting('notifications.test_emails', []));
+
+        return in_array(strtolower((string) $user->email), $erlaubt, true);
+    }
+
+    public function testMode(): bool
+    {
+        return (bool) $this->current->get()?->setting('notifications.test_only');
     }
 
     /** Schalter der Person: Termin-Erinnerungen, Abendmail, Aufgaben-Erinnerungen. */

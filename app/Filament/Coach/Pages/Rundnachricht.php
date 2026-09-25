@@ -3,6 +3,7 @@
 namespace App\Filament\Coach\Pages;
 
 use App\Models\Program;
+use App\Notifications\Notifier;
 use App\Notifications\Rundsendung;
 use BackedEnum;
 use Filament\Forms\Components\CheckboxList;
@@ -61,7 +62,8 @@ class Rundnachricht extends Page
 
         Notification::make()
             ->title("An {$r['empfaenger']} Person".($r['empfaenger'] === 1 ? '' : 'en').' geschickt')
-            ->body($r['erreicht'].' davon direkt erreicht (Push, Telegram oder Mail)'.($r['chat'] ? ', dazu im Gruppengespräch' : '').'. Wer keinen Kanal hat, sieht es in der App.')
+            ->body($r['erreicht'].' davon direkt erreicht (Push, Telegram oder Mail)'.($r['chat'] ? ', dazu im Gruppengespräch' : '').'. Wer keinen Kanal hat, sieht es in der App.'
+                .(app(Notifier::class)->testMode() ? ' Testbetrieb ist an: nur freigegebene Adressen bekommen etwas.' : ''))
             ->success()->send();
         $this->form->fill(['an' => $data['an'], 'program_id' => $data['program_id'] ?? null, 'kanaele' => $data['kanaele'], 'chat' => false]);
     }

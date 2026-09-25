@@ -8,7 +8,9 @@ use BackedEnum;
 use Filament\Forms\Components\ColorPicker;
 use Filament\Forms\Components\Repeater;
 use Filament\Forms\Components\Select;
+use Filament\Forms\Components\TagsInput;
 use Filament\Forms\Components\TextInput;
+use Filament\Forms\Components\Toggle;
 use Filament\Notifications\Notification;
 use Filament\Pages\Page;
 use Filament\Schemas\Components\Section;
@@ -59,12 +61,19 @@ class Einstellungen extends Page
             'reply_to' => $s['mail']['reply_to'] ?? null,
             'feeds' => array_values((array) ($s['feeds'] ?? [])),
             'telegram_bot_username' => $s['telegram']['bot_username'] ?? null,
+            'test_only' => (bool) ($s['notifications']['test_only'] ?? false),
+            'test_emails' => array_values((array) ($s['notifications']['test_emails'] ?? [])),
         ]);
     }
 
     public function form(Schema $schema): Schema
     {
         return $schema->components([
+            Section::make('Testbetrieb')->description('Solange die App parallel zum bisherigen Mitgliederbereich läuft: Benachrichtigungen (Erinnerungen, Abendmail, Rundnachrichten, Push) gehen nur an diese Adressen. Anmeldelinks funktionieren für alle.')->schema([
+                Toggle::make('test_only')->label('Testbetrieb an')->live(),
+                TagsInput::make('test_emails')->label('Diese Adressen bekommen Benachrichtigungen')->placeholder('Adresse eingeben, Enter')
+                    ->visible(fn ($get) => (bool) $get('test_only'))->nestedRecursiveRules(['email']),
+            ]),
             Section::make('Aussehen')->description('Name und Farben der App. Weitere Feinheiten stellt die Plattform ein.')->schema([
                 TextInput::make('app_name')->label('Name der App')->maxLength(60),
                 TextInput::make('short_name')->label('Kurzname (Startbildschirm)')->maxLength(12),
@@ -110,6 +119,10 @@ class Einstellungen extends Page
         $s['mail'] = array_merge($s['mail'] ?? [], ['from_name' => $data['from_name'] ?: null, 'from_address' => $data['from_address'] ?: null, 'reply_to' => $data['reply_to'] ?: null]);
         $s['feeds'] = array_values(array_map(fn ($f) => array_filter(['type' => $f['type'] ?? 'post', 'url' => $f['url'] ?? null, 'show' => $f['show'] ?? null, 'limit' => (int) ($f['limit'] ?? 0) ?: null]), $data['feeds'] ?? []));
         $s['telegram'] = array_merge($s['telegram'] ?? [], ['bot_username' => $data['telegram_bot_username'] ?: null]);
+        $s['notifications'] = array_merge($s['notifications'] ?? [], [
+            'test_only' => (bool) ($data['test_only'] ?? false),
+            'test_emails' => array_values(array_unique(array_map(fn ($e) => strtolower(trim($e)), (array) ($data['test_emails'] ?? $s['notifications']['test_emails'] ?? [])))),
+        ]);
         $tenant->forceFill(['branding' => $b, 'settings' => $s])->save();
 
         Notification::make()->title('Gespeichert')->success()->send();
