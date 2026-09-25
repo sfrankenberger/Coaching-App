@@ -78,6 +78,28 @@
         </x-karte>
     @endif
 
+    <x-karte titel="Passkey: anmelden mit Fingerabdruck oder Gesicht" data-passkey-box>
+        <p class="hinweis mb-3">Ein Passkey ersetzt Link und Passwort: einmal auf diesem Gerät anlegen, danach genügt Fingerabdruck, Gesicht oder Geräte-Code. Gilt nur für diese Adresse.</p>
+        @if ($passkeys->isNotEmpty())
+            <ul class="divide-y divide-line mb-3">
+                @foreach ($passkeys as $pk)
+                    <li class="flex items-center gap-3 py-2">
+                        <span class="min-w-0 flex-1">
+                            <span class="block text-base">{{ $pk->alias ?: 'Passkey' }}</span>
+                            <span class="hinweis">angelegt {{ $pk->created_at->translatedFormat('j. F Y') }}</span>
+                        </span>
+                        <form method="post" action="{{ route('passkeys.loeschen', $pk->id) }}" onsubmit="return confirm('Diesen Passkey entfernen?')">@csrf @method('DELETE')<button class="knopf knopf-leise" style="min-height:36px;padding:6px 12px">Entfernen</button></form>
+                    </li>
+                @endforeach
+            </ul>
+        @endif
+        <div class="flex flex-wrap items-center gap-2">
+            <input type="text" name="alias" class="feld" style="max-width:220px" placeholder="Name, z. B. iPhone" maxlength="60">
+            <button type="button" class="knopf" data-passkey="anlegen" data-optionen="{{ route('passkeys.anlegen.optionen') }}" data-speichern="{{ route('passkeys.anlegen') }}">Passkey anlegen</button>
+            <span class="hinweis" data-passkey-status></span>
+        </div>
+    </x-karte>
+
     <x-karte titel="Passwort, freiwillig">
         <p class="hinweis mb-3">Du brauchst kein Passwort, der Link per Mail reicht. Wer trotzdem eines möchte, setzt es hier.</p>
         <form method="post" action="{{ route('profil.passwort') }}" class="eingabe">
@@ -101,4 +123,6 @@
         <p class="hinweis mb-3">Die Einführung vom Anfang kannst du jederzeit wieder anschauen.</p>
         <a href="{{ route('willkommen') }}" class="knopf knopf-leise">Einführung nochmals ansehen</a>
     </x-karte>
+
+    @push('scripts')<script src="{{ asset('js/passkeys.js') }}?v={{ filemtime(public_path('js/passkeys.js')) }}" defer></script>@endpush
 </x-layouts.app>

@@ -11,14 +11,16 @@ use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Illuminate\Support\Str;
+use Laragear\WebAuthn\Contracts\WebAuthnAuthenticatable;
+use Laragear\WebAuthn\WebAuthnAuthentication;
 
 /**
  * Person, plattformweit eindeutig ueber die Mailadresse.
  * Rollen haengen NICHT hier, sondern an der Mitgliedschaft je Mandant.
  */
-class User extends Authenticatable implements FilamentUser
+class User extends Authenticatable implements FilamentUser, WebAuthnAuthenticatable
 {
-    use HasFactory, Notifiable;
+    use HasFactory, Notifiable, WebAuthnAuthentication;
 
     protected $fillable = ['name', 'email', 'password', 'phone', 'avatar_path', 'is_platform_admin'];
 

@@ -3,6 +3,7 @@
 use App\Http\Controllers\AufgabenController;
 use App\Http\Controllers\Auth\BridgeController;
 use App\Http\Controllers\Auth\LoginController;
+use App\Http\Controllers\Auth\PasskeyController;
 use App\Http\Controllers\Auth\SocialController;
 use App\Http\Controllers\GespraechController;
 use App\Http\Controllers\HomeController;
@@ -47,6 +48,8 @@ Route::middleware('guest')->group(function () {
     Route::post('/anmelden/passwort', [LoginController::class, 'password'])->name('anmelden.passwort');
     Route::get('/anmelden/dienst/{dienst}', [SocialController::class, 'redirect'])->name('anmelden.dienst');
     Route::match(['get', 'post'], '/anmelden/dienst/{dienst}/zurueck', [SocialController::class, 'callback'])->name('anmelden.dienst.zurueck');
+    Route::post('/passkeys/anmelden/optionen', [PasskeyController::class, 'loginOptions'])->name('passkeys.anmelden.optionen');
+    Route::post('/passkeys/anmelden', [PasskeyController::class, 'login'])->name('passkeys.anmelden');
 });
 // Der Link aus der Mail darf auch klappen, wenn schon jemand angemeldet ist (anderes Konto).
 Route::get('/anmelden/{token}', [LoginController::class, 'token'])->name('anmelden.token')->where('token', '[A-Za-z0-9]{40,64}');
@@ -61,6 +64,9 @@ Route::middleware(['auth', 'membership'])->group(function () {
     Route::post('/profil', [ProfilController::class, 'save'])->name('profil.speichern');
     Route::post('/profil/benachrichtigungen', [ProfilController::class, 'notifications'])->name('profil.benachrichtigungen');
     Route::post('/profil/passwort', [ProfilController::class, 'password'])->name('profil.passwort');
+    Route::post('/passkeys/anlegen/optionen', [PasskeyController::class, 'registerOptions'])->name('passkeys.anlegen.optionen');
+    Route::post('/passkeys/anlegen', [PasskeyController::class, 'register'])->name('passkeys.anlegen');
+    Route::delete('/passkeys/{id}', [PasskeyController::class, 'destroy'])->name('passkeys.loeschen');
     Route::get('/push/schluessel', [PushController::class, 'schluessel'])->name('push.schluessel');
     Route::post('/push/abo', [PushController::class, 'abo'])->name('push.abo');
     Route::delete('/push/abo', [PushController::class, 'weg'])->name('push.weg');

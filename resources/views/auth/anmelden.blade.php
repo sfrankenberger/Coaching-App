@@ -17,6 +17,11 @@
             </div>
         </form>
 
+        <div class="mt-3" data-passkey-box>
+            <button type="button" class="knopf knopf-leise knopf-breit" data-passkey="anmelden" data-optionen="{{ route('passkeys.anmelden.optionen') }}" data-anmelden="{{ route('passkeys.anmelden') }}" data-weiter="{{ $weiter ?? '' }}">Mit Passkey anmelden</button>
+            <p class="hinweis mt-1 text-center" data-passkey-status></p>
+        </div>
+
         @if ($dienste !== [])
             <div class="relative my-5 text-center">
                 <span class="relative z-10 bg-card px-3 hinweis">oder</span>
@@ -49,4 +54,6 @@
             </form>
         </details>
     </x-karte>
+
+    @push('scripts')<script src="{{ asset('js/passkeys.js') }}?v={{ filemtime(public_path('js/passkeys.js')) }}" defer></script>@endpush
 </x-layouts.auth>

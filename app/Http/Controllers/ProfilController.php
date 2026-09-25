@@ -21,6 +21,7 @@ class ProfilController extends Controller
             'pushGeraete' => PushSubscription::where('user_id', $request->user()->id)->count(),
             'telegram' => TelegramController::configured($tenant) ? TelegramLink::where('user_id', $request->user()->id)->first() : false,
             'telegramBot' => $tenant?->setting('telegram.bot_username'),
+            'passkeys' => $request->user()->webAuthnCredentials()->orderBy('created_at')->get(),
             'kalenderUrl' => ($m = $request->user()->membershipIn()) ? route('kalender.abo', ['token' => Ics::tokenFor($m)]) : null,
         ]);
     }
