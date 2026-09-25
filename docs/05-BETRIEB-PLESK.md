@@ -65,7 +65,7 @@ $PHP artisan branding:icons lea /var/www/vhosts/leawernli.ch/httpdocs/wp-content
 
 Zusaetzlich in der `.env`: `ANTHROPIC_API_KEY` (KI), `QUEUE_CONNECTION=database` (Worker laeuft im Scheduler). Der Import kopiert Dateien aus `wp-content/uploads` nach `storage/app/tenants/1/` (Pfad in `settings.import.wordpress.uploads_dir`), das dauert beim ersten Mal.
 
-Einstellungen je Mandant unter `/plattform` (JSON in `tenants.settings`):
+Die Coachin pflegt Aussehen, Absender, Website, Feeds und den Telegram-Bot-Namen selbst unter `/coach/einstellungen` (nur Rolle owner). Rundnachrichten an alle oder an ein Programm unter `/coach/rundnachricht`, Einladungen mit Anmeldelink aus der Personenliste. Alles andere, vor allem Geheimnisse, unter `/plattform` (JSON in `tenants.settings`):
 
 | Schluessel | Wofuer |
 |---|---|

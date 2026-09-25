@@ -54,6 +54,7 @@ Stand nach Etappe 1: Lea kann sich per Link anmelden, sieht Start und Profil, im
 - [ ] Deploy, `.env` (Mail, Redis, WP-DB, Anthropic), `db:seed`, `import:wordpress lea --only=alles`, `push:keys lea`, `bridge:secret lea`, Woo-Webhook eintragen (siehe 05 und 07)
 - [ ] Parallelbetrieb mit dem Testkurs, Rückmeldungen einarbeiten
 - [x] Passkeys, App-Icons (Kommando), Willkommens-Einführung (8 Schritte, `/willkommen`), Dashboard der Coachin (Kennzahlen, Neues von den Personen, nächste Termine)
+- [x] Coach-Bereich: Einstellungen (Aussehen, Absender, Feeds, Telegram-Name), Rundnachricht an alle oder ein Programm, Einladungen mit Anmeldelink
 - [x] Startseite mit Tagesüberblick (Neu seit dem letzten Besuch, aktuelle Woche, nächster Termin, Aufgaben, Impuls), Kalender-Abo je Person (webcal) und Termin-Datei
 
 ## Umschalten (nach Leas Freigabe)
