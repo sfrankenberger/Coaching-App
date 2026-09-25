@@ -69,6 +69,6 @@
             </div>
         </article>
     @empty
-        <div class="leer"><i class="fa-regular fa-calendar"></i>Hier steht gerade nichts.</div>
+        <x-leer icon="calendar" :knopf="$zeit === 'kommend' ? 'Vergangene Termine' : null" :href="route('termine.index', ['zeit' => 'vorbei'])">{{ $zeit === 'kommend' ? 'Gerade steht nichts an. Sobald ein Termin eingetragen ist, bekommst du Bescheid.' : 'Hier steht gerade nichts.' }}</x-leer>
     @endforelse
 </x-layouts.app>

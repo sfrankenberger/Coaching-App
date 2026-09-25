@@ -5,6 +5,6 @@
     @forelse ($zeilen as $z)
         <x-inhalt-zeile :z="$z" :gemerkt="$gemerkt" />
     @empty
-        <div class="leer"><i class="fa-regular fa-bookmark"></i>Noch nichts gemerkt. Bei Material, Terminen, Einheiten, Impulsen und Podcastfolgen findest du ein Lesezeichen. Was du dort markierst, landet hier.</div>
+        <x-leer icon="bookmark" knopf="Zu den Impulsen" :href="route('impulse.index')">Noch nichts gemerkt. Bei Material, Terminen, Einheiten, Impulsen und Podcastfolgen findest du ein Lesezeichen. Was du dort markierst, landet hier.</x-leer>
     @endforelse
 </x-layouts.app>

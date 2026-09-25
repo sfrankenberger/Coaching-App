@@ -66,6 +66,7 @@
 
     @if ($event->summary)
         <x-karte titel="Zusammenfassung" icon="align-left">
+            @if ($event->hasRecording())<x-kapitel :text="$event->summary" />@endif
             <div class="prose-app">{{ \App\Support\Kapitel::html($event->summary) }}</div>
             @if ($vorschlaege?->tasks)
                 <p class="eyebrow" style="margin:18px 0 6px">Deine Aufgaben daraus</p>

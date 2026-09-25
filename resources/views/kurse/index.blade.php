@@ -33,6 +33,6 @@
             </a>
         @endforeach
     @empty
-        <div class="leer"><i class="fa-solid fa-graduation-cap"></i>Noch kein Kurs für dich freigeschaltet. Sobald es losgeht, siehst du ihn hier.</div>
+        <x-leer icon="solid:graduation-cap" knopf="Was es gibt" :href="route('impulse.index')">Noch kein Kurs für dich freigeschaltet. Sobald es losgeht, siehst du ihn hier. Bis dahin findest du bei den Impulsen etwas zum Lesen und Hören.</x-leer>
     @endforelse
 </x-layouts.app>

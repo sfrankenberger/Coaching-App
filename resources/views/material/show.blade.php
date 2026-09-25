@@ -30,7 +30,10 @@
 
         @if ($r->summary)
             <h2 class="abschnitt"><i class="fa-solid fa-list-ul"></i>Worum es geht</h2>
-            <div class="karte"><div class="prose-app">{{ \App\Support\Kapitel::html($r->summary) }}</div></div>
+            <div class="karte">
+                @if ($video || $audio)<x-kapitel :text="$r->summary" />@endif
+                <div class="prose-app">{{ \App\Support\Kapitel::html($r->summary) }}</div>
+            </div>
             <p class="hinweis" style="margin:6px 0 0">Tipp auf eine Zeitmarke, dann springt das Video an die Stelle. Die Zusammenfassung ist automatisch erstellt.</p>
         @endif
         @if ($r->body && strip_tags($r->body) !== '')

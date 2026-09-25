@@ -40,6 +40,23 @@ class Kapitel
         return new HtmlString($istHtml ? self::saeubern($text) : nl2br(e($text), false));
     }
 
+    /** Kapitel aus einer Zusammenfassung: Ueberschriften mit "(ab MM:SS)" als [['sekunden' => int, 'titel' => string], ...]. */
+    public static function liste(?string $text): array
+    {
+        $out = [];
+        if (! preg_match_all('~<h[2-4][^>]*>(.*?)</h[2-4]>~is', (string) $text, $m)) {
+            return $out;
+        }
+        foreach ($m[1] as $roh) {
+            $titel = trim(html_entity_decode(strip_tags($roh), ENT_QUOTES, 'UTF-8'));
+            if (preg_match('~^(.*?)\s*\((?:ab|bei|Minute)\s+(\d{1,2}:\d{2}(?::\d{2})?)\)\s*$~u', $titel, $z)) {
+                $out[] = ['sekunden' => self::sekunden($z[2]), 'titel' => trim($z[1]) ?: $z[2]];
+            }
+        }
+
+        return $out;
+    }
+
     /** "12:34" oder "1:02:03" in Sekunden. */
     public static function sekunden(string $zeit): int
     {

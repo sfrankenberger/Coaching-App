@@ -4,7 +4,7 @@
     <p class="unterzeile" style="margin:0 0 16px">{{ $art->duration }} Minuten{{ $art->text ? ' · '.$art->text : '' }}</p>
 
     @if ($tage->isEmpty())
-        <div class="leer"><i class="fa-regular fa-calendar-xmark"></i>Gerade ist keine Zeit frei. Schau bald wieder rein oder schreib mir im Gespräch.</div>
+        <x-leer icon="calendar-xmark" knopf="Ins Gespräch" :href="route('gespraech.index')">Gerade ist keine Zeit frei. Schau bald wieder rein oder schreib mir im Gespräch.</x-leer>
     @else
         <form method="post" action="{{ route('buchen.store', $art) }}" class="buchen">
             @csrf

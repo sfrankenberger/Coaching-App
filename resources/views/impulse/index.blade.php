@@ -26,6 +26,6 @@
             <a href="{{ route('impulse.index', array_filter(['f' => $filter, 'q' => $suche, 'seite' => $mehr])) }}#mehr-{{ $loop->iteration }}" id="mehr-{{ $loop->iteration }}" class="knopf knopf-anstoss knopf-breit">Weitere anzeigen ({{ $gesamt - $zeilen->count() }})</a>
         @endif
     @empty
-        <div class="leer"><i class="fa-regular fa-lightbulb"></i>{{ $suche ? 'Nichts gefunden.' : 'Hier kommen Impulse und Podcastfolgen hin, sobald es welche gibt.' }}</div>
+        <x-leer icon="lightbulb">{{ $suche ? 'Dazu habe ich nichts gefunden. Probier ein anderes Wort.' : 'Hier kommen Impulse und Podcastfolgen hin, sobald es welche gibt.' }}</x-leer>
     @endforelse
 </x-layouts.app>

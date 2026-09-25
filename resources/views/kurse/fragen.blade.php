@@ -46,7 +46,7 @@
                 </span>
             </a>
         @empty
-            <div class="leer"><i class="fa-regular fa-circle-question"></i>{{ $filter ? 'Keine Fragen in dieser Auswahl.' : 'Noch keine Fragen. Mach gern den Anfang.' }}</div>
+            <x-leer icon="circle-question">{{ $filter ? 'Keine Fragen in dieser Auswahl.' : 'Noch keine Fragen. Mach gern den Anfang, es gibt keine dummen.' }}</x-leer>
         @endforelse
     </div>
 </x-layouts.app>

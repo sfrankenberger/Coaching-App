@@ -36,7 +36,7 @@
     @forelse ($offen as $t)
         @include('aufgaben._karte', ['t' => $t])
     @empty
-        <div class="leer"><i class="fa-regular fa-circle-check"></i>Nichts offen. Schreib auf, was als Nächstes dran ist.</div>
+        <x-leer icon="circle-check">Nichts offen. Schön. Wenn dir etwas einfällt, schreib es oben auf, dann bleibt es nicht im Kopf.</x-leer>
     @endforelse
 
     @if ($fertig->isNotEmpty())

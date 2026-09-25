@@ -52,6 +52,6 @@
             </div>
         </article>
     @empty
-        <div class="leer"><i class="fa-regular fa-note-sticky"></i>Noch keine Notiz. Alles, was du dir merken willst, kommt hierher.</div>
+        <x-leer icon="note-sticky">Noch keine Notiz. Alles, was du dir merken willst, kommt hierher. Du kannst auch diktieren.</x-leer>
     @endforelse
 </x-layouts.app>

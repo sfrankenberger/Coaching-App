@@ -489,7 +489,21 @@ document.addEventListener('click', function (e) {
     } else if (f) {
         f.src = f.src.replace(/#t=\d+s?$/, '') + '#t=' + s + 's';
     }
-    box.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    if (b.dataset.ohneScroll === undefined) box.scrollIntoView({ behavior: 'smooth', block: 'center' });
+});
+
+/* Kapitelliste laeuft mit: die Medienbeobachtung meldet die Zeit ueber 'medien:zeit' */
+document.addEventListener('medien:zeit', function (e) {
+    var liste = document.querySelector('[data-kapitel]');
+    if (!liste) return;
+    var s = e.detail.sekunden, aktiv = null;
+    var zeilen = liste.querySelectorAll('li');
+    zeilen.forEach(function (li) {
+        var t = parseInt(li.querySelector('[data-sprung]').dataset.sprung, 10) || 0;
+        li.classList.remove('aktiv', 'vorbei');
+        if (t <= s) { if (aktiv) aktiv.classList.add('vorbei'); aktiv = li; }
+    });
+    if (aktiv) aktiv.classList.add('aktiv');
 });
 
 /* ---------- Videoposition merken, ab 80 % erledigt ---------- */
@@ -509,6 +523,7 @@ document.addEventListener('click', function (e) {
     function beobachten(box) {
         var key = box.dataset.medien, start = parseInt(box.dataset.start || '0', 10), zuletzt = 0;
         function melden(s, d, sofort) {
+            document.dispatchEvent(new CustomEvent('medien:zeit', { detail: { key: key, sekunden: s } }));
             if (!sofort && Math.abs(s - zuletzt) < 10) return;
             zuletzt = s; senden(key, s, d);
         }

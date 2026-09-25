@@ -112,7 +112,7 @@
     @endif
 
     @if ($neues->isEmpty() && ! $termin && $weiter->isEmpty() && $aufgaben->isEmpty())
-        <div class="leer"><i class="fa-solid fa-leaf"></i>Gerade ist nichts offen. Schön, dass du da bist.</div>
+        <x-leer icon="solid:leaf" knopf="Reflexion schreiben" :href="route('reflexion.index')">Gerade ist nichts offen. Schön, dass du da bist. Magst du kurz festhalten, wie es dir geht?</x-leer>
     @endif
 
     {{-- Kacheln --}}

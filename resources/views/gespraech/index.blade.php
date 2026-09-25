@@ -15,6 +15,6 @@
             @endif
         </a>
     @empty
-        <div class="leer"><i class="fa-regular fa-comments"></i>Noch keine Gespräche. Sobald jemand schreibt, erscheint es hier.</div>
+        <x-leer icon="comments">Noch keine Gespräche. Sobald jemand schreibt, erscheint es hier.</x-leer>
     @endforelse
 </x-layouts.app>

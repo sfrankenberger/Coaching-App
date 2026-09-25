@@ -760,7 +760,8 @@
     .sprung { display: inline-flex; align-items: center; gap: 5px; font-size: var(--fs-sm); font-weight: 600; color: var(--c-primary); background: var(--c-primary-tint); border: 0; border-radius: 999px; padding: 2px 9px; cursor: pointer; font-family: inherit; }
 
     /* Leerer Zustand */
-    .leer { text-align: center; padding: 28px 16px; color: var(--c-muted); }
+    .leer { text-align: center; padding: 28px 16px; color: var(--c-muted); max-width: 420px; margin: 0 auto; }
+    .leer p { margin: 0; font-family: var(--font-read); font-size: var(--fs-base); line-height: 1.6; }
     .leer i { display: block; font-size: 24px; color: var(--c-ghost); margin-bottom: 10px; }
 
     /* Sprungziel kurz aufleuchten lassen */
@@ -912,3 +913,15 @@ button.vorschlag:hover { border-color: var(--c-primary); }
 /* Dunkle Terminkarte */
 .karte-dunkel-titel { display: block; font-family: var(--font-heading); font-size: var(--fs-xl); line-height: 1.3; margin-top: 2px; }
 .chip-hell { background: rgba(255, 255, 255, .14); color: #fff; }
+
+
+/* Kapitelliste: antippen springt, beim Abspielen laeuft die Markierung mit */
+.kapitel { list-style: none; margin: 0 0 14px; padding: 0; border: 1px solid var(--c-line-soft); border-radius: 12px; overflow: hidden; }
+.kapitel li + li { border-top: 1px solid var(--c-line-soft); }
+.kapitel button { display: flex; align-items: baseline; gap: 12px; width: 100%; padding: 9px 12px; border: 0; background: none; font: inherit; font-size: var(--fs-md); color: var(--c-text); text-align: left; cursor: pointer; }
+.kapitel button:hover { background: var(--c-surface); }
+.kapitel .zeit { flex: none; font-size: var(--fs-sm); font-weight: 600; color: var(--c-primary); font-variant-numeric: tabular-nums; }
+.kapitel .titel { flex: 1; min-width: 0; }
+.kapitel li.aktiv button { background: var(--c-primary-tint); }
+.kapitel li.aktiv .titel { font-weight: 600; }
+.kapitel li.vorbei .titel { color: var(--c-muted); }
