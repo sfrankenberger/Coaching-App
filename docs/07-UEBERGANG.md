@@ -36,6 +36,10 @@ Shortcode `[lea_neueapp_knopf]` (Optionen `text`, `weiter`). Sichtbar für Lea u
 
 Der Link wird beim Seitenaufbau erzeugt und gilt 60 Sekunden. Wer länger wartet, landet auf `/anmelden` mit dem Hinweis, sich dort anzumelden (Magic Link), das ist der Normalweg. Testen: als Lea angemeldet `[lea_neueapp_knopf weiter="/kurse"]` auf einer Seite in der Vorschau.
 
+## 2b. Testbetrieb
+
+Solange beide Systeme laufen, ist in der App der Testbetrieb an (Coach-Bereich, Einstellungen): Erinnerungen, Abendmail, Push, Rundnachrichten und die automatische Willkommensmail aus dem Shop gehen nur an die dort freigegebenen Adressen. Anmeldelinks und Einladungen, die Lea selbst auslöst, gehen an alle. Für den Testkurs die Adressen seiner Teilnehmerinnen freigeben. Beim Umschalten den Testbetrieb ausschalten.
+
 ## 3. Was während des Parallelbetriebs wo gepflegt wird
 
 | Was | Wo | Warum |

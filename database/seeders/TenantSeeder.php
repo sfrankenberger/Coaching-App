@@ -41,7 +41,7 @@ class TenantSeeder extends Seeder
                 // Impulse, Podcast, Themen kommen waehrend des Parallelbetriebs stuendlich aus WordPress (import:geplant),
                 // dort ist die Auswahl "Free", die Sendungen und die KI-Aufbereitung schon gemacht.
                 'import' => ['wordpress' => [
-                    'schedule' => ['inhalte'],
+                    'schedule' => ['users', 'inhalte'],
                     'owner_ids' => [2],                                   // LEA_KR_LEA in lea-kursraum.php
                     'team_roles' => ['administrator', 'lea_redaktion'],
                     'course_relation_id' => 13,                            // JetEngine-Relation Teilnehmer zu Kurse

@@ -47,6 +47,19 @@ Anmelden: `https://app.leawernli.ch/anmelden`, Mailadresse eingeben, Link aus de
 
 Import-Zuordnung (in `tenants.settings.import.wordpress`, vom Seeder gesetzt): WordPress-ID 2 = owner, Rollen `administrator` und `lea_redaktion` = team, Kurszugang (`lea_zugaenge` gueltig oder Relation 13) = member, Rest = guest (nur mit `--with-guests`). Uebernommen werden Name, Mailadresse, Telefon (`lea_telefon`), die drei Schalter (`lea_te_aus`, `lea_am_aus`, `lea_ap_erinnerung_aus`) und ob die Einfuehrung gesehen wurde. Passwoerter werden nicht uebernommen, der Magic Link ersetzt sie. Der Import ist wiederholbar und ueberschreibt nichts, was die Person in der App selbst geaendert hat.
 
+## Stand auf dem Server (25.09.2026)
+
+Eingerichtet und geprueft, die App laeuft unter https://app.leawernli.ch:
+
+- Branch `claude/etappe-1-seitenhulle-magic-link-p0y0lb` ausgecheckt (nach dem Merge wieder `git checkout main && git pull`), `deploy.sh` gelaufen, alle Migrationen durch
+- `db:seed`, Plattform-Admin mail@sfrankenberger.com, Import `--only=alles`: 12 Personen (Lea, 2 Team, 8 Teilnehmerinnen, 1 Klientin), 19 Programme, 206 Einheiten, 69 Termine, Chats, 48 Impulse, 100 Podcastfolgen, 68 Themen
+- Mail ueber Mailgun (Domain mail.leawernli.ch, EU, Schluessel aus Mailster), Absender mail@leawernli.ch. Direkter Versand vom Server wurde von Gmail abgewiesen (IPv6 ohne SPF)
+- **Testbetrieb an**: Benachrichtigungen gehen nur an mail@sfrankenberger.com. Weitere Adressen im Coach-Bereich unter Einstellungen freigeben, zum Umschalten dort ausschalten
+- Web Push (VAPID), App-Icons, KI (Anthropic-Schluessel aus WordPress in `settings.ai`), Bruecke (Geheimnis in App und wp-config.php), Woo-Webhooks 1 (Bestellungen) und 2 (Abos) aktiv
+- Scheduler per Cron, Queue-Worker im Scheduler, stuendlich `import:geplant` (Personen und Inhalte aus WordPress)
+- Nicht eingerichtet: Telegram (der Bot haengt an WordPress, ein zweiter Webhook wuerde ihn dort abhaengen), Google/Apple-Anmeldung (Redirect-URLs muessen in den Konsolen von Google und Apple eingetragen werden). Passkeys der Website werden nicht uebernommen (es gibt genau einen), in der App einmal neu anlegen
+- Backups: `.env` unter `storage/app/env-backup-*`, wp-config.php unter `/var/www/vhosts/leawernli.ch/private/wp-config.php.bak-vor-neueapp-*`
+
 ## Etappen 2 bis 4 auf dem Server (nach dem Deploy)
 
 ```bash
@@ -76,7 +89,7 @@ Die Coachin pflegt Aussehen, Absender, Website, Feeds und den Telegram-Bot-Namen
 | `shop.webhook_secret` | WooCommerce-Webhook (siehe 07) |
 | `bridge.secret` | SSO-Bruecke (von `bridge:secret` gesetzt) |
 | `feeds` | RSS-Quellen fuer Impulse und Podcast (fuer Mandanten ohne WordPress; bei Lea leer, dort kommt alles aus dem WordPress-Import) |
-| `import.wordpress.schedule` | Teile des WordPress-Imports, die stuendlich laufen (`import:geplant`), bei Lea `['inhalte']` |
+| `import.wordpress.schedule` | Teile des WordPress-Imports, die stuendlich laufen (`import:geplant`), bei Lea `['users', 'inhalte']`. `programs` und `begleitung` bewusst nicht: sie wuerden Aenderungen am Testkurs in der App ueberschreiben |
 | `notifications.test_only`, `notifications.test_emails` | Testbetrieb: Benachrichtigungen nur an diese Adressen (im Coach-Bereich unter Einstellungen) |
 | `ai.anthropic_key`, `ai.model` | eigener KI-Schluessel des Mandanten (sonst Plattform) |
 | `passkeys.rp_id`, `passkeys.origins` | Relying Party fuer Passkeys (fuer Lea `leawernli.ch`, damit Website und App dieselben Passkeys nutzen) |

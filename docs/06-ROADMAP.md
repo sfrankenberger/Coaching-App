@@ -33,7 +33,8 @@ Stand nach Etappe 1: Lea kann sich per Link anmelden, sieht Start und Profil, im
 - [x] Taktung: wöchentlich (unlocks_at je Schritt), alles frei, keine Schritte (1:1)
 - [x] Freigabe an die Coachin: einmal "alles" am Anfang oder je Einheit (Workbook-Prinzip)
 - [x] Import 2: Kurse, Module, Lektionen, Workbooks (JSON), Fortschritt, Antworten, Zugänge (`--only=programs`)
-- [ ] **Testkurs** in der App auf dem Server befüllt und mit Lea angeschaut (nächster Schritt nach dem Deploy)
+- [x] Kurse auf dem Server befüllt (Import 25.09.)
+- [ ] Mit Lea anschauen, Testkurs festlegen (Kurs-ID in `LEA_NEUEAPP_KURSE` im Bruecken-Snippet, Adressen im Testbetrieb freigeben)
 
 ## Etappe 3 - Begleitung (erledigt 25.09.)
 
@@ -51,7 +52,8 @@ Stand nach Etappe 1: Lea kann sich per Link anmelden, sieht Start und Profil, im
 - [x] SSO-Brücke `GET /sso?token=` (HMAC, 60 Sekunden, einmalig), `bridge:secret lea`; WordPress-Snippet und Knopf "Zur neuen App" in `docs/07-UEBERGANG.md` (im WordPress noch einzubauen)
 - [x] Impulse und Podcast per RSS (`inhalte:feeds`, stündlich) und aus WordPress (`--only=inhalte`), Themenfinder (Themen an allen Inhalten, KI-Zuordnung), Merkliste
 - [x] KI-Zusammenfassung von Aufzeichnungen mit Aufgabenvorschlägen (Coach-Bereich und für die Person in ihrer 1:1-Sitzung), Podcast-Aufbereitung, Themenfinder-Texte
-- [ ] Deploy, `.env` (Mail, Redis, WP-DB, Anthropic), `db:seed`, `import:wordpress lea --only=alles`, `push:keys lea`, `bridge:secret lea`, Woo-Webhook eintragen (siehe 05 und 07)
+- [x] Deploy, `.env` (Mailgun, Redis, WP-DB), `db:seed`, `import:wordpress lea --only=alles`, `push:keys lea`, `bridge:secret lea`, Woo-Webhooks, Bruecke in WordPress, KI-Schluessel (25.09., siehe 05)
+- [x] Testbetrieb: Benachrichtigungen nur an freigegebene Adressen, bis umgeschaltet wird
 - [ ] Parallelbetrieb mit dem Testkurs, Rückmeldungen einarbeiten
 - [x] Passkeys, App-Icons (Kommando), Willkommens-Einführung (8 Schritte, `/willkommen`), Dashboard der Coachin (Kennzahlen, Neues von den Personen, nächste Termine)
 - [x] Coach-Bereich: Einstellungen (Aussehen, Absender, Feeds, Telegram-Name), Rundnachricht an alle oder ein Programm, Einladungen mit Anmeldelink
