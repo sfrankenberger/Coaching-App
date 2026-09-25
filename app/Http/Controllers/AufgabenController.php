@@ -3,7 +3,9 @@
 namespace App\Http\Controllers;
 
 use App\Models\Program;
+use App\Models\ProgramStep;
 use App\Models\Task;
+use App\Models\Unit;
 use App\Programs\ProgramAccess;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
@@ -36,7 +38,13 @@ class AufgabenController extends Controller
     public function store(Request $request): RedirectResponse
     {
         $data = $this->validated($request);
-        $task = Task::create($data + ['user_id' => $request->user()->id, 'source' => 'manual']);
+        $task = Task::create($data + ['user_id' => $request->user()->id, 'source' => $data['unit_id'] ?? null ? 'exercise' : 'manual']);
+
+        // Aus der Wochen- oder Einheitsseite angelegt: dorthin zurueck
+        $zurueck = (string) $request->input('zurueck', '');
+        if ($zurueck !== '' && str_starts_with($zurueck, url('/').'/')) {
+            return redirect()->to($zurueck)->with('meldung', 'Aufgabe angelegt. Du findest sie auch im Journal.');
+        }
 
         return redirect()->route('aufgaben.index')->with('meldung', 'Aufgabe angelegt.')->withFragment('aufgabe-'.$task->id);
     }
@@ -100,6 +108,8 @@ class AufgabenController extends Controller
             'due_time' => ['nullable', 'date_format:H:i'],
             'is_daily' => ['nullable', 'boolean'],
             'program_id' => ['nullable', 'integer'],
+            'step_id' => ['nullable', 'integer'],
+            'unit_id' => ['nullable', 'integer'],
             'visibility' => ['nullable', 'in:private,coach,program'],
             'is_pinned' => ['nullable', 'boolean'],
         ]);
@@ -109,6 +119,13 @@ class AufgabenController extends Controller
         if (! empty($data['program_id'])) {
             $program = Program::find($data['program_id']);
             $data['program_id'] = $program && $this->access->canView($request->user(), $program) ? $program->id : null;
+        }
+        // Woche und Einheit nur, wenn sie zum Programm gehoeren
+        if (! empty($data['step_id'])) {
+            $data['step_id'] = ProgramStep::where('id', $data['step_id'])->where('program_id', $data['program_id'] ?? 0)->value('id');
+        }
+        if (! empty($data['unit_id'])) {
+            $data['unit_id'] = Unit::where('id', $data['unit_id'])->where('program_id', $data['program_id'] ?? 0)->value('id');
         }
         if ($data['visibility'] === 'program' && empty($data['program_id'])) {
             $data['visibility'] = 'coach';

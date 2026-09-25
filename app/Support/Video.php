@@ -22,7 +22,7 @@ class Video
         }
 
         if (preg_match('~vimeo\.com/(?:video/)?(\d+)(?:/([0-9a-zA-Z]+))?~', $url, $m)) {
-            $src = 'https://player.vimeo.com/video/'.$m[1].'?dnt=1';
+            $src = 'https://player.vimeo.com/video/'.$m[1].'?dnt=1&api=1';
             if (! empty($m[2])) {
                 $src .= '&h='.$m[2];
             }

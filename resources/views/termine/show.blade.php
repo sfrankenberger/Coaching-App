@@ -36,7 +36,8 @@
     @if ($event->hasRecording())
         <x-karte class="!p-2">
             @if ($rec)
-                <div class="video" id="video-player">
+                @if ($position)<p class="hinweis" style="margin:4px 6px 8px"><i class="fa-solid fa-clock-rotate-left"></i> Du warst bei {{ gmdate($position >= 3600 ? 'G:i:s' : 'i:s', $position) }}, es geht dort weiter.</p>@endif
+                <div class="video" id="video-player" data-medien="event-{{ $event->id }}" data-start="{{ (int) $position }}">
                     @if ($rec['kind'] === 'iframe')
                         <iframe src="{{ $rec['src'] }}" allow="autoplay; fullscreen; picture-in-picture" allowfullscreen loading="lazy" title="Aufzeichnung"></iframe>
                     @else

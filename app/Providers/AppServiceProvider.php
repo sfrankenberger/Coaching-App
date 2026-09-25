@@ -12,6 +12,7 @@ use App\Models\Note;
 use App\Models\PodcastEpisode;
 use App\Models\Post;
 use App\Models\Program;
+use App\Models\ProgramMember;
 use App\Models\ProgramStep;
 use App\Models\Reflection;
 use App\Models\Resourceable;
@@ -21,6 +22,7 @@ use App\Models\Unit;
 use App\Models\User;
 use App\Observers\EventObserver;
 use App\Observers\PostObserver;
+use App\Observers\ProgramMemberObserver;
 use App\Observers\ResourceableObserver;
 use App\Observers\TaskObserver;
 use App\Programs\ProgramAccess;
@@ -69,6 +71,7 @@ class AppServiceProvider extends ServiceProvider
         EventFacade::listen(MessageSent::class, BenachrichtigeBeiNachricht::class);
         Event::observe(EventObserver::class);
         Task::observe(TaskObserver::class);
+        ProgramMember::observe(ProgramMemberObserver::class);
         Post::observe(PostObserver::class);
         Resourceable::observe(ResourceableObserver::class);
 

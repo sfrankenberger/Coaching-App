@@ -13,6 +13,7 @@ use App\Http\Controllers\JournalController;
 use App\Http\Controllers\KalenderController;
 use App\Http\Controllers\KursController;
 use App\Http\Controllers\MaterialController;
+use App\Http\Controllers\MedienController;
 use App\Http\Controllers\MerklisteController;
 use App\Http\Controllers\NotizenController;
 use App\Http\Controllers\ProfilController;
@@ -59,6 +60,7 @@ Route::post('/abmelden', [LoginController::class, 'logout'])->name('abmelden');
 Route::middleware(['auth', 'membership'])->group(function () {
     Route::get('/', HomeController::class)->name('home');
     Route::post('/neu/gesehen', [HomeController::class, 'gesehen'])->name('neu.gesehen');
+    Route::post('/medien/position', [MedienController::class, 'position'])->middleware('throttle:120,1')->name('medien.position');
     Route::get('/willkommen', [WillkommenController::class, 'index'])->name('willkommen');
     Route::post('/willkommen', [WillkommenController::class, 'fertig'])->name('willkommen.fertig');
     Route::get('/profil', [ProfilController::class, 'show'])->name('profil');

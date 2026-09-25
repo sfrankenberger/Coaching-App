@@ -4,11 +4,14 @@ namespace App\Http\Controllers;
 
 use App\Models\Answer;
 use App\Models\Exercise;
+use App\Models\MediaPosition;
 use App\Models\Note;
 use App\Models\Program;
 use App\Models\ProgramMember;
 use App\Models\ProgramStep;
+use App\Models\Task;
 use App\Models\Unit;
+use App\Programs\Begleitung;
 use App\Programs\ProgramAccess;
 use App\Programs\ProgressTracker;
 use Illuminate\Http\JsonResponse;
@@ -89,7 +92,20 @@ class KursController extends Controller
         $steps = $program->steps;
         $idx = $steps->search(fn ($s) => $s->id === $schritt->id);
 
+        // Alles, was zu dieser Woche gehoert: Call, Aufgaben, Material, Reflexion
+        $begleitung = app(Begleitung::class);
+        $termine = $begleitung->eventsQuery($user)->where('step_id', $schritt->id)
+            ->with(['attendees' => fn ($a) => $a->where('user_id', $user->id)])->orderBy('starts_at')->get();
+        $material = $begleitung->resourcesQuery($user)
+            ->whereHas('links', fn ($l) => $l->where(fn ($w) => $w->where('resourceable_type', 'step')->where('resourceable_id', $schritt->id))
+                ->orWhere(fn ($w) => $w->where('resourceable_type', 'unit')->whereIn('resourceable_id', $units->pluck('id'))))
+            ->orderBy('title')->get();
+
         return view('kurse.schritt', [
+            'termine' => $termine,
+            'aufgaben' => Task::where('user_id', $user->id)->where('step_id', $schritt->id)
+                ->orderByRaw('CASE WHEN done_at IS NULL THEN 0 ELSE 1 END')->orderBy('due_at')->get(),
+            'material' => $material,
             'program' => $program,
             'schritt' => $schritt,
             'units' => $units,
@@ -118,8 +134,12 @@ class KursController extends Controller
         $idx = $ordered->search(fn (Unit $u) => $u->id === $einheit->id);
         $answers = $this->progress->answersFor($user, $einheit);
         $member = ProgramMember::where('program_id', $program->id)->where('user_id', $user->id)->first();
+        $material = app(Begleitung::class)->resourcesQuery($user)
+            ->whereHas('links', fn ($l) => $l->where('resourceable_type', 'unit')->where('resourceable_id', $einheit->id))->orderBy('title')->get();
 
         return view('kurse.einheit', [
+            'material' => $material,
+            'position' => MediaPosition::where('user_id', $user->id)->where('key', 'unit-'.$einheit->id)->value('seconds'),
             'program' => $program,
             'unit' => $einheit,
             'answers' => $answers,

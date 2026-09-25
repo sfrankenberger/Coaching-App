@@ -7,6 +7,7 @@ use App\Filament\Coach\Resources\Tasks\Pages\EditTask;
 use App\Filament\Coach\Resources\Tasks\Pages\ListTasks;
 use App\Models\Membership;
 use App\Models\Note;
+use App\Models\ProgramStep;
 use App\Models\Task;
 use BackedEnum;
 use Filament\Actions\EditAction;
@@ -56,9 +57,13 @@ class TaskResource extends Resource
                     ->required(fn ($get, $livewire) => ! ($livewire instanceof CreateTask) || ! $get('fuer_programm'))
                     ->hidden(fn ($get, $livewire) => $livewire instanceof CreateTask && $get('fuer_programm')),
                 Select::make('program_id')->label('Programm')->relationship('program', 'title')->preload()->native(false)->live(),
+                Select::make('step_id')->label('Woche / Schritt')->native(false)
+                    ->options(fn ($get) => ProgramStep::where('program_id', $get('program_id'))->orderBy('position')->pluck('title', 'id')->all())
+                    ->visible(fn ($get) => filled($get('program_id')))
+                    ->helperText('Die Aufgabe erscheint dann auf der Wochenseite.'),
                 Toggle::make('fuer_programm')->label('An alle im Programm')->dehydrated(false)->live()
                     ->visible(fn ($livewire) => $livewire instanceof CreateTask)
-                    ->helperText('Legt für jede Teilnehmerin des Programms eine eigene Aufgabe an.'),
+                    ->helperText('Legt für jede Teilnehmerin eine eigene Aufgabe an. Wer später dazukommt, bekommt sie auch.'),
                 DatePicker::make('due_at')->label('Bis')->native(false)->displayFormat('d.m.Y'),
                 TextInput::make('due_time')->label('Uhrzeit')->placeholder('19:00')->maxLength(5),
                 Toggle::make('is_daily')->label('Jeden Tag'),

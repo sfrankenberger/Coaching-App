@@ -491,3 +491,93 @@ document.addEventListener('click', function (e) {
     }
     box.scrollIntoView({ behavior: 'smooth', block: 'center' });
 });
+
+/* ---------- Videoposition merken, ab 80 % erledigt ---------- */
+(function () {
+    var boxen = document.querySelectorAll('[data-medien]');
+    if (!boxen.length) return;
+    var csrf = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
+    var ziel = document.querySelector('meta[name="medien-url"]');
+    var url = ziel ? ziel.content : '/medien/position';
+
+    function senden(key, s, d) {
+        return fetch(url, { method: 'POST', credentials: 'same-origin', headers: { 'Content-Type': 'application/json', 'Accept': 'application/json', 'X-CSRF-TOKEN': csrf }, body: JSON.stringify({ key: key, seconds: Math.floor(s), duration: d ? Math.floor(d) : null }) })
+            .then(function (r) { return r.json(); })
+            .then(function (j) { if (j.erledigt) { var h = document.querySelector('[data-erledigt-hinweis]'); if (h) h.hidden = false; } })
+            .catch(function () {});
+    }
+    function beobachten(box) {
+        var key = box.dataset.medien, start = parseInt(box.dataset.start || '0', 10), zuletzt = 0;
+        function melden(s, d, sofort) {
+            if (!sofort && Math.abs(s - zuletzt) < 10) return;
+            zuletzt = s; senden(key, s, d);
+        }
+        var v = box.querySelector('video, audio');
+        if (v) {
+            v.addEventListener('loadedmetadata', function () { if (start > 5 && start < v.duration - 10) v.currentTime = start; });
+            v.addEventListener('timeupdate', function () { melden(v.currentTime, v.duration, false); });
+            v.addEventListener('pause', function () { melden(v.currentTime, v.duration, true); });
+            v.addEventListener('ended', function () { melden(v.duration, v.duration, true); });
+            return;
+        }
+        var f = box.querySelector('iframe');
+        if (!f || !/vimeo/.test(f.src)) return;
+        var dauer = 0, gesprungen = false;
+        function an(msg) { f.contentWindow.postMessage(JSON.stringify(msg), '*'); }
+        window.addEventListener('message', function (e) {
+            if (e.source !== f.contentWindow || !/vimeo\.com$/.test(new URL(e.origin).hostname)) return;
+            var d; try { d = typeof e.data === 'string' ? JSON.parse(e.data) : e.data; } catch (x) { return; }
+            if (!d) return;
+            if (d.event === 'ready') {
+                ['timeupdate', 'pause', 'ended'].forEach(function (ev) { an({ method: 'addEventListener', value: ev }); });
+                if (start > 5 && !gesprungen) { gesprungen = true; an({ method: 'setCurrentTime', value: start }); }
+            }
+            if (d.event === 'timeupdate' && d.data) { dauer = d.data.duration || dauer; melden(d.data.seconds, dauer, false); }
+            if (d.event === 'pause' && d.data) melden(d.data.seconds, dauer, true);
+            if (d.event === 'ended') melden(dauer, dauer, true);
+        });
+        /* Falls "ready" schon vorbei ist, bevor wir lauschen: nach dem Laden direkt anmelden */
+        f.addEventListener('load', function () {
+            ['timeupdate', 'pause', 'ended'].forEach(function (ev) { an({ method: 'addEventListener', value: ev }); });
+            if (start > 5 && !gesprungen) { gesprungen = true; setTimeout(function () { an({ method: 'setCurrentTime', value: start }); }, 600); }
+        });
+    }
+    boxen.forEach(beobachten);
+})();
+
+/* ---------- Diktieren: Mikrofon an Textfeldern (Web Speech API) ---------- */
+(function () {
+    var SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+    if (!SR) return;
+    var sprache = document.documentElement.lang || 'de-CH';
+    document.querySelectorAll('textarea.feld').forEach(function (t) {
+        if (t.closest('.chat-eingabe') || t.dataset.ohneDiktat !== undefined) return;
+        var wrap = t.parentNode;
+        if (!wrap.classList.contains('mit-mikro')) {
+            wrap = document.createElement('div');
+            wrap.className = 'mit-mikro';
+            t.parentNode.insertBefore(wrap, t);
+            wrap.appendChild(t);
+        }
+        var b = document.createElement('button');
+        b.type = 'button'; b.className = 'mikro'; b.setAttribute('aria-label', 'Diktieren'); b.title = 'Diktieren';
+        b.innerHTML = '<i class="fa-solid fa-microphone"></i>';
+        wrap.appendChild(b);
+        var rec = null;
+        b.addEventListener('click', function () {
+            if (rec) { rec.stop(); return; }
+            rec = new SR(); rec.lang = sprache; rec.interimResults = false; rec.continuous = true;
+            rec.onresult = function (e) {
+                var neu = '';
+                for (var i = e.resultIndex; i < e.results.length; i++) if (e.results[i].isFinal) neu += e.results[i][0].transcript;
+                if (!neu) return;
+                var vor = t.value && !/\s$/.test(t.value) ? ' ' : '';
+                t.value += vor + neu.trim();
+                t.dispatchEvent(new Event('input', { bubbles: true }));
+            };
+            rec.onend = function () { rec = null; b.classList.remove('an'); t.dispatchEvent(new Event('focusout', { bubbles: true })); };
+            rec.onerror = function () { rec = null; b.classList.remove('an'); };
+            rec.start(); b.classList.add('an');
+        });
+    });
+})();

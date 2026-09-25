@@ -838,3 +838,13 @@
     .willkommen-punkte span { width: 7px; height: 7px; border-radius: 50%; background: var(--c-card-border); transition: background .2s; }
     .willkommen-punkte span.an { background: var(--c-primary); }
 }
+
+@layer components {
+    /* Mikrofon zum Diktieren im Textfeld */
+    .mit-mikro { position: relative; }
+    .mit-mikro textarea { padding-right: 54px; }
+    .mikro { position: absolute; right: 8px; top: 8px; width: 36px; height: 36px; border-radius: 50%; border: 0; background: var(--c-neutral); color: var(--c-text-soft); display: grid; place-items: center; cursor: pointer; font-size: 14px; }
+    .mikro:hover { color: var(--c-primary); }
+    .mikro.an { background: var(--c-danger); color: #fff; animation: pulsieren 1.2s ease-in-out infinite; }
+    @keyframes pulsieren { 50% { box-shadow: 0 0 0 6px color-mix(in srgb, var(--c-danger) 25%, transparent); } }
+}

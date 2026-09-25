@@ -1,4 +1,5 @@
 <x-layouts.app :title="$schritt->title">
+    @php $ich = auth()->user(); @endphp
     <div style="--kc: {{ $program->color ?: '#7C8C9A' }}">
         <div class="flex items-center gap-3" style="margin:0 0 6px">
             <a href="{{ route('kurse.show', $program) }}" class="knopf knopf-ruhig" style="width:44px;padding:0;flex:none" aria-label="Zurück zum Kurs"><i class="fa-solid fa-chevron-left"></i></a>
@@ -9,7 +10,7 @@
             @if ($vorher)
                 <a href="{{ route('kurse.schritt', [$program, $vorher]) }}" class="knopf knopf-rund" aria-label="Schritt davor"><i class="fa-solid fa-chevron-left"></i></a>
             @endif
-            @if ($nachher && ($nachher->isUnlocked($program) || auth()->user()->canManageCurrentTenant()))
+            @if ($nachher && ($nachher->isUnlocked($program) || $ich->canManageCurrentTenant()))
                 <a href="{{ route('kurse.schritt', [$program, $nachher]) }}" class="knopf knopf-rund" aria-label="Schritt danach"><i class="fa-solid fa-chevron-right"></i></a>
             @endif
         </div>
@@ -23,6 +24,28 @@
             <div class="karte"><div class="prose-app">{!! $schritt->summary !!}</div></div>
         @endif
 
+        {{-- Calls dieser Woche: vorher Zoom, danach Aufzeichnung --}}
+        @foreach ($termine->reject(fn ($t) => in_array($t->type, \App\Models\Event::ALL_DAY_TYPES, true)) as $t)
+            @php $mein = $t->attendees->first(); $live = $t->isLive(); $vorbei = $t->isPast(); @endphp
+            <a href="{{ route('termine.show', $t) }}" @class(['karte karte-dunkel', 'block no-underline']) style="margin-top:12px">
+                <span class="eyebrow">{{ $live ? 'Jetzt live' : ($vorbei ? 'Call dieser Woche' : 'Nächster Call') }}</span>
+                <span class="block" style="font-family:var(--font-heading);font-size:var(--fs-xl);line-height:1.3;margin-top:2px">{{ $t->title }}</span>
+                <span class="m">{{ $t->starts_at->translatedFormat('l, j. F, H:i') }} Uhr</span>
+                <span class="flex flex-wrap gap-2" style="margin-top:12px">
+                    @if (! $vorbei && $t->zoom_url)
+                        <span class="knopf knopf-klein" onclick="event.preventDefault();window.open('{{ $t->zoom_url }}','_blank','noopener')"><i class="fa-solid fa-video"></i>{{ $live ? 'Jetzt beitreten' : 'Zoom-Link' }}</span>
+                    @elseif ($t->hasRecording())
+                        <span class="knopf knopf-klein"><i class="fa-solid fa-circle-play"></i>Aufzeichnung ansehen</span>
+                    @elseif ($vorbei)
+                        <span class="chip" style="background:rgba(255,255,255,.14);color:#fff">Aufzeichnung folgt</span>
+                    @endif
+                    @if ($mein && in_array($mein->status, ['attended', 'watched'], true))
+                        <span class="chip chip-gut"><i class="fa-solid fa-check"></i>{{ $mein->status === 'attended' ? 'Live dabei' : 'Gesehen' }}</span>
+                    @endif
+                </span>
+            </a>
+        @endforeach
+
         <h2 class="abschnitt"><i class="fa-solid fa-circle-play"></i>{{ $program->pacing === 'weekly' ? 'Diese Woche' : 'Lektionen' }}<em>{{ $units->count() }}</em></h2>
         @if ($units->isEmpty())
             <div class="leer"><i class="fa-regular fa-hourglass"></i>Hier kommt noch etwas. Schau bald wieder rein.</div>
@@ -33,5 +56,43 @@
                 @endforeach
             </div>
         @endif
+
+        {{-- Aufgaben der Woche: von der Coachin und eigene --}}
+        <h2 class="abschnitt"><i class="fa-solid fa-list-check"></i>Deine Aufgaben diese Woche @if ($aufgaben->whereNull('done_at')->count())<em>{{ $aufgaben->whereNull('done_at')->count() }}</em>@endif</h2>
+        @foreach ($aufgaben as $t)
+            @include('aufgaben._karte', ['t' => $t])
+        @endforeach
+        @unless ($ich->canManageCurrentTenant())
+            <form method="post" action="{{ route('aufgaben.store') }}" class="baustein" style="margin-top:4px">
+                @csrf
+                <input type="hidden" name="program_id" value="{{ $program->id }}">
+                <input type="hidden" name="step_id" value="{{ $schritt->id }}">
+                <input type="hidden" name="visibility" value="coach">
+                <input type="hidden" name="zurueck" value="{{ url()->current() }}">
+                <label for="vorhaben" class="eyebrow block" style="margin:0 0 8px">Was nimmst du dir diese Woche vor?</label>
+                <div class="flex gap-2">
+                    <input id="vorhaben" name="title" class="feld" maxlength="160" required placeholder="Ein kleiner, konkreter Schritt">
+                    <button type="submit" class="knopf" aria-label="Aufgabe anlegen" style="flex:none"><i class="fa-solid fa-plus"></i></button>
+                </div>
+                <p class="hinweis" style="margin:8px 0 0">Deine Coachin sieht, was du dir vornimmst. Du kannst es im Journal ändern.</p>
+            </form>
+        @endunless
+
+        {{-- Material der Woche und ihrer Lektionen --}}
+        @if ($material->isNotEmpty())
+            <h2 class="abschnitt"><i class="fa-solid fa-folder-open"></i>Material<em>{{ $material->count() }}</em></h2>
+            @foreach ($material as $r)
+                @include('kurse._material', ['r' => $r])
+            @endforeach
+        @endif
+
+        {{-- Reflexions- und Fragentag --}}
+        @foreach ($termine->filter(fn ($t) => in_array($t->type, \App\Models\Event::ALL_DAY_TYPES, true)) as $t)
+            <a href="{{ $t->type === 'reflection_day' ? route('reflexion.index') : route('gespraech.index') }}" class="zeile" style="margin-top:12px">
+                <span class="ic"><i class="fa-solid fa-{{ $t->type === 'reflection_day' ? 'pen-to-square' : 'circle-question' }}"></i></span>
+                <span class="tx"><b>{{ $t->type === 'reflection_day' ? 'Reflexion schreiben' : 'Frage stellen' }}</b><span>{{ $t->typeLabel() }} · {{ $t->starts_at->translatedFormat('l, j. F') }}</span></span>
+                <i class="fa-solid fa-chevron-right pf"></i>
+            </a>
+        @endforeach
     </div>
 </x-layouts.app>

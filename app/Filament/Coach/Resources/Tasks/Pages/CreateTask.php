@@ -19,6 +19,8 @@ class CreateTask extends CreateRecord
         $userIds = [];
 
         if ($this->data['fuer_programm'] ?? false) {
+            // Kursaufgabe: Vorlage auch fuer spaeter Eintretende (ProgramMemberObserver)
+            $base['source'] = 'program';
             $program = Program::find($data['program_id'] ?? 0);
             $userIds = $program ? $program->members()->pluck('user_id')->all() : [];
             $data['user_id'] = $userIds[0] ?? auth()->id();

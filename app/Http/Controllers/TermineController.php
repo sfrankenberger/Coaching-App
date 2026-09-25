@@ -6,6 +6,7 @@ use App\Ai\Summarizer;
 use App\Models\AiSummary;
 use App\Models\Event;
 use App\Models\EventAttendee;
+use App\Models\MediaPosition;
 use App\Models\Program;
 use App\Programs\Begleitung;
 use App\Support\Ics;
@@ -54,6 +55,7 @@ class TermineController extends Controller
         $termin->load(['program', 'resources', 'attendees.user:id,name']);
 
         return view('termine.show', [
+            'position' => MediaPosition::where('user_id', $user->id)->where('key', 'event-'.$termin->id)->value('seconds'),
             'event' => $termin,
             'mein' => $termin->attendees->firstWhere('user_id', $user->id),
             'absagen' => $termin->attendees->where('status', 'declined'),

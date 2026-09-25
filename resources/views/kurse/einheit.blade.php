@@ -31,7 +31,8 @@
         @php $erstes = \App\Support\Video::embed($videos[0]['url']); @endphp
         <x-karte class="!p-2">
             @if ($erstes)
-                <div class="video" id="video-player">
+                @if ($position)<p class="hinweis" style="margin:4px 6px 8px"><i class="fa-solid fa-clock-rotate-left"></i> Du warst bei {{ gmdate($position >= 3600 ? 'G:i:s' : 'i:s', $position) }}, es geht dort weiter.</p>@endif
+                <div class="video" id="video-player" data-medien="unit-{{ $unit->id }}" data-start="{{ (int) $position }}">
                     @if ($erstes['kind'] === 'iframe')
                         <iframe src="{{ $erstes['src'] }}" allow="autoplay; fullscreen; picture-in-picture" allowfullscreen loading="lazy" title="Video"></iframe>
                     @else
@@ -71,6 +72,13 @@
                 @endforeach
             </ul>
         </x-karte>
+    @endif
+
+    @if ($material->isNotEmpty())
+        <h2 class="abschnitt"><i class="fa-solid fa-folder-open"></i>Material dazu<em>{{ $material->count() }}</em></h2>
+        @foreach ($material as $r)
+            @include('kurse._material', ['r' => $r])
+        @endforeach
     @endif
 
     @if ($unit->exercises->isNotEmpty())
@@ -156,6 +164,7 @@
         </form>
     </x-karte>
 
+    <p class="meldung meldung-gut" data-erledigt-hinweis hidden style="margin-top:12px"><i class="fa-solid fa-circle-check"></i> Video fast fertig geschaut, die Einheit ist als erledigt markiert.</p>
     <div class="mt-4 flex flex-wrap items-center justify-between gap-3">
         <form method="post" action="{{ route('kurse.erledigt', [$program, $unit]) }}" data-erledigt>
             @csrf
