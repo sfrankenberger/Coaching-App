@@ -58,7 +58,7 @@ $PHP artisan import:wordpress lea --only=alles --dry-run # users, programs, begl
 nohup nice -n 10 $PHP artisan import:wordpress lea --only=alles > storage/logs/import.log 2>&1 &
 $PHP artisan push:keys lea                              # Web Push (VAPID)
 $PHP artisan bridge:secret lea                          # SSO-Bruecke, Geheimnis in die wp-config.php (siehe 07)
-$PHP artisan inhalte:feeds lea                          # Feeds einmal von Hand, sonst stuendlich
+$PHP artisan import:wordpress lea --only=inhalte        # Impulse, Podcast, Themen aus WordPress, sonst stuendlich (import:geplant)
 $PHP artisan themen:profil lea --limit=20               # Themenfinder per KI (braucht ANTHROPIC_API_KEY)
 $PHP artisan branding:icons lea /var/www/vhosts/leawernli.ch/httpdocs/wp-content/uploads/lea-app   # App-Icons
 ```
@@ -75,13 +75,15 @@ Die Coachin pflegt Aussehen, Absender, Website, Feeds und den Telegram-Bot-Namen
 | `telegram.bot_token`, `telegram.bot_username`, `telegram.webhook_secret` | Telegram-Bot; Webhook des Bots auf `https://app.leawernli.ch/hooks/telegram/{webhook_secret}` setzen |
 | `shop.webhook_secret` | WooCommerce-Webhook (siehe 07) |
 | `bridge.secret` | SSO-Bruecke (von `bridge:secret` gesetzt) |
-| `feeds` | RSS-Quellen fuer Impulse und Podcast |
+| `feeds` | RSS-Quellen fuer Impulse und Podcast (fuer Mandanten ohne WordPress; bei Lea leer, dort kommt alles aus dem WordPress-Import) |
+| `import.wordpress.schedule` | Teile des WordPress-Imports, die stuendlich laufen (`import:geplant`), bei Lea `['inhalte']` |
+| `notifications.test_only`, `notifications.test_emails` | Testbetrieb: Benachrichtigungen nur an diese Adressen (im Coach-Bereich unter Einstellungen) |
 | `ai.anthropic_key`, `ai.model` | eigener KI-Schluessel des Mandanten (sonst Plattform) |
 | `passkeys.rp_id`, `passkeys.origins` | Relying Party fuer Passkeys (fuer Lea `leawernli.ch`, damit Website und App dieselben Passkeys nutzen) |
 | `onboarding.steps` | eigene Texte der Einfuehrung (sonst Vorgabe mit dem Namen der Coachin), `coach_name` fuer die Anrede |
 | `import.wordpress` | Zuordnung fuer den Import |
 
-Scheduler-Laeufe (`routes/console.php`): Queue-Worker jede Minute, Termin-Erinnerungen und Nachfassen alle zehn Minuten, Aufgaben-Hinweise 8 und 18 Uhr, Abendmail 19:30, Feeds stuendlich, geplante Beitraege alle zehn Minuten. Zeiten gelten in der Zeitzone des Mandanten.
+Scheduler-Laeufe (`routes/console.php`): Queue-Worker jede Minute, Termin-Erinnerungen und Nachfassen alle zehn Minuten, Aufgaben-Hinweise 8 und 18 Uhr, Abendmail 19:30, Feeds stuendlich, geplante WordPress-Importe stuendlich um :17, geplante Beitraege alle zehn Minuten. Zeiten gelten in der Zeitzone des Mandanten.
 
 ## Cron (bereits eingetragen)
 

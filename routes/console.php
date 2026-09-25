@@ -24,4 +24,6 @@ Schedule::command('benachrichtigungen:runde abendmail')->dailyAt('19:30');
 
 // Inhalte: Feeds holen, geplante Beitraege melden
 Schedule::command('inhalte:feeds')->hourly()->withoutOverlapping();
+// Parallelbetrieb: geplante WordPress-Importe je Mandant (settings.import.wordpress.schedule)
+Schedule::command('import:geplant')->hourlyAt(17)->withoutOverlapping(50)->runInBackground();
 Schedule::command('inhalte:veroeffentlichen')->everyTenMinutes()->withoutOverlapping();

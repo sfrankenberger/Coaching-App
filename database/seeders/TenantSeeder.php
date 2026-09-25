@@ -27,11 +27,6 @@ class TenantSeeder extends Seeder
                 // Parallelbetrieb: Benachrichtigungen nur an freigegebene Adressen (im Coach-Bereich unter Einstellungen erweiterbar)
                 'notifications' => ['test_only' => true, 'test_emails' => ['mail@sfrankenberger.com']],
                 'shop' => ['driver' => 'woocommerce', 'url' => 'https://leawernli.ch', 'webhook_secret' => null],
-                // Impulse und Podcast per RSS (inhalte:feeds). Eigener Podcast bei Kajabi, Blog nur "Free"-Beitraege.
-                'feeds' => [
-                    ['type' => 'podcast', 'url' => 'https://app.kajabi.com/podcasts/2147743703/feed', 'show' => 'Abenteuer Leben', 'limit' => 30],
-                    ['type' => 'post', 'url' => 'https://leawernli.ch/?sichtbarkeit=free&feed=rss2', 'limit' => 20],
-                ],
                 'website' => 'https://leawernli.ch',
                 'mail' => [
                     'from_address' => 'hallo@leawernli.ch',
@@ -43,7 +38,10 @@ class TenantSeeder extends Seeder
                     'apple' => ['client_id' => null, 'client_secret' => null],
                 ],
                 // Wie der WordPress-Import Personen und Rollen zuordnet (import:wordpress lea --only=users).
+                // Impulse, Podcast, Themen kommen waehrend des Parallelbetriebs stuendlich aus WordPress (import:geplant),
+                // dort ist die Auswahl "Free", die Sendungen und die KI-Aufbereitung schon gemacht.
                 'import' => ['wordpress' => [
+                    'schedule' => ['inhalte'],
                     'owner_ids' => [2],                                   // LEA_KR_LEA in lea-kursraum.php
                     'team_roles' => ['administrator', 'lea_redaktion'],
                     'course_relation_id' => 13,                            // JetEngine-Relation Teilnehmer zu Kurse
