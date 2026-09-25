@@ -26,7 +26,7 @@ class TenantSeeder extends Seeder
                 'coach_name' => 'Lea',
                 // Parallelbetrieb: Benachrichtigungen nur an freigegebene Adressen (im Coach-Bereich unter Einstellungen erweiterbar)
                 'notifications' => ['test_only' => true, 'test_emails' => ['mail@sfrankenberger.com']],
-                'shop' => ['driver' => 'woocommerce', 'url' => 'https://leawernli.ch', 'webhook_secret' => null, 'rechnung_zahlarten' => ['lea_rechnung']],
+                'shop' => ['driver' => 'woocommerce', 'url' => 'https://leawernli.ch', 'webhook_secret' => null, 'rechnung_zahlarten' => ['lea_rechnung'], 'account_url' => 'https://leawernli.ch/mitgliederbereich/mein-account/subscriptions/'],
                 'links' => ['website' => 'https://leawernli.ch', 'impressum' => 'https://leawernli.ch/impressum/', 'datenschutz' => 'https://leawernli.ch/datenschutz/', 'kontakt' => 'mail@leawernli.ch'],
                 'support' => ['email' => 'mail@sfrankenberger.com', 'whatsapp' => '491709323103', 'name' => 'Sebastian'],
                 'wochencheck' => ['haken' => [

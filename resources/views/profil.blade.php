@@ -8,6 +8,46 @@
         </span>
     </div>
 
+    @if ($zugaenge->isNotEmpty() || $kontingent)
+        <x-karte titel="Meine Buchungen" icon="ticket">
+            @if ($kontingent)
+                <div style="margin-bottom:14px">
+                    <span class="t">Sitzungen: {{ $kontingent['offen'] }} von {{ $kontingent['gesamt'] }} offen</span>
+                    <span class="balken" style="display:block;margin:8px 0 4px"><span style="width: {{ round(($kontingent['gehabt'] + $kontingent['geplant']) / max(1, $kontingent['gesamt']) * 100) }}%"></span></span>
+                    <span class="m">{{ $kontingent['gehabt'] }} gehabt{{ $kontingent['geplant'] ? ', '.$kontingent['geplant'].' geplant' : '' }}</span>
+                    @if ($buchen && $kontingent['offen'])<a href="{{ route('buchen.index') }}" class="knopf knopf-klein" style="margin-top:10px"><i class="fa-regular fa-calendar-plus"></i>Termin buchen</a>@endif
+                </div>
+            @endif
+            @foreach ($zugaenge as $z)
+                <div @class(['zeile', 'fertig' => ! $z->aktiv]) style="align-items:flex-start">
+                    <span class="ic"><i class="fa-solid fa-{{ $z->offer->type === 'club' ? 'people-group' : ($z->offer->type === 'one_on_one' ? 'user' : 'graduation-cap') }}"></i></span>
+                    <span class="tx">
+                        <b>{{ $z->offer->title }}</b>
+                        <span>
+                            @if (! $z->aktiv) Beendet{{ $z->ends_at ? ' am '.$z->ends_at->translatedFormat('j. F Y') : '' }}
+                            @elseif ($z->ends_at) Zugang bis {{ $z->ends_at->translatedFormat('j. F Y') }}
+                            @else Ohne Ablaufdatum @endif
+                            @if ($z->starts_at) · seit {{ $z->starts_at->translatedFormat('j. F Y') }} @endif
+                        </span>
+                        @foreach ($z->wochen as $w)
+                            <span>{{ $w['program']->title }}: Woche {{ $w['jetzt'] }} von {{ $w['alle'] }}</span>
+                        @endforeach
+                        @if ($z->aktiv)
+                            <span class="flex flex-wrap gap-2" style="margin-top:8px">
+                                @foreach ($z->offer->programs->take(3) as $p)
+                                    <a href="{{ route('kurse.show', $p) }}" class="knopf knopf-ruhig knopf-klein">Zum {{ $p->isWorkbook() ? 'Arbeitsbuch' : 'Programm' }}</a>
+                                @endforeach
+                                @if ($z->offer->type === 'club' && $aboUrl)
+                                    <a href="{{ $aboUrl }}" target="_blank" rel="noopener" class="knopf knopf-leise knopf-klein">Abo verwalten</a>
+                                @endif
+                            </span>
+                        @endif
+                    </span>
+                </div>
+            @endforeach
+        </x-karte>
+    @endif
+
     <x-karte titel="Über dich" icon="user">
         <form method="post" action="{{ route('profil.speichern') }}" class="eingabe">
             @csrf

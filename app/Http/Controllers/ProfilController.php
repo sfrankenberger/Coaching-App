@@ -2,6 +2,9 @@
 
 namespace App\Http\Controllers;
 
+use App\Booking\GoogleCalendar;
+use App\Coach\Lage;
+use App\Models\Entitlement;
 use App\Models\PushSubscription;
 use App\Models\TelegramLink;
 use App\Programs\ProgramAccess;
@@ -25,7 +28,29 @@ class ProfilController extends Controller
             'telegramBot' => $tenant?->setting('telegram.bot_username'),
             'passkeys' => $request->user()->webAuthnCredentials()->orderBy('created_at')->get(),
             'kalenderUrl' => ($m = $request->user()->membershipIn()) ? route('kalender.abo', ['token' => Ics::tokenFor($m)]) : null,
+            'zugaenge' => $this->zugaenge($request->user()),
+            'kontingent' => app(Lage::class)->kontingent($request->user()),
+            'buchen' => app(GoogleCalendar::class)->aktiv(),
+            'aboUrl' => $tenant?->setting('shop.account_url'),
         ]);
+    }
+
+    /** Meine Buchungen (wie lea-mitgliedschaft-neu): Zugaenge mit Programmen, Laufzeit und Kurswoche. */
+    protected function zugaenge($user)
+    {
+        return Entitlement::where('user_id', $user->id)->with('offer.programs.steps')->orderByRaw("CASE WHEN status = 'active' THEN 0 ELSE 1 END")->latest('starts_at')->get()
+            ->filter(fn ($e) => $e->offer)
+            ->map(function ($e) {
+                $e->setAttribute('aktiv', $e->status === 'active' && (! $e->ends_at || $e->ends_at->isFuture()));
+                $e->setAttribute('wochen', $e->offer->programs->where('pacing', 'weekly')->map(function ($p) {
+                    $alle = $p->steps->count();
+                    $offen = $p->steps->filter(fn ($s) => $s->isUnlocked($p))->count();
+
+                    return $alle ? ['program' => $p, 'jetzt' => max(1, $offen), 'alle' => $alle] : null;
+                })->filter()->values());
+
+                return $e;
+            });
     }
 
     public function save(Request $request): RedirectResponse
