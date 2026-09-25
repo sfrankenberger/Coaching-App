@@ -3,19 +3,21 @@
 namespace App\Models;
 
 use App\Content\Concerns\HasTopics;
+use App\Support\Suche;
 use App\Tenancy\Concerns\BelongsToTenant;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\MorphMany;
 use Illuminate\Support\Collection;
+use Laravel\Scout\Searchable;
 
 /**
  * Einheit: eine Lektion (Video, Text), eine Uebung (Fragen) oder ein Text.
  */
 class Unit extends Model
 {
-    use BelongsToTenant, HasTopics;
+    use BelongsToTenant, HasTopics, Searchable;
 
     public const TYPES = [
         'lesson' => 'Lektion',
@@ -73,5 +75,15 @@ class Unit extends Model
     public function answerableExercises(): Collection
     {
         return $this->exercises->filter(fn (Exercise $e) => $e->isAnswerable());
+    }
+
+    /** Suche (Scout, Datenbank): Felder als reiner Text. */
+    public function toSearchableArray(): array
+    {
+        return [
+            'title' => Suche::text($this->title),
+            'intro' => Suche::text($this->intro),
+            'body' => Suche::text($this->body),
+        ];
     }
 }

@@ -6,6 +6,7 @@
     $tenant = $branding->tenant();
     $kannVerwalten = $person?->canManageCurrentTenant();
     $ungelesen = $person ? app(App\Chat\Chat::class)->unreadFor($person) : 0;
+    $mitteilungen = $person ? $person->notifications()->whereNull('read_at')->count() : 0;
     $avatar = $branding->get('avatar_url');
     $zusatz = $branding->get('mark_suffix');
     $links = (array) data_get($tenant?->settings, 'links', []);
@@ -68,6 +69,7 @@
             </a>
             @auth
                 <div class="kopf-rechts">
+                    <a href="{{ route('mitteilungen') }}" aria-label="Mitteilungen"><i class="fa-{{ $mitteilungen ? 'solid' : 'regular' }} fa-bell"></i>@if ($mitteilungen)<span class="zahl">{{ $mitteilungen }}</span>@endif</a>
                     <a href="{{ route('gespraech.index') }}" aria-label="Gespräch"><i class="fa-solid fa-comments"></i>@if ($ungelesen)<span class="zahl">{{ $ungelesen }}</span>@endif</a>
                 </div>
             @else
@@ -94,13 +96,15 @@
                     <li><a href="{{ route('termine.index') }}" @class(['aktiv' => $ist('termine.*')])><i class="fa-solid fa-calendar"></i>Termine</a></li>
                     <li><a href="{{ route('material.index') }}" @class(['aktiv' => $ist('material.*')])><i class="fa-solid fa-folder-open"></i>Material</a></li>
                     <li><a href="{{ route('impulse.index') }}" @class(['aktiv' => $ist('impulse.*')])><i class="fa-solid fa-lightbulb"></i>Impulse</a></li>
-                    <li class="unter"><a href="{{ route('themen.index') }}"><i class="fa-solid fa-magnifying-glass"></i>Nachschlagen</a></li>
+                    <li class="unter"><a href="{{ route('themen.index') }}"><i class="fa-solid fa-tags"></i>Nachschlagen</a></li>
+                    <li class="unter"><a href="{{ route('suche') }}"><i class="fa-solid fa-magnifying-glass"></i>Suchen</a></li>
                     <li class="unter"><a href="{{ route('merkliste') }}"><i class="fa-solid fa-bookmark"></i>Gemerkt</a></li>
                     <li><a href="{{ route('journal.index') }}" @class(['aktiv' => $ist('journal.*')])><i class="fa-solid fa-book-open"></i>Mein Journal</a></li>
                     <li class="unter"><a href="{{ route('aufgaben.index') }}"><i class="fa-solid fa-list-check"></i>Aufgaben</a></li>
                     <li class="unter"><a href="{{ route('notizen.index') }}"><i class="fa-solid fa-note-sticky"></i>Notizen</a></li>
                     <li class="unter"><a href="{{ route('reflexion.index') }}"><i class="fa-solid fa-pen-to-square"></i>Reflexion</a></li>
                     <li><a href="{{ route('gespraech.index') }}" @class(['aktiv' => $ist('gespraech.*')])><i class="fa-solid fa-comments"></i>Gespräch @if ($ungelesen)<span class="zahl">{{ $ungelesen }}</span>@endif</a></li>
+                    <li><a href="{{ route('mitteilungen') }}" @class(['aktiv' => $ist('mitteilungen*')])><i class="fa-solid fa-bell"></i>Mitteilungen @if ($mitteilungen)<span class="zahl">{{ $mitteilungen }}</span>@endif</a></li>
                     <li><a href="{{ route('profil') }}" @class(['aktiv' => $ist('profil*')])><i class="fa-solid fa-user"></i>Profil</a></li>
                     @if ($kannVerwalten)
                         <li><a href="/coach"><i class="fa-solid fa-user-group"></i>Coach-Bereich</a></li>

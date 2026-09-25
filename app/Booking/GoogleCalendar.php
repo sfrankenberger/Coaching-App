@@ -6,6 +6,7 @@ use App\Tenancy\CurrentTenant;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Http;
+use Laravel\Pennant\Feature;
 use RuntimeException;
 
 /**
@@ -34,7 +35,9 @@ class GoogleCalendar
     /** Buchung in der App eingeschaltet (settings.booking.enabled) und Kalender angebunden. */
     public function aktiv(): bool
     {
-        return (bool) $this->current->get()?->setting('booking.enabled') && $this->konfiguriert();
+        $tenant = $this->current->get();
+
+        return $tenant && Feature::for($tenant)->active('buchung') && $this->konfiguriert();
     }
 
     public function kalender(): ?string

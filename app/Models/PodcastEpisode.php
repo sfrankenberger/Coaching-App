@@ -3,10 +3,12 @@
 namespace App\Models;
 
 use App\Content\Concerns\HasTopics;
+use App\Support\Suche;
 use App\Tenancy\Concerns\BelongsToTenant;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Str;
+use Laravel\Scout\Searchable;
 
 /**
  * Podcastfolge: eigener Podcast oder gespiegelte Fremd-Sendung (per Feed).
@@ -14,7 +16,7 @@ use Illuminate\Support\Str;
  */
 class PodcastEpisode extends Model
 {
-    use BelongsToTenant, HasTopics;
+    use BelongsToTenant, HasTopics, Searchable;
 
     protected $guarded = [];
 
@@ -78,5 +80,17 @@ class PodcastEpisode extends Model
         }
 
         return $sec ?: null;
+    }
+
+    /** Suche (Scout, Datenbank): Felder als reiner Text. */
+    public function toSearchableArray(): array
+    {
+        return [
+            'title' => Suche::text($this->title),
+            'excerpt' => Suche::text($this->excerpt),
+            'body' => Suche::text($this->body),
+            'summary' => Suche::text($this->summary),
+            'transcript' => Suche::text($this->transcript),
+        ];
     }
 }

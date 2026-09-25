@@ -16,6 +16,7 @@ class Nachricht
         public ?string $knopf = null,
         public ?string $html = null,          // nur Mail: zusaetzlicher Inhalt, z. B. die Zusammenfassung
         public bool $mailImmer = false,       // Mail auch an Personen mit Push (z. B. Aufzeichnung mit Zusammenfassung)
+        public bool $inApp = true,            // auch als Mitteilung in der App (Glocke)
     ) {
         $this->tag ??= $anlass;
     }

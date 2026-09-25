@@ -56,7 +56,7 @@ Eingerichtet und geprueft, die App laeuft unter https://app.leawernli.ch:
 - Mail ueber Mailgun (Domain mail.leawernli.ch, EU, Schluessel aus Mailster), Absender mail@leawernli.ch. Direkter Versand vom Server wurde von Gmail abgewiesen (IPv6 ohne SPF)
 - **Testbetrieb an**: Benachrichtigungen gehen nur an mail@sfrankenberger.com. Weitere Adressen im Coach-Bereich unter Einstellungen freigeben, zum Umschalten dort ausschalten
 - Web Push (VAPID), App-Icons, KI (Anthropic-Schluessel aus WordPress in `settings.ai`), Bruecke (Geheimnis in App und wp-config.php), Woo-Webhooks 1 (Bestellungen) und 2 (Abos) aktiv
-- Scheduler per Cron, Queue-Worker im Scheduler, stuendlich `import:geplant` (Personen und Inhalte aus WordPress)
+- Scheduler per Cron, Queue-Worker als Systemd-Dienst `lea-app-queue.service` (Root, `/etc/systemd/system/`, Log in `storage/logs/queue.log`), stuendlich `import:geplant` (Personen und Inhalte aus WordPress)
 - Nicht eingerichtet: Telegram (der Bot haengt an WordPress, ein zweiter Webhook wuerde ihn dort abhaengen), Google/Apple-Anmeldung (Redirect-URLs muessen in den Konsolen von Google und Apple eingetragen werden). Passkeys der Website werden nicht uebernommen (es gibt genau einen), in der App einmal neu anlegen
 - Backups: `.env` unter `storage/app/env-backup-*`, wp-config.php unter `/var/www/vhosts/leawernli.ch/private/wp-config.php.bak-vor-neueapp-*`
 
@@ -76,7 +76,7 @@ $PHP artisan themen:profil lea --limit=20               # Themenfinder per KI (b
 $PHP artisan branding:icons lea /var/www/vhosts/leawernli.ch/httpdocs/wp-content/uploads/lea-app   # App-Icons
 ```
 
-Zusaetzlich in der `.env`: `ANTHROPIC_API_KEY` (KI), `QUEUE_CONNECTION=database` (Worker laeuft im Scheduler). Der Import kopiert Dateien aus `wp-content/uploads` nach `storage/app/tenants/1/` (Pfad in `settings.import.wordpress.uploads_dir`), das dauert beim ersten Mal.
+Zusaetzlich in der `.env`: `ANTHROPIC_API_KEY` (KI), `QUEUE_CONNECTION=database` (Worker laeuft als Systemd-Dienst). Der Import kopiert Dateien aus `wp-content/uploads` nach `storage/app/tenants/1/` (Pfad in `settings.import.wordpress.uploads_dir`), das dauert beim ersten Mal.
 
 Die Coachin pflegt Aussehen, Absender, Website, Feeds und den Telegram-Bot-Namen selbst unter `/coach/einstellungen` (nur Rolle owner). Rundnachrichten an alle oder an ein Programm unter `/coach/rundnachricht`, Einladungen mit Anmeldelink aus der Personenliste. Alles andere, vor allem Geheimnisse, unter `/plattform` (JSON in `tenants.settings`):
 
@@ -96,7 +96,7 @@ Die Coachin pflegt Aussehen, Absender, Website, Feeds und den Telegram-Bot-Namen
 | `onboarding.steps` | eigene Texte der Einfuehrung (sonst Vorgabe mit dem Namen der Coachin), `coach_name` fuer die Anrede |
 | `import.wordpress` | Zuordnung fuer den Import |
 
-Scheduler-Laeufe (`routes/console.php`): Queue-Worker jede Minute, Termin-Erinnerungen und Nachfassen alle zehn Minuten, Aufgaben-Hinweise 8 und 18 Uhr, Abendmail 19:30, Feeds stuendlich, geplante WordPress-Importe stuendlich um :17, geplante Beitraege alle zehn Minuten. Zeiten gelten in der Zeitzone des Mandanten.
+Scheduler-Laeufe (`routes/console.php`): Termin-Erinnerungen und Nachfassen alle zehn Minuten, Aufgaben-Hinweise 8 und 18 Uhr, Abendmail 19:30, Feeds stuendlich, geplante WordPress-Importe stuendlich um :17, geplante Beitraege alle zehn Minuten. Zeiten gelten in der Zeitzone des Mandanten.
 
 ## Cron (bereits eingetragen)
 
@@ -104,7 +104,7 @@ Scheduler-Laeufe (`routes/console.php`): Queue-Worker jede Minute, Termin-Erinne
 * * * * * cd /var/www/vhosts/leawernli.ch/app.leawernli.ch && /opt/plesk/php/8.4/bin/php artisan schedule:run >> /dev/null 2>&1
 ```
 
-Queue-Worker wird im Scheduler selbst gestartet (`routes/console.php`): `queue:work --stop-when-empty --max-time=50`, einmal pro Minute, ohne Überlappung.
+Queue-Worker: Systemd-Dienst `lea-app-queue.service` (`queue:work --sleep=2 --tries=3 --max-time=3600`, startet sich nach einer Stunde und nach jedem Deploy neu: `systemctl restart lea-app-queue`). Stand: `systemctl status lea-app-queue`, Log `storage/logs/queue.log`.
 
 ## Backups
 

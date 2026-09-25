@@ -3,11 +3,13 @@
 namespace App\Notifications;
 
 use App\Models\Membership;
+use App\Models\Mitteilung;
 use App\Models\PushSubscription;
 use App\Models\TelegramLink;
 use App\Models\User;
 use App\Tenancy\CurrentTenant;
 use Illuminate\Support\Collection;
+use Illuminate\Support\Str;
 
 /**
  * Ein zentraler Dienst entscheidet pro Person und Anlass den Kanal:
@@ -30,6 +32,10 @@ class Notifier
         $report = [];
         foreach ($this->users($users) as $user) {
             $channels = $this->channelsFor($user, $nachricht);
+            // In der App (Glocke) landet alles, was die Person will, auch ohne Push und im Testbetrieb
+            if ($nachricht->inApp && $this->wantsInApp($user, $nachricht)) {
+                $this->mitteilung($user, $nachricht);
+            }
             if ($channels === []) {
                 $report[$user->id] = [];
 
@@ -71,6 +77,28 @@ class Notifier
         }
 
         return $channels;
+    }
+
+    /** Mitteilung fuer die Glocke, sofort und ohne Queue. Gleiche Kennung (tag) ersetzt die aeltere ungelesene. */
+    protected function mitteilung(User $user, Nachricht $nachricht): void
+    {
+        if ($nachricht->tag) {
+            Mitteilung::where('notifiable_type', $user->getMorphClass())->where('notifiable_id', $user->id)->whereNull('read_at')->where('data->tag', $nachricht->tag)->delete();
+        }
+        Mitteilung::create([
+            'id' => (string) Str::uuid(),
+            'type' => $nachricht->anlass,
+            'notifiable_type' => $user->getMorphClass(),
+            'notifiable_id' => $user->id,
+            'data' => $nachricht->toArray() + ['knopf' => $nachricht->knopf],
+        ]);
+    }
+
+    protected function wantsInApp(User $user, Nachricht $nachricht): bool
+    {
+        $membership = $user->membershipIn();
+
+        return $membership && $membership->isActive() && $this->wants($membership, $nachricht->anlass);
     }
 
     public function hasPushOrTelegram(User $user): bool

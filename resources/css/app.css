@@ -928,3 +928,9 @@ button.vorschlag:hover { border-color: var(--c-primary); }
 
 /* Quadratischer Knopf (Zurueck, Plus) */
 .knopf-quadrat { width: 44px; padding: 0; flex: none; }
+
+/* Ungelesene Mitteilung */
+.zeile.neu { border-left: 3px solid var(--c-primary); background: #fff; }
+.zeile.neu .tx b::before { content: ''; display: inline-block; width: 7px; height: 7px; border-radius: 50%; background: var(--c-primary); margin: 0 6px 2px 0; }
+
+mark { background: var(--c-primary-tint); color: var(--c-text); padding: 0 2px; border-radius: 3px; }

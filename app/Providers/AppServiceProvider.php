@@ -2,6 +2,7 @@
 
 namespace App\Providers;
 
+use App\Ai\Anthropic;
 use App\Models\Answer;
 use App\Models\Booking;
 use App\Models\Comment;
@@ -20,6 +21,7 @@ use App\Models\Question;
 use App\Models\Reflection;
 use App\Models\Resourceable;
 use App\Models\Task;
+use App\Models\Tenant;
 use App\Models\Topic;
 use App\Models\Unit;
 use App\Models\User;
@@ -46,6 +48,7 @@ use Illuminate\Database\Connection;
 use Illuminate\Database\Eloquent\Relations\Relation;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\ServiceProvider;
+use Laravel\Pennant\Feature;
 use Laravel\Socialite\Contracts\Factory as SocialiteFactory;
 use SocialiteProviders\Apple\Provider as AppleProvider;
 
@@ -85,6 +88,13 @@ class AppServiceProvider extends ServiceProvider
             'episode' => PodcastEpisode::class,
             'topic' => Topic::class,
         ]);
+
+        // Funktionen je Mandant (Pennant): Schalter in tenants.settings, hier an einer Stelle aufgeloest
+        Feature::define('buchung', fn (Tenant $t) => (bool) $t->setting('booking.enabled') && filled($t->setting('booking.calendar_id')));
+        Feature::define('ki', fn (Tenant $t) => Anthropic::configured($t));
+        Feature::define('aufzeichnungen', fn (Tenant $t) => filled($t->setting('vimeo.token')));
+        Feature::define('zoom', fn (Tenant $t) => filled($t->setting('zoom.client_secret')));
+        Feature::define('community', fn (Tenant $t) => (bool) $t->setting('community.enabled'));
 
         // Wer darf was: je Modell eine Policy, die Regeln liegen in ProgramAccess, Begleitung, Chat
         Gate::policy(Program::class, ProgramPolicy::class);

@@ -3,11 +3,13 @@
 namespace App\Models;
 
 use App\Content\Concerns\HasTopics;
+use App\Support\Suche;
 use App\Tenancy\Concerns\BelongsToTenant;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Support\Str;
+use Laravel\Scout\Searchable;
 
 /**
  * Impuls oder Neuigkeit (Beitrag). Kommt aus WordPress (Import oder Feed)
@@ -15,7 +17,7 @@ use Illuminate\Support\Str;
  */
 class Post extends Model
 {
-    use BelongsToTenant, HasTopics;
+    use BelongsToTenant, HasTopics, Searchable;
 
     public const TYPES = ['impuls' => 'Impuls', 'neuigkeit' => 'Neuigkeit'];
 
@@ -81,5 +83,15 @@ class Post extends Model
     public function excerptText(int $limit = 200): string
     {
         return Str::limit(trim(html_entity_decode(strip_tags((string) ($this->excerpt ?: $this->body)), ENT_QUOTES, 'UTF-8')), $limit);
+    }
+
+    /** Suche (Scout, Datenbank): Felder als reiner Text. */
+    public function toSearchableArray(): array
+    {
+        return [
+            'title' => Suche::text($this->title),
+            'excerpt' => Suche::text($this->excerpt),
+            'body' => Suche::text($this->body),
+        ];
     }
 }

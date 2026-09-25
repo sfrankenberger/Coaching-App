@@ -8,6 +8,7 @@ use Filament\Models\Contracts\FilamentUser;
 use Filament\Panel;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
+use Illuminate\Database\Eloquent\Relations\MorphMany;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Illuminate\Support\Str;
@@ -20,7 +21,13 @@ use Laragear\WebAuthn\WebAuthnAuthentication;
  */
 class User extends Authenticatable implements FilamentUser, WebAuthnAuthenticatable
 {
-    use HasFactory, Notifiable, WebAuthnAuthentication;
+    use HasFactory, \Laravel\Sanctum\HasApiTokens, Notifiable, WebAuthnAuthentication;
+
+    /** Mitteilungen in der App (Glocke), nur im aktuellen Mandanten. */
+    public function notifications(): MorphMany
+    {
+        return $this->morphMany(Mitteilung::class, 'notifiable')->latest();
+    }
 
     protected $fillable = ['name', 'email', 'password', 'phone', 'avatar_path', 'is_platform_admin'];
 

@@ -13,6 +13,10 @@
         "filament/filament": "^5.8",
         "laragear/webauthn": "^5.0",
         "laravel/framework": "^13.17",
+        "laravel/pennant": "^1.26",
+        "laravel/reverb": "^1.12",
+        "laravel/sanctum": "^4.0",
+        "laravel/scout": "^11.8",
         "laravel/socialite": "^5.31",
         "laravel/tinker": "^3.0",
         "livewire/livewire": "^4.4",
@@ -22,6 +26,7 @@
         "symfony/mailgun-mailer": "^8.1"
     },
     "require-dev": {
+        "brianium/paratest": "^7.20",
         "fakerphp/faker": "^1.23",
         "laravel/pail": "^1.2.5",
         "laravel/pao": "^1.0.6",

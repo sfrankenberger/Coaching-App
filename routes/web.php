@@ -19,10 +19,12 @@ use App\Http\Controllers\KursController;
 use App\Http\Controllers\MaterialController;
 use App\Http\Controllers\MedienController;
 use App\Http\Controllers\MerklisteController;
+use App\Http\Controllers\MitteilungenController;
 use App\Http\Controllers\NotizenController;
 use App\Http\Controllers\ProfilController;
 use App\Http\Controllers\PushController;
 use App\Http\Controllers\ReflexionController;
+use App\Http\Controllers\SucheController;
 use App\Http\Controllers\TelegramController;
 use App\Http\Controllers\TermineController;
 use App\Http\Controllers\ThemenController;
@@ -98,6 +100,9 @@ Route::middleware(['auth', 'membership'])->group(function () {
 
     // Termine
     Route::get('/termine', [TermineController::class, 'index'])->name('termine.index');
+    Route::get('/suche', SucheController::class)->name('suche');
+    Route::get('/mitteilungen', [MitteilungenController::class, 'index'])->name('mitteilungen');
+    Route::get('/mitteilungen/{id}', [MitteilungenController::class, 'oeffnen'])->name('mitteilungen.oeffnen');
     Route::get('/buchen', [BuchenController::class, 'index'])->name('buchen.index');
     Route::get('/buchen/{art}', [BuchenController::class, 'zeiten'])->name('buchen.zeiten');
     Route::post('/buchen/{art}', [BuchenController::class, 'store'])->middleware('throttle:10,1')->name('buchen.store');

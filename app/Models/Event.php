@@ -3,12 +3,14 @@
 namespace App\Models;
 
 use App\Content\Concerns\HasTopics;
+use App\Support\Suche;
 use App\Tenancy\Concerns\BelongsToTenant;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\MorphToMany;
+use Laravel\Scout\Searchable;
 
 /**
  * Termin: Gruppencall, 1:1-Sitzung, Q&A, Webinar, oder ein ganztaegiger
@@ -16,7 +18,7 @@ use Illuminate\Database\Eloquent\Relations\MorphToMany;
  */
 class Event extends Model
 {
-    use BelongsToTenant, HasTopics;
+    use BelongsToTenant, HasTopics, Searchable;
 
     public const TYPES = [
         'group_call' => 'Gruppencall',
@@ -118,5 +120,16 @@ class Event extends Model
     public function hasRecording(): bool
     {
         return filled($this->recording_url);
+    }
+
+    /** Suche (Scout, Datenbank): Felder als reiner Text. */
+    public function toSearchableArray(): array
+    {
+        return [
+            'title' => Suche::text($this->title),
+            'description' => Suche::text($this->description),
+            'summary' => Suche::text($this->summary),
+            'transcript' => Suche::text($this->transcript),
+        ];
     }
 }
