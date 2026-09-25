@@ -50,8 +50,8 @@
                                     <form method="post" action="{{ route('reflexion.nachtrag', $r) }}" class="eingabe mt-2">@csrf<textarea name="addendum" class="feld" rows="3" required placeholder="Was dir noch einfällt ..."></textarea><div class="eingabe-knoepfe"><button class="knopf knopf-leise">Nachtrag speichern</button></div></form>
                                 </details>
                             @else
-                                <a href="{{ route('reflexion.index', ['refl' => $r->id]) }}" class="knopf knopf-leise" style="min-height:36px;padding:6px 12px">Weiterschreiben</a>
-                                <form method="post" action="{{ route('reflexion.teilen', $r) }}">@csrf<input type="hidden" name="visibility" value="coach"><button class="knopf knopf-leise" style="min-height:36px;padding:6px 12px">Mit Coachin teilen</button></form>
+                                <a href="{{ route('reflexion.index', ['refl' => $r->id]) }}" class="knopf knopf-leise knopf-klein">Weiterschreiben</a>
+                                <form method="post" action="{{ route('reflexion.teilen', $r) }}">@csrf<input type="hidden" name="visibility" value="coach"><button class="knopf knopf-leise knopf-klein">Mit Coachin teilen</button></form>
                             @endif
                         </div>
                     </div>

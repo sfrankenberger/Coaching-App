@@ -4,7 +4,7 @@
     $gelesen = $meine && isset($gelesenBis) && $gelesenBis && $gelesenBis->gte($m->created_at);
 @endphp
 <div id="nachricht-{{ $m->id }}" class="flex {{ $meine ? 'justify-end' : 'justify-start' }}" data-nachricht="{{ $m->id }}" data-tag="{{ $m->created_at->toDateString() }}">
-    <div @class(['max-w-[85%] rounded-2xl px-3.5 py-2.5', 'bg-primary text-primary-contrast' => $meine, 'bg-card border border-line' => ! $meine])>
+    <div @class(['blase', 'blase-meine' => $meine])>
         @if (! $meine && ! $conv->isDirect())
             <span class="block text-xs font-semibold opacity-80 mb-0.5">{{ $m->user?->vorname() ?? 'Jemand' }}</span>
         @endif
@@ -21,17 +21,17 @@
             @if ($m->attachmentIsImage())
                 <a href="{{ route('nachricht.datei', [$m, 'datei']) }}" target="_blank" rel="noopener"><img src="{{ route('nachricht.datei', [$m, 'datei']) }}" alt="" class="mt-1 max-h-64 rounded-xl" loading="lazy"></a>
             @else
-                <a href="{{ route('nachricht.datei', [$m, 'datei']) }}" target="_blank" rel="noopener" class="mt-1 block text-md underline {{ $meine ? 'text-primary-contrast' : '' }}">📎 {{ $m->attachment_name ?: 'Datei' }}</a>
+                <a href="{{ route('nachricht.datei', [$m, 'datei']) }}" target="_blank" rel="noopener" class="mt-1 inline-flex items-center gap-2 text-md underline"><i class="fa-solid fa-paperclip"></i>{{ $m->attachment_name ?: 'Datei' }}</a>
             @endif
         @endif
         @if ($m->ref)
             @php $ref = $m->ref; $refLabel = ['task' => 'Aufgabe', 'note' => 'Notiz', 'reflection' => 'Reflexion', 'event' => 'Termin', 'resource' => 'Material', 'unit' => 'Einheit'][$m->ref_type] ?? 'Anhang'; @endphp
-            <div class="mt-1 rounded-xl border px-3 py-2 text-md {{ $meine ? 'border-white/40' : 'border-line bg-page' }}">
-                <span class="block text-xs uppercase tracking-wider opacity-80">{{ $refLabel }}</span>
+            <div class="mt-1 rounded-xl border border-line bg-card px-3 py-2 text-md">
+                <span class="eyebrow block">{{ $refLabel }}</span>
                 {{ $ref->title ?? ($ref->week_label ?? \Illuminate\Support\Str::limit($ref->body ?? '', 80)) }}
             </div>
         @endif
-        <div class="mt-1 flex items-center gap-2 text-xs opacity-80">
+        <div class="blase-zeit">
             <span>{{ $m->created_at->format('H:i') }}</span>
             @if ($meine)
                 <span data-haken data-zeit="{{ $m->created_at->toIso8601String() }}" title="{{ $gelesen ? 'Gelesen' : 'Zugestellt' }}">{{ $gelesen ? '✓✓' : '✓' }}</span>

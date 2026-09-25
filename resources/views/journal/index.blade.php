@@ -1,29 +1,30 @@
 <x-layouts.app title="Mein Journal">
-    <h1 class="mb-3">Mein Journal</h1>
+    <h1>Mein Journal</h1>
+    <p class="unterzeile" style="margin:0 0 14px">Dein Platz zum Schreiben. Alles bleibt bei dir, bis du es selbst teilst.</p>
 
-    <a href="{{ route('aufgaben.index') }}" class="karte flex items-center gap-3 no-underline text-ink hover:border-primary">
-        <span class="size-10 shrink-0 rounded-xl bg-page grid place-items-center text-primary"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" class="size-5"><path d="M9 6h11M9 12h11M9 18h11M4 6l1 1 2-2M4 12l1 1 2-2M4 18l1 1 2-2"/></svg></span>
-        <span class="flex-1"><span class="block text-base">Meine Aufgaben</span><span class="hinweis">{{ $offeneAufgaben }} offen</span></span>
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" class="size-5 text-muted"><path d="m9 6 6 6-6 6"/></svg>
+    <a href="{{ route('aufgaben.index') }}" class="zeile">
+        <span class="ic"><i class="fa-solid fa-list-check"></i></span>
+        <span class="tx"><b>Meine Aufgaben</b><span>{{ $offeneAufgaben }} offen</span></span>
+        <i class="fa-solid fa-chevron-right pf"></i>
     </a>
-    <a href="{{ route('notizen.index') }}" class="karte flex items-center gap-3 no-underline text-ink hover:border-primary">
-        <span class="size-10 shrink-0 rounded-xl bg-page grid place-items-center text-primary"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" class="size-5"><path d="M4 20h16M6 16l10-10 2 2L8 18l-3 1z"/></svg></span>
-        <span class="flex-1"><span class="block text-base">Meine Notizen</span><span class="hinweis">{{ $notizen }} {{ $notizen === 1 ? 'Notiz' : 'Notizen' }}</span></span>
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" class="size-5 text-muted"><path d="m9 6 6 6-6 6"/></svg>
+    <a href="{{ route('notizen.index') }}" class="zeile">
+        <span class="ic"><i class="fa-solid fa-note-sticky"></i></span>
+        <span class="tx"><b>Meine Notizen</b><span>{{ $notizen }} {{ $notizen === 1 ? 'Notiz' : 'Notizen' }}</span></span>
+        <i class="fa-solid fa-chevron-right pf"></i>
     </a>
-    <a href="{{ route('reflexion.index') }}" class="karte flex items-center gap-3 no-underline text-ink hover:border-primary">
-        <span class="size-10 shrink-0 rounded-xl bg-page grid place-items-center text-primary"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" class="size-5"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg></span>
-        <span class="flex-1"><span class="block text-base">Wochenreflexion</span><span class="hinweis">{{ $letzteReflexion ? 'Zuletzt '.$letzteReflexion->created_at->translatedFormat('j. F') : 'Noch keine' }}</span></span>
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" class="size-5 text-muted"><path d="m9 6 6 6-6 6"/></svg>
+    <a href="{{ route('reflexion.index') }}" class="zeile">
+        <span class="ic"><i class="fa-solid fa-pen-to-square"></i></span>
+        <span class="tx"><b>Wochenreflexion</b><span>{{ $letzteReflexion ? 'Zuletzt '.$letzteReflexion->created_at->translatedFormat('j. F') : 'Noch keine' }}</span></span>
+        <i class="fa-solid fa-chevron-right pf"></i>
     </a>
 
     @if ($eintraege->isNotEmpty())
-        <h2 class="mt-5 mb-2">Frühere Einträge</h2>
+        <h2 class="abschnitt"><i class="fa-solid fa-book-open"></i>Frühere Einträge<em>{{ $eintraege->count() }}</em></h2>
         @foreach ($eintraege as $e)
             <article class="karte">
-                @if ($e->title)<h3 class="text-base">{{ $e->title }}</h3>@endif
-                @if ($e->body)<p class="text-md whitespace-pre-line">{{ $e->body }}</p>@endif
-                <span class="hinweis block mt-1">{{ $e->created_at->translatedFormat('j. M Y') }}@if ($e->url) · <a href="{{ $e->url }}" target="_blank" rel="noopener">Link</a>@endif</span>
+                @if ($e->title)<span class="t">{{ $e->title }}</span>@endif
+                @if ($e->body)<p class="x whitespace-pre-line" style="margin:4px 0 0">{{ $e->body }}</p>@endif
+                <span class="m" style="margin-top:6px">{{ $e->created_at->translatedFormat('j. M Y') }}@if ($e->url) · <a href="{{ $e->url }}" target="_blank" rel="noopener">Link</a>@endif</span>
             </article>
         @endforeach
     @endif

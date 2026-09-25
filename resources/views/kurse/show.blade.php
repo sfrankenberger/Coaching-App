@@ -1,83 +1,106 @@
 <x-layouts.app :title="$program->title">
-    <p class="mb-2"><a href="{{ route('kurse.index') }}" class="hinweis no-underline">&larr; Meine Kurse</a></p>
+    <div style="--kc: {{ $program->color ?: '#7C8C9A' }}">
+        <p style="margin:0 0 8px"><a href="{{ route('kurse.index') }}" class="hinweis no-underline"><i class="fa-solid fa-chevron-left" style="font-size:11px"></i> Meine Kurse</a></p>
 
-    <x-karte style="--kc: {{ $program->color ?: 'var(--c-primary)' }}">
-        <span class="hinweis uppercase tracking-wider text-xs font-semibold">{{ $program->typeLabel() }}</span>
-        <h1>{{ $program->title }}</h1>
-        @if ($program->subtitle)
-            <p class="text-ink-soft mt-1">{{ $program->subtitle }}</p>
-        @endif
-        @if ($program->description)
-            <div class="prose-app mt-3">{!! $program->description !!}</div>
-        @endif
+        <div class="bildband" @if ($program->cover_url) style="background-image:url('{{ $program->cover_url }}')" @endif>
+            <div>
+                <span class="eyebrow" style="color:rgba(255,255,255,.8)">{{ $program->typeLabel() }}</span>
+                <h1>{{ $program->title }}</h1>
+                @if ($program->subtitle)<p>{{ $program->subtitle }}</p>@endif
+            </div>
+        </div>
 
         @if ($stand['total'])
-            <div class="mt-4 flex flex-wrap items-center gap-3">
-                <div class="flex-1 min-w-[180px]">
-                    <div class="text-md"><b>{{ $stand['done'] }}</b> von {{ $stand['total'] }} erledigt</div>
-                    <span class="mt-1 block h-1.5 rounded-full bg-line overflow-hidden"><span class="block h-full rounded-full" style="width: {{ $stand['percent'] }}%; background: var(--kc)"></span></span>
+            <div class="karte">
+                <div class="flex items-center gap-3">
+                    <span class="x" style="flex:none"><b style="font-family:var(--font-heading);font-size:20px;font-weight:400;color:var(--c-text)">{{ $stand['done'] }}</b> von {{ $stand['total'] }} {{ $program->steps->isEmpty() ? 'erledigt' : 'Schritten erledigt' }}</span>
                 </div>
+                <span class="balken" style="display:block;margin:10px 0 14px"><span style="width: {{ $stand['percent'] }}%"></span></span>
                 @if ($stand['next'])
-                    <a href="{{ route('kurse.einheit', [$program, $stand['next']]) }}" class="knopf">{{ $stand['done'] > 0 ? 'Weiter machen' : 'Loslegen' }}</a>
+                    <a href="{{ route('kurse.einheit', [$program, $stand['next']]) }}" class="knopf">{{ $stand['done'] > 0 ? 'Weitermachen' : 'Los geht es' }} <i class="fa-solid fa-arrow-right"></i></a>
+                @else
+                    <span class="chip chip-gut"><i class="fa-solid fa-check"></i>Alles erledigt</span>
                 @endif
             </div>
         @endif
-    </x-karte>
 
-    @if ($program->isGroup() && ! $program->isWorkbook())
-        <a href="{{ route('kurse.austausch', $program) }}" class="karte flex items-center gap-3 no-underline text-ink hover:border-primary">
-            <span class="size-9 shrink-0 rounded-full bg-page grid place-items-center text-primary"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" class="size-5"><path d="M4 5h16v11H8l-4 4z"/></svg></span>
-            <span class="flex-1"><span class="block text-base">Austausch in der Gruppe</span><span class="hinweis">Fragen an alle, Erfahrungen teilen</span></span>
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" class="size-5 text-muted"><path d="m9 6 6 6-6 6"/></svg>
-        </a>
-    @endif
+        @if ($program->description)
+            <details class="karte">
+                <summary class="t" style="cursor:pointer">Worum es geht</summary>
+                <div class="prose-app" style="margin-top:10px">{!! $program->description !!}</div>
+            </details>
+        @endif
 
-    @if ($freigabeOffen)
-        <x-karte titel="Bevor du anfängst: Wer liest mit?">
-            <p class="text-ink-soft mb-3">Alles, was du hier schreibst, ist zuerst nur für dich. Du kannst deine Antworten mit deiner Coachin teilen, damit sie vor eurem nächsten Gespräch weiss, wo du stehst. Du entscheidest das einmal jetzt und kannst es jederzeit ändern.</p>
-            <form method="post" action="{{ route('kurse.freigabe', $program) }}" class="eingabe-knoepfe" style="justify-content:flex-start">
-                @csrf
-                <button type="submit" name="modus" value="alles" class="knopf">Alles teilen</button>
-                <button type="submit" name="modus" value="einzeln" class="knopf knopf-leise">Ich entscheide je Übung</button>
-            </form>
-        </x-karte>
-    @endif
+        @if ($freigabeOffen)
+            <div class="baustein">
+                <p class="eyebrow" style="margin:0 0 8px">Bevor du anfängst</p>
+                <p class="karte-titel">Wer liest mit?</p>
+                <p class="x" style="margin:0 0 12px">Alles, was du hier schreibst, ist zuerst nur für dich. Du kannst deine Antworten mit deiner Coachin teilen, damit sie vor eurem nächsten Gespräch weiss, wo du stehst. Du entscheidest das einmal jetzt und kannst es jederzeit ändern.</p>
+                <form method="post" action="{{ route('kurse.freigabe', $program) }}" class="flex flex-wrap gap-2">
+                    @csrf
+                    <button type="submit" name="modus" value="alles" class="knopf"><i class="fa-solid fa-lock-open"></i>Alles teilen</button>
+                    <button type="submit" name="modus" value="einzeln" class="knopf knopf-ruhig">Ich entscheide je Übung</button>
+                </form>
+            </div>
+        @endif
 
-    @if ($program->pacing === 'none' || $program->steps->isEmpty())
-        @foreach ($program->units->where('is_published', true) as $unit)
-            @include('kurse._einheit-zeile', ['unit' => $unit, 'erledigt' => $done->contains($unit->id)])
-        @endforeach
-    @else
-        <h2 class="mt-4 mb-2">{{ $program->pacing === 'weekly' ? 'Alle Wochen' : 'Kursinhalt' }}</h2>
-        @foreach ($program->steps as $step)
-            @php
-                $offen = $step->isUnlocked($program) || auth()->user()->canManageCurrentTenant();
-                $units = $step->units->where('is_published', true);
-                $fertig = $units->filter(fn ($u) => $done->contains($u->id))->count();
-                $aktuell = $aktuellerSchritt?->id === $step->id;
-            @endphp
-            <a @if ($offen) href="{{ route('kurse.schritt', [$program, $step]) }}" @endif
-               @class(['karte flex items-center gap-3 no-underline text-ink', 'hover:border-primary' => $offen, 'opacity-60' => ! $offen, 'border-primary' => $aktuell])>
-                <span class="size-9 shrink-0 rounded-full border border-line grid place-items-center font-heading text-md {{ $units->count() && $fertig === $units->count() ? 'bg-success text-primary-contrast border-success' : '' }}">
-                    {{ $step->week_number ?? $loop->iteration }}
-                </span>
-                <span class="min-w-0 flex-1">
-                    <span class="block text-base leading-snug">{{ $step->title }}</span>
-                    <span class="hinweis block">
-                        @if ($program->pacing === 'weekly' && $step->unlocks_at)
-                            {{ $offen ? 'ab ' : 'frei ab ' }}{{ $step->unlocks_at->translatedFormat('j. F') }}
-                            @if ($units->count()) · @endif
-                        @endif
-                        @if ($units->count()) {{ $fertig }} von {{ $units->count() }} erledigt @endif
-                        @if ($aktuell) · <b class="text-primary">Jetzt dran</b> @endif
-                    </span>
-                </span>
-                @if (! $offen)
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" class="size-5 text-muted"><rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg>
-                @else
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" class="size-5 text-muted"><path d="m9 6 6 6-6 6"/></svg>
-                @endif
+        @if ($program->isGroup() && ! $program->isWorkbook())
+            <a href="{{ route('kurse.austausch', $program) }}" class="zeile">
+                <span class="ic"><i class="fa-solid fa-user-group"></i></span>
+                <span class="tx"><b>Austausch in der Gruppe</b><span>Fragen an alle, Erfahrungen teilen</span></span>
+                <i class="fa-solid fa-chevron-right pf"></i>
             </a>
-        @endforeach
-    @endif
+        @endif
+
+        @if ($program->pacing === 'none' || $program->steps->isEmpty())
+            <div class="modul einzeln">
+                @foreach ($program->units->where('is_published', true) as $unit)
+                    @include('kurse._einheit-zeile', ['unit' => $unit, 'erledigt' => $done->contains($unit->id)])
+                @endforeach
+            </div>
+        @elseif ($program->pacing === 'weekly')
+            <h2 class="abschnitt"><i class="fa-solid fa-calendar-week"></i>Alle Wochen</h2>
+            @foreach ($program->steps as $step)
+                @php
+                    $offen = $step->isUnlocked($program) || auth()->user()->canManageCurrentTenant();
+                    $units = $step->units->where('is_published', true);
+                    $fertig = $units->filter(fn ($u) => $done->contains($u->id))->count();
+                    $aktuell = $aktuellerSchritt?->id === $step->id;
+                    $alle = $units->count() && $fertig === $units->count();
+                @endphp
+                <a @if ($offen) href="{{ route('kurse.schritt', [$program, $step]) }}" @endif @class(['karte woche-zeile', 'heute' => $aktuell, 'fertig' => ! $offen])>
+                    <span @class(['woche-nr', 'fertig' => $alle, 'jetzt' => $aktuell && ! $alle])>{{ $step->week_number ?? $loop->iteration }}</span>
+                    <span class="min-w-0 flex-1">
+                        <span class="t">{{ $step->title }}</span>
+                        <span class="m">
+                            @if ($step->unlocks_at){{ $offen ? 'ab ' : 'frei ab ' }}{{ $step->unlocks_at->translatedFormat('j. F') }}@endif
+                            @if ($units->count()) · {{ $fertig }} von {{ $units->count() }} erledigt @endif
+                        </span>
+                    </span>
+                    @if ($aktuell)<span class="chip chip-coach">Jetzt dran</span>@endif
+                    <i class="fa-solid fa-{{ $offen ? 'chevron-right' : 'lock' }}" style="color:var(--c-ghost);font-size:13px"></i>
+                </a>
+            @endforeach
+        @else
+            @foreach ($program->steps as $step)
+                @php
+                    $offen = $step->isUnlocked($program) || auth()->user()->canManageCurrentTenant();
+                    $units = $step->units->where('is_published', true);
+                    $fertig = $units->filter(fn ($u) => $done->contains($u->id))->count();
+                @endphp
+                <section @class(['modul', 'zu' => ! $offen]) id="schritt-{{ $step->id }}">
+                    <a class="modul-kopf" @if ($offen) href="{{ route('kurse.schritt', [$program, $step]) }}" @endif>
+                        <span class="nr">{{ str_pad((string) ($step->week_number ?? $loop->iteration), 2, '0', STR_PAD_LEFT) }}</span>
+                        <span class="name">{{ $step->title }}</span>
+                        <span class="stand">@if ($offen){{ $fertig }}/{{ $units->count() }}@else<i class="fa-solid fa-lock"></i> {{ $step->unlocks_at?->translatedFormat('j. F') }}@endif</span>
+                    </a>
+                    @if ($offen)
+                        @foreach ($units as $unit)
+                            @include('kurse._einheit-zeile', ['unit' => $unit, 'erledigt' => $done->contains($unit->id)])
+                        @endforeach
+                    @endif
+                </section>
+            @endforeach
+        @endif
+    </div>
 </x-layouts.app>

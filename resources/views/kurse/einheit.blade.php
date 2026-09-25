@@ -1,25 +1,31 @@
 <x-layouts.app :title="$unit->title">
     @php $videos = $unit->videoList(); $teile = $unit->answerableExercises(); @endphp
-    <p class="mb-2">
-        <a href="{{ $unit->step ? route('kurse.schritt', [$program, $unit->step]) : route('kurse.show', $program) }}" class="hinweis no-underline">&larr; {{ $unit->step?->title ?? $program->title }}</a>
-    </p>
-
-    <x-karte>
-        <span class="hinweis uppercase tracking-wider text-xs font-semibold">
-            {{ \App\Models\Unit::TYPES[$unit->type] ?? '' }}@if ($nummer) · {{ $nummer }} von {{ $anzahl }}@endif
-            @if ($unit->is_core) · Kern @endif
+    @php $coach = data_get(app(\App\Tenancy\CurrentTenant::class)->get()?->settings, 'coach_name'); $avatar = app(\App\Tenancy\Branding::class)->get('avatar_url'); @endphp
+    <div class="flex items-center gap-3" style="margin:0 0 6px">
+        <a href="{{ $unit->step ? route('kurse.schritt', [$program, $unit->step]) : route('kurse.show', $program) }}" class="knopf knopf-ruhig" style="width:44px;padding:0;flex:none" aria-label="Zurück"><i class="fa-solid fa-chevron-left"></i></a>
+        <span class="min-w-0">
+            <span class="eyebrow block">{{ $unit->step?->title ?? $program->title }}</span>
+            <span class="hinweis block truncate">{{ $program->title }}</span>
         </span>
-        <h1>{{ $unit->title }}</h1>
-        @if ($unit->intro)
-            <p class="text-ink-soft mt-2 whitespace-pre-line">{{ $unit->intro }}</p>
-        @endif
-        <div class="mt-3 flex flex-wrap items-center gap-2">
-            <x-merken art="unit" :id="$unit->id" :an="\App\Models\Bookmark::where('user_id', auth()->id())->where('bookmarkable_type', 'unit')->where('bookmarkable_id', $unit->id)->exists()" :text="true" />
-            @foreach ($unit->topics as $t)
-                <a href="{{ route('themen.show', $t) }}" class="knopf knopf-leise no-underline" style="min-height:32px;padding:4px 12px">{{ $t->name }}</a>
-            @endforeach
+    </div>
+
+    <p class="eyebrow" style="color:var(--c-primary);margin:18px 0 4px">
+        {{ \App\Models\Unit::TYPES[$unit->type] ?? 'Schritt' }}@if ($nummer) {{ $nummer }} von {{ $anzahl }}@endif
+        @if ($unit->is_core) · Kern @endif
+    </p>
+    <h1 style="margin:0 0 10px">{{ $unit->title }}</h1>
+    <div class="flex flex-wrap items-center gap-2" style="margin:0 0 14px">
+        <x-merken art="unit" :id="$unit->id" :an="\App\Models\Bookmark::where('user_id', auth()->id())->where('bookmarkable_type', 'unit')->where('bookmarkable_id', $unit->id)->exists()" :text="true" />
+        @foreach ($unit->topics as $t)
+            <a href="{{ route('themen.show', $t) }}" class="chip no-underline"><i class="fa-solid fa-tag"></i>{{ $t->name }}</a>
+        @endforeach
+    </div>
+    @if ($unit->intro)
+        <div class="karte">
+            <p class="eyebrow flex items-center gap-2" style="margin:0 0 8px">@if ($avatar)<img src="{{ $avatar }}" alt="" style="width:22px;height:22px;border-radius:50%;object-fit:cover">@endif Von {{ $coach ?: 'deiner Coachin' }}</p>
+            <p class="x whitespace-pre-line" style="margin:0;font-size:var(--fs-base);line-height:1.7">{{ $unit->intro }}</p>
         </div>
-    </x-karte>
+    @endif
 
     @if ($videos)
         @php $erstes = \App\Support\Video::embed($videos[0]['url']); @endphp
@@ -56,7 +62,7 @@
     @endif
 
     @if ($unit->links)
-        <x-karte titel="Links">
+        <x-karte titel="Links" icon="link">
             <ul class="space-y-1">
                 @foreach ($unit->links as $l)
                     @if (filled($l['url'] ?? null))
@@ -70,7 +76,7 @@
     @if ($unit->exercises->isNotEmpty())
         <x-karte id="uebung" data-uebung>
             <div class="flex items-center justify-between gap-3 mb-2">
-                <h2>{{ $unit->type === 'exercise_set' ? 'Deine Antworten' : 'Zum Mitmachen' }}</h2>
+                <h2 class="karte-titel" style="margin:0">{{ $unit->type === 'exercise_set' ? 'Deine Antworten' : 'Zum Mitmachen' }}</h2>
                 @if ($uebung['total'])
                     <span class="hinweis"><span data-uebung-voll>{{ $uebung['filled'] }}</span> von {{ $uebung['total'] }}</span>
                 @endif
@@ -79,7 +85,7 @@
                 @php $a = $answers->get($ex->id); $v = $a?->value['v'] ?? null; @endphp
                 @switch($ex->type)
                     @case('heading')
-                        <h3 class="mt-4 mb-1 border-b border-line pb-1">{{ $ex->title ?: $ex->prompt }}</h3>
+                        <h3 class="mt-4 mb-2" style="font-size:var(--fs-lg)">{{ $ex->title ?: $ex->prompt }}</h3>
                         @break
                     @case('hint')
                         <p class="font-heading italic text-ink-soft mb-3">{{ $ex->prompt }}</p>
@@ -131,7 +137,7 @@
                     <form method="post" action="{{ route('kurse.teilen', [$program, $unit]) }}" data-teilen>
                         @csrf
                         <input type="hidden" name="an" value="{{ $geteilt ? 0 : 1 }}">
-                        <button type="submit" @class(['knopf', 'knopf-leise' => ! $geteilt])>{{ $geteilt ? 'Mit deiner Coachin geteilt' : 'Mit deiner Coachin teilen' }}</button>
+                        <button type="submit" @class(['knopf', 'knopf-ruhig' => ! $geteilt])><i class="fa-solid fa-{{ $geteilt ? 'lock-open' : 'lock' }}"></i>{{ $geteilt ? 'Mit deiner Coachin geteilt' : 'Mit deiner Coachin teilen' }}</button>
                     </form>
                     <span class="hinweis">{{ $shareMode === 'alles' ? 'Du teilst grundsätzlich alles. Hier kannst du eine Ausnahme machen.' : 'Nur was du teilst, sieht deine Coachin.' }}</span>
                 </div>
@@ -139,14 +145,14 @@
         </x-karte>
     @endif
 
-    <x-karte titel="Deine Notiz dazu">
+    <x-karte titel="Deine Notiz dazu" icon="note-sticky">
         <form method="post" action="{{ route('kurse.notiz', [$program, $unit]) }}" class="eingabe" data-notiz>
             @csrf
             <div class="relative">
                 <textarea name="body" class="feld" rows="3" placeholder="Was du dir dazu merken willst ...">{{ $notiz?->body }}</textarea>
                 <span class="absolute right-3 bottom-2 text-xs text-muted" data-status></span>
             </div>
-            <div class="eingabe-knoepfe"><button type="submit" class="knopf knopf-leise">Notiz speichern</button></div>
+            <div class="eingabe-knoepfe"><button type="submit" class="knopf knopf-ruhig">Notiz speichern</button></div>
         </form>
     </x-karte>
 
@@ -154,10 +160,10 @@
         <form method="post" action="{{ route('kurse.erledigt', [$program, $unit]) }}" data-erledigt>
             @csrf
             <input type="hidden" name="an" value="{{ $erledigt ? 0 : 1 }}">
-            <button type="submit" @class(['knopf', 'knopf-leise' => ! $erledigt])>{{ $erledigt ? '✓ Erledigt' : 'Als erledigt markieren' }}</button>
+            <button type="submit" @class(['knopf', 'knopf-ruhig' => ! $erledigt])><i class="fa-solid fa-{{ $erledigt ? 'circle-check' : 'check' }}"></i>{{ $erledigt ? 'Erledigt' : 'Als erledigt markieren' }}</button>
         </form>
         @if ($nachher)
-            <a href="{{ route('kurse.einheit', [$program, $nachher]) }}" class="knopf">Weiter &rarr;</a>
+            <a href="{{ route('kurse.einheit', [$program, $nachher]) }}" class="knopf">Weiter <i class="fa-solid fa-arrow-right"></i></a>
         @else
             <a href="{{ route('kurse.show', $program) }}" class="knopf">Zurück zur Übersicht</a>
         @endif

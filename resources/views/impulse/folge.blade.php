@@ -7,7 +7,7 @@
                 <img src="{{ $folge->image_url }}" alt="" class="size-20 rounded-lg object-cover shrink-0 bg-page">
             @endif
             <div class="min-w-0">
-                <span class="hinweis uppercase tracking-wider text-xs font-semibold">{{ $folge->show }}@if ($folge->episode_number) · Folge {{ $folge->episode_number }}@endif</span>
+                <span class="eyebrow">{{ $folge->show }}@if ($folge->episode_number) · Folge {{ $folge->episode_number }}@endif</span>
                 <h1 class="mt-1">{{ $folge->title }}</h1>
                 <p class="hinweis mt-1">@if ($folge->published_at){{ $folge->published_at->translatedFormat('j. F Y') }}@endif @if ($folge->durationLabel()) · {{ $folge->durationLabel() }}@endif</p>
             </div>
@@ -21,7 +21,7 @@
         <div class="mt-4 flex flex-wrap items-center gap-2">
             <x-merken art="episode" :id="$folge->id" :an="$gemerkt->has('episode-'.$folge->id)" :text="true" />
             @if ($folge->url)
-                <a href="{{ $folge->url }}" target="_blank" rel="noopener" class="knopf knopf-leise" style="min-height:36px;padding:6px 12px">Zur Folge im Web</a>
+                <a href="{{ $folge->url }}" target="_blank" rel="noopener" class="knopf knopf-leise knopf-klein">Zur Folge im Web</a>
             @endif
         </div>
     </x-karte>

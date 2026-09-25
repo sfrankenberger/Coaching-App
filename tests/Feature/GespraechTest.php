@@ -122,7 +122,7 @@ class GespraechTest extends TestCase
         $r = $this->actingAs($this->anna)->get('http://a.test/kurse/kurs/austausch');
         $conv = $this->in(fn () => Conversation::where('type', 'group')->where('program_id', $program->id)->first());
         $r->assertRedirect("http://a.test/gespraech/{$conv->id}");
-        $this->actingAs($this->anna)->get("http://a.test/gespraech/{$conv->id}")->assertOk()->assertSee('Austausch: Kurs A');
+        $this->actingAs($this->anna)->get("http://a.test/gespraech/{$conv->id}")->assertOk()->assertSee('Austausch in der Gruppe')->assertSee('Kurs A');
         $this->actingAs($this->bea)->get('http://a.test/kurse/kurs/austausch')->assertForbidden();
         $this->actingAs($this->bea)->get("http://a.test/gespraech/{$conv->id}")->assertForbidden();
 

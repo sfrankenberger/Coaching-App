@@ -2,6 +2,7 @@
 
 namespace App\Notifications;
 
+use App\Content\Inhalte;
 use App\Models\Conversation;
 use App\Models\Event;
 use App\Models\Membership;
@@ -198,31 +199,52 @@ class Runden
         return $n;
     }
 
-    /** Was seit einem Zeitpunkt fuer eine Person neu ist (Nachrichten, Aufzeichnungen, Material, Aufgaben, Termine). */
-    public function neuesFuer(User $user, \DateTimeInterface $seit): Collection
+    /**
+     * Was seit einem Zeitpunkt fuer eine Person neu ist: Nachrichten, Beitraege, Podcast,
+     * Aufzeichnungen, Termine, Material, Aufgaben. Je Eintrag Titel, Herkunft, Icon, Link
+     * und Zeit, neueste zuerst.
+     */
+    public function neuesFuer(User $user, \DateTimeInterface $seit, int $limit = 30): Collection
     {
         $out = collect();
         $begleitung = app(Begleitung::class);
+        $inhalte = app(Inhalte::class);
 
-        $ungelesen = Conversation::query()->whereHas('participants', fn ($p) => $p->where('user_id', $user->id))->get()
-            ->sum(fn (Conversation $c) => $c->messages()->where('user_id', '!=', $user->id)->where('created_at', '>', $seit)->count());
-        if ($ungelesen) {
-            $out->push(['titel' => $ungelesen === 1 ? 'Eine neue Nachricht' : "{$ungelesen} neue Nachrichten", 'text' => 'im Gespräch']);
+        foreach (Conversation::query()->whereHas('participants', fn ($p) => $p->where('user_id', $user->id))->get() as $c) {
+            $neu = $c->messages()->where('user_id', '!=', $user->id)->where('created_at', '>', $seit)->with('user:id,name')->latest()->get();
+            if ($neu->isEmpty()) {
+                continue;
+            }
+            $von = $neu->first()->user?->vorname() ?? 'Jemand';
+            $out->push([
+                'titel' => $c->type === 'direct' ? $von.' hat dir geschrieben' : 'Neu im Austausch: '.($c->title ?: 'Gruppe'),
+                'text' => $neu->count() > 1 ? $neu->count().' Nachrichten' : $neu->first()->excerpt(10),
+                'herkunft' => $c->type === 'direct' ? 'Persönlich' : 'Austausch',
+                'icon' => 'comments',
+                'url' => route('gespraech.show', $c),
+                'zeit' => $neu->first()->created_at,
+            ]);
         }
 
+        foreach ($inhalte->postsQuery($user)->published()->where('published_at', '>', $seit)->latest('published_at')->limit(10)->get() as $p) {
+            $out->push(['titel' => $p->title, 'text' => $p->excerptText(80), 'herkunft' => $p->typeLabel(), 'icon' => $p->type === 'neuigkeit' ? 'bullhorn' : 'lightbulb', 'url' => route('impulse.show', $p), 'zeit' => $p->published_at]);
+        }
+        foreach ($inhalte->episodesQuery($user)->where('published_at', '>', $seit)->latest('published_at')->limit(5)->get() as $f) {
+            $out->push(['titel' => $f->title, 'text' => $f->durationLabel() ?? '', 'herkunft' => 'Podcast', 'icon' => 'microphone', 'url' => route('impulse.folge', $f), 'zeit' => $f->published_at]);
+        }
         foreach ($begleitung->eventsQuery($user)->whereNotNull('recording_url')->where('updated_at', '>', $seit)->get() as $e) {
-            $out->push(['titel' => 'Aufzeichnung: '.$e->title, 'text' => $e->starts_at->translatedFormat('j. F')]);
+            $out->push(['titel' => 'Aufzeichnung: '.$e->title, 'text' => $e->starts_at->translatedFormat('j. F'), 'herkunft' => 'Aufzeichnung', 'icon' => 'circle-play', 'url' => route('termine.show', $e), 'zeit' => $e->updated_at]);
         }
         foreach ($begleitung->eventsQuery($user)->where('created_at', '>', $seit)->where('starts_at', '>', now())->get() as $e) {
-            $out->push(['titel' => 'Neuer Termin: '.$e->title, 'text' => $e->starts_at->translatedFormat('D, j. F, H:i').' Uhr']);
+            $out->push(['titel' => 'Neuer Termin: '.$e->title, 'text' => $e->starts_at->translatedFormat('D, j. F, H:i').' Uhr', 'herkunft' => 'Termin', 'icon' => 'calendar', 'url' => route('termine.show', $e), 'zeit' => $e->created_at]);
         }
         foreach ($begleitung->resourcesQuery($user)->where('resources.created_at', '>', $seit)->get() as $r) {
-            $out->push(['titel' => 'Neues Material: '.$r->title, 'text' => $r->typeLabel()]);
+            $out->push(['titel' => $r->title, 'text' => $r->typeLabel(), 'herkunft' => 'Material', 'icon' => 'folder-open', 'url' => route('material.index'), 'zeit' => $r->created_at]);
         }
         foreach (Task::where('user_id', $user->id)->whereNotNull('assigned_by')->where('created_at', '>', $seit)->open()->get() as $t) {
-            $out->push(['titel' => 'Aufgabe: '.$t->title, 'text' => $t->due_at ? 'bis '.$t->due_at->translatedFormat('j. F') : '']);
+            $out->push(['titel' => $t->title, 'text' => $t->due_at ? 'bis '.$t->due_at->translatedFormat('j. F') : '', 'herkunft' => 'Aufgabe', 'icon' => 'list-check', 'url' => route('aufgaben.index'), 'zeit' => $t->created_at]);
         }
 
-        return $out->take(8);
+        return $out->sortByDesc(fn ($e) => $e['zeit']?->getTimestamp() ?? 0)->values()->take($limit);
     }
 }

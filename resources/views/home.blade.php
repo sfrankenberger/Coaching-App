@@ -1,103 +1,140 @@
-<x-layouts.app title="Start">
-    <h1 class="mb-1">Hallo {{ $person->vorname() }}</h1>
-    <p class="text-ink-soft mb-3">{{ now()->translatedFormat('l, j. F') }}{{ $offen ? ' · '.$offen.' offene '.($offen === 1 ? 'Aufgabe' : 'Aufgaben') : '' }}{{ $ungelesen ? ' · '.$ungelesen.' ungelesen' : '' }}</p>
+<x-layouts.app title="Start" :schmal="true">
+    <h1 style="margin:6px 0 2px">Hallo {{ $person->vorname() }}</h1>
+    <p class="unterzeile" style="margin:0 0 6px">{{ now()->translatedFormat('l, j. F') }}</p>
 
+    {{-- Was ist neu: drei Zeilen, der Rest aufklappbar --}}
     @if ($neues->isNotEmpty())
-        <x-karte titel="Neu für dich">
-            <ul class="divide-y divide-line">
-                @foreach ($neues as $n)
-                    <li class="py-2">
-                        <span class="block text-base leading-snug">{{ $n['titel'] }}</span>
-                        @if ($n['text'])<span class="hinweis">{{ $n['text'] }}</span>@endif
-                    </li>
-                @endforeach
-            </ul>
-        </x-karte>
+        <h2 class="abschnitt"><i class="fa-solid fa-bell"></i>Was ist neu<em>{{ $neues->count() }}</em>
+            <span class="rechts">
+                <form method="post" action="{{ route('neu.gesehen') }}">@csrf<button type="submit" class="underline text-muted" style="background:none;border:0;cursor:pointer;font:inherit">Alles gesehen</button></form>
+            </span>
+        </h2>
+        <div class="neu-liste">
+            @foreach ($neues as $i => $n)
+                @if ($i === 3)
+                    <details class="neu-mehr"><summary class="knopf knopf-anstoss knopf-breit" style="margin:4px 0 0">Weitere {{ $neues->count() - 3 }} anzeigen</summary><div class="neu-liste" style="margin-top:5px">
+                @endif
+                <a href="{{ $n['url'] }}" class="zeile neu">
+                    <span class="ic"><i class="fa-solid fa-{{ $n['icon'] }}"></i></span>
+                    <span class="tx">
+                        <span class="herkunft">{{ $n['herkunft'] }}</span>
+                        <b>{{ $n['titel'] }}</b>
+                        <span>{{ $n['zeit']?->translatedFormat('j. F') }}@if ($n['text']) · {{ $n['text'] }}@endif</span>
+                    </span>
+                    <i class="fa-solid fa-chevron-right pf"></i>
+                </a>
+                @if ($loop->last && $i >= 3)
+                    </div></details>
+                @endif
+            @endforeach
+        </div>
     @endif
 
+    {{-- Naechster Termin --}}
+    @if ($termin)
+        @php
+            $tage = (int) now()->startOfDay()->diffInDays($termin->starts_at->copy()->startOfDay());
+            $wann = $termin->isLive() ? 'Jetzt' : match (true) {
+                $tage === 0 => 'Heute',
+                $tage === 1 => 'Morgen',
+                $tage < 7 => 'In '.$tage.' Tagen',
+                default => $termin->starts_at->translatedFormat('j. F'),
+            };
+        @endphp
+        <h2 class="abschnitt"><i class="fa-solid fa-calendar"></i>Nächster Termin</h2>
+        <div @class(['termin-hero', 'jetzt' => $termin->isLive()])>
+            <span class="wann">{{ $wann }}@if (! $termin->all_day) · {{ $termin->starts_at->format('H:i') }} Uhr @endif</span>
+            <a href="{{ route('termine.show', $termin) }}" class="t" style="color:inherit;text-decoration:none">{{ $termin->title }}</a>
+            <span class="m">{{ $termin->starts_at->translatedFormat('l, j. F') }}{{ $termin->program ? ' · '.$termin->program->title : '' }}</span>
+            <div class="knoepfe">
+                @if ($termin->isLive() && $termin->zoom_url)
+                    <a href="{{ $termin->zoom_url }}" target="_blank" rel="noopener" class="knopf"><i class="fa-solid fa-video"></i>Jetzt beitreten</a>
+                @elseif ($termin->type === 'reflection_day')
+                    <a href="{{ route('reflexion.index') }}" class="knopf knopf-ruhig"><i class="fa-solid fa-pen-to-square"></i>Reflexion schreiben</a>
+                @elseif ($termin->type === 'question_day')
+                    <a href="{{ route('gespraech.index') }}" class="knopf knopf-ruhig"><i class="fa-solid fa-circle-question"></i>Frage stellen</a>
+                @else
+                    <a href="{{ route('termine.show', $termin) }}" class="knopf knopf-ruhig">Zum Termin</a>
+                @endif
+            </div>
+        </div>
+    @endif
+
+    {{-- Diese Woche / weiter im Kurs, in der Kursfarbe --}}
     @foreach ($weiter as $w)
         @php $p = $w['program']; $stand = $w['stand']; $step = $w['step']; @endphp
-        <x-karte style="--kc: {{ $p->color ?: 'var(--c-primary)' }}">
-            <span class="hinweis uppercase tracking-wider text-xs font-semibold">{{ $step ? 'Diese Woche' : 'Weiter im Kurs' }} · {{ $p->title }}</span>
-            <h2 class="mt-1">{{ $step ? $step->title : ($stand['next']?->title ?? $p->title) }}</h2>
-            @if ($step && $step->summary)
-                <div class="prose-app mt-1">{!! \Illuminate\Support\Str::limit(strip_tags($step->summary), 200) !!}</div>
-            @endif
-            <div class="mt-3 flex items-center gap-3">
-                <span class="h-1.5 flex-1 rounded-full bg-line overflow-hidden"><span class="block h-full rounded-full" style="width: {{ $stand['percent'] }}%; background: var(--kc)"></span></span>
-                <span class="hinweis whitespace-nowrap">{{ $stand['done'] }} von {{ $stand['total'] }}</span>
-            </div>
-            <div class="mt-3 flex flex-wrap gap-2">
-                @if ($step)
-                    <a href="{{ route('kurse.schritt', [$p, $step]) }}" class="knopf">Zur Woche</a>
-                @endif
-                @if ($stand['next'])
-                    <a href="{{ route('kurse.einheit', [$p, $stand['next']]) }}" class="knopf {{ $step ? 'knopf-leise' : '' }}">{{ $stand['done'] ? 'Weiter: ' : 'Anfangen: ' }}{{ \Illuminate\Support\Str::limit($stand['next']->title, 40) }}</a>
-                @endif
-            </div>
-        </x-karte>
+        <h2 class="abschnitt"><i class="fa-solid fa-graduation-cap"></i>{{ $step ? 'Diese Woche' : 'Mein Kurs' }}</h2>
+        <a href="{{ $step ? route('kurse.schritt', [$p, $step]) : ($stand['next'] ? route('kurse.einheit', [$p, $stand['next']]) : route('kurse.show', $p)) }}" class="woche" style="--kc: {{ $p->color ?: '#7C8C9A' }}">
+            <span class="bild">
+                @if ($p->cover_url)<img src="{{ $p->cover_url }}" alt="">@else<i class="fa-solid fa-{{ $p->icon ?: 'seedling' }}"></i>@endif
+            </span>
+            <span class="lab">{{ $p->title }}</span>
+            <span class="t">{{ $step ? $step->title : ($stand['next']?->title ?? $p->title) }}</span>
+            @if ($step && $w['woche'])<span class="k">Woche {{ $w['woche'] }} von {{ $w['wochen'] }}</span>@endif
+            <span class="reihe">
+                <span class="balken"><span style="width: {{ $stand['percent'] }}%"></span></span>
+                <span class="z">{{ $stand['done'] }} von {{ $stand['total'] }} erledigt</span>
+            </span>
+            @if ($step && $stand['next'])<span class="als">Als Nächstes: {{ $stand['next']->title }}</span>@endif
+            <span class="cta">{{ $step ? 'Zur Woche' : ($stand['done'] ? 'Weitermachen' : 'Los geht es') }} &rarr;</span>
+        </a>
     @endforeach
 
-    @if ($termin)
-        <x-karte>
-            <span class="hinweis uppercase tracking-wider text-xs font-semibold">Nächster Termin</span>
-            <h2 class="mt-1"><a href="{{ route('termine.show', $termin) }}" class="no-underline text-ink">{{ $termin->title }}</a></h2>
-            <p class="text-ink-soft mt-1">{{ $termin->starts_at->translatedFormat('l, j. F') }}@if (! $termin->all_day), {{ $termin->starts_at->format('H:i') }} Uhr @endif{{ $termin->program ? ' · '.$termin->program->title : '' }}</p>
-            <div class="mt-3 flex flex-wrap gap-2">
-                @if ($termin->isLive() && $termin->zoom_url)
-                    <a href="{{ $termin->zoom_url }}" target="_blank" rel="noopener" class="knopf">Jetzt beitreten</a>
-                @endif
-                <a href="{{ route('termine.show', $termin) }}" class="knopf knopf-leise">Zum Termin</a>
-            </div>
-        </x-karte>
-    @endif
-
+    {{-- Offene Aufgaben --}}
     @if ($aufgaben->isNotEmpty())
-        <x-karte titel="Deine Aufgaben">
-            <ul class="divide-y divide-line">
-                @foreach ($aufgaben as $t)
-                    <li class="flex items-center gap-3 py-2">
-                        <form method="post" action="{{ route('aufgaben.haken', $t) }}" data-haken>
-                            @csrf
-                            <button type="submit" class="size-7 rounded-lg border border-line bg-page grid place-items-center" aria-label="Erledigt"></button>
-                        </form>
-                        <span class="min-w-0 flex-1">
-                            <span class="block text-base leading-snug">{{ $t->title }}</span>
-                            @if ($t->due_at)<span class="hinweis {{ $t->isOverdue() ? 'text-danger font-semibold' : '' }}">bis {{ $t->due_at->translatedFormat('j. F') }}</span>@endif
-                        </span>
-                    </li>
-                @endforeach
-            </ul>
-            <p class="mt-2"><a href="{{ route('aufgaben.index') }}" class="hinweis">Alle Aufgaben</a></p>
-        </x-karte>
-    @endif
-
-    @if ($impuls)
-        <article class="karte flex items-center gap-3">
-            @if ($impuls->image_url)
-                <a href="{{ route('impulse.show', $impuls) }}" class="shrink-0"><img src="{{ $impuls->image_url }}" alt="" class="size-16 rounded-lg object-cover bg-page" loading="lazy"></a>
-            @endif
-            <div class="min-w-0 flex-1">
-                <span class="hinweis uppercase tracking-wider text-xs font-semibold">{{ $impuls->typeLabel() }}</span>
-                <a href="{{ route('impulse.show', $impuls) }}" class="block text-base leading-snug no-underline text-ink">{{ $impuls->title }}</a>
-                <p class="text-md text-ink-soft mt-1">{{ $impuls->excerptText(120) }}</p>
+        <h2 class="abschnitt"><i class="fa-solid fa-list-check"></i>Offene Aufgaben<em>{{ $offen }}</em>
+            @if ($offen > $aufgaben->count())<span class="rechts"><a href="{{ route('aufgaben.index') }}">Alle {{ $offen }} ansehen</a></span>@endif
+        </h2>
+        @foreach ($aufgaben as $t)
+            <div @class(['karte flex items-center gap-3', 'offen' => $t->isOverdue()])>
+                <form method="post" action="{{ route('aufgaben.haken', $t) }}" data-haken>
+                    @csrf
+                    <button type="submit" class="haken" aria-label="Erledigt"><i class="fa-solid fa-check"></i></button>
+                </form>
+                <a href="{{ route('aufgaben.index') }}" class="min-w-0 flex-1 no-underline">
+                    <span class="t">{{ $t->title }}</span>
+                    @if ($t->due_at)<span @class(['m', 'text-danger font-semibold' => $t->isOverdue()])>bis {{ $t->due_at->translatedFormat('j. F') }}</span>@endif
+                </a>
             </div>
-        </article>
+        @endforeach
     @endif
 
-    <div class="grid grid-cols-2 gap-2 my-2">
-        @foreach ([['kurse.index', 'Kurse', 'Wochen, Übungen, Fortschritt'], ['termine.index', 'Termine', 'Calls und Aufzeichnungen'], ['material.index', 'Material', 'PDFs, Audios, Links'], ['journal.index', 'Journal', 'Aufgaben, Notizen, Reflexion'], ['impulse.index', 'Impulse', 'Beiträge und Podcast'], ['themen.index', 'Themen', 'Finde, was dich gerade beschäftigt'], ['merkliste', 'Merkliste', 'Was du dir gemerkt hast'], ['gespraech.index', 'Gespräch', $ungelesen ? $ungelesen.' ungelesen' : 'Der direkte Draht']] as [$r, $t, $x])
-            <a href="{{ route($r) }}" class="karte !mt-0 no-underline text-ink hover:border-primary">
-                <span class="block text-base font-semibold">{{ $t }}</span>
-                <span class="hinweis">{{ $x }}</span>
-            </a>
+    {{-- Neuester Impuls --}}
+    @if ($impuls && $neues->where('herkunft', $impuls->typeLabel())->isEmpty())
+        <h2 class="abschnitt"><i class="fa-solid fa-lightbulb"></i>Impuls</h2>
+        <a href="{{ route('impulse.show', $impuls) }}" class="zeile">
+            <span class="ic" style="border-radius:12px;flex-basis:56px;width:56px;height:56px">
+                @if ($impuls->image_url)<img src="{{ $impuls->image_url }}" alt="" loading="lazy">@else<i class="fa-solid fa-lightbulb"></i>@endif
+            </span>
+            <span class="tx"><b>{{ $impuls->title }}</b><span>{{ $impuls->excerptText(90) }}</span></span>
+            <i class="fa-solid fa-chevron-right pf"></i>
+        </a>
+    @endif
+
+    @if ($neues->isEmpty() && ! $termin && $weiter->isEmpty() && $aufgaben->isEmpty())
+        <div class="leer"><i class="fa-solid fa-leaf"></i>Gerade ist nichts offen. Schön, dass du da bist.</div>
+    @endif
+
+    {{-- Kacheln --}}
+    <h2 class="abschnitt"><i class="fa-solid fa-compass"></i>Dein Bereich</h2>
+    <div class="kacheln kacheln-2">
+        @foreach ([
+            ['kurse.index', 'graduation-cap', 'Kurse', 'Wochen, Übungen, Fortschritt'],
+            ['termine.index', 'calendar', 'Termine', 'Calls und Aufzeichnungen'],
+            ['material.index', 'folder-open', 'Material', 'PDFs, Audios, Links'],
+            ['journal.index', 'book-open', 'Mein Journal', 'Aufgaben, Notizen, Reflexion'],
+            ['impulse.index', 'lightbulb', 'Impulse', 'Beiträge und Podcast'],
+            ['themen.index', 'magnifying-glass', 'Nachschlagen', 'Finde, was dich beschäftigt'],
+        ] as [$r, $ic, $t, $x])
+            <a href="{{ route($r) }}" class="kachel"><i class="fa-solid fa-{{ $ic }}"></i><span class="tx"><b>{{ $t }}</b><small>{{ $x }}</small></span></a>
         @endforeach
     </div>
 
     @if ($person->canManageCurrentTenant())
-        <x-karte titel="Für dich als Coach">
-            <p class="text-ink-soft mb-3">{{ $personen }} aktive Personen. Kurse, Termine, Material und Impulse pflegst du im Coach-Bereich.</p>
+        <h2 class="abschnitt"><i class="fa-solid fa-user-group"></i>Für dich als Coach</h2>
+        <div class="karte">
+            <p class="x" style="margin:0 0 12px">{{ $personen }} aktive Personen. Kurse, Termine, Material und Impulse pflegst du im Coach-Bereich.</p>
             <a href="/coach" class="knopf">Zum Coach-Bereich</a>
-        </x-karte>
+        </div>
     @endif
 </x-layouts.app>

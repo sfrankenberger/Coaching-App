@@ -58,12 +58,14 @@ Route::post('/abmelden', [LoginController::class, 'logout'])->name('abmelden');
 // Angemeldet, mit Mitgliedschaft im Mandanten
 Route::middleware(['auth', 'membership'])->group(function () {
     Route::get('/', HomeController::class)->name('home');
+    Route::post('/neu/gesehen', [HomeController::class, 'gesehen'])->name('neu.gesehen');
     Route::get('/willkommen', [WillkommenController::class, 'index'])->name('willkommen');
     Route::post('/willkommen', [WillkommenController::class, 'fertig'])->name('willkommen.fertig');
     Route::get('/profil', [ProfilController::class, 'show'])->name('profil');
     Route::post('/profil', [ProfilController::class, 'save'])->name('profil.speichern');
     Route::post('/profil/benachrichtigungen', [ProfilController::class, 'notifications'])->name('profil.benachrichtigungen');
     Route::post('/profil/passwort', [ProfilController::class, 'password'])->name('profil.passwort');
+    Route::post('/profil/hilfe', [ProfilController::class, 'hilfe'])->middleware('throttle:5,10')->name('profil.hilfe');
     Route::post('/passkeys/anlegen/optionen', [PasskeyController::class, 'registerOptions'])->name('passkeys.anlegen.optionen');
     Route::post('/passkeys/anlegen', [PasskeyController::class, 'register'])->name('passkeys.anlegen');
     Route::delete('/passkeys/{id}', [PasskeyController::class, 'destroy'])->name('passkeys.loeschen');

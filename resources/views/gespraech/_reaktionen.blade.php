@@ -6,7 +6,7 @@
         <form method="post" action="{{ route('nachricht.reaktion', $m) }}" class="inline" data-reaktion>
             @csrf
             <input type="hidden" name="emoji" value="{{ $key }}">
-            <button type="{{ $eigene ? 'button' : 'submit' }}" @class(['rounded-full border px-1.5 py-0.5 text-xs leading-none', 'border-primary bg-primary/10' => $mein, 'border-transparent' => ! $mein && $n, 'border-transparent opacity-40 hover:opacity-100' => ! $n]) title="{{ $titel }}" @disabled($eigene)>{{ $emoji }}@if ($n) <span class="ml-0.5">{{ $n }}</span>@endif</button>
+            <button type="{{ $eigene ? 'button' : 'submit' }}" @class(['rounded-full border px-1.5 py-0.5 text-xs leading-none', 'border-primary bg-primary-tint' => $mein, 'border-transparent' => ! $mein && $n, 'border-transparent opacity-40 hover:opacity-100' => ! $n]) title="{{ $titel }}" @disabled($eigene)>{{ $emoji }}@if ($n) <span class="ml-0.5">{{ $n }}</span>@endif</button>
         </form>
     @endforeach
 </div>

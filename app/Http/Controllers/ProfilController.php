@@ -4,10 +4,12 @@ namespace App\Http\Controllers;
 
 use App\Models\PushSubscription;
 use App\Models\TelegramLink;
+use App\Programs\ProgramAccess;
 use App\Support\Ics;
 use App\Tenancy\CurrentTenant;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Mail;
 use Illuminate\View\View;
 
 class ProfilController extends Controller
@@ -64,5 +66,39 @@ class ProfilController extends Controller
         $request->user()->forceFill(['password' => $data['password']])->save();
 
         return back()->with('meldung', 'Passwort gesetzt. Der Link per Mail geht weiterhin.');
+    }
+
+    /** Technik-Hilfe: Meldung mit Seite, Geraet und Browser an die Support-Adresse des Mandanten. */
+    public function hilfe(Request $request): RedirectResponse
+    {
+        $data = $request->validate([
+            'wo' => ['nullable', 'string', 'max:200'],
+            'was' => ['required', 'string', 'max:3000'],
+            'seite' => ['nullable', 'string', 'max:500'],
+            'geraet' => ['nullable', 'string', 'max:300'],
+        ]);
+        $tenant = app(CurrentTenant::class)->get();
+        $an = $tenant?->setting('support.email') ?: $tenant?->setting('mail.reply_to') ?: $tenant?->setting('mail.from_address');
+        if (! $an) {
+            return back()->with('fehler', 'Gerade kann keine Meldung verschickt werden. Schreib bitte ins Gespräch.');
+        }
+        $user = $request->user();
+        $programme = app(ProgramAccess::class)->programsFor($user)->pluck('title')->join(', ');
+        $text = "Technik-Meldung von {$user->name} <{$user->email}>\n\n"
+            .'Wo: '.($data['wo'] ?: '-')."\n\nWas:\n{$data['was']}\n\n"
+            .'Seite: '.($data['seite'] ?: '-')."\n"
+            .'Gerät: '.($data['geraet'] ?: '-')."\n"
+            .'Browser: '.$request->userAgent()."\n"
+            .'Kurse: '.($programme ?: '-')."\n"
+            .'Mandant: '.($tenant?->name ?? '-');
+
+        Mail::raw($text, function ($m) use ($an, $user, $tenant) {
+            $m->to($an)->replyTo($user->email, $user->name)->subject('Technik: '.$user->name.' ('.($tenant?->name ?? 'App').')');
+            if ($from = $tenant?->setting('mail.from_address')) {
+                $m->from($from, $tenant->setting('mail.from_name', $tenant->name));
+            }
+        });
+
+        return redirect()->route('profil')->with('meldung', 'Danke, deine Meldung ist unterwegs. Du bekommst eine Antwort per Mail.');
     }
 }

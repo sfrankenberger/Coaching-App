@@ -8,6 +8,8 @@ use App\Models\Event;
 use App\Models\EventAttendee;
 use App\Models\Program;
 use App\Programs\Begleitung;
+use App\Support\Ics;
+use App\Tenancy\CurrentTenant;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -15,7 +17,7 @@ use Illuminate\View\View;
 
 class TermineController extends Controller
 {
-    public function __construct(protected Begleitung $begleitung) {}
+    public function __construct(protected Begleitung $begleitung, protected CurrentTenant $current) {}
 
     public function index(Request $request): View
     {
@@ -36,7 +38,13 @@ class TermineController extends Controller
 
         $kurse = Program::whereIn('id', $this->begleitung->eventsQuery($user)->select('program_id'))->orderBy('title')->pluck('title', 'id');
 
-        return view('termine.index', ['events' => $events, 'zeit' => $zeit, 'kurs' => $kurs, 'kurse' => $kurse]);
+        $m = $user->membershipIn();
+
+        return view('termine.index', [
+            'events' => $events, 'zeit' => $zeit, 'kurs' => $kurs, 'kurse' => $kurse,
+            'kalenderUrl' => $m ? route('kalender.abo', ['token' => Ics::tokenFor($m)]) : null,
+            'buchenUrl' => data_get($this->current->get()?->settings, 'links.buchung'),
+        ]);
     }
 
     public function show(Request $request, Event $termin): View

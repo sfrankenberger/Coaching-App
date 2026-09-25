@@ -185,6 +185,7 @@
             .finally(function () { laeuft = false; });
     }
     setInterval(nachfragen, 5000);
+    window.gespraechNachfragen = nachfragen;
     document.addEventListener('visibilitychange', function () { if (!document.hidden) nachfragen(); });
 
     /* Senden */
@@ -306,9 +307,11 @@
             .then(function (j) {
                 var an = !!j.an;
                 b.dataset.an = an ? '1' : '0';
-                b.classList.toggle('text-primary', an); b.classList.toggle('border-primary', an); b.classList.toggle('text-muted', !an && !b.classList.contains('knopf'));
-                var svg = b.querySelector('svg'); if (svg) svg.setAttribute('fill', an ? 'currentColor' : 'none');
+                b.classList.toggle('an', an);
+                if (b.classList.contains('knopf')) { b.classList.toggle('text-primary', an); b.classList.toggle('border-primary', an); }
+                var i = b.querySelector('i'); if (i) { i.classList.toggle('fa-solid', an); i.classList.toggle('fa-regular', !an); }
                 var t = b.querySelector('[data-merken-text]'); if (t) t.textContent = an ? 'Gemerkt' : 'Merken';
+                b.setAttribute('aria-pressed', an ? 'true' : 'false');
             })
             .catch(function () { f.submit(); });
     });
@@ -319,4 +322,172 @@ document.addEventListener('click', function (e) {
     var b = e.target.closest('[data-kopieren]'); if (!b) return;
     var alt = b.textContent;
     (navigator.clipboard ? navigator.clipboard.writeText(b.dataset.kopieren) : Promise.reject()).then(function () { b.textContent = 'Kopiert'; setTimeout(function () { b.textContent = alt; }, 1500); }).catch(function () { window.prompt('Link kopieren:', b.dataset.kopieren); });
+});
+
+/* ---------- Menue von links ---------- */
+(function () {
+    var menue = document.getElementById('menue');
+    if (!menue) return;
+    var schleier = document.querySelector('.schleier-menue');
+    var burger = document.querySelector('[data-menue-auf]');
+    function setzen(auf) {
+        menue.classList.toggle('offen', auf);
+        schleier.classList.toggle('offen', auf);
+        menue.setAttribute('aria-hidden', auf ? 'false' : 'true');
+        if (burger) burger.setAttribute('aria-expanded', auf ? 'true' : 'false');
+        document.body.classList.toggle('gesperrt', auf);
+    }
+    document.addEventListener('click', function (e) {
+        if (e.target.closest('[data-menue-auf]')) { setzen(true); return; }
+        if (e.target.closest('[data-menue-zu]')) { setzen(false); return; }
+        if (e.target.closest('#menue a')) setzen(false);
+    });
+    document.addEventListener('keydown', function (e) { if (e.key === 'Escape') setzen(false); });
+})();
+
+/* ---------- Chatknopf beim Runterscrollen ausblenden ---------- */
+(function () {
+    var k = document.querySelector('.chat-knopf');
+    if (!k) return;
+    var letzte = window.scrollY;
+    window.addEventListener('scroll', function () {
+        var y = window.scrollY;
+        k.classList.toggle('weg', y > letzte && y > 160);
+        letzte = y;
+    }, { passive: true });
+})();
+
+/* ---------- Ziehen zum Aktualisieren (nur mobil) ---------- */
+(function () {
+    var anzeige = document.querySelector('.pull');
+    if (!anzeige || !('ontouchstart' in window)) return;
+    var start = null, weg = 0, SCHWELLE = 72, MAX = 90;
+    function offenesFenster() { return document.body.classList.contains('gesperrt'); }
+    document.addEventListener('touchstart', function (e) {
+        if (window.innerWidth > 760 || window.scrollY > 0 || offenesFenster()) { start = null; return; }
+        if (e.target.closest('textarea, input, select, .video, iframe')) { start = null; return; }
+        start = e.touches[0].clientY; weg = 0;
+    }, { passive: true });
+    document.addEventListener('touchmove', function (e) {
+        if (start === null) return;
+        weg = Math.max(0, (e.touches[0].clientY - start) * 0.55);
+        if (window.scrollY > 0) { weg = 0; }
+        anzeige.style.height = Math.min(MAX, weg) + 'px';
+        anzeige.querySelector('i').style.transform = 'rotate(' + Math.round(weg * 3) + 'deg)';
+    }, { passive: true });
+    document.addEventListener('touchend', function () {
+        if (start === null) return;
+        start = null;
+        if (weg >= SCHWELLE) {
+            anzeige.classList.add('laedt');
+            anzeige.style.height = '48px';
+            var verlauf = document.getElementById('verlauf');
+            if (verlauf && window.gespraechNachfragen) {
+                window.gespraechNachfragen();
+                setTimeout(function () { anzeige.classList.remove('laedt'); anzeige.style.height = '0'; }, 700);
+            } else {
+                location.reload();
+            }
+        } else {
+            anzeige.style.height = '0';
+        }
+    });
+})();
+
+/* ---------- Hinweis-Fenster: App installieren und Push einschalten ---------- */
+(function () {
+    var sheet = document.getElementById('app-sheet');
+    if (!sheet) return;
+    var inhalt = sheet.querySelector('[data-sheet-inhalt]');
+    var csrf = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
+    var coach = sheet.dataset.coach || 'deiner Coachin';
+    var heute = new Date().toISOString().slice(0, 10);
+    function merk(k, v) { try { if (v === undefined) return localStorage.getItem(k); localStorage.setItem(k, v); } catch (e) { return null; } }
+    function auf(html) { inhalt.innerHTML = html; sheet.classList.add('offen'); sheet.setAttribute('aria-hidden', 'false'); document.body.classList.add('gesperrt'); }
+    function zu() { sheet.classList.remove('offen'); sheet.setAttribute('aria-hidden', 'true'); document.body.classList.remove('gesperrt'); }
+    window.appSheet = { auf: auf, zu: zu };
+    sheet.addEventListener('click', function (e) { if (e.target.closest('[data-sheet-zu]')) zu(); });
+    document.addEventListener('keydown', function (e) { if (e.key === 'Escape') zu(); });
+
+    var standalone = window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone === true;
+    var ios = /iphone|ipad|ipod/i.test(navigator.userAgent) && !window.MSStream;
+    var installEvent = null;
+    window.addEventListener('beforeinstallprompt', function (e) { e.preventDefault(); installEvent = e; });
+
+    function b64(s) { var p = '='.repeat((4 - s.length % 4) % 4); var raw = atob((s + p).replace(/-/g, '+').replace(/_/g, '/')); return Uint8Array.from(raw, function (c) { return c.charCodeAt(0); }); }
+    function pushEinschalten(btn) {
+        btn.disabled = true; btn.textContent = 'Einen Moment ...';
+        Notification.requestPermission().then(function (perm) {
+            if (perm !== 'granted') throw new Error('nicht erlaubt');
+            return navigator.serviceWorker.ready;
+        }).then(function (reg) {
+            return fetch(sheet.dataset.pushSchluessel, { credentials: 'same-origin', headers: { 'Accept': 'application/json' } }).then(function (r) { return r.json(); })
+                .then(function (j) { return reg.pushManager.subscribe({ userVisibleOnly: true, applicationServerKey: b64(j.publicKey) }); });
+        }).then(function (sub) {
+            return fetch(sheet.dataset.pushAbo, { method: 'POST', credentials: 'same-origin', headers: { 'Content-Type': 'application/json', 'Accept': 'application/json', 'X-CSRF-TOKEN': csrf }, body: JSON.stringify(sub.toJSON()) });
+        }).then(function () {
+            auf('<h3>Push ist an</h3><p>Du bekommst ab jetzt einen kurzen Hinweis, wenn ' + coach + ' dir schreibt oder etwas Neues für dich da ist.</p><button type="button" class="knopf knopf-breit" data-sheet-zu>Schön</button>');
+        }).catch(function () {
+            auf('<h3>Das hat nicht geklappt</h3><p>Du kannst Push jederzeit im Profil einschalten. Falls dein Browser nachfragt, tippe auf «Erlauben».</p><button type="button" class="knopf knopf-breit" data-sheet-zu>Okay</button>');
+        });
+    }
+
+    sheet.addEventListener('click', function (e) {
+        var b = e.target.closest('[data-sheet-aktion]');
+        if (!b) return;
+        var a = b.dataset.sheetAktion;
+        if (a === 'installieren' && installEvent) { installEvent.prompt(); installEvent.userChoice.finally(function () { installEvent = null; zu(); }); }
+        if (a === 'push') pushEinschalten(b);
+        if (a === 'nicht') { merk('app-sheet-nicht', heute); zu(); }
+    });
+
+    /* Nur auf der Startseite, hoechstens einmal pro Tag */
+    if (sheet.dataset.start !== '1' || merk('app-sheet-nicht') === heute) return;
+    setTimeout(function () {
+        var pushGeht = 'serviceWorker' in navigator && 'PushManager' in window && 'Notification' in window;
+        if (standalone && pushGeht && Notification.permission === 'default') {
+            auf('<h3>Soll ich dir Bescheid geben?</h3><p>Wenn ' + coach + ' dir schreibt oder etwas Neues für dich da ist, bekommst du einen kurzen Hinweis aufs Handy. Ein paar pro Woche, nicht mehr.</p>'
+                + '<button type="button" class="knopf knopf-breit" data-sheet-aktion="push">Push einschalten</button><button type="button" class="knopf knopf-text knopf-breit" data-sheet-aktion="nicht">Jetzt nicht</button>');
+        } else if (!standalone && installEvent) {
+            auf('<h3>Als App auf den Startbildschirm</h3><p>Dann bist du mit einem Tipp hier, ohne Anmelden und ohne Suchen.</p>'
+                + '<button type="button" class="knopf knopf-breit" data-sheet-aktion="installieren">Installieren</button><button type="button" class="knopf knopf-text knopf-breit" data-sheet-aktion="nicht">Jetzt nicht</button>');
+        } else if (!standalone && ios && window.innerWidth < 760) {
+            auf('<h3>Als App auf den Startbildschirm</h3><p>Dann bist du mit einem Tipp hier, und Push-Nachrichten gehen auch.</p>'
+                + '<div class="schritt"><b>1</b><span>Tippe unten auf <i class="fa-solid fa-arrow-up-from-bracket"></i> Teilen.</span></div>'
+                + '<div class="schritt"><b>2</b><span>Wähle «Zum Home-Bildschirm».</span></div>'
+                + '<div class="schritt"><b>3</b><span>Tippe auf «Hinzufügen» und öffne die App von dort.</span></div>'
+                + '<button type="button" class="knopf knopf-text knopf-breit" data-sheet-aktion="nicht">Jetzt nicht</button>');
+        }
+    }, 1200);
+})();
+
+/* Technik-Hilfe: Geraet und Bildschirm mitschicken */
+(function () {
+    var f = document.querySelector('form[data-hilfe]');
+    if (!f) return;
+    var g = f.querySelector('input[name="geraet"]');
+    var standalone = window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone === true;
+    g.value = screen.width + 'x' + screen.height + ' @' + (window.devicePixelRatio || 1) + ', Fenster ' + window.innerWidth + 'x' + window.innerHeight + (standalone ? ', als App' : ', im Browser') + ', ' + (navigator.language || '');
+})();
+
+/* Sprungmarken "(ab 12:34)": springt im Video der Seite an die Stelle */
+document.addEventListener('click', function (e) {
+    var b = e.target.closest('[data-sprung]');
+    if (!b) return;
+    var s = parseInt(b.dataset.sprung, 10) || 0;
+    var box = document.getElementById('video-player') || document.querySelector('.video');
+    if (!box) return;
+    var v = box.querySelector('video, audio');
+    var f = box.querySelector('iframe');
+    if (v) { v.currentTime = s; v.play(); }
+    else if (f && /vimeo/.test(f.src)) {
+        f.contentWindow.postMessage(JSON.stringify({ method: 'setCurrentTime', value: s }), '*');
+        f.contentWindow.postMessage(JSON.stringify({ method: 'play' }), '*');
+    } else if (f && /youtube/.test(f.src)) {
+        f.contentWindow.postMessage(JSON.stringify({ event: 'command', func: 'seekTo', args: [s, true] }), '*');
+        f.contentWindow.postMessage(JSON.stringify({ event: 'command', func: 'playVideo', args: [] }), '*');
+    } else if (f) {
+        f.src = f.src.replace(/#t=\d+s?$/, '') + '#t=' + s + 's';
+    }
+    box.scrollIntoView({ behavior: 'smooth', block: 'center' });
 });

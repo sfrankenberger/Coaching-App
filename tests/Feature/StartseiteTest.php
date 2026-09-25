@@ -47,14 +47,14 @@ class StartseiteTest extends TestCase
     public function test_einfuehrung_beim_ersten_besuch_und_danach_startseite(): void
     {
         $this->actingAs($this->anna)->get('http://a.test/')->assertRedirect('http://a.test/willkommen');
-        $this->actingAs($this->anna)->get('http://a.test/willkommen')->assertOk()->assertSee('Hier bist du richtig')->assertSee('Schritt 1 von 8')->assertSee('Lea')->assertDontSee('Schliessen');
+        $this->actingAs($this->anna)->get('http://a.test/willkommen')->assertOk()->assertSee('Hier bist du richtig')->assertSee('Schritt 1 von 8')->assertSee('Lea')->assertDontSee('data-willkommen-zu', false);
 
         $this->actingAs($this->anna)->post('http://a.test/willkommen', ['phone' => '079 111 22 33'])->assertRedirect('http://a.test');
         $this->assertSame('079 111 22 33', $this->anna->fresh()->phone);
         $this->assertNotNull($this->in(fn () => Membership::where('user_id', $this->anna->id)->first()->setting('onboarding_seen_at')));
 
         $this->actingAs($this->anna)->get('http://a.test/')->assertOk()->assertSee('Hallo Anna');
-        $this->actingAs($this->anna)->get('http://a.test/willkommen')->assertOk()->assertSee('Schliessen');
+        $this->actingAs($this->anna)->get('http://a.test/willkommen')->assertOk()->assertSee('data-willkommen-zu', false);
         $this->actingAs($this->lea)->get('http://a.test/')->assertOk()->assertSee('Für dich als Coach');
     }
 
@@ -78,12 +78,16 @@ class StartseiteTest extends TestCase
         });
 
         $r = $this->actingAs($this->anna)->get('http://a.test/');
-        $r->assertOk()->assertSee('Diese Woche')->assertSee('Woche 2: Rad')->assertDontSee('Woche 3')->assertSee('Anfangen: Willkommen')
+        $r->assertOk()->assertSee('Diese Woche')->assertSee('Woche 2: Rad')->assertDontSee('Woche 3')->assertSee('Als Nächstes: Willkommen')
             ->assertSee('Nächster Termin')->assertSee('Call morgen')->assertDontSee('Call gestern')
-            ->assertSee('Buch lesen')->assertDontSee('Schon fertig')->assertSee('1 offene Aufgabe')
-            ->assertSee('Der neue Impuls')->assertSee('Neu für dich')->assertSee('Neuer Termin: Call morgen');
+            ->assertSee('Buch lesen')->assertDontSee('Schon fertig')->assertSee('Offene Aufgaben')
+            ->assertSee('Der neue Impuls')->assertSee('Was ist neu')->assertSee('Neuer Termin: Call morgen')->assertSee('Alles gesehen');
 
         $this->assertTrue($this->in(fn () => Membership::where('user_id', $this->anna->id)->first()->last_seen_at->gt(now()->subMinute())), 'zuletzt gesehen aktualisiert');
+
+        // "Alles gesehen" leert die Neu-Liste
+        $this->actingAs($this->anna)->post('http://a.test/neu/gesehen')->assertRedirect('http://a.test');
+        $this->actingAs($this->anna)->get('http://a.test/')->assertOk()->assertDontSee('Was ist neu')->assertSee('Call morgen');
     }
 
     public function test_kalender_abo_und_termin_datei(): void

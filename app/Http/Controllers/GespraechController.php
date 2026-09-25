@@ -24,7 +24,7 @@ class GespraechController extends Controller
     {
         $user = $request->user();
         if (! $user->canManageCurrentTenant()) {
-            return redirect()->route('gespraech.show', $this->chat->directFor($user));
+            return redirect()->route('gespraech.show', array_filter([$this->chat->directFor($user), 'entwurf' => $request->query('entwurf')]));
         }
 
         return view('gespraech.index', ['gespraeche' => $this->chat->conversationsFor($user)]);

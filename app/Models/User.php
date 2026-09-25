@@ -94,6 +94,13 @@ class User extends Authenticatable implements FilamentUser, WebAuthnAuthenticata
         return Str::of($this->name)->trim()->before(' ')->toString() ?: $this->name;
     }
 
+    /** Kuerzel fuer Listen, die andere Teilnehmende sehen (z. B. "M. S."). */
+    public function kuerzel(): string
+    {
+        return collect(preg_split('~\s+~u', trim((string) $this->name)))->filter()->take(2)
+            ->map(fn ($t) => mb_strtoupper(mb_substr($t, 0, 1)).'.')->join(' ') ?: '?';
+    }
+
     public function hasPassword(): bool
     {
         return filled($this->password);

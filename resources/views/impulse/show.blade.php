@@ -6,7 +6,7 @@
             <img src="{{ $post->image_url }}" alt="" class="w-full max-h-80 object-cover">
         @endif
         <div class="p-4">
-            <span class="hinweis uppercase tracking-wider text-xs font-semibold">{{ $post->typeLabel() }}@if ($post->published_at) · {{ $post->published_at->translatedFormat('j. F Y') }}@endif</span>
+            <span class="eyebrow">{{ $post->typeLabel() }}@if ($post->published_at) · {{ $post->published_at->translatedFormat('j. F Y') }}@endif</span>
             <h1 class="mt-1">{{ $post->title }}</h1>
             @if ($post->categories)
                 <p class="hinweis mt-1">{{ implode(' · ', $post->categories) }}</p>
@@ -15,7 +15,7 @@
             <div class="mt-4 flex flex-wrap items-center gap-2">
                 <x-merken art="post" :id="$post->id" :an="$gemerkt->has('post-'.$post->id)" :text="true" />
                 @if ($post->url)
-                    <a href="{{ $post->url }}" target="_blank" rel="noopener" class="knopf knopf-leise" style="min-height:36px;padding:6px 12px">Im Web öffnen</a>
+                    <a href="{{ $post->url }}" target="_blank" rel="noopener" class="knopf knopf-leise knopf-klein">Im Web öffnen</a>
                 @endif
             </div>
         </div>

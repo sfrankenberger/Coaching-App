@@ -1,31 +1,27 @@
 <x-layouts.app title="Meine Kurse">
-    <h1 class="mb-3">Meine Kurse</h1>
+    <h1>Meine Kurse</h1>
 
     @forelse ($programs as $program)
         @php $stand = $program->stand; @endphp
-        <a href="{{ route('kurse.show', $program) }}" class="karte block no-underline text-ink hover:border-primary" style="--kc: {{ $program->color ?: 'var(--c-primary)' }}">
-            <div class="flex items-start gap-3">
-                <span class="mt-1 size-10 shrink-0 rounded-xl grid place-items-center text-primary-contrast" style="background: var(--kc)">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" class="size-5"><path d="M2 8l10-4 10 4-10 4z"/><path d="M6 10v5c0 1.5 3 3 6 3s6-1.5 6-3v-5"/></svg>
-                </span>
-                <div class="min-w-0 flex-1">
-                    <span class="hinweis uppercase tracking-wider text-xs font-semibold">{{ $program->typeLabel() }}</span>
-                    <h2 class="text-lg leading-snug">{{ $program->title }}</h2>
-                    @if ($program->subtitle)
-                        <p class="text-ink-soft text-md mt-1">{{ $program->subtitle }}</p>
-                    @endif
-                    @if ($stand['total'])
-                        <div class="mt-3 flex items-center gap-3">
-                            <span class="h-1.5 flex-1 rounded-full bg-line overflow-hidden"><span class="block h-full rounded-full" style="width: {{ $stand['percent'] }}%; background: var(--kc)"></span></span>
-                            <span class="hinweis whitespace-nowrap">{{ $stand['done'] }} von {{ $stand['total'] }}</span>
-                        </div>
-                    @endif
-                </div>
-            </div>
+        <a href="{{ route('kurse.show', $program) }}" class="karte kurs-karte" style="--kc: {{ $program->color ?: '#7C8C9A' }}">
+            @if ($program->cover_url)
+                <span class="kurs-bild" style="background-image:url('{{ $program->cover_url }}')"></span>
+            @else
+                <span class="kurs-bild kurs-bild-farbe"><i class="fa-solid fa-{{ $program->icon ?: 'seedling' }}"></i></span>
+            @endif
+            <span class="kurs-text">
+                <span class="eyebrow">{{ $program->typeLabel() }}</span>
+                <span class="t" style="font-family:var(--font-heading);font-weight:400;font-size:var(--fs-xl);line-height:1.25;margin-top:2px">{{ $program->title }}</span>
+                @if ($program->subtitle)<span class="x block" style="margin-top:4px">{{ $program->subtitle }}</span>@endif
+                @if ($stand['total'])
+                    <span class="flex items-center gap-3" style="margin-top:12px">
+                        <span class="balken"><span style="width: {{ $stand['percent'] }}%"></span></span>
+                        <span class="balken-label">{{ $stand['done'] }} von {{ $stand['total'] }}</span>
+                    </span>
+                @endif
+            </span>
         </a>
     @empty
-        <x-karte>
-            <p class="text-ink-soft">Noch kein Kurs für dich freigeschaltet. Sobald es losgeht, siehst du ihn hier.</p>
-        </x-karte>
+        <div class="leer"><i class="fa-solid fa-graduation-cap"></i>Noch kein Kurs für dich freigeschaltet. Sobald es losgeht, siehst du ihn hier.</div>
     @endforelse
 </x-layouts.app>

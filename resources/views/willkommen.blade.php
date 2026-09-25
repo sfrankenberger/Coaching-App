@@ -6,7 +6,7 @@
             @csrf
             @foreach ($schritte as $i => $s)
                 <section class="karte" data-schritt @if ($i > 0) hidden @endif>
-                    <span class="hinweis uppercase tracking-wider text-xs font-semibold">Schritt {{ $i + 1 }} von {{ count($schritte) }}</span>
+                    <span class="eyebrow">Schritt {{ $i + 1 }} von {{ count($schritte) }}</span>
                     <h1 class="mt-1">{{ $s['titel'] }}</h1>
                     <div class="prose-app mt-2">{!! $s['text'] !!}</div>
                     @if (! empty($s['push']) && $pushMoeglich)
@@ -28,7 +28,7 @@
                 <button type="button" class="knopf knopf-leise" data-zurueck hidden>Zurück</button>
                 <span class="flex-1"></span>
                 @if ($gesehen)
-                    <a href="{{ route('home') }}" class="knopf knopf-leise">Schliessen</a>
+                    <a href="{{ route('home') }}" class="knopf knopf-leise" data-willkommen-zu>Schliessen</a>
                 @endif
                 <button type="button" class="knopf" data-weiter>Weiter</button>
                 <button type="submit" class="knopf" data-los hidden>Los geht es</button>

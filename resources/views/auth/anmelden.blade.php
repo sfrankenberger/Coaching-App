@@ -1,8 +1,8 @@
 @inject('branding', App\Tenancy\Branding::class)
 <x-layouts.auth title="Anmelden">
     <x-karte>
-        <h1 class="mb-1">Anmelden</h1>
-        <p class="text-ink-soft mb-4">Gib deine E-Mail-Adresse ein. Du bekommst einen Link, mit dem du direkt drin bist. Kein Passwort nötig.</p>
+        <h1 style="margin:0 0 6px;font-size:26px">Schön, dass du da bist</h1>
+        <p class="x" style="margin:0 0 16px">Gib deine E-Mail-Adresse ein. Du bekommst einen Link, mit dem du direkt drin bist. Kein Passwort nötig.</p>
 
         <form method="post" action="{{ route('anmelden.link') }}" class="eingabe">
             @csrf
@@ -13,12 +13,12 @@
                 @error('email') <p class="fehler mt-1">{{ $message }}</p> @enderror
             </div>
             <div class="eingabe-knoepfe">
-                <button type="submit" class="knopf knopf-breit">Link schicken</button>
+                <button type="submit" class="knopf knopf-breit knopf-gross"><i class="fa-solid fa-envelope"></i>Link schicken</button>
             </div>
         </form>
 
         <div class="mt-3" data-passkey-box>
-            <button type="button" class="knopf knopf-leise knopf-breit" data-passkey="anmelden" data-optionen="{{ route('passkeys.anmelden.optionen') }}" data-anmelden="{{ route('passkeys.anmelden') }}" data-weiter="{{ $weiter ?? '' }}">Mit Passkey anmelden</button>
+            <button type="button" class="knopf knopf-ruhig knopf-breit" data-passkey="anmelden" data-optionen="{{ route('passkeys.anmelden.optionen') }}" data-anmelden="{{ route('passkeys.anmelden') }}" data-weiter="{{ $weiter ?? '' }}"><i class="fa-solid fa-fingerprint"></i>Mit Passkey anmelden</button>
             <p class="hinweis mt-1 text-center" data-passkey-status></p>
         </div>
 
@@ -29,7 +29,7 @@
             </div>
             <div class="flex flex-col gap-2">
                 @foreach ($dienste as $dienst => $label)
-                    <a href="{{ route('anmelden.dienst', ['dienst' => $dienst, 'weiter' => $weiter ?? null]) }}" class="knopf knopf-leise knopf-breit">Mit {{ $label }} anmelden</a>
+                    <a href="{{ route('anmelden.dienst', ['dienst' => $dienst, 'weiter' => $weiter ?? null]) }}" @class(['knopf knopf-breit', 'knopf-ruhig' => $dienst !== 'apple']) @if ($dienst === 'apple') style="background:#000;border-color:#000;color:#fff" @endif><i class="fa-brands fa-{{ $dienst }}"></i>Mit {{ $label }} anmelden</a>
                 @endforeach
             </div>
         @endif

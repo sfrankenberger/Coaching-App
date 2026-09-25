@@ -1,11 +1,12 @@
 <x-layouts.app :title="$event->title">
     @php $rec = $event->hasRecording() ? \App\Support\Video::embed($event->recording_url) : null; $live = $event->isLive(); $ab = $mein?->status === 'declined'; @endphp
-    <p class="mb-2"><a href="{{ route('termine.index') }}" class="hinweis no-underline">&larr; Termine</a></p>
+    <p style="margin:0 0 8px"><a href="{{ route('termine.index') }}" class="hinweis no-underline"><i class="fa-solid fa-chevron-left" style="font-size:11px"></i> Termine</a></p>
 
     <x-karte>
-        <span class="hinweis uppercase tracking-wider text-xs font-semibold">{{ $event->typeLabel() }}@if ($event->program) · {{ $event->program->title }}@endif</span>
-        <h1>{{ $event->title }}</h1>
-        <p class="text-ink-soft mt-1">
+        <span class="eyebrow">{{ $event->typeLabel() }}@if ($event->program) · {{ $event->program->title }}@endif</span>
+        <h1 style="margin:4px 0 0">{{ $event->title }}</h1>
+        @if ($live)<span class="badge badge-live" style="margin-top:8px"><i class="fa-solid fa-circle" style="font-size:7px"></i>Läuft gerade</span>@endif
+        <p class="x" style="margin:6px 0 0">
             {{ $event->starts_at->translatedFormat('l, j. F Y') }}@if (! $event->all_day), {{ $event->starts_at->format('H:i') }}@if ($event->ends_at) bis {{ $event->ends_at->format('H:i') }}@endif Uhr @else, ganzer Tag @endif
             @if ($event->location) · {{ $event->location }} @endif
         </p>
@@ -15,10 +16,10 @@
         <div class="mt-4 flex flex-wrap gap-2">
             <x-merken art="event" :id="$event->id" :an="\App\Models\Bookmark::where('user_id', auth()->id())->where('bookmarkable_type', 'event')->where('bookmarkable_id', $event->id)->exists()" :text="true" />
             @if (! $event->isPast() && $event->zoom_url)
-                <a href="{{ $event->zoom_url }}" target="_blank" rel="noopener" class="knopf">{{ $live ? 'Jetzt beitreten' : 'Zoom öffnen' }}</a>
+                <a href="{{ $event->zoom_url }}" target="_blank" rel="noopener" class="knopf"><i class="fa-solid fa-video"></i>{{ $live ? 'Jetzt beitreten' : 'Zoom öffnen' }}</a>
             @endif
             @if (! $event->isPast())
-                <a href="{{ route('termine.ics', $event) }}" class="knopf knopf-leise">In den Kalender</a>
+                <a href="{{ route('termine.ics', $event) }}" class="knopf knopf-ruhig"><i class="fa-solid fa-calendar-plus"></i>In den Kalender</a>
             @endif
             @if (! $event->isPast() && ! $event->isOneOnOne())
                 <form method="post" action="{{ route('termine.dabei', $event) }}">@csrf<button class="knopf knopf-leise">{{ $ab ? 'Doch dabei' : 'Nicht dabei' }}</button></form>
@@ -28,14 +29,14 @@
             @endif
         </div>
         @if ($absagen->isNotEmpty() && ! $event->isPast())
-            <p class="hinweis mt-3">Nicht dabei: {{ $absagen->map(fn ($a) => $a->user->vorname())->join(', ') }}</p>
+            <p class="hinweis mt-3">Nicht dabei: {{ auth()->user()->canManageCurrentTenant() ? $absagen->map(fn ($a) => $a->user->vorname())->join(', ') : $absagen->map(fn ($a) => $a->user->kuerzel())->join(', ') }}</p>
         @endif
     </x-karte>
 
     @if ($event->hasRecording())
         <x-karte class="!p-2">
             @if ($rec)
-                <div class="video">
+                <div class="video" id="video-player">
                     @if ($rec['kind'] === 'iframe')
                         <iframe src="{{ $rec['src'] }}" allow="autoplay; fullscreen; picture-in-picture" allowfullscreen loading="lazy" title="Aufzeichnung"></iframe>
                     @else
@@ -48,9 +49,9 @@
             <div class="flex flex-wrap items-center gap-3 p-2">
                 <span class="hinweis">Aufzeichnung{{ $event->recording_duration ? ' · '.$event->recording_duration : '' }}</span>
                 @if ($mein?->status !== 'watched' && $mein?->status !== 'attended')
-                    <form method="post" action="{{ route('termine.gesehen', $event) }}" class="ml-auto">@csrf<button class="knopf knopf-leise" style="min-height:36px;padding:6px 12px">Gesehen</button></form>
+                    <form method="post" action="{{ route('termine.gesehen', $event) }}" class="ml-auto">@csrf<button class="knopf knopf-leise knopf-klein">Gesehen</button></form>
                 @else
-                    <span class="hinweis ml-auto text-success font-semibold">✓ {{ $mein->status === 'attended' ? 'Live dabei' : 'Gesehen' }}</span>
+                    <span class="chip chip-gut ml-auto"><i class="fa-solid fa-check"></i>{{ $mein->status === 'attended' ? 'Live dabei' : 'Gesehen' }}</span>
                 @endif
             </div>
         </x-karte>
@@ -59,10 +60,10 @@
     @endif
 
     @if ($event->summary)
-        <x-karte titel="Zusammenfassung">
-            <div class="prose-app whitespace-pre-line">{{ $event->summary }}</div>
+        <x-karte titel="Zusammenfassung" icon="align-left">
+            <div class="prose-app">{{ \App\Support\Kapitel::html($event->summary) }}</div>
             @if ($vorschlaege?->tasks)
-                <h3 class="mt-4 mb-1">Deine Aufgaben daraus</h3>
+                <p class="eyebrow" style="margin:18px 0 6px">Deine Aufgaben daraus</p>
                 <ul class="divide-y divide-line">
                     @foreach ($vorschlaege->tasks as $i => $t)
                         <li class="flex items-start gap-3 py-2">
@@ -70,7 +71,7 @@
                                 <span class="block text-base">{{ $t['titel'] }}</span>
                                 @if ($t['text'])<span class="hinweis block">{{ $t['text'] }}</span>@endif
                             </div>
-                            <form method="post" action="{{ route('termine.aufgabe', $event) }}">@csrf<input type="hidden" name="nr" value="{{ $i }}"><button class="knopf knopf-leise" style="min-height:36px;padding:6px 12px">Als Aufgabe</button></form>
+                            <form method="post" action="{{ route('termine.aufgabe', $event) }}">@csrf<input type="hidden" name="nr" value="{{ $i }}"><button class="knopf knopf-leise knopf-klein">Als Aufgabe</button></form>
                         </li>
                     @endforeach
                 </ul>
@@ -79,7 +80,7 @@
     @endif
 
     @if ($event->resources->isNotEmpty())
-        <x-karte titel="Material zum Termin">
+        <x-karte titel="Material zum Termin" icon="folder-open">
             <ul class="divide-y divide-line">
                 @foreach ($event->resources as $r)
                     <li class="flex items-center gap-3 py-2">

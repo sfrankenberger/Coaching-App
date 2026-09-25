@@ -34,7 +34,7 @@ class Video
         }
 
         if (preg_match('~(?:youtube\.com/watch\?v=|youtu\.be/|youtube\.com/embed/)([A-Za-z0-9_-]{6,})~', $url, $m)) {
-            return ['kind' => 'iframe', 'src' => 'https://www.youtube-nocookie.com/embed/'.$m[1].($start ? '?start='.$start : '')];
+            return ['kind' => 'iframe', 'src' => 'https://www.youtube-nocookie.com/embed/'.$m[1].'?enablejsapi=1'.($start ? '&start='.$start : '')];
         }
 
         if (preg_match('~iframe\.mediadelivery\.net/(?:play|embed)/(\d+)/([0-9a-f-]{36})~i', $url, $m)) {
