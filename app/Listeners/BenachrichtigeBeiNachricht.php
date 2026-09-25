@@ -20,6 +20,10 @@ class BenachrichtigeBeiNachricht
         }
 
         $andere = $conv->participants->pluck('user_id')->reject(fn ($id) => $id === $msg->user_id);
+        // Im 1:1 schreibt das Team fuer die Person: nur sie bekommt Bescheid, nicht die Kolleginnen
+        if ($conv->isDirect() && $msg->user_id !== $conv->user_id) {
+            $andere = $andere->filter(fn ($id) => $id === $conv->user_id);
+        }
         if ($andere->isEmpty()) {
             return;
         }

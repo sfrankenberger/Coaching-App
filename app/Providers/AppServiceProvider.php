@@ -2,8 +2,6 @@
 
 namespace App\Providers;
 
-use App\Events\MessageSent;
-use App\Listeners\BenachrichtigeBeiNachricht;
 use App\Models\Comment;
 use App\Models\Event;
 use App\Models\JournalEntry;
@@ -30,7 +28,6 @@ use App\Programs\ProgramAccess;
 use App\Tenancy\Branding;
 use App\Tenancy\CurrentTenant;
 use Illuminate\Database\Eloquent\Relations\Relation;
-use Illuminate\Support\Facades\Event as EventFacade;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\ServiceProvider;
 use Laravel\Socialite\Contracts\Factory as SocialiteFactory;
@@ -75,8 +72,8 @@ class AppServiceProvider extends ServiceProvider
         // Zugriff auf Programme an genau einer Stelle
         Gate::define('view-program', fn (User $user, Program $program) => app(ProgramAccess::class)->canView($user, $program));
 
-        // Wer bei was Bescheid bekommt
-        EventFacade::listen(MessageSent::class, BenachrichtigeBeiNachricht::class);
+        // Wer bei was Bescheid bekommt. Listener in app/Listeners findet Laravel selbst
+        // (BenachrichtigeBeiNachricht auf MessageSent), nicht zusaetzlich registrieren, sonst doppelt.
         Event::observe(EventObserver::class);
         Task::observe(TaskObserver::class);
         ProgramMember::observe(ProgramMemberObserver::class);

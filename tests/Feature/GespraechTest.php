@@ -67,7 +67,9 @@ class GespraechTest extends TestCase
     {
         $conv = $this->in(fn () => app(Chat::class)->directFor($this->anna));
 
+        \Illuminate\Support\Facades\Notification::fake();
         $this->actingAs($this->anna)->postJson("http://a.test/gespraech/{$conv->id}/senden", ['body' => 'Hallo Lea, kurze Frage'])->assertOk()->assertJsonStructure(['id', 'html']);
+        \Illuminate\Support\Facades\Notification::assertSentToTimes($this->lea, \App\Notifications\AppNotification::class, 1);
         $this->actingAs($this->anna)->postJson("http://a.test/gespraech/{$conv->id}/senden", [])->assertStatus(422);
         $m = $this->in(fn () => Message::first());
         $this->assertSame('Hallo Lea, kurze Frage', $m->body);
