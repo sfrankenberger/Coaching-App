@@ -98,7 +98,7 @@ class AufzeichnungenTest extends TestCase
         $this->assertSame('222', $call->vimeo_id);
         $this->assertSame('https://vimeo.com/222', $call->recording_url);
         $this->assertSame('gross.jpg', $call->recording_thumb);
-        $this->assertSame('1 h 02 min', $call->recording_duration);
+        $this->assertSame('1 Std. 2 Min.', $call->recording_duration);
         $this->assertStringContainsString('[00:05] Willkommen im Call.', $call->transcript);
         $this->assertStringContainsString('(ab 00:05)', $call->summary);
         $this->assertSame('bereit', $call->recording_status);

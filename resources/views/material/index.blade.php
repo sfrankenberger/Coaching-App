@@ -35,7 +35,7 @@
                     @if ($k) · {{ $k->title }} @endif
                     @if ($z['geteilt']) · Für dich geteilt @endif
                     @if ($z['ts']) · {{ $z['ts']->translatedFormat('j. M Y') }} @endif
-                    @if ($z['dauer']) · {{ $z['dauer'] }} @endif
+                    @if ($z['dauer']) · {{ \App\Support\Zeit::dauerLesbar($z['dauer']) }} @endif
                 </span>
             </div>
             <x-merken :art="$z['art']" :id="$z['id']" :an="$gemerkt->has($key)" />

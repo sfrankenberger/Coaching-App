@@ -9,7 +9,7 @@
             <span class="block text-xs font-semibold opacity-80 mb-0.5">{{ $m->user?->vorname() ?? 'Jemand' }}</span>
         @endif
         @if (filled($m->body))
-            <div class="whitespace-pre-line break-words text-base leading-snug">{{ $m->body }}</div>
+            <div class="lesetext whitespace-pre-line break-words" style="line-height:1.5">{{ $m->body }}</div>
         @endif
         @if ($m->hasAudio())
             <audio controls preload="metadata" src="{{ route('nachricht.datei', [$m, 'audio']) }}" class="mt-1 w-56 max-w-full"></audio>

@@ -45,4 +45,15 @@ class HilfenTest extends TestCase
         $this->assertFalse(ConvertAudio::noetig('x.m4a'));
         $this->assertFalse(ConvertAudio::noetig(null));
     }
+
+    public function test_zeit_dauer_lesbar(): void
+    {
+        $this->assertSame('3 Min.', \App\Support\Zeit::dauerLesbar('03min'));
+        $this->assertSame('1 Std. 39 Min.', \App\Support\Zeit::dauerLesbar('1h 39min'));
+        $this->assertSame('58 Min.', \App\Support\Zeit::dauerLesbar('58 Min.'));
+        $this->assertSame('1 Std. 2 Min.', \App\Support\Zeit::dauerLesbar('1 h 02 min'));
+        $this->assertSame('1 Std.', \App\Support\Zeit::dauer(3600));
+        $this->assertSame('10 Videos, rund 23 Min.', \App\Support\Zeit::dauerLesbar('10 Videos, rund 23 Min.'));
+        $this->assertNull(\App\Support\Zeit::dauerLesbar(''));
+    }
 }

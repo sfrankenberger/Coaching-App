@@ -2,6 +2,7 @@
 
 namespace App\Recordings;
 
+use App\Support\Zeit;
 use App\Tenancy\CurrentTenant;
 use Illuminate\Support\Facades\Http;
 use RuntimeException;
@@ -75,7 +76,7 @@ class Vimeo
 
     public static function dauer(int $sekunden): string
     {
-        return $sekunden >= 3600 ? intdiv($sekunden, 3600).' h '.str_pad((string) intdiv($sekunden % 3600, 60), 2, '0', STR_PAD_LEFT).' min' : max(1, intdiv($sekunden, 60)).' min';
+        return Zeit::dauer($sekunden);
     }
 
     /** Abschrift aus der Textspur (deutsch bevorzugt), null wenn es noch keine gibt. */

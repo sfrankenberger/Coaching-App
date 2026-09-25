@@ -62,7 +62,7 @@ class MaterialVideoTest extends TestCase
         $r = $this->video->fresh();
         $this->assertSame('video', $r->type);
         $this->assertSame('987654', $r->vimeo_id);
-        $this->assertSame('12 min', $r->duration);
+        $this->assertSame('13 Min.', $r->duration);
         $this->assertSame('bild.jpg', $r->image_url);
         $this->assertStringContainsString('[00:02] Heute geht es um die Schritte.', $r->transcript);
         $this->assertStringStartsWith('<p><strong>Worum es geht:</strong>', $r->summary);

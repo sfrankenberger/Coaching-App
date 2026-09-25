@@ -33,7 +33,7 @@
             <div class="flex items-start gap-3">
                 <div class="min-w-0 flex-1">
                     @if ($n->title)<span class="t">@if ($n->is_pinned)<i class="fa-solid fa-thumbtack" style="color:var(--c-primary);font-size:12px;margin-right:6px"></i>@endif{{ $n->title }}</span>@endif
-                    <p class="x whitespace-pre-line" style="margin:4px 0 0;font-size:var(--fs-base)">{{ $n->body }}</p>
+                    <p class="lesetext whitespace-pre-line" style="margin:4px 0 0">{{ $n->body }}</p>
                     <span class="m" style="margin-top:8px">
                         {{ $n->updated_at->translatedFormat('j. M Y, H:i') }}
                         @if ($n->notable) · zu «{{ $n->notable->title ?? '' }}» @endif

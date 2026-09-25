@@ -52,7 +52,7 @@
                 <a href="{{ $event->recording_url }}" target="_blank" rel="noopener" class="knopf m-2">Aufzeichnung öffnen</a>
             @endif
             <div class="flex flex-wrap items-center gap-3 p-2">
-                <span class="hinweis">Aufzeichnung{{ $event->recording_duration ? ' · '.$event->recording_duration : '' }}</span>
+                <span class="hinweis">Aufzeichnung{{ $event->recording_duration ? ' · '.\App\Support\Zeit::dauerLesbar($event->recording_duration) : '' }}</span>
                 @if ($mein?->status !== 'watched' && $mein?->status !== 'attended')
                     <form method="post" action="{{ route('termine.gesehen', $event) }}" class="ml-auto">@csrf<button class="knopf knopf-leise knopf-klein">Gesehen</button></form>
                 @else

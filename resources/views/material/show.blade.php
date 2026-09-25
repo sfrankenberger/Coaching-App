@@ -8,7 +8,7 @@
         <p style="margin:0 0 8px"><a href="{{ route('material.index', $kurs ? ['f' => 'k'.$kurs->id] : []) }}" class="hinweis no-underline"><i class="fa-solid fa-chevron-left" style="font-size:11px"></i> Material</a></p>
         <div class="flex items-start gap-3">
             <div class="min-w-0 flex-1">
-                <span class="eyebrow">{{ $r->typeLabel() }}@if ($kurs) · {{ $kurs->title }}@endif@if ($r->duration) · {{ $r->duration }}@endif</span>
+                <span class="eyebrow">{{ $r->typeLabel() }}@if ($kurs) · {{ $kurs->title }}@endif@if ($r->duration) · {{ \App\Support\Zeit::dauerLesbar($r->duration) }}@endif</span>
                 <h1 style="margin:2px 0 0">{{ $r->title }}</h1>
             </div>
             <x-merken art="resource" :id="$r->id" :an="$gemerkt" />
@@ -39,7 +39,7 @@
         @if ($r->transcript)
             <details class="karte" style="margin-top:14px">
                 <summary class="t" style="cursor:pointer">Abschrift</summary>
-                <div class="x whitespace-pre-line" style="margin-top:10px;font-size:var(--fs-md)">{{ $r->transcript }}</div>
+                <div class="lesetext whitespace-pre-line" style="margin-top:10px;font-size:var(--fs-md)">{{ $r->transcript }}</div>
             </details>
         @endif
     </div>

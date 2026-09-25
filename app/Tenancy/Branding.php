@@ -49,6 +49,7 @@ class Branding
         'font_heading' => 'Georgia, "Times New Roman", serif',
         'font_body' => 'system-ui, -apple-system, "Segoe UI", Roboto, sans-serif',
         'font_mark' => null,            // Wortmarke im Kopf, leer = font_heading
+        'font_read' => null,            // Lesetexte ab drei Zeilen (Lektionen, Zusammenfassungen, Chat), leer = font_heading
         'font_url' => null,             // Schriften-CSS, z. B. /fonts/schriften.css
         'radius' => 16,
         'card_padding_y' => 14,
@@ -75,6 +76,7 @@ class Branding
         'bg_wide' => 'var(--c-bg)',
         'bar_bg' => 'var(--c-bg)',
         'font_mark' => 'var(--font-heading)',
+        'font_read' => 'var(--font-heading)',
     ];
 
     public function __construct(protected CurrentTenant $current) {}
@@ -148,6 +150,7 @@ class Branding
             '--font-heading' => $this->get('font_heading'),
             '--font-body' => $this->get('font_body'),
             '--font-mark' => $this->fine('font_mark'),
+            '--font-read' => $this->fine('font_read'),
             '--radius' => $this->px($this->get('radius')),
             '--card-py' => $this->px($this->get('card_padding_y')),
             '--card-px' => $this->px($this->get('card_padding_x')),

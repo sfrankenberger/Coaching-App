@@ -92,7 +92,7 @@
     @media (min-width: 761px) { .seite { padding-inline: 18px; } }
     .seite-schmal { max-width: 640px; }
 
-    .inhalt { padding-block: 12px calc(96px + env(safe-area-inset-bottom)); }
+    .inhalt { padding-block: 12px calc(140px + env(safe-area-inset-bottom)); }   /* Platz fuer Leiste und Chatknopf */
     @media (min-width: 761px) { .inhalt { padding-block: 26px 88px; } }
 
     /* ---------- Typo-Rollen ---------- */
@@ -148,6 +148,9 @@
         color: var(--c-text);
     }
     a.karte { text-decoration: none; transition: border-color .15s; }
+    /* Keine Karte in der Karte: innen nur eine Trennlinie */
+    .karte .karte, .karte .baustein { background: transparent; border: 0; border-top: 1px solid var(--c-line-soft); border-radius: 0; box-shadow: none; padding: 12px 0 0; margin: 12px 0 0; }
+    .karte .karte:first-child { border-top: 0; padding-top: 0; margin-top: 0; }
     a.karte:hover, .karte.klickbar:hover { border-color: var(--c-primary); }
     .karte.flaeche, .karte.fremd { background: var(--c-surface); }
     .karte.neu { background: #fff; border-color: var(--c-primary-line); border-left: 3px solid var(--c-primary); padding-left: 18px; }
@@ -397,6 +400,8 @@
         cursor: pointer;
         flex: none;
         white-space: nowrap;
+        max-width: min(78vw, 360px);
+        overflow: hidden;
         transition: background .15s, border-color .15s;
     }
     .pille:hover { border-color: var(--c-line-strong); }
@@ -735,7 +740,10 @@
     .bildband p { margin: 6px 0 0; font-size: var(--fs-md); color: rgba(255, 255, 255, .88); }
 
     /* Inhaltstexte aus dem Editor */
-    .prose-app { font-size: var(--fs-base); line-height: 1.7; color: var(--c-text-soft); overflow-wrap: anywhere; }
+    /* Lesetexte: ab drei Zeilen in der Leseschrift (Serifen), Mono bleibt fuer Titel, Zeilen und Meta */
+    .prose-app, .lesetext { font-family: var(--font-read); font-size: calc(var(--fs-base) + 1px); line-height: 1.7; color: var(--c-text-soft); overflow-wrap: anywhere; }
+    .lesetext { color: var(--c-text); }
+    .prose-app strong, .lesetext strong { color: var(--c-text); }
     .prose-app p { margin: 0 0 12px; }
     .prose-app p:last-child { margin-bottom: 0; }
     .prose-app h2, .prose-app h3, .prose-app h4 { margin: 20px 0 8px; color: var(--c-text); font-family: var(--font-heading); font-weight: 400; }
@@ -780,6 +788,8 @@
     .kurs-bild { display: block; aspect-ratio: 40 / 15; background: var(--kc) center / cover no-repeat; }
     .kurs-bild-farbe { display: grid; place-items: center; color: rgba(255, 255, 255, .92); font-size: 30px; background: linear-gradient(135deg, color-mix(in srgb, var(--kc) 92%, #000 8%), color-mix(in srgb, var(--kc) 72%, var(--c-text) 28%)); }
     .kurs-text { display: block; padding: 14px 16px 16px; }
+    .kurs-titel { display: block; font-family: var(--font-heading); font-size: var(--fs-xl); line-height: 1.25; margin-top: 2px; }
+    .kurs-bild-farbe { aspect-ratio: 40 / 11; }
 
     /* Modul-Karte mit Lektionen (Kursseite) */
     .modul { background: var(--c-card); border: 1px solid var(--c-card-border); border-radius: var(--radius); margin: 0 0 12px; overflow: hidden; }

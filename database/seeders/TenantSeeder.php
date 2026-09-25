@@ -118,6 +118,7 @@ class TenantSeeder extends Seeder
                 'font_heading' => 'Lora, Georgia, serif',
                 'font_body' => '"Oxygen Mono", "Courier New", monospace',
                 'font_mark' => '"Cutive Mono", monospace',
+                'font_read' => 'Lora, Georgia, serif',
                 'font_url' => '/fonts/schriften.css',
                 'mark_suffix' => 'Mitgliederbereich',
                 'avatar_url' => null,

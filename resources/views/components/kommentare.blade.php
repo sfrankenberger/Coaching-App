@@ -12,7 +12,7 @@
         @foreach ($liste as $c)
             <div id="kommentar-{{ $c->id }}" @class(['kommentar', 'vom-team' => $c->user_id !== $item->user_id])>
                 <span class="wer">{{ $c->user_id === $ich->id ? 'Du' : $c->user?->vorname() }} · {{ \App\Support\Zeit::wannKurz($c->created_at) }}</span>
-                <span class="whitespace-pre-line">{{ $c->body }}</span>
+                <span class="lesetext whitespace-pre-line" style="font-size:var(--fs-md)">{{ $c->body }}</span>
                 @if (! $coach && $c->user_id === $ich->id)
                     <form method="post" action="{{ route('kommentar.destroy', $c) }}" onsubmit="return confirm('Kommentar löschen?')" class="weg">@csrf @method('DELETE')<button aria-label="Kommentar löschen"><i class="fa-solid fa-xmark"></i></button></form>
                 @endif

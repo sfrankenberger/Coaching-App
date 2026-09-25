@@ -40,9 +40,9 @@
                     <div class="min-w-0 flex-1">
                         <span class="hinweis">{{ $r->week_label ?: $r->created_at->translatedFormat('j. F Y') }}@if ($r->program) · {{ $r->program->title }}@endif · {{ $r->isShared() ? 'Geteilt' : 'Nur ich' }}</span>
                         @foreach ($fragen as $k => [$ico, $frage])
-                            @if ($r->$k)<p class="mt-2"><b class="block text-md">{{ $ico }} {{ $frage }}</b><span class="whitespace-pre-line">{{ $r->$k }}</span></p>@endif
+                            @if ($r->$k)<p class="mt-2"><b class="block text-md">{{ $ico }} {{ $frage }}</b><span class="lesetext whitespace-pre-line">{{ $r->$k }}</span></p>@endif
                         @endforeach
-                        @if ($r->addendum)<p class="mt-2"><b class="block text-md">Nachtrag</b><span class="whitespace-pre-line">{{ $r->addendum }}</span></p>@endif
+                        @if ($r->addendum)<p class="mt-2"><b class="block text-md">Nachtrag</b><span class="lesetext whitespace-pre-line">{{ $r->addendum }}</span></p>@endif
                         <div class="mt-3 flex flex-wrap gap-2">
                             @if ($r->isShared())
                                 <details class="w-full">
