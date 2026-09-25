@@ -13,6 +13,7 @@ use App\Models\Message;
 use App\Models\Note;
 use App\Models\Program;
 use App\Models\ProgramStep;
+use App\Models\Question;
 use App\Models\Reaction;
 use App\Models\Reflection;
 use App\Models\Resource;
@@ -34,7 +35,7 @@ use Illuminate\Support\Str;
  */
 class BegleitungImport
 {
-    public array $stats = ['termine' => 0, 'teilnahmen' => 0, 'material' => 0, 'zuordnungen' => 0, 'aufgaben' => 0, 'notizen' => 0, 'reflexionen' => 0, 'journal' => 0, 'kommentare' => 0, 'gespraeche' => 0, 'nachrichten' => 0, 'wochen' => 0, 'hinweise' => []];
+    public array $stats = ['termine' => 0, 'teilnahmen' => 0, 'material' => 0, 'zuordnungen' => 0, 'aufgaben' => 0, 'notizen' => 0, 'reflexionen' => 0, 'journal' => 0, 'kommentare' => 0, 'fragen' => 0, 'gespraeche' => 0, 'nachrichten' => 0, 'wochen' => 0, 'hinweise' => []];
 
     protected array $config;
 
@@ -82,6 +83,7 @@ class BegleitungImport
         $this->importNotes();
         $this->importReflections();
         $this->importJournal();
+        $this->importQuestions();
         $this->importComments();
         $this->importChats();
         $this->importWeeks();
@@ -489,12 +491,43 @@ class BegleitungImport
 
     /* ---------- Kommentare und Reaktionen an Elementen ---------- */
 
+    /** Fragen aus dem Kursraum (CPT frage), Antworten kommen ueber importComments. */
+    protected function importQuestions(): void
+    {
+        foreach ($this->source->posts('frage', ['publish']) as $post) {
+            $id = (int) $post->ID;
+            $meta = $this->source->postMeta($id);
+            $programId = Program::where('legacy_id', (string) ($meta['frage_kurs'] ?? ''))->value('id');
+            $uid = $this->userMap[(int) $post->post_author] ?? null;
+            if (! $programId || ! $uid || ($meta['frage_ist_chat'] ?? '') === '1') {
+                continue;
+            }
+            $this->stats['fragen']++;
+            if ($this->dryRun) {
+                continue;
+            }
+            $status = (string) ($meta['frage_status'] ?? 'offen');
+            $q = Question::firstOrNew(['legacy_id' => (string) $id]);
+            $q->fill([
+                'program_id' => $programId,
+                'user_id' => $uid,
+                'title' => html_entity_decode($post->post_title, ENT_QUOTES, 'UTF-8'),
+                'body' => trim(strip_tags((string) $post->post_content)) ?: null,
+                'status' => array_key_exists($status, Question::STATUS) ? $status : 'offen',
+                'visibility' => ($meta['frage_sicht'] ?? '') === 'lea' ? 'coach' : 'program',
+            ]);
+            $q->save();
+            $this->keepWpTimes($q, $post);
+            $this->elementMap[$id] = ['question', $q->id];
+        }
+    }
+
     protected function importComments(): void
     {
         if ($this->dryRun || ! $this->source->hasTable('comments')) {
             return;
         }
-        $ids = array_keys(array_filter($this->elementMap, fn ($e) => in_array($e[0], ['task', 'note', 'reflection', 'journal'], true)));
+        $ids = array_keys(array_filter($this->elementMap, fn ($e) => in_array($e[0], ['task', 'note', 'reflection', 'journal', 'question'], true)));
         if ($ids === []) {
             return;
         }

@@ -16,6 +16,7 @@ use App\Models\Note;
 use App\Models\Program;
 use App\Models\ProgramMember;
 use App\Models\ProgramStep;
+use App\Models\Question;
 use App\Models\Reaction;
 use App\Models\Reflection;
 use App\Models\Resource;
@@ -157,6 +158,12 @@ class ImportBegleitungTest extends TestCase
 
         // Kommentar der Coachin an der Notiz
         $this->wpComment(1, 600, 2, 'Schön, bleib dran.');
+
+        // Fragen im Kursraum: eine an alle, eine nur an Lea, eine alte Chat-Frage (wird uebersprungen)
+        $this->wpPost(1000, 'frage', 'Wie visualisiere ich?', 'frage-1', 'Ich sehe nichts.', ['frage_kurs' => '1849', 'frage_status' => 'beantwortet', 'frage_sicht' => 'kurs'], 'publish', 21);
+        $this->wpPost(1001, 'frage', 'Nur fuer Lea', 'frage-2', '', ['frage_kurs' => '1849', 'frage_status' => 'offen', 'frage_sicht' => 'lea'], 'publish', 22);
+        $this->wpPost(1002, 'frage', 'Chat', 'frage-3', '', ['frage_kurs' => '1849', 'frage_ist_chat' => '1'], 'publish', 22);
+        $this->wpComment(20, 1000, 2, 'Stell dir einen Morgen vor.', '2026-09-17 08:00:00');
 
         // Chat von Anna: Kommentare am chat-Post
         $this->wpPost(900, 'chat', 'Chat Anna', 'chat-anna', '', [], 'private', 21);
@@ -330,6 +337,20 @@ class ImportBegleitungTest extends TestCase
         });
     }
 
+    public function test_fragen_aus_dem_kursraum(): void
+    {
+        $stats = $this->import();
+        $this->assertSame(2, $stats['fragen']);
+
+        app(CurrentTenant::class)->run($this->lea, function () {
+            $f = Question::where('legacy_id', '1000')->first();
+            $this->assertSame([$this->anna->id, $this->hybrid->id, 'beantwortet', 'program'], [$f->user_id, $f->program_id, $f->status, $f->visibility]);
+            $this->assertSame('Stell dir einen Morgen vor.', $f->answers()->first()->body);
+            $this->assertSame('coach', Question::where('legacy_id', '1001')->value('visibility'));
+            $this->assertNull(Question::where('legacy_id', '1002')->first());
+        });
+    }
+
     public function test_chats_und_lesestand(): void
     {
         $stats = $this->import();
@@ -397,7 +418,7 @@ class ImportBegleitungTest extends TestCase
             $this->assertSame(4, Task::count(), '2 eigene + 2 Kopien');
             $this->assertSame(1, Conversation::count());
             $this->assertSame(3, Message::count());
-            $this->assertSame(1, Comment::count());
+            $this->assertSame(2, Comment::count(), 'Kommentar an der Notiz und Antwort auf die Frage');
             $this->assertSame(3, Resource::where('legacy_id', '400')->first()->links()->count());
         });
     }

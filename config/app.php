@@ -67,6 +67,9 @@ return [
 
     'timezone' => 'UTC',
 
+    // Zeiten im Scheduler (z. B. Abendmail um 19:30) in Ortszeit, gespeichert wird weiter in UTC
+    'schedule_timezone' => env('SCHEDULE_TIMEZONE', env('APP_TIMEZONE', 'UTC')),
+
     /*
     |--------------------------------------------------------------------------
     | Application Locale Configuration
