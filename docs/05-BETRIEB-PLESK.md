@@ -60,6 +60,7 @@ $PHP artisan push:keys lea                              # Web Push (VAPID)
 $PHP artisan bridge:secret lea                          # SSO-Bruecke, Geheimnis in die wp-config.php (siehe 07)
 $PHP artisan inhalte:feeds lea                          # Feeds einmal von Hand, sonst stuendlich
 $PHP artisan themen:profil lea --limit=20               # Themenfinder per KI (braucht ANTHROPIC_API_KEY)
+$PHP artisan branding:icons lea /var/www/vhosts/leawernli.ch/httpdocs/wp-content/uploads/lea-app   # App-Icons
 ```
 
 Zusaetzlich in der `.env`: `ANTHROPIC_API_KEY` (KI), `QUEUE_CONNECTION=database` (Worker laeuft im Scheduler). Der Import kopiert Dateien aus `wp-content/uploads` nach `storage/app/tenants/1/` (Pfad in `settings.import.wordpress.uploads_dir`), das dauert beim ersten Mal.
@@ -76,6 +77,8 @@ Einstellungen je Mandant unter `/plattform` (JSON in `tenants.settings`):
 | `bridge.secret` | SSO-Bruecke (von `bridge:secret` gesetzt) |
 | `feeds` | RSS-Quellen fuer Impulse und Podcast |
 | `ai.anthropic_key`, `ai.model` | eigener KI-Schluessel des Mandanten (sonst Plattform) |
+| `passkeys.rp_id`, `passkeys.origins` | Relying Party fuer Passkeys (fuer Lea `leawernli.ch`, damit Website und App dieselben Passkeys nutzen) |
+| `onboarding.steps` | eigene Texte der Einfuehrung (sonst Vorgabe mit dem Namen der Coachin), `coach_name` fuer die Anrede |
 | `import.wordpress` | Zuordnung fuer den Import |
 
 Scheduler-Laeufe (`routes/console.php`): Queue-Worker jede Minute, Termin-Erinnerungen und Nachfassen alle zehn Minuten, Aufgaben-Hinweise 8 und 18 Uhr, Abendmail 19:30, Feeds stuendlich, geplante Beitraege alle zehn Minuten. Zeiten gelten in der Zeitzone des Mandanten.

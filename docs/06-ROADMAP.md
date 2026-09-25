@@ -18,8 +18,8 @@ Jede Etappe endet mit einem Stand, den Lea anschauen kann.
 - [x] Tailwind-Standalone eingerichtet, `bin/build-css` (laedt die CLI bei Bedarf, baut `public/css/app.css`)
 - [x] Anmeldung: Magic Link als Standard (15 Minuten, einmalig, je Mandant), Passwort optional (im Profil setzbar), Google und Apple über Socialite (Zugangsdaten je Mandant in `settings.oauth`, Knopf erscheint nur mit Zugangsdaten)
 - [x] Profil: Name, Handynummer, drei Schalter "Was dich erreicht", Passwort
-- [ ] Passkeys (WebAuthn), RP-ID konfigurierbar je Mandant; Übernahme aus `secure_passkeys_webauthns` prüfen (nächster Schritt)
-- [x] PWA: Manifest je Mandant (`/manifest.webmanifest`), Service Worker ohne Cache. Offen: App-Icons aus `uploads/lea-app/` nach `storage/app/tenants/1/` kopieren und in `branding.icon_url` eintragen
+- [x] Passkeys (WebAuthn, Laragear) mit RP-ID je Mandant (`settings.passkeys.rp_id`, für Lea `leawernli.ch`, damit die Passkeys der Website weitergelten). Übernahme der Website-Passkeys aus `secure_passkeys_webauthns` noch offen (Format prüfen), sonst einmal neu anlegen
+- [x] PWA: Manifest je Mandant (`/manifest.webmanifest`), Service Worker ohne Cache. App-Icons: `php84 artisan branding:icons lea /var/www/vhosts/leawernli.ch/httpdocs/wp-content/uploads/lea-app`
 - [x] Filament-Panel `coach` (`/coach`, nur owner/team, Ressource Personen) und `plattform` (`/plattform`, nur Plattform-Admin, Ressource Mandanten). Anmeldung läuft über die App, nicht über Filament
 - [x] Import 1: Personen und Rollen (`php84 artisan import:wordpress lea --only=users`, wiederholbar, `--dry-run`, `--with-guests`)
 
@@ -53,7 +53,8 @@ Stand nach Etappe 1: Lea kann sich per Link anmelden, sieht Start und Profil, im
 - [x] KI-Zusammenfassung von Aufzeichnungen mit Aufgabenvorschlägen (Coach-Bereich und für die Person in ihrer 1:1-Sitzung), Podcast-Aufbereitung, Themenfinder-Texte
 - [ ] Deploy, `.env` (Mail, Redis, WP-DB, Anthropic), `db:seed`, `import:wordpress lea --only=alles`, `push:keys lea`, `bridge:secret lea`, Woo-Webhook eintragen (siehe 05 und 07)
 - [ ] Parallelbetrieb mit dem Testkurs, Rückmeldungen einarbeiten
-- [ ] Passkeys, App-Icons, Willkommens-Einführung (8 Schritte), Neuigkeiten-Übersicht für die Coachin
+- [x] Passkeys, App-Icons (Kommando), Willkommens-Einführung (8 Schritte, `/willkommen`), Dashboard der Coachin (Kennzahlen, Neues von den Personen, nächste Termine)
+- [x] Startseite mit Tagesüberblick (Neu seit dem letzten Besuch, aktuelle Woche, nächster Termin, Aufgaben, Impuls), Kalender-Abo je Person (webcal) und Termin-Datei
 
 ## Umschalten (nach Leas Freigabe)
 

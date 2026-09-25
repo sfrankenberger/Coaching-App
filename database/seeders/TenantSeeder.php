@@ -21,6 +21,9 @@ class TenantSeeder extends Seeder
             'currency' => 'CHF',
             'settings' => [
                 // Woo-Webhook: Geheimnis ueber /plattform eintragen (webhook_secret), Ziel https://app.leawernli.ch/hooks/woocommerce
+                // Passkeys: RP-ID ist die Haupt-Domain, damit auf leawernli.ch angelegte Passkeys auch fuer app. gelten
+                'passkeys' => ['rp_id' => 'leawernli.ch', 'origins' => ['https://leawernli.ch']],
+                'coach_name' => 'Lea',
                 'shop' => ['driver' => 'woocommerce', 'url' => 'https://leawernli.ch', 'webhook_secret' => null],
                 // Impulse und Podcast per RSS (inhalte:feeds). Eigener Podcast bei Kajabi, Blog nur "Free"-Beitraege.
                 'feeds' => [
