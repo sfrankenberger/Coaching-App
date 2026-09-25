@@ -873,3 +873,11 @@
     body.drucke-mitnehmen .wird-gedruckt .wb-mitnehmen-text { max-height: none; border: 0; }
     body.drucke-mitnehmen .wird-gedruckt button { display: none; }
 }
+
+/* Kommentare unter Geteiltem */
+.kommentare { margin-top: 12px; padding-top: 10px; border-top: 1px solid var(--c-line-soft); display: grid; gap: 8px; }
+.kommentar { position: relative; padding: 8px 32px 8px 12px; border-radius: 12px; background: var(--c-ghost); font-size: var(--fs-md); line-height: 1.5; }
+.kommentar.vom-team { background: var(--c-primary-soft); }
+.kommentar .wer { display: block; font-size: var(--fs-xs); color: var(--c-faint); margin-bottom: 2px; }
+.kommentar .weg { position: absolute; top: 6px; right: 6px; }
+.kommentar .weg button { width: 24px; height: 24px; border: 0; background: none; color: var(--c-faint); cursor: pointer; }

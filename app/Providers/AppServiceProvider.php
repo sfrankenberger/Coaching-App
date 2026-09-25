@@ -60,6 +60,7 @@ class AppServiceProvider extends ServiceProvider
             'journal' => JournalEntry::class,
             'message' => Message::class,
             'comment' => Comment::class,
+            'answer' => \App\Models\Answer::class,
             'question' => Question::class,
             'post' => Post::class,
             'episode' => PodcastEpisode::class,

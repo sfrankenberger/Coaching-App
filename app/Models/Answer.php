@@ -48,4 +48,9 @@ class Answer extends Model
 
         return is_array($v) ? $v !== [] : trim((string) $v) !== '';
     }
+
+    public function comments(): \Illuminate\Database\Eloquent\Relations\MorphMany
+    {
+        return $this->morphMany(Comment::class, 'commentable')->oldest();
+    }
 }

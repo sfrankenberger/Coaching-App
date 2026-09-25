@@ -8,6 +8,7 @@ use App\Http\Controllers\Auth\SocialController;
 use App\Http\Controllers\FragenController;
 use App\Http\Controllers\GespraechController;
 use App\Http\Controllers\HomeController;
+use App\Http\Controllers\KommentarController;
 use App\Http\Controllers\Hooks\WooCommerceController;
 use App\Http\Controllers\ImpulseController;
 use App\Http\Controllers\JournalController;
@@ -151,4 +152,6 @@ Route::middleware(['auth', 'membership'])->group(function () {
     Route::post('/fragen/{frage}/call', [FragenController::class, 'call'])->name('fragen.call');
     Route::delete('/fragen/{frage}', [FragenController::class, 'destroy'])->name('fragen.destroy');
     Route::delete('/antworten/{antwort}', [FragenController::class, 'antwortLoeschen'])->name('fragen.antwort.loeschen');
+    Route::post('/kommentar', [KommentarController::class, 'store'])->middleware('throttle:30,1')->name('kommentar.store');
+    Route::delete('/kommentar/{kommentar}', [KommentarController::class, 'destroy'])->name('kommentar.destroy');
 });

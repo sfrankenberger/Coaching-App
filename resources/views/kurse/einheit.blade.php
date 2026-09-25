@@ -261,6 +261,13 @@
                     <span class="hinweis">{{ $shareMode === 'alles' ? 'Du teilst grundsätzlich alles. Hier kannst du eine Ausnahme machen.' : 'Nur was du teilst, sieht deine Coachin.' }}</span>
                 </div>
             @endif
+            {{-- Rueckmeldungen der Coachin zu einzelnen Antworten --}}
+            @foreach ($answers->filter(fn ($a) => $a->comments()->exists()) as $a)
+                <div id="uebung-{{ $a->exercise_id }}" style="margin-top:14px">
+                    <span class="eyebrow block">Rückmeldung zu «{{ \Illuminate\Support\Str::limit($unit->exercises->firstWhere('id', $a->exercise_id)?->prompt ?: $unit->exercises->firstWhere('id', $a->exercise_id)?->title, 60) }}»</span>
+                    <x-kommentare :item="$a" />
+                </div>
+            @endforeach
         </x-karte>
     @endif
 

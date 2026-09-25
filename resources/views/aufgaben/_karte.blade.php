@@ -23,6 +23,7 @@
                     @endforeach
                 </div>
             @endif
+            @unless (($ohneKommentare ?? false))<x-kommentare :item="$t" />@endunless
         </div>
         <details class="relative shrink-0">
             <summary class="list-none cursor-pointer knopf-rund grid place-items-center" aria-label="Mehr"><i class="fa-solid fa-ellipsis-vertical"></i></summary>

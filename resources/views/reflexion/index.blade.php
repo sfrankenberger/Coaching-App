@@ -35,7 +35,7 @@
     @if ($meine->isNotEmpty())
         <h2 class="abschnitt"><i class="fa-solid fa-clock-rotate-left"></i>Deine bisherigen Reflexionen<em>{{ $meine->count() }}</em></h2>
         @foreach ($meine as $r)
-            <article class="karte">
+            <article id="reflexion-{{ $r->id }}" class="karte">
                 <div class="flex items-start gap-3">
                     <div class="min-w-0 flex-1">
                         <span class="hinweis">{{ $r->week_label ?: $r->created_at->translatedFormat('j. F Y') }}@if ($r->program) · {{ $r->program->title }}@endif · {{ $r->isShared() ? 'Geteilt' : 'Nur ich' }}</span>
@@ -54,6 +54,7 @@
                                 <form method="post" action="{{ route('reflexion.teilen', $r) }}">@csrf<input type="hidden" name="visibility" value="coach"><button class="knopf knopf-leise knopf-klein">Mit Coachin teilen</button></form>
                             @endif
                         </div>
+                        <x-kommentare :item="$r" />
                     </div>
                     <details class="relative shrink-0">
                         <summary class="list-none cursor-pointer knopf-rund grid place-items-center" aria-label="Mehr"><i class="fa-solid fa-ellipsis-vertical"></i></summary>

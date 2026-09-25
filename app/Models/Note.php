@@ -43,4 +43,9 @@ class Note extends Model
     {
         return $this->belongsTo(Program::class);
     }
+
+    public function comments(): \Illuminate\Database\Eloquent\Relations\MorphMany
+    {
+        return $this->morphMany(Comment::class, 'commentable')->oldest();
+    }
 }

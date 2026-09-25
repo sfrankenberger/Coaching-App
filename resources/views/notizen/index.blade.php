@@ -40,6 +40,7 @@
                         @if ($n->program) · {{ $n->program->title }} @endif
                         · {{ \App\Models\Note::VISIBILITIES[$n->visibility] ?? '' }}
                     </span>
+                    <x-kommentare :item="$n" />
                 </div>
                 <details class="relative shrink-0">
                     <summary class="list-none cursor-pointer knopf-rund grid place-items-center" aria-label="Mehr"><i class="fa-solid fa-ellipsis-vertical"></i></summary>
