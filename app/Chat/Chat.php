@@ -111,6 +111,7 @@ class Chat
             'user_id' => $from->id,
             'body' => filled($data['body'] ?? null) ? trim($data['body']) : null,
             'source' => $data['source'] ?? 'app',
+            'meta' => $data['meta'] ?? null,
         ]);
 
         if (($ref = $data['ref'] ?? null) && is_array($ref) && ! empty($ref['type']) && ! empty($ref['id'])) {

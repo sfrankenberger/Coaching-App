@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Chat\Chat;
+use App\Chat\Terminvorschlag;
 use App\Models\Conversation;
 use App\Models\Membership;
 use App\Models\Message;
@@ -127,6 +128,16 @@ class GespraechController extends Controller
     }
 
     /** Reaktion auf eine fremde Nachricht setzen oder wieder nehmen. */
+    /** Vorgeschlagene Zeit antippen: Termin anlegen, Bestaetigung ins Gespraech. */
+    public function termin(Request $request, Message $nachricht, Terminvorschlag $vorschlag): RedirectResponse
+    {
+        $data = $request->validate(['i' => ['required', 'integer', 'min:0', 'max:20']]);
+        $event = $vorschlag->waehlen($nachricht, $request->user(), (int) $data['i']);
+
+        return redirect()->route('gespraech.show', $nachricht->conversation_id)
+            ->with('meldung', 'Gebucht: '.$event->starts_at->translatedFormat('l, j. F, H:i').' Uhr. Du findest den Termin unter Termine.');
+    }
+
     public function reaktion(Request $request, Message $nachricht): JsonResponse|RedirectResponse
     {
         $user = $request->user();

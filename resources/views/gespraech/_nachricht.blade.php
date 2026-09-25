@@ -24,6 +24,23 @@
                 <a href="{{ route('nachricht.datei', [$m, 'datei']) }}" target="_blank" rel="noopener" class="mt-1 inline-flex items-center gap-2 text-md underline"><i class="fa-solid fa-paperclip"></i>{{ $m->attachment_name ?: 'Datei' }}</a>
             @endif
         @endif
+        @if ($m->istVorschlag())
+            @php $gebucht = $m->meta['gebucht'] ?? null; $fuerMich = $conv->isDirect() && $conv->user_id === $ich->id; @endphp
+            <div class="vorschlaege">
+                @foreach ($m->vorschlaege() as $i => $zeit)
+                    @if ($gebucht)
+                        @if ((int) $gebucht['i'] === $i)<span class="vorschlag an"><i class="fa-solid fa-check"></i>{{ $zeit->translatedFormat('D j. M, H:i') }} gebucht</span>@endif
+                    @elseif ($fuerMich && $zeit->isFuture())
+                        <form method="post" action="{{ route('nachricht.termin', $m) }}" onsubmit="return confirm('{{ $zeit->translatedFormat('l, j. F, H:i') }} Uhr buchen?')">
+                            @csrf<input type="hidden" name="i" value="{{ $i }}">
+                            <button class="vorschlag"><i class="fa-regular fa-calendar"></i>{{ $zeit->translatedFormat('D j. M, H:i') }}</button>
+                        </form>
+                    @else
+                        <span @class(['vorschlag', 'vorbei' => $zeit->isPast()])><i class="fa-regular fa-calendar"></i>{{ $zeit->translatedFormat('D j. M, H:i') }}</span>
+                    @endif
+                @endforeach
+            </div>
+        @endif
         @if ($m->ref)
             @php $ref = $m->ref; $refLabel = ['task' => 'Aufgabe', 'note' => 'Notiz', 'reflection' => 'Reflexion', 'event' => 'Termin', 'resource' => 'Material', 'unit' => 'Einheit'][$m->ref_type] ?? 'Anhang'; @endphp
             <div class="mt-1 rounded-xl border border-line bg-card px-3 py-2 text-md">

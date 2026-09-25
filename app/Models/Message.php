@@ -20,7 +20,7 @@ class Message extends Model
 
     protected function casts(): array
     {
-        return ['nudged_at' => 'datetime'];
+        return ['nudged_at' => 'datetime', 'meta' => 'array'];
     }
 
     public function conversation(): BelongsTo
@@ -71,5 +71,18 @@ class Message extends Model
         }
 
         return 'Etwas geteilt';
+    }
+
+    /** Terminvorschlaege als Zeitpunkte in Ortszeit. */
+    public function vorschlaege(): \Illuminate\Support\Collection
+    {
+        $tz = static::ortszone() ?? config('app.timezone');
+
+        return collect($this->meta['vorschlaege'] ?? [])->map(fn ($iso) => \Illuminate\Support\Carbon::parse($iso)->setTimezone($tz));
+    }
+
+    public function istVorschlag(): bool
+    {
+        return ! empty($this->meta['vorschlaege']);
     }
 }

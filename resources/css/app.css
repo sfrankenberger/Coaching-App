@@ -881,3 +881,10 @@
 .kommentar .wer { display: block; font-size: var(--fs-xs); color: var(--c-faint); margin-bottom: 2px; }
 .kommentar .weg { position: absolute; top: 6px; right: 6px; }
 .kommentar .weg button { width: 24px; height: 24px; border: 0; background: none; color: var(--c-faint); cursor: pointer; }
+
+/* Terminvorschlag im Gespraech */
+.vorschlaege { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; }
+.vorschlag { display: inline-flex; align-items: center; gap: 6px; min-height: 40px; padding: 0 14px; border-radius: 999px; border: 1px solid var(--c-line-strong); background: var(--c-card); color: var(--c-text); font: inherit; font-size: var(--fs-md); cursor: pointer; }
+button.vorschlag:hover { border-color: var(--c-primary); }
+.vorschlag.an { background: var(--c-success-soft); border-color: transparent; }
+.vorschlag.vorbei { opacity: .5; text-decoration: line-through; }

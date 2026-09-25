@@ -94,6 +94,20 @@ class Dossier extends Page
         return [
             Action::make('gespraech')->label('Gespräch')->icon('heroicon-o-chat-bubble-left-right')
                 ->url(fn () => route('gespraech.show', app(Chat::class)->directFor($user))),
+            Action::make('zeiten')->label('Zeiten vorschlagen')->icon('heroicon-o-calendar-days')
+                ->modalHeading('Zeiten vorschlagen')->modalDescription($user->vorname().' sieht die Zeiten im Gespräch und tippt eine an. Daraus wird der Termin.')
+                ->schema([
+                    \Filament\Forms\Components\Repeater::make('zeiten')->label('Zeiten')->simple(
+                        \Filament\Forms\Components\DateTimePicker::make('start')->required()->native(false)->seconds(false)->displayFormat('D d.m.Y H:i')->minDate(now())
+                    )->minItems(1)->maxItems(6)->default([null])->addActionLabel('Weitere Zeit'),
+                    \Filament\Forms\Components\TextInput::make('dauer')->label('Dauer (Minuten)')->numeric()->default(60)->minValue(15)->maxValue(240)->required(),
+                    \Filament\Forms\Components\Textarea::make('text')->label('Nachricht dazu')->rows(2)
+                        ->default('Hallo '.$user->vorname().', diese Zeiten hätte ich für unser nächstes Gespräch. Tipp einfach die an, die dir passt.'),
+                ])
+                ->action(function (array $data) use ($user) {
+                    app(\App\Chat\Terminvorschlag::class)->vorschlagen(auth()->user(), $user, collect($data['zeiten'])->all(), (int) $data['dauer'], $data['text'] ?? null);
+                    Notification::make()->title('Zeiten sind im Gespräch mit '.$user->vorname())->success()->send();
+                }),
             Action::make('mail')->label('Mail')->icon('heroicon-o-envelope')->url('mailto:'.$user->email)->openUrlInNewTab(),
             Action::make('whatsapp')->label('WhatsApp')->icon('heroicon-o-device-phone-mobile')
                 ->url(Telefon::whatsapp($user->phone, app(CurrentTenant::class)->get()))->openUrlInNewTab()->visible(filled($user->phone)),

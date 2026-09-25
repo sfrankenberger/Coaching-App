@@ -139,6 +139,7 @@ Route::middleware(['auth', 'membership'])->group(function () {
     Route::post('/gespraech/{gespraech}/senden', [GespraechController::class, 'senden'])->name('gespraech.senden');
     Route::get('/gespraech/{gespraech}/neu', [GespraechController::class, 'neu'])->name('gespraech.neu');
     Route::post('/gespraech/{gespraech}/gelesen', [GespraechController::class, 'gelesen'])->name('gespraech.gelesen');
+    Route::post('/nachricht/{nachricht}/termin', [GespraechController::class, 'termin'])->middleware('throttle:10,1')->name('nachricht.termin');
     Route::post('/nachricht/{nachricht}/reaktion', [GespraechController::class, 'reaktion'])->name('nachricht.reaktion');
     Route::get('/nachricht/{nachricht}/{art}', [GespraechController::class, 'datei'])->name('nachricht.datei')->where('art', 'audio|datei');
     Route::get('/kurse/{program:slug}/austausch', [GespraechController::class, 'gruppe'])->name('kurse.austausch');
