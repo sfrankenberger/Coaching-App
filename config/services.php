@@ -14,6 +14,14 @@ return [
     |
     */
 
+    // Mailgun (Versand aller Mails, fuer Lea dieselbe Domain wie WordPress/Mailster)
+    'mailgun' => [
+        'domain' => env('MAILGUN_DOMAIN'),
+        'secret' => env('MAILGUN_SECRET'),
+        'endpoint' => env('MAILGUN_ENDPOINT', 'api.eu.mailgun.net'),
+        'scheme' => 'https',
+    ],
+
     'postmark' => [
         'key' => env('POSTMARK_API_KEY'),
     ],
