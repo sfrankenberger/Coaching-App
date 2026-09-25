@@ -63,6 +63,7 @@ class AppServiceProvider extends ServiceProvider
             'message' => Message::class,
             'comment' => Comment::class,
             'answer' => \App\Models\Answer::class,
+            'membership' => \App\Models\Membership::class,
             'question' => Question::class,
             'post' => Post::class,
             'episode' => PodcastEpisode::class,

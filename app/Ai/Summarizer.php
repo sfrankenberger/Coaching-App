@@ -7,6 +7,7 @@ use App\Models\Event;
 use App\Models\FinderProfile;
 use App\Models\PodcastEpisode;
 use App\Models\ProgramMember;
+use App\Models\Reflection;
 use App\Models\Task;
 use App\Models\Topic;
 use App\Models\User;
@@ -67,6 +68,95 @@ class Summarizer
         }
 
         return $summary;
+    }
+
+    /* ---------- Vorbereitung auf ein Gespraech ---------- */
+
+    /**
+     * Vorbereitung der Coachin auf das naechste Gespraech mit einer Person (wie lea-coachees):
+     * Wo sie steht, was auffaellt, Fragen, woran denken. Nur aus dem, was die Person geteilt hat,
+     * dazu die eigenen Notizen der Coachin und das 1:1-Gespraech.
+     */
+    public function vorbereitung(\App\Models\Membership $m, ?int $requestedBy = null): AiSummary
+    {
+        $summary = AiSummary::firstOrNew(['summarizable_type' => 'membership', 'summarizable_id' => $m->id, 'kind' => 'vorbereitung']);
+        $summary->fill(['status' => 'pending', 'error' => null, 'requested_by' => $requestedBy ?? $summary->requested_by])->save();
+
+        $person = $m->user;
+        $stoff = $this->stoffFuerVorbereitung($m);
+        $prompt = "Du hilfst einer Coachin, sich auf das nächste Gespräch mit {$person->vorname()} vorzubereiten.\n"
+            ."Hier ist alles, was {$person->vorname()} mit ihr geteilt hat, dazu die Notizen der Coachin und die letzten Nachrichten. "
+            ."Nichts davon ist für andere bestimmt.\n\n{$stoff}\n\n"
+            ."Antworte AUSSCHLIESSLICH mit einem JSON-Objekt, ohne Vorrede, ohne Code-Zaun, mit genau diesen Schlüsseln:\n"
+            .'{"wo_sie_steht": "3 bis 5 Sätze", "faellt_auf": ["2 bis 4 Beobachtungen, konkret, mit Bezug"], '
+            .'"fragen": ["3 bis 5 offene Fragen für das Gespräch"], "woran_denken": ["0 bis 3 Dinge, die die Coachin nicht vergessen sollte (Zusagen, offene Punkte)"]}'
+            ."\n\nRegeln: Schreib an die Coachin (Du). Keine Diagnosen, keine Werbesprache, nichts erfinden. Wenn es wenig Material gibt, sag das ehrlich und halte dich kurz.";
+
+        try {
+            $r = $this->ai->json($prompt, Anthropic::STIL);
+            $d = $r['data'];
+            $liste = fn ($k) => collect($d[$k] ?? [])->filter(fn ($s) => is_string($s) && trim($s) !== '')->map(fn ($s) => '• '.trim($s))->implode("\n");
+            $teile = array_filter([
+                'Wo sie steht' => trim((string) ($d['wo_sie_steht'] ?? '')),
+                'Das fällt auf' => $liste('faellt_auf'),
+                'Fragen für das Gespräch' => $liste('fragen'),
+                'Woran denken' => $liste('woran_denken'),
+            ]);
+            $text = collect($teile)->map(fn ($t, $h) => "{$h}\n{$t}")->implode("\n\n");
+            $summary->fill(['status' => 'done', 'body' => $text, 'model' => $r['model'], 'tokens_in' => $r['tokens_in'], 'tokens_out' => $r['tokens_out']])->save();
+        } catch (Throwable $e) {
+            $summary->fill(['status' => 'failed', 'error' => mb_substr($e->getMessage(), 0, 1000)])->save();
+        }
+
+        return $summary;
+    }
+
+    /** Stoff fuer die Vorbereitung: nur Geteiltes, eigene Notizen der Coachin, 1:1-Gespraech. */
+    public function stoffFuerVorbereitung(\App\Models\Membership $m): string
+    {
+        $u = $m->user;
+        $teile = [];
+        $programme = app(\App\Programs\ProgramAccess::class)->programsFor($u);
+        if ($programme->isNotEmpty()) {
+            $tracker = app(\App\Programs\ProgressTracker::class);
+            $teile[] = "PROGRAMME\n".$programme->map(fn ($p) => '- '.$p->title.': '.$tracker->summary($u, $p)['done'].' von '.$tracker->summary($u, $p)['total'].' erledigt')->implode("\n");
+        }
+        $lage = app(\App\Coach\Lage::class)->fuer($m);
+        $teile[] = "LAGE\n- zuletzt da: ".($m->last_seen_at?->diffForHumans() ?? 'noch nie')
+            ."\n- Aufgaben von der Coachin: {$lage['aufgaben'][0]} von {$lage['aufgaben'][1]} erledigt, {$lage['ueberfaellig']} überfällig"
+            .($lage['verpasst'] ? "\n- {$lage['verpasst']} Gruppencalls verpasst" : '')
+            .($lage['kontingent'] ? "\n- Sitzungen: {$lage['kontingent']['gehabt']} gehabt, {$lage['kontingent']['offen']} offen" : '')
+            .($lage['naechster'] ? "\n- nächster Termin: ".$lage['naechster']->title.', '.$lage['naechster']->starts_at->translatedFormat('j. F H:i') : '');
+
+        $refl = Reflection::where('user_id', $u->id)->where('visibility', '!=', 'private')->latest()->limit(5)->get();
+        if ($refl->isNotEmpty()) {
+            $teile[] = "GETEILTE REFLEXIONEN\n".$refl->map(fn ($r) => '- '.($r->week_label ?: $r->created_at->format('d.m.Y')).': '
+                .collect(\App\Http\Controllers\ReflexionController::FRAGEN)->map(fn ($f, $k) => $r->$k ? $f[1].' '.Str::limit($r->$k, 600) : null)->filter()->implode(' | '))->implode("\n");
+        }
+        $antworten = \App\Models\Answer::where('user_id', $u->id)->where('shared_with_coach', true)->with('exercise')->latest('updated_at')->limit(20)->get()->filter->isFilled();
+        if ($antworten->isNotEmpty()) {
+            $teile[] = "GETEILTE ÜBUNGSANTWORTEN\n".$antworten->map(fn ($a) => '- '.Str::limit((string) ($a->exercise?->prompt ?: $a->exercise?->title), 120).': '.Str::limit($a->asText(), 500))->implode("\n");
+        }
+        $notizen = \App\Models\Note::where('user_id', $u->id)->whereIn('visibility', ['coach', 'program', 'all'])->latest()->limit(8)->get();
+        if ($notizen->isNotEmpty()) {
+            $teile[] = "GETEILTE NOTIZEN\n".$notizen->map(fn ($n) => '- '.Str::limit(trim(($n->title ? $n->title.': ' : '').$n->body), 500))->implode("\n");
+        }
+        $aufgaben = Task::where('user_id', $u->id)->where(fn ($q) => $q->where('visibility', '!=', 'private')->orWhereNotNull('assigned_by'))->latest()->limit(15)->get();
+        if ($aufgaben->isNotEmpty()) {
+            $teile[] = "AUFGABEN\n".$aufgaben->map(fn ($t) => '- '.($t->isDone() ? '[erledigt] ' : '[offen] ').$t->title)->implode("\n");
+        }
+        $eigene = \App\Models\CoachNote::where('user_id', $u->id)->latest()->limit(10)->get();
+        if ($eigene->isNotEmpty()) {
+            $teile[] = "NOTIZEN DER COACHIN\n".$eigene->map(fn ($n) => '- '.$n->created_at->format('d.m.Y').': '.Str::limit($n->body, 600))->implode("\n");
+        }
+        if ($conv = app(\App\Chat\Chat::class)->directFor($u, false)) {
+            $msgs = \App\Models\Message::where('conversation_id', $conv->id)->latest('id')->limit(30)->get()->reverse();
+            if ($msgs->isNotEmpty()) {
+                $teile[] = "1:1-GESPRÄCH (neueste zuletzt)\n".$msgs->map(fn ($x) => '- '.$x->created_at->format('d.m. H:i').' '.($x->user_id === $u->id ? $u->vorname() : 'Coachin').': '.Str::limit((string) ($x->body ?: $x->transcript ?: '[Anhang]'), 400))->implode("\n");
+            }
+        }
+
+        return mb_substr(implode("\n\n", $teile), 0, 60000);
     }
 
     /** Aus den Vorschlaegen echte Aufgaben machen (Indizes der gewaehlten Vorschlaege). */

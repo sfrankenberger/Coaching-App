@@ -88,6 +88,23 @@
         </div>
 
         <div class="space-y-6 lg:col-span-2">
+            @if ($vorbereitung)
+                <x-filament::section heading="Vorbereitung auf das Gespräch" icon="heroicon-o-sparkles"
+                    :description="$vorbereitung->isDone() ? 'Erstellt '.$vorbereitung->updated_at->diffForHumans().'. Nur aus Geteiltem, deinen Notizen und dem Gespräch.' : null">
+                    @if ($vorbereitung->status === 'pending')
+                        <p class="text-sm text-gray-500" wire:poll.10s>Wird erstellt ...</p>
+                    @elseif ($vorbereitung->status === 'failed')
+                        <p class="text-sm text-danger-600">Das hat nicht geklappt: {{ $vorbereitung->error }}</p>
+                    @else
+                        <div class="space-y-3 text-sm">
+                            @foreach (preg_split('/\n{2,}/', (string) $vorbereitung->body) as $block)
+                                @php [$kopf, $rest] = array_pad(explode("\n", $block, 2), 2, ''); @endphp
+                                <div><div class="font-medium">{{ $kopf }}</div><div class="whitespace-pre-line text-gray-700 dark:text-gray-300">{{ $rest }}</div></div>
+                            @endforeach
+                        </div>
+                    @endif
+                </x-filament::section>
+            @endif
             <x-filament::section heading="Geteilte Antworten" description="Nur, was die Person selbst freigegeben hat.">
                 @forelse ($antworten as $unitId => $liste)
                     @php $unit = $liste->first()->exercise->unit; @endphp

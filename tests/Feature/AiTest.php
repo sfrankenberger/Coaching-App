@@ -153,4 +153,36 @@ class AiTest extends TestCase
         $this->assertSame(['Innere Ruhe', 'Neues Thema'], $this->in(fn () => $post->topics()->pluck('name')->sort()->values()->all()));
         $this->assertSame(2, $this->in(fn () => Topic::count()));
     }
+
+    public function test_vorbereitung_nur_aus_geteiltem(): void
+    {
+        $m = $this->in(function () {
+            \App\Models\Reflection::create(['user_id' => $this->anna->id, 'went_well' => 'Geteilter Fortschritt', 'visibility' => 'coach', 'shared_at' => now()]);
+            \App\Models\Reflection::create(['user_id' => $this->anna->id, 'went_well' => 'Ganz privates Geheimnis']);
+            \App\Models\Note::create(['user_id' => $this->anna->id, 'body' => 'Private Notiz XYZ', 'visibility' => 'private']);
+            \App\Models\CoachNote::create(['user_id' => $this->anna->id, 'author_id' => $this->lea->id, 'body' => 'Beim Thema Arbeit nachfragen']);
+
+            return \App\Models\Membership::where('user_id', $this->anna->id)->first();
+        });
+        Http::fake(['api.anthropic.com/*' => Http::response($this->antwort([
+            'wo_sie_steht' => 'Anna kommt gut voran.', 'faellt_auf' => ['Sie schreibt regelmässig.'], 'fragen' => ['Was hilft dir gerade?'], 'woran_denken' => [],
+        ]))]);
+
+        \App\Jobs\VorbereitungErstellen::dispatchSync($this->a->id, $m->id, $this->lea->id);
+
+        Http::assertSent(function ($request) {
+            $prompt = $request['messages'][0]['content'];
+
+            return str_contains($prompt, 'Geteilter Fortschritt') && str_contains($prompt, 'Beim Thema Arbeit nachfragen')
+                && ! str_contains($prompt, 'Ganz privates Geheimnis') && ! str_contains($prompt, 'Private Notiz XYZ');
+        });
+        $v = $this->in(fn () => AiSummary::where('kind', 'vorbereitung')->first());
+        $this->assertTrue($v->isDone());
+        $this->assertStringContainsString("Wo sie steht\nAnna kommt gut voran.", $v->body);
+        $this->assertStringContainsString('• Was hilft dir gerade?', $v->body);
+        $this->assertStringNotContainsString('Woran denken', $v->body, 'leere Abschnitte fallen weg');
+
+        $this->actingAs($this->lea)->get("http://a.test/coach/memberships/{$m->id}/dossier")->assertOk()
+            ->assertSee('Vorbereitung auf das Gespräch')->assertSee('Anna kommt gut voran.');
+    }
 }

@@ -108,6 +108,15 @@ class Dossier extends Page
                     app(\App\Chat\Terminvorschlag::class)->vorschlagen(auth()->user(), $user, collect($data['zeiten'])->all(), (int) $data['dauer'], $data['text'] ?? null);
                     Notification::make()->title('Zeiten sind im Gespräch mit '.$user->vorname())->success()->send();
                 }),
+            Action::make('vorbereitung')->label(fn () => $this->vorbereitung() ? 'Vorbereitung neu' : 'Vorbereitung (KI)')->icon('heroicon-o-sparkles')->color('gray')
+                ->visible(fn () => \App\Ai\Anthropic::configured(app(CurrentTenant::class)->get()))
+                ->requiresConfirmation()->modalHeading('Vorbereitung auf das Gespräch erstellen?')
+                ->modalDescription('Aus dem, was '.$user->vorname().' geteilt hat, deinen Notizen und dem Gespräch. Dauert etwa eine Minute, du bekommst Bescheid.')
+                ->action(function () {
+                    \App\Models\AiSummary::updateOrCreate(['summarizable_type' => 'membership', 'summarizable_id' => $this->record->id, 'kind' => 'vorbereitung'], ['status' => 'pending', 'error' => null]);
+                    \App\Jobs\VorbereitungErstellen::dispatch(app(CurrentTenant::class)->id(), $this->record->id, auth()->id());
+                    Notification::make()->title('Läuft. Du bekommst Bescheid, sobald es fertig ist.')->success()->send();
+                }),
             Action::make('mail')->label('Mail')->icon('heroicon-o-envelope')->url('mailto:'.$user->email)->openUrlInNewTab(),
             Action::make('whatsapp')->label('WhatsApp')->icon('heroicon-o-device-phone-mobile')
                 ->url(Telefon::whatsapp($user->phone, app(CurrentTenant::class)->get()))->openUrlInNewTab()->visible(filled($user->phone)),
@@ -120,6 +129,13 @@ class Dossier extends Page
                 }),
             Action::make('bearbeiten')->label('Bearbeiten')->url(MembershipResource::getUrl('edit', ['record' => $this->record]))->color('gray'),
         ];
+    }
+
+    /** Gespeicherte Vorbereitung, drei Tage gueltig. */
+    public function vorbereitung(): ?\App\Models\AiSummary
+    {
+        return \App\Models\AiSummary::where('summarizable_type', 'membership')->where('summarizable_id', $this->record->id)
+            ->where('kind', 'vorbereitung')->where('updated_at', '>=', now()->subDays(3))->first();
     }
 
     protected function getViewData(): array
@@ -150,6 +166,7 @@ class Dossier extends Page
             'privateAufgaben' => Task::where('user_id', $user->id)->where('visibility', 'private')->whereNull('assigned_by')->count(),
             'reflexionen' => Reflection::where('user_id', $user->id)->where('visibility', '!=', 'private')->with('comments.user')->latest()->limit(10)->get(),
             'notizen' => Note::where('user_id', $user->id)->whereIn('visibility', ['coach', 'program', 'all'])->with('comments.user')->latest()->limit(20)->get(),
+            'vorbereitung' => $this->vorbereitung(),
             'coachNotizen' => CoachNote::where('user_id', $user->id)->with('author')->orderByDesc('is_pinned')->latest()->get(),
             'lage' => app(Lage::class)->fuer($this->record),
             'termine' => EventAttendee::where('user_id', $user->id)->with('event')->get()->filter(fn ($a) => $a->event)->sortByDesc(fn ($a) => $a->event->starts_at)->take(15),
