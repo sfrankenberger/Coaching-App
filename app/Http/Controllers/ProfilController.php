@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\PushSubscription;
 use App\Models\TelegramLink;
+use App\Support\Ics;
 use App\Tenancy\CurrentTenant;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -20,6 +21,7 @@ class ProfilController extends Controller
             'pushGeraete' => PushSubscription::where('user_id', $request->user()->id)->count(),
             'telegram' => TelegramController::configured($tenant) ? TelegramLink::where('user_id', $request->user()->id)->first() : false,
             'telegramBot' => $tenant?->setting('telegram.bot_username'),
+            'kalenderUrl' => ($m = $request->user()->membershipIn()) ? route('kalender.abo', ['token' => Ics::tokenFor($m)]) : null,
         ]);
     }
 

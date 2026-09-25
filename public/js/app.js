@@ -313,3 +313,10 @@
             .catch(function () { f.submit(); });
     });
 })();
+
+/* Link kopieren */
+document.addEventListener('click', function (e) {
+    var b = e.target.closest('[data-kopieren]'); if (!b) return;
+    var alt = b.textContent;
+    (navigator.clipboard ? navigator.clipboard.writeText(b.dataset.kopieren) : Promise.reject()).then(function () { b.textContent = 'Kopiert'; setTimeout(function () { b.textContent = alt; }, 1500); }).catch(function () { window.prompt('Link kopieren:', b.dataset.kopieren); });
+});

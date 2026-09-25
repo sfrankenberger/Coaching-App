@@ -20,7 +20,7 @@
     <link rel="manifest" href="{{ route('manifest') }}">
     @if ($icon = $branding->get('icon_url'))
         <link rel="icon" href="{{ $icon }}">
-        <link rel="apple-touch-icon" href="{{ $icon }}">
+        <link rel="apple-touch-icon" href="{{ collect($branding->get('icons'))->firstWhere('sizes', '180x180')['src'] ?? $icon }}">
     @endif
     @if ($fontUrl = $branding->get('font_url'))
         <link rel="preconnect" href="https://fonts.googleapis.com">

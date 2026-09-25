@@ -68,6 +68,16 @@
         </form>
     </x-karte>
 
+    @if ($kalenderUrl)
+        <x-karte titel="Termine im eigenen Kalender">
+            <p class="hinweis mb-3">Abonniere deine Termine in Apple Kalender, Google Kalender oder Outlook. Änderungen kommen von selbst nach. Der Link ist nur für dich, gib ihn nicht weiter.</p>
+            <div class="flex flex-wrap items-center gap-2">
+                <a href="{{ preg_replace('~^https?://~', 'webcal://', $kalenderUrl) }}" class="knopf">Kalender abonnieren</a>
+                <button type="button" class="knopf knopf-leise" data-kopieren="{{ $kalenderUrl }}">Link kopieren</button>
+            </div>
+        </x-karte>
+    @endif
+
     <x-karte titel="Passwort, freiwillig">
         <p class="hinweis mb-3">Du brauchst kein Passwort, der Link per Mail reicht. Wer trotzdem eines möchte, setzt es hier.</p>
         <form method="post" action="{{ route('profil.passwort') }}" class="eingabe">
@@ -85,5 +95,10 @@
                 <button type="submit" class="knopf knopf-leise">{{ $person->password ? 'Passwort ändern' : 'Passwort setzen' }}</button>
             </div>
         </form>
+    </x-karte>
+
+    <x-karte titel="Hilfe">
+        <p class="hinweis mb-3">Die Einführung vom Anfang kannst du jederzeit wieder anschauen.</p>
+        <a href="{{ route('willkommen') }}" class="knopf knopf-leise">Einführung nochmals ansehen</a>
     </x-karte>
 </x-layouts.app>

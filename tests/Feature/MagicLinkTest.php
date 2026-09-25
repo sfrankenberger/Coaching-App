@@ -131,7 +131,8 @@ class MagicLinkTest extends TestCase
 
     public function test_startseite_und_profil_fuer_mitglied(): void
     {
-        $this->actingAs($this->anna)->get('http://a.test/')->assertOk()->assertSee('Hallo');
+        $this->actingAs($this->anna)->get('http://a.test/')->assertRedirect('http://a.test/willkommen');
+        $this->actingAs($this->anna)->get('http://a.test/?ohne=1')->assertOk()->assertSee('Hallo');
 
         $this->actingAs($this->anna)->post('http://a.test/profil', ['name' => 'Anna Muster', 'phone' => '079 123 45 67'])->assertRedirect();
         $this->assertSame('079 123 45 67', $this->anna->fresh()->phone);

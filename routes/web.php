@@ -5,9 +5,11 @@ use App\Http\Controllers\Auth\BridgeController;
 use App\Http\Controllers\Auth\LoginController;
 use App\Http\Controllers\Auth\SocialController;
 use App\Http\Controllers\GespraechController;
+use App\Http\Controllers\HomeController;
 use App\Http\Controllers\Hooks\WooCommerceController;
 use App\Http\Controllers\ImpulseController;
 use App\Http\Controllers\JournalController;
+use App\Http\Controllers\KalenderController;
 use App\Http\Controllers\KursController;
 use App\Http\Controllers\MaterialController;
 use App\Http\Controllers\MerklisteController;
@@ -18,6 +20,7 @@ use App\Http\Controllers\ReflexionController;
 use App\Http\Controllers\TelegramController;
 use App\Http\Controllers\TermineController;
 use App\Http\Controllers\ThemenController;
+use App\Http\Controllers\WillkommenController;
 use App\Tenancy\Branding;
 use Illuminate\Support\Facades\Route;
 
@@ -34,6 +37,9 @@ Route::post('/hooks/woocommerce', WooCommerceController::class)->name('hooks.woo
 // Bruecke aus dem alten Mitgliederbereich (signierter Link, 60 Sekunden, einmalig)
 Route::get('/sso', BridgeController::class)->name('sso');
 
+// Kalender-Abo (ohne Anmeldung, Schluessel je Person)
+Route::get('/kalender/{token}.ics', [KalenderController::class, 'abo'])->name('kalender.abo')->where('token', '[A-Za-z0-9]{32,64}');
+
 // Anmelden
 Route::middleware('guest')->group(function () {
     Route::get('/anmelden', [LoginController::class, 'form'])->name('anmelden');
@@ -48,7 +54,9 @@ Route::post('/abmelden', [LoginController::class, 'logout'])->name('abmelden');
 
 // Angemeldet, mit Mitgliedschaft im Mandanten
 Route::middleware(['auth', 'membership'])->group(function () {
-    Route::get('/', fn () => view('home'))->name('home');
+    Route::get('/', HomeController::class)->name('home');
+    Route::get('/willkommen', [WillkommenController::class, 'index'])->name('willkommen');
+    Route::post('/willkommen', [WillkommenController::class, 'fertig'])->name('willkommen.fertig');
     Route::get('/profil', [ProfilController::class, 'show'])->name('profil');
     Route::post('/profil', [ProfilController::class, 'save'])->name('profil.speichern');
     Route::post('/profil/benachrichtigungen', [ProfilController::class, 'notifications'])->name('profil.benachrichtigungen');
@@ -76,6 +84,7 @@ Route::middleware(['auth', 'membership'])->group(function () {
     Route::post('/termine/{termin}/dabei', [TermineController::class, 'dabei'])->name('termine.dabei');
     Route::post('/termine/{termin}/gesehen', [TermineController::class, 'gesehen'])->name('termine.gesehen');
     Route::post('/termine/{termin}/aufgabe', [TermineController::class, 'aufgabe'])->name('termine.aufgabe');
+    Route::get('/termine/{termin}/kalender.ics', [KalenderController::class, 'termin'])->name('termine.ics');
 
     // Material und Merkliste
     Route::get('/material', [MaterialController::class, 'index'])->name('material.index');

@@ -17,6 +17,9 @@
             @if (! $event->isPast() && $event->zoom_url)
                 <a href="{{ $event->zoom_url }}" target="_blank" rel="noopener" class="knopf">{{ $live ? 'Jetzt beitreten' : 'Zoom öffnen' }}</a>
             @endif
+            @if (! $event->isPast())
+                <a href="{{ route('termine.ics', $event) }}" class="knopf knopf-leise">In den Kalender</a>
+            @endif
             @if (! $event->isPast() && ! $event->isOneOnOne())
                 <form method="post" action="{{ route('termine.dabei', $event) }}">@csrf<button class="knopf knopf-leise">{{ $ab ? 'Doch dabei' : 'Nicht dabei' }}</button></form>
             @endif

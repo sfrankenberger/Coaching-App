@@ -58,7 +58,7 @@ class CoachPanelTest extends TestCase
 
     public function test_owner_und_team_sehen_den_coach_bereich(): void
     {
-        $this->actingAs($this->person($this->a, Role::Owner))->get('http://a.test/coach')->assertOk()->assertSee('Coaching A');
+        $this->actingAs($this->person($this->a, Role::Owner))->get('http://a.test/coach')->assertOk()->assertSee('Coaching A')->assertSee('Aktive Personen')->assertSee('Neu von den Personen');
         $this->actingAs($this->person($this->a, Role::Team))->get('http://a.test/coach/memberships')->assertOk();
     }
 

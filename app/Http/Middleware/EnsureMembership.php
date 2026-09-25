@@ -26,6 +26,14 @@ class EnsureMembership
             return redirect()->route('anmelden')->with('fehler', 'Für diesen Bereich hast du keinen Zugang.');
         }
 
+        // Zuletzt gesehen (hoechstens alle zehn Minuten), der alte Wert bleibt fuer "Neu seit" im Request
+        if ($user && ($m = $user->membershipIn())) {
+            $request->attributes->set('zuletzt', $m->last_seen_at);
+            if (! $m->last_seen_at || $m->last_seen_at->lt(now()->subMinutes(10))) {
+                $m->forceFill(['last_seen_at' => now()])->saveQuietly();
+            }
+        }
+
         return $next($request);
     }
 }
