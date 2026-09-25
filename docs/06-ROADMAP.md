@@ -68,6 +68,13 @@ Stand nach Etappe 1: Lea kann sich per Link anmelden, sieht Start und Profil, im
 - [x] Buchung mit Google-Kalender (eingerichtet, noch ausgeschaltet: `settings.booking.enabled`), Meine Buchungen im Profil
 - [ ] Rechnungen aus bexio (über WordPress), Buchung verschieben, Buchung für Gäste
 
+## Etappe 7 - Design, Code und Laravel-Bausteine (26.09.)
+
+- [x] Lesetexte in Serifen, Kursliste einheitlich, keine Karte in der Karte, Kapitelliste mit laufender Markierung, leere Zustaende, Coach-Bereich im Stil der App
+- [x] Zeit-Helfer, `Branding::coachName`, Komponenten Termin-Karte und Kommentare, Policies, FormRequests, `EinheitController`, Inline-Styles in Klassen
+- [x] Mitteilungen mit Glocke, Suche ueber alles (Scout), Funktionen je Mandant (Pennant), JSON-API v1 (Sanctum), Queue-Worker und Reverb als Systemd-Dienste, Chat in Echtzeit
+- [ ] Livewire fuer Workbook-Bausteine (spaeter, wenn es hakt)
+
 ## Umschalten (nach Leas Freigabe)
 
 1. Schreibstopp im alten Mitgliederbereich (Hinweis an Teilnehmerinnen)

@@ -39,6 +39,8 @@ php84 artisan benachrichtigungen:runde termine         # Laeufe (termine, nachfa
 php84 artisan inhalte:feeds lea                        # Impulse und Podcast per RSS, sonst stuendlich
 php84 artisan aufzeichnungen:wache lea                 # Vimeo-Aufzeichnungen zuordnen, Abschrift, Zusammenfassung (alle 15 Min)
 php84 artisan zoom:anwesenheit lea --trocken           # wer war im Zoom-Call (stuendlich, ohne --trocken setzt es "live dabei")
+php84 artisan api:token <email>                        # Token fuer die JSON-API /api/v1 (Sanctum)
+php artisan test --parallel                            # lokal, mit paratest etwa dreimal so schnell
 php84 artisan themen:profil lea --limit=20             # Themenfinder per KI
 php84 artisan branding:icons lea <ordner>              # App-Icons uebernehmen
 php84 artisan filament:assets                          # nach Filament-Updates, laeuft im Deploy
@@ -46,6 +48,10 @@ bin/build-css                                          # Tailwind bauen (bin/bui
 ```
 
 Weitere Ordner: `app/Programs` (Zugriff, Fortschritt, Begleitung), `app/Chat`, `app/Notifications` (Notifier, Kanaele, Runden), `app/Shop` (Zugaenge, WooCommerce), `app/Content` (Feeds, Inhalte, Themen), `app/Ai` (Anthropic, Summarizer), `app/Import/WordPress`, `app/Coach` (Lage/Ampel, Kommentare, Wochencheck), `app/Recordings` (Vimeo, Wache, Freigabe), `app/Zoom` (Anwesenheit), `app/Booking` (Google-Kalender, Verfuegbarkeit, Buchung). Einstellungen je Mandant in `tenants.settings`: `mail`, `oauth`, `push.vapid`, `telegram`, `shop.webhook_secret`, `bridge.secret`, `feeds`, `ai`, `import.wordpress`, `vimeo.token`, `recordings`, `zoom`, `google.service_account`, `booking` (`enabled` schaltet die Buchung frei), `wochencheck.haken`.
+
+Wer darf was: Policies in `app/Policies` (`Gate::authorize('view', $program)` usw.), Regeln liegen in `ProgramAccess`, `Begleitung`, `Chat`. Formulare pruefen `app/Http/Requests`. Funktionen je Mandant ueber Pennant (`Feature::for($tenant)->active('buchung')`, definiert in `AppServiceProvider`). Mitteilungen in der App (Glocke): `App\Models\Mitteilung`, jede `Nachricht` aus dem `Notifier` landet dort. Suche: Scout mit Datenbank-Treiber (`Searchable` an Unit, Resource, Event, Post, PodcastEpisode). Chat in Echtzeit: Reverb (`MessageSent` auf `gespraech.{id}`), ohne Reverb fragt der Browser alle 5 Sekunden nach.
+
+Schriften: `font_body` (Mono) fuer Titel, Zeilen und Meta, `font_read` (Serifen) fuer Lesetexte ab drei Zeilen (`.prose-app`, `.lesetext`), `font_heading` fuer Ueberschriften. Coach-Bereich nutzt dieselben Variablen (`public/css/coach.css`).
 
 Zeiten: in der Datenbank UTC, Modelle lesen in der Zeitzone des Mandanten (`Ortszeit` in `BelongsToTenant`), Abfragen binden immer UTC (`UtcBindings`). Beim Testen Zeiten also in UTC in die DB schreiben und in Ortszeit erwarten.
 
