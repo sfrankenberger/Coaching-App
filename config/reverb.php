@@ -3,6 +3,17 @@
 return [
 
     /*
+    | Adresse, unter der der Browser Reverb erreicht (ueber Apache/nginx als Proxy).
+    | REVERB_HOST/PORT/SCHEME sind die interne Adresse fuer den PHP-Client (127.0.0.1:8080).
+    */
+    'public' => [
+        'host' => env('REVERB_PUBLIC_HOST'),
+        'port' => (int) env('REVERB_PUBLIC_PORT', 443),
+        'scheme' => env('REVERB_PUBLIC_SCHEME', 'https'),
+    ],
+
+
+    /*
     |--------------------------------------------------------------------------
     | Default Reverb Server
     |--------------------------------------------------------------------------

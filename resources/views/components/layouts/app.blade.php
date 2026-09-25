@@ -50,7 +50,7 @@
     <link rel="stylesheet" href="{{ asset('vendor/fontawesome/css/fa.min.css') }}">
     <style>{!! $branding->cssVariables() !!}</style>
     @if (config('broadcasting.default') === 'reverb' && config('broadcasting.connections.reverb.key'))
-        <meta name="reverb" content="{{ json_encode(['key' => config('broadcasting.connections.reverb.key'), 'host' => config('broadcasting.connections.reverb.options.host') ?: request()->getHost(), 'port' => (int) config('broadcasting.connections.reverb.options.port', 443), 'scheme' => config('broadcasting.connections.reverb.options.scheme', 'https')]) }}">
+        <meta name="reverb" content="{{ json_encode(['key' => config('broadcasting.connections.reverb.key'), 'host' => config('reverb.public.host') ?: request()->getHost(), 'port' => (int) config('reverb.public.port', 443), 'scheme' => config('reverb.public.scheme', 'https')]) }}">
     @endif
     <link rel="stylesheet" href="{{ asset('css/app.css') }}?v={{ filemtime(public_path('css/app.css')) }}">
     @stack('head')
