@@ -13,6 +13,7 @@ use App\Models\ProgramMember;
 use App\Models\Task;
 use App\Models\User;
 use App\Programs\ProgramAccess;
+use Illuminate\Support\Carbon;
 use Illuminate\Support\Collection;
 
 /**
@@ -55,7 +56,7 @@ class Lage
         // Ampel: rot vor gelb vor gruen, der erste Grund zaehlt
         [$stufe, $grund, $entwurf] = match (true) {
             (bool) $wartetSeit => [3, 'wartet auf deine Antwort', null],
-            $tage === null && $m->created_at?->lt(now()->subDays(3)) => [3, 'war noch nie da', 'still'],
+            $tage === null && ($m->joined_at ?? $m->created_at)?->lt(now()->subDays(3)) => [3, 'war noch nie da', 'still'],
             $tage !== null && $tage >= 14 => [3, "seit {$tage} Tagen nicht da", 'still'],
             $verpasst >= 2 => [2, "{$verpasst} Calls verpasst", 'call'],
             $ueberfaellig >= 2 => [2, "{$ueberfaellig} Aufgaben überfällig", 'aufgaben'],
@@ -96,7 +97,7 @@ class Lage
             $out[$c->user_id] = Message::where('conversation_id', $c->id)->where('id', '>', $antwort)->min('created_at');
         }
 
-        return $out->map(fn ($t) => \Illuminate\Support\Carbon::parse($t));
+        return $out->map(fn ($t) => Carbon::parse($t));
     }
 
     /** Gruppencalls der letzten drei Wochen, bei denen die Person weder live noch per Aufzeichnung dabei war. */

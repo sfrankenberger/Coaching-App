@@ -59,6 +59,7 @@ class ImportUsersTest extends TestCase
         $this->wpUser(3, 'andrea@example.com', 'Andrea', ['lea_redaktion']);
         $this->wpUser(4, 'anna@example.com', 'Anna', ['customer'], [
             'lea_telefon' => '079 111 22 33', 'lea_am_aus' => '1', 'lea_willkommen_gesehen' => '1758700000',
+            'lea_zuletzt_da' => (string) (time() - 3 * 86400), 'wc_last_active' => (string) (time() - 86400), 'lea_last_login' => '2020-01-01 10:00:00',
             'lea_zugaenge' => serialize([1234 => ['bis' => 0, 'quelle' => 'kauf']]),
         ]);
         $this->wpUser(5, 'bea@example.com', 'Bea', ['subscriber']);
@@ -122,6 +123,12 @@ class ImportUsersTest extends TestCase
         $this->assertSame(['termine' => true, 'abendmail' => false, 'aufgaben' => true], $m->setting('notifications'));
         $this->assertNotNull($m->setting('onboarding_seen_at'));
         $this->assertSame('2025-01-04', $m->joined_at->toDateString());
+        $this->assertSame(time() - 86400, $m->last_seen_at->getTimestamp(), 'juengste Aktivitaet aus WordPress');
+
+        // Wer in der App da war, wird nicht zurueckgesetzt
+        $m->forceFill(['last_seen_at' => now()])->save();
+        $this->import();
+        $this->assertTrue($anna->membershipIn($this->lea)->last_seen_at->gt(now()->subMinute()));
     }
 
     public function test_import_ist_wiederholbar_und_ueberschreibt_eigene_aenderungen_nicht(): void

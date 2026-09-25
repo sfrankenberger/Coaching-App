@@ -6,6 +6,7 @@ use App\Enums\Role;
 use App\Models\Membership;
 use App\Models\Tenant;
 use App\Models\User;
+use Illuminate\Support\Carbon;
 use Illuminate\Support\Str;
 
 /**
@@ -39,6 +40,8 @@ class UsersImport
             'team_roles' => ['administrator'],
             'course_relation_id' => null,
             'one_on_one_meta' => ['nvc_person', 'einzel_person'],   // postmeta, das auf die Person zeigt
+            'last_seen_meta' => ['lea_zuletzt_da', 'wc_last_active'], // usermeta mit Unix-Zeit der letzten Aktivitaet
+            'last_login_meta' => 'lea_last_login',                  // usermeta mit Ortszeit der letzten Anmeldung
             'meta' => [
                 'phone' => null,
                 'reminders_off' => null,
@@ -194,7 +197,20 @@ class UsersImport
             ->where(fn ($q) => $q->where('legacy_id', (string) $wpUser->ID)->orWhere('user_id', $user->id))
             ->first() ?? new Membership(['tenant_id' => $this->tenant->id]);
 
+        // Parallelbetrieb: zuletzt aktiv im alten Bereich zaehlt auch (Ampel, "zuletzt da"), nie rueckwaerts
+        $zuletzt = collect((array) $this->config['last_seen_meta'])->map(fn ($k) => (int) ($meta[$k] ?? 0))->filter()
+            ->map(fn ($ts) => Carbon::createFromTimestampUTC($ts));
+        if (($k = $this->config['last_login_meta']) && filled($meta[$k] ?? null)) {
+            try {
+                $zuletzt->push(Carbon::parse($meta[$k], $this->tenant->timezone ?: config('app.timezone'))->utc());
+            } catch (\Throwable) {
+            }
+        }
+        $wpZuletzt = $zuletzt->filter(fn (Carbon $c) => $c->isPast())->max();
+        $lastSeen = $membership->last_seen_at && (! $wpZuletzt || $membership->last_seen_at->gt($wpZuletzt)) ? $membership->last_seen_at : $wpZuletzt;
+
         $membership->fill([
+            'last_seen_at' => $lastSeen,
             'user_id' => $user->id,
             'legacy_id' => (string) $wpUser->ID,
             'role' => $role,
