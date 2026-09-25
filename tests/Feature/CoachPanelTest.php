@@ -125,6 +125,7 @@ class CoachPanelTest extends TestCase
         $this->actingAs($owner)->get('http://a.test/coach/podcast')->assertOk()->assertSee('Folge A');
         $this->actingAs($owner)->get('http://a.test/coach/topics')->assertOk()->assertSee('Thema A');
         $this->actingAs($owner)->get('http://a.test/coach/topics/neu')->assertOk();
+        $this->actingAs($owner)->get('http://a.test/coach/rundnachricht')->assertOk()->assertSee('Rundnachricht');
 
         $anna = $this->person($this->a, Role::Member);
         $anna->update(['name' => 'Anna Dossier', 'phone' => '079 111 22 33']);

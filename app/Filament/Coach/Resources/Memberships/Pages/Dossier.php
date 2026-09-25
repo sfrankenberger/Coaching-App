@@ -15,7 +15,9 @@ use App\Models\Task;
 use App\Models\TelegramLink;
 use App\Programs\ProgramAccess;
 use App\Programs\ProgressTracker;
+use App\Shop\Zugang;
 use Filament\Actions\Action;
+use Filament\Notifications\Notification;
 use Filament\Resources\Pages\Concerns\InteractsWithRecord;
 use Filament\Resources\Pages\Page;
 
@@ -52,6 +54,12 @@ class Dossier extends Page
             Action::make('whatsapp')->label('WhatsApp')->icon('heroicon-o-device-phone-mobile')
                 ->url('https://wa.me/'.preg_replace('~\D+~', '', (string) $user->phone))->openUrlInNewTab()->visible(filled($user->phone)),
             Action::make('anrufen')->label('Anrufen')->icon('heroicon-o-phone')->url('tel:'.$user->phone)->visible(filled($user->phone)),
+            Action::make('einladen')->label('Einladung')->icon('heroicon-o-paper-airplane')->color('gray')->requiresConfirmation()
+                ->modalHeading('Willkommensmail mit Anmeldelink schicken?')->modalDescription('Der Link gilt sieben Tage.')
+                ->action(function () use ($user) {
+                    app(Zugang::class)->welcome($user);
+                    Notification::make()->title('Einladung an '.$user->email.' geschickt')->success()->send();
+                }),
             Action::make('bearbeiten')->label('Bearbeiten')->url(MembershipResource::getUrl('edit', ['record' => $this->record]))->color('gray'),
         ];
     }

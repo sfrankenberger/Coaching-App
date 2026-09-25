@@ -5,11 +5,15 @@ namespace App\Filament\Coach\Resources\Memberships\Tables;
 use App\Enums\Role;
 use App\Filament\Coach\Resources\Memberships\MembershipResource;
 use App\Models\Membership;
+use App\Shop\Zugang;
 use Filament\Actions\Action;
+use Filament\Actions\BulkAction;
 use Filament\Actions\EditAction;
+use Filament\Notifications\Notification;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Table;
+use Illuminate\Database\Eloquent\Collection;
 
 class MembershipsTable
 {
@@ -42,6 +46,20 @@ class MembershipsTable
                 Action::make('dossier')->label('Dossier')->icon('heroicon-o-identification')
                     ->url(fn (Membership $record) => MembershipResource::getUrl('dossier', ['record' => $record])),
                 EditAction::make(),
+            ])
+            ->toolbarActions([
+                BulkAction::make('einladen')->label('Einladung schicken')->icon('heroicon-o-envelope')->requiresConfirmation()
+                    ->modalHeading('Willkommensmail mit Anmeldelink an die gewählten Personen?')
+                    ->action(function (Collection $records) {
+                        $n = 0;
+                        foreach ($records as $m) {
+                            if ($m->user && $m->status === 'active') {
+                                app(Zugang::class)->welcome($m->user);
+                                $n++;
+                            }
+                        }
+                        Notification::make()->title("{$n} Einladung".($n === 1 ? '' : 'en').' geschickt')->success()->send();
+                    })->deselectRecordsAfterCompletion(),
             ])
             ->recordUrl(fn (Membership $record) => MembershipResource::getUrl('dossier', ['record' => $record]));
     }
