@@ -225,6 +225,10 @@ class ImportBegleitungTest extends TestCase
             $this->assertSame('https://zoom.us/j/1', $call->zoom_url);
             $this->assertStringContainsString('<p>Wir starten.</p>', $call->description);
             $this->assertNotNull($call->reminded_day_at, 'keine nachtraeglichen Erinnerungen');
+            $this->assertSame('2026-09-01 06:00:00', $call->created_at->utc()->toDateTimeString(), 'angelegt wie in WordPress (08:00 Zuerich)');
+            $this->assertSame('2026-09-02 06:00:00', $call->updated_at->utc()->toDateTimeString());
+            $absage = EventAttendee::where('event_id', $call->id)->where('user_id', $this->bea->id)->first();
+            $this->assertSame($call->starts_at->toDateTimeString(), $absage->updated_at->toDateTimeString(), 'vergangener Termin: Zeitpunkt des Termins');
             $this->assertSame('declined', EventAttendee::where('event_id', $call->id)->where('user_id', $this->bea->id)->value('status'));
             $this->assertSame('attended', EventAttendee::where('event_id', $call->id)->where('user_id', $this->anna->id)->value('status'));
 

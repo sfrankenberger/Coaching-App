@@ -191,6 +191,7 @@ class BegleitungImport
                 $event->reminded_hour_at = now();
             }
             $event->saveQuietly();
+            $this->keepWpTimes($event, $post);
             $this->elementMap[$id] = ['event', $event->id];
 
             // Absagen, live dabei, Aufzeichnung gesehen
@@ -214,8 +215,13 @@ class BegleitungImport
         }
         $row = EventAttendee::firstOrNew(['event_id' => $event->id, 'user_id' => $uid]);
         if (! $row->exists || $override || $row->status === 'invited') {
+            // Wann genau abgesagt oder geschaut wurde, weiss WordPress nicht: Zeitpunkt des Termins
+            $wann = $event->starts_at->lt(now()) ? $event->starts_at : $event->created_at;
             $row->status = $status;
-            $row->attended_at ??= now();
+            $row->attended_at ??= $wann;
+            $row->timestamps = false;
+            $row->created_at ??= $wann;
+            $row->updated_at = $wann;
             $row->save();
             $this->stats['teilnahmen']++;
         }
@@ -270,6 +276,7 @@ class BegleitungImport
                 'body' => WordPressSource::autop($m('ressource_text') ?: $post->post_content),
                 'is_archived' => (bool) $m('nur_archiv') || $post->post_status !== 'publish',
             ])->save();
+            $this->keepWpTimes($resource, $post);
             $this->elementMap[$id] = ['resource', $resource->id];
 
             foreach ($this->source->parents($rel['course_resources'], $id) as $kid) {
@@ -633,7 +640,9 @@ class BegleitungImport
                 $montag = $call->starts_at->copy()->setTimezone($tz)->startOfWeek();
                 $step->forceFill(['week_number' => $nr, 'unlocks_at' => $montag->utc()])->save();
                 if (! $call->step_id) {
+                    $call->timestamps = false;   // Zeitstempel aus WordPress behalten
                     $call->forceFill(['step_id' => $step->id])->saveQuietly();
+                    $call->timestamps = true;
                 }
                 $this->stats['wochen']++;
             }
@@ -653,6 +662,20 @@ class BegleitungImport
     }
 
     /* ---------- Helfer ---------- */
+
+    /** Angelegt/geaendert wie in WordPress (lokale Zeit), damit Importiertes nicht als "neu" gilt. */
+    protected function keepWpTimes($model, object $post): void
+    {
+        $tz = $this->tenant->timezone ?: config('app.timezone');
+        $created = $post->post_date ? Carbon::parse($post->post_date, $tz)->utc() : null;
+        $updated = $post->post_modified ? Carbon::parse($post->post_modified, $tz)->utc() : $created;
+        if (! $created) {
+            return;
+        }
+        $model->timestamps = false;
+        $model->forceFill(['created_at' => $created, 'updated_at' => $updated ?? $created])->saveQuietly();
+        $model->timestamps = true;
+    }
 
     protected function visibility(string $sicht): string
     {
