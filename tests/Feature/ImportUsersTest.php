@@ -157,4 +157,27 @@ class ImportUsersTest extends TestCase
         $this->assertSame(Role::Owner, $andrea->roleIn($b));
         $this->assertNull(User::where('email', 'anna@example.com')->first()->roleIn($b));
     }
+
+    public function test_eins_zu_eins_klientin_ohne_kurs_wird_client(): void
+    {
+        $wp = DB::connection('wordpress');
+        $wp->getSchemaBuilder()->create('posts', function ($t) {
+            $t->increments('ID');
+            $t->string('post_type');
+            $t->string('post_status');
+        });
+        $wp->getSchemaBuilder()->create('postmeta', function ($t) {
+            $t->increments('meta_id');
+            $t->unsignedInteger('post_id');
+            $t->string('meta_key');
+            $t->text('meta_value')->nullable();
+        });
+        $wp->table('posts')->insert(['ID' => 500, 'post_type' => 'termin', 'post_status' => 'private']);
+        $wp->table('postmeta')->insert(['post_id' => 500, 'meta_key' => 'nvc_person', 'meta_value' => '6']);
+
+        $stats = $this->import();
+
+        $this->assertSame(Role::Client, User::where('email', 'gast@example.com')->first()?->roleIn($this->lea), '1:1-Termin ohne Kurs');
+        $this->assertSame(1, $stats['rollen']['client']);
+    }
 }

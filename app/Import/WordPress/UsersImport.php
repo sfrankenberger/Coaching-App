@@ -25,6 +25,9 @@ class UsersImport
 
     protected array $config;
 
+    /** WordPress-IDs mit eigener 1:1-Begleitung (Termin oder Einzelkurs), einmal gelesen */
+    protected ?array $oneOnOneIds = null;
+
     public function __construct(
         protected Tenant $tenant,
         protected WordPressSource $source,
@@ -35,6 +38,7 @@ class UsersImport
             'owner_ids' => [],
             'team_roles' => ['administrator'],
             'course_relation_id' => null,
+            'one_on_one_meta' => ['nvc_person', 'einzel_person'],   // postmeta, das auf die Person zeigt
             'meta' => [
                 'phone' => null,
                 'reminders_off' => null,
@@ -97,7 +101,30 @@ class UsersImport
             return Role::Team;
         }
 
-        return $this->hasCourseAccess($wpId, $meta) ? Role::Member : Role::Guest;
+        if ($this->hasCourseAccess($wpId, $meta)) {
+            return Role::Member;
+        }
+
+        // Eigene 1:1-Termine oder ein Einzelkurs, aber kein Kurszugang: 1:1-Klientin
+        return in_array($wpId, $this->oneOnOneIds(), true) ? Role::Client : Role::Guest;
+    }
+
+    protected function oneOnOneIds(): array
+    {
+        if ($this->oneOnOneIds !== null) {
+            return $this->oneOnOneIds;
+        }
+        $keys = (array) ($this->config['one_on_one_meta'] ?? []);
+        if ($keys === [] || ! $this->source->hasTable('postmeta') || ! $this->source->hasTable('posts')) {
+            return $this->oneOnOneIds = [];
+        }
+
+        return $this->oneOnOneIds = $this->source->db()->table('postmeta as m')
+            ->join('posts as p', 'p.ID', '=', 'm.post_id')
+            ->whereIn('m.meta_key', $keys)
+            ->whereIn('p.post_status', ['publish', 'private', 'draft', 'future'])
+            ->pluck('m.meta_value')
+            ->map(fn ($v) => (int) $v)->filter()->unique()->values()->all();
     }
 
     protected function hasCourseAccess(int $wpId, array $meta): bool
