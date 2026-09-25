@@ -10,7 +10,7 @@
     <span class="eyebrow">{{ $etikett }}</span>
     <span class="karte-dunkel-titel">{{ $termin->title }}</span>
     <span class="m">{{ \App\Support\Zeit::wann($termin->starts_at) }}</span>
-    <span class="flex flex-wrap gap-2" style="margin-top:12px">
+    <span class="flex flex-wrap gap-2 mt-3">
         @if (! $vorbei && $termin->zoom_url)
             <span class="knopf knopf-klein" onclick="event.preventDefault();window.open('{{ $termin->zoom_url }}','_blank','noopener')"><i class="fa-solid fa-video"></i>{{ $live ? 'Jetzt beitreten' : 'Zoom-Link' }}</span>
         @elseif ($termin->hasRecording())

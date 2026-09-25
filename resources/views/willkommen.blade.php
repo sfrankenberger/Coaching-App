@@ -8,7 +8,7 @@
                 <section data-schritt @if ($i > 0) hidden @endif>
                     @if (! empty($s['icon']))<span class="willkommen-ic"><i class="fa-solid fa-{{ $s['icon'] }}"></i></span>@endif
                     <span class="eyebrow">Schritt {{ $i + 1 }} von {{ count($schritte) }}</span>
-                    <h1 style="margin:4px 0 0">{{ $s['titel'] }}</h1>
+                    <h1 class="m-0 mt-1">{{ $s['titel'] }}</h1>
                     <div class="prose-app mt-2">{!! $s['text'] !!}</div>
                     @if (! empty($s['push']) && $pushMoeglich)
                         <div class="mt-3" data-push data-schluessel="{{ route('push.schluessel') }}" data-abo="{{ route('push.abo') }}">

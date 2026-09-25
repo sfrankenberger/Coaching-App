@@ -1,11 +1,11 @@
 <x-layouts.app title="Termin buchen">
     <h1>Termin buchen</h1>
-    <p class="unterzeile" style="margin:0 0 16px">Such dir aus, was du brauchst, dann eine Zeit, die dir passt.</p>
+    <p class="unterzeile m-0 mb-4">Such dir aus, was du brauchst, dann eine Zeit, die dir passt.</p>
 
     @if ($kontingent)
         <div class="karte">
             <span class="eyebrow"><i class="fa-solid fa-ticket"></i> Deine Sitzungen</span>
-            <div class="flex items-baseline gap-2" style="margin-top:4px">
+            <div class="flex items-baseline gap-2 mt-1">
                 <b style="font-family:var(--font-heading);font-size:26px;font-weight:400">{{ $kontingent['offen'] }}</b>
                 <span class="x">von {{ $kontingent['gesamt'] }} noch offen</span>
             </div>
@@ -42,7 +42,7 @@
                     <span class="min-w-0 flex-1">
                         <span class="t">{{ $art->title }}</span>
                         <span class="m">{{ $art->duration }} Minuten</span>
-                        @if ($art->text)<span class="x block" style="margin-top:6px">{{ $art->text }}</span>@endif
+                        @if ($art->text)<span class="x block mt-1.5">{{ $art->text }}</span>@endif
                     </span>
                     <i class="fa-solid fa-chevron-right" style="color:var(--c-ghost)"></i>
                 </span>

@@ -7,6 +7,7 @@ use App\Models\Program;
 use App\Programs\ProgramAccess;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Gate;
 use Illuminate\View\View;
 
 class NotizenController extends Controller
@@ -39,7 +40,7 @@ class NotizenController extends Controller
 
     public function update(Request $request, Note $notiz): RedirectResponse
     {
-        abort_unless($notiz->user_id === $request->user()->id, 403);
+        Gate::authorize('update', $notiz);
         $notiz->update($this->validated($request));
 
         return redirect()->route('notizen.index')->with('meldung', 'Gespeichert.');
@@ -47,7 +48,7 @@ class NotizenController extends Controller
 
     public function destroy(Request $request, Note $notiz): RedirectResponse
     {
-        abort_unless($notiz->user_id === $request->user()->id, 403);
+        Gate::authorize('update', $notiz);
         $notiz->delete();
 
         return redirect()->route('notizen.index')->with('meldung', 'Notiz gelöscht.');

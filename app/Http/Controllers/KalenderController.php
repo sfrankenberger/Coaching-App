@@ -10,6 +10,7 @@ use App\Tenancy\Branding;
 use App\Tenancy\CurrentTenant;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
+use Illuminate\Support\Facades\Gate;
 
 /** Kalender-Abo (ohne Anmeldung, ueber den Schluessel der Person) und Datei je Termin. */
 class KalenderController extends Controller
@@ -28,7 +29,7 @@ class KalenderController extends Controller
 
     public function termin(Request $request, Event $termin): Response
     {
-        abort_unless($this->begleitung->canViewEvent($request->user(), $termin), 403);
+        Gate::authorize('view', $termin);
 
         return $this->ics(Ics::calendar(collect([$termin]), $this->branding->appName(), $this->current->getOrFail()->timezone ?: config('app.timezone'), $request->getHost()), 'termin-'.$termin->id.'.ics');
     }

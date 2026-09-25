@@ -1,12 +1,12 @@
 <x-layouts.app :title="'Fragen · '.$program->title">
     <div style="--kc: {{ $program->color ?: '#7C8C9A' }}">
-        <p style="margin:0 0 8px"><a href="{{ route('kurse.show', $program) }}" class="hinweis no-underline"><i class="fa-solid fa-chevron-left" style="font-size:11px"></i> {{ $program->title }}</a></p>
-        <h1 style="margin-bottom:4px">Fragen an {{ $coach }}</h1>
-        <p class="unterzeile" style="margin:0 0 14px">Was dich beschäftigt, hilft oft auch den anderen. {{ $coach }} beantwortet die Fragen hier oder nimmt sie in den nächsten Call.</p>
+        <p class="m-0 mb-2"><a href="{{ route('kurse.show', $program) }}" class="hinweis no-underline"><i class="fa-solid fa-chevron-left text-[11px]"></i> {{ $program->title }}</a></p>
+        <h1 class="mb-1">Fragen an {{ $coach }}</h1>
+        <p class="unterzeile m-0 mb-3.5">Was dich beschäftigt, hilft oft auch den anderen. {{ $coach }} beantwortet die Fragen hier oder nimmt sie in den nächsten Call.</p>
 
         <details class="baustein" @if ($errors->any()) open @endif>
-            <summary class="knopf knopf-anstoss" style="cursor:pointer"><i class="fa-solid fa-circle-question"></i>Frage stellen</summary>
-            <form method="post" action="{{ route('kurse.fragen.store', $program) }}" class="eingabe" style="margin-top:14px" data-entwurf="frage-{{ $program->id }}">
+            <summary class="knopf knopf-anstoss cursor-pointer"><i class="fa-solid fa-circle-question"></i>Frage stellen</summary>
+            <form method="post" action="{{ route('kurse.fragen.store', $program) }}" class="eingabe mt-3.5" data-entwurf="frage-{{ $program->id }}">
                 @csrf
                 <div>
                     <label for="frage-titel" class="feld-label">Deine Frage in einem Satz</label>
@@ -34,7 +34,7 @@
 
         @forelse ($fragen as $f)
             <a href="{{ route('fragen.show', $f) }}" @class(['karte', 'block no-underline', 'neu' => $f->status === 'offen'])>
-                <span class="flex flex-wrap items-center gap-2" style="margin-bottom:6px">
+                <span class="flex flex-wrap items-center gap-2 mb-1.5">
                     <span @class(['chip', 'chip-coach' => $f->status === 'call', 'chip-gut' => in_array($f->status, ['beantwortet', 'besprochen'], true)])>{{ $f->statusLabel() }}</span>
                     @if ($f->visibility === 'coach')<span class="chip"><i class="fa-solid fa-lock"></i>Nur {{ $coach }}</span>@endif
                 </span>

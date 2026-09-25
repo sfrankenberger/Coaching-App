@@ -11,7 +11,7 @@
         </a>
         <div class="impuls-text">
             <a href="{{ $z['url'] }}" class="t no-underline">{{ $z['titel'] }}</a>
-            @if ($z['text'])<p class="x" style="margin:6px 0 0">{{ \Illuminate\Support\Str::limit(strip_tags($z['text']), 170) }}</p>@endif
+            @if ($z['text'])<p class="x m-0 mt-1.5">{{ \Illuminate\Support\Str::limit(strip_tags($z['text']), 170) }}</p>@endif
             <div class="impuls-fuss">
                 <span class="m">{{ $z['ts']?->translatedFormat('j. M Y') }}</span>
                 <span class="flex items-center gap-1">

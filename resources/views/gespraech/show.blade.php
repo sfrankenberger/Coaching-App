@@ -1,8 +1,8 @@
 <x-layouts.app :title="$conv->isDirect() ? '1:1 mit '.$gegenueber : $gegenueber" body="chat-seite">
     @php $ich = auth()->user(); @endphp
-    <div class="flex items-center gap-3" style="margin:0 0 12px">
+    <div class="flex items-center gap-3 m-0 mb-3">
         @if ($ich->canManageCurrentTenant())
-            <a href="{{ route('gespraech.index') }}" class="knopf knopf-ruhig" style="width:44px;padding:0;flex:none" aria-label="Alle Gespräche"><i class="fa-solid fa-chevron-left"></i></a>
+            <a href="{{ route('gespraech.index') }}" class="knopf knopf-ruhig knopf-quadrat" aria-label="Alle Gespräche"><i class="fa-solid fa-chevron-left"></i></a>
         @elseif (! $conv->isDirect() && $conv->program)
             <a href="{{ route('kurse.show', $conv->program) }}" class="knopf knopf-ruhig" style="width:44px;padding:0;flex:none" aria-label="Zum Kurs"><i class="fa-solid fa-chevron-left"></i></a>
         @endif

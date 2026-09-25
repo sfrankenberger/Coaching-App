@@ -1,6 +1,6 @@
 <x-layouts.app title="Mein Journal">
     <h1>Mein Journal</h1>
-    <p class="unterzeile" style="margin:0 0 14px">Dein Platz zum Schreiben. Alles bleibt bei dir, bis du es selbst teilst.</p>
+    <p class="unterzeile m-0 mb-3.5">Dein Platz zum Schreiben. Alles bleibt bei dir, bis du es selbst teilst.</p>
 
     <a href="{{ route('aufgaben.index') }}" class="zeile">
         <span class="ic"><i class="fa-solid fa-list-check"></i></span>
@@ -23,8 +23,8 @@
         @foreach ($eintraege as $e)
             <article class="karte">
                 @if ($e->title)<span class="t">{{ $e->title }}</span>@endif
-                @if ($e->body)<p class="x whitespace-pre-line" style="margin:4px 0 0">{{ $e->body }}</p>@endif
-                <span class="m" style="margin-top:6px">{{ $e->created_at->translatedFormat('j. M Y') }}@if ($e->url) · <a href="{{ $e->url }}" target="_blank" rel="noopener">Link</a>@endif</span>
+                @if ($e->body)<p class="x whitespace-pre-line m-0 mt-1">{{ $e->body }}</p>@endif
+                <span class="m mt-1.5">{{ $e->created_at->translatedFormat('j. M Y') }}@if ($e->url) · <a href="{{ $e->url }}" target="_blank" rel="noopener">Link</a>@endif</span>
             </article>
         @endforeach
     @endif

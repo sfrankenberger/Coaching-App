@@ -1,8 +1,8 @@
 <x-layouts.app :title="$schritt->title">
     @php $ich = auth()->user(); @endphp
     <div style="--kc: {{ $program->color ?: '#7C8C9A' }}">
-        <div class="flex items-center gap-3" style="margin:0 0 6px">
-            <a href="{{ route('kurse.show', $program) }}" class="knopf knopf-ruhig" style="width:44px;padding:0;flex:none" aria-label="Zurück zum Kurs"><i class="fa-solid fa-chevron-left"></i></a>
+        <div class="flex items-center gap-3 m-0 mb-1.5">
+            <a href="{{ route('kurse.show', $program) }}" class="knopf knopf-ruhig knopf-quadrat" aria-label="Zurück zum Kurs"><i class="fa-solid fa-chevron-left"></i></a>
             <span class="min-w-0 flex-1">
                 <span class="eyebrow block">Kurs</span>
                 <span class="hinweis block truncate">{{ $program->title }}</span>
@@ -16,9 +16,9 @@
         </div>
 
         <p class="eyebrow" style="color:var(--c-primary);margin:18px 0 4px">{{ $program->pacing === 'weekly' ? 'Woche' : 'Schritt' }} {{ $schritt->week_number ?? $nummer }} von {{ $anzahl }}</p>
-        <h1 style="margin:0 0 4px">{{ $schritt->title }}</h1>
+        <h1 class="m-0 mb-1">{{ $schritt->title }}</h1>
         @if ($schritt->unlocks_at && $program->pacing === 'weekly')
-            <p class="unterzeile" style="margin:0 0 12px">ab {{ $schritt->unlocks_at->translatedFormat('l, j. F') }}</p>
+            <p class="unterzeile m-0 mb-3">ab {{ $schritt->unlocks_at->translatedFormat('l, j. F') }}</p>
         @endif
         @if ($schritt->summary)
             <div class="karte"><div class="prose-app">{!! $schritt->summary !!}</div></div>
@@ -26,7 +26,7 @@
 
         {{-- Calls dieser Woche: vorher Zoom, danach Aufzeichnung --}}
         @foreach ($termine->reject(fn ($t) => in_array($t->type, \App\Models\Event::ALL_DAY_TYPES, true)) as $t)
-            <x-termin-karte :termin="$t" style="margin-top:12px" />
+            <x-termin-karte class="mt-3" :termin="$t" />
         @endforeach
 
         <h2 class="abschnitt"><i class="fa-solid fa-circle-play"></i>{{ $program->pacing === 'weekly' ? 'Diese Woche' : 'Lektionen' }}<em>{{ $units->count() }}</em></h2>
@@ -46,18 +46,18 @@
             @include('aufgaben._karte', ['t' => $t])
         @endforeach
         @unless ($ich->canManageCurrentTenant())
-            <form method="post" action="{{ route('aufgaben.store') }}" class="baustein" style="margin-top:4px">
+            <form method="post" action="{{ route('aufgaben.store') }}" class="baustein mt-1">
                 @csrf
                 <input type="hidden" name="program_id" value="{{ $program->id }}">
                 <input type="hidden" name="step_id" value="{{ $schritt->id }}">
                 <input type="hidden" name="visibility" value="coach">
                 <input type="hidden" name="zurueck" value="{{ url()->current() }}">
-                <label for="vorhaben" class="eyebrow block" style="margin:0 0 8px">Was nimmst du dir diese Woche vor?</label>
+                <label for="vorhaben" class="eyebrow block m-0 mb-2">Was nimmst du dir diese Woche vor?</label>
                 <div class="flex gap-2">
                     <input id="vorhaben" name="title" class="feld" maxlength="160" required placeholder="Ein kleiner, konkreter Schritt">
                     <button type="submit" class="knopf" aria-label="Aufgabe anlegen" style="flex:none"><i class="fa-solid fa-plus"></i></button>
                 </div>
-                <p class="hinweis" style="margin:8px 0 0">Deine Coachin sieht, was du dir vornimmst. Du kannst es im Journal ändern.</p>
+                <p class="hinweis m-0 mt-2">Deine Coachin sieht, was du dir vornimmst. Du kannst es im Journal ändern.</p>
             </form>
         @endunless
 

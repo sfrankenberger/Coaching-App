@@ -6,12 +6,14 @@ use App\Booking\Buchung;
 use App\Booking\GoogleCalendar;
 use App\Booking\Verfuegbarkeit;
 use App\Coach\Lage;
+use App\Http\Requests\BuchungRequest;
 use App\Models\Booking;
 use App\Models\BookingType;
 use App\Tenancy\CurrentTenant;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
+use Illuminate\Support\Facades\Gate;
 use Illuminate\View\View;
 use Throwable;
 
@@ -49,14 +51,10 @@ class BuchenController extends Controller
         return view('buchen.zeiten', ['art' => $art, 'tage' => $zeiten->groupBy(fn (Carbon $z) => $z->toDateString())]);
     }
 
-    public function store(Request $request, BookingType $art): RedirectResponse
+    public function store(BuchungRequest $request, BookingType $art): RedirectResponse
     {
         abort_unless(app(GoogleCalendar::class)->aktiv(), 404);
-        $data = $request->validate([
-            'start' => ['required', 'integer'],
-            'antworten' => ['nullable', 'array', 'max:10'],
-            'antworten.*' => ['nullable', 'string', 'max:3000'],
-        ]);
+        $data = $request->validated();
         $start = Carbon::createFromTimestamp((int) $data['start'], app(CurrentTenant::class)->get()?->timezone ?: config('app.timezone'));
         $antworten = collect($art->questions ?? [])->values()->map(fn ($frage, $i) => ['frage' => $frage, 'antwort' => trim((string) ($data['antworten'][$i] ?? ''))])->all();
 
@@ -67,6 +65,7 @@ class BuchenController extends Controller
 
     public function absagen(Request $request, Booking $booking): RedirectResponse
     {
+        Gate::authorize('cancel', $booking);
         $this->buchung->absagen($booking, $request->user());
 
         return redirect()->route('buchen.index')->with('meldung', 'Abgesagt. Du kannst dir jederzeit eine neue Zeit buchen.');

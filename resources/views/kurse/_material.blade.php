@@ -23,16 +23,16 @@
     @if ($pdf)
         <iframe src="{{ $ziel }}#view=FitH" title="{{ $r->title }}" loading="lazy" style="width:100%;height:min(75vh,760px);border:1px solid var(--c-card-border);border-radius:12px;margin-top:12px;background:#fff"></iframe>
     @elseif ($audio)
-        <div data-medien="resource-{{ $r->id }}" style="margin-top:10px"><audio controls preload="none" src="{{ $ziel }}" style="width:100%"></audio></div>
+        <div data-medien="resource-{{ $r->id }}" style="margin-top:10px"><audio class="w-full" controls preload="none" src="{{ $ziel }}"></audio></div>
     @elseif ($video)
         <div class="video" data-medien="resource-{{ $r->id }}" style="margin-top:12px">
             @if ($video['kind'] === 'iframe')<iframe src="{{ $video['src'] }}" allow="autoplay; fullscreen; picture-in-picture" allowfullscreen loading="lazy" title="{{ $r->title }}"></iframe>@else<video controls preload="metadata" src="{{ $video['src'] }}"></video>@endif
         </div>
     @endif
     @if ($r->summary)
-        <details style="margin-top:10px">
+        <details class="mt-2.5">
             <summary class="hinweis cursor-pointer"><i class="fa-solid fa-list-ul"></i> Worum es geht</summary>
-            <div class="prose-app" style="margin-top:8px">{{ \App\Support\Kapitel::html($r->summary) }}</div>
+            <div class="prose-app mt-2">{{ \App\Support\Kapitel::html($r->summary) }}</div>
         </details>
     @endif
 </div>

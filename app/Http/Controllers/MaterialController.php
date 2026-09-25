@@ -9,6 +9,7 @@ use App\Programs\Begleitung;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\View\View;
 use Symfony\Component\HttpFoundation\StreamedResponse;
@@ -63,7 +64,7 @@ class MaterialController extends Controller
     /** Eigene Seite fuer Video und Audio: Player, Zusammenfassung mit Sprungmarken, Abschrift. */
     public function show(Request $request, Resource $material): View|RedirectResponse
     {
-        abort_unless($this->begleitung->canViewResource($request->user(), $material), 403);
+        Gate::authorize('view', $material);
         if (! $material->hatSeite()) {
             return redirect()->away($material->target() ?: route('material.index'));
         }
@@ -79,7 +80,7 @@ class MaterialController extends Controller
     /** Datei ausliefern (nur mit Zugang). */
     public function datei(Request $request, Resource $material): StreamedResponse|RedirectResponse
     {
-        abort_unless($this->begleitung->canViewResource($request->user(), $material), 403);
+        Gate::authorize('view', $material);
         if (! $material->file_path) {
             return redirect()->away($material->url);
         }

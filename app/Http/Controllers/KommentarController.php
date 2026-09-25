@@ -6,6 +6,7 @@ use App\Coach\Kommentare;
 use App\Models\Comment;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Gate;
 
 /** Kommentare unter Reflexion, Notiz, Aufgabe und Uebungsantwort. */
 class KommentarController extends Controller
@@ -28,8 +29,8 @@ class KommentarController extends Controller
 
     public function destroy(Request $request, Comment $kommentar): RedirectResponse
     {
-        abort_unless($kommentar->user_id === $request->user()->id || $request->user()->canManageCurrentTenant(), 403);
         abort_if($kommentar->commentable_type === 'question', 404);
+        Gate::authorize('delete', $kommentar);
         $kommentar->delete();
 
         return back();

@@ -15,7 +15,7 @@
                     <span class="t">Sitzungen: {{ $kontingent['offen'] }} von {{ $kontingent['gesamt'] }} offen</span>
                     <span class="balken" style="display:block;margin:8px 0 4px"><span style="width: {{ round(($kontingent['gehabt'] + $kontingent['geplant']) / max(1, $kontingent['gesamt']) * 100) }}%"></span></span>
                     <span class="m">{{ $kontingent['gehabt'] }} gehabt{{ $kontingent['geplant'] ? ', '.$kontingent['geplant'].' geplant' : '' }}</span>
-                    @if ($buchen && $kontingent['offen'])<a href="{{ route('buchen.index') }}" class="knopf knopf-klein" style="margin-top:10px"><i class="fa-regular fa-calendar-plus"></i>Termin buchen</a>@endif
+                    @if ($buchen && $kontingent['offen'])<a href="{{ route('buchen.index') }}" class="knopf knopf-klein mt-2.5"><i class="fa-regular fa-calendar-plus"></i>Termin buchen</a>@endif
                 </div>
             @endif
             @foreach ($zugaenge as $z)
@@ -33,7 +33,7 @@
                             <span>{{ $w['program']->title }}: Woche {{ $w['jetzt'] }} von {{ $w['alle'] }}</span>
                         @endforeach
                         @if ($z->aktiv)
-                            <span class="flex flex-wrap gap-2" style="margin-top:8px">
+                            <span class="flex flex-wrap gap-2 mt-2">
                                 @foreach ($z->offer->programs->take(3) as $p)
                                     <a href="{{ route('kurse.show', $p) }}" class="knopf knopf-ruhig knopf-klein">Zum {{ $p->isWorkbook() ? 'Arbeitsbuch' : 'Programm' }}</a>
                                 @endforeach
@@ -168,7 +168,7 @@
 
     <div id="hilfe"></div>
     <x-karte titel="Hilfe" icon="life-ring">
-        <p class="x" style="margin:0 0 12px">Klemmt etwas? Schreib kurz, wo und was passiert. Seite, Gerät und Browser schicken wir automatisch mit, dann geht es schneller.</p>
+        <p class="x m-0 mb-3">Klemmt etwas? Schreib kurz, wo und was passiert. Seite, Gerät und Browser schicken wir automatisch mit, dann geht es schneller.</p>
         <form method="post" action="{{ route('profil.hilfe') }}" class="eingabe" data-hilfe>
             @csrf
             <input type="hidden" name="seite" value="{{ url()->previous() }}">
@@ -188,7 +188,7 @@
         </form>
         @php $wa = data_get(app(\App\Tenancy\CurrentTenant::class)->get()?->settings, 'support.whatsapp'); $waName = data_get(app(\App\Tenancy\CurrentTenant::class)->get()?->settings, 'support.name'); @endphp
         @if ($wa)
-            <p style="margin:12px 0 0"><a href="https://wa.me/{{ preg_replace('~\D+~', '', $wa) }}?text={{ rawurlencode('Hallo'.($waName ? ' '.$waName : '').', ich habe ein technisches Problem in der App: ') }}" target="_blank" rel="noopener" class="knopf knopf-ruhig"><i class="fa-brands fa-whatsapp"></i>Live-Chat{{ $waName ? ' mit '.$waName : '' }} auf WhatsApp</a></p>
+            <p class="m-0 mt-3"><a href="https://wa.me/{{ preg_replace('~\D+~', '', $wa) }}?text={{ rawurlencode('Hallo'.($waName ? ' '.$waName : '').', ich habe ein technisches Problem in der App: ') }}" target="_blank" rel="noopener" class="knopf knopf-ruhig"><i class="fa-brands fa-whatsapp"></i>Live-Chat{{ $waName ? ' mit '.$waName : '' }} auf WhatsApp</a></p>
         @endif
     </x-karte>
 

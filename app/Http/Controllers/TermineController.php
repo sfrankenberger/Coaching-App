@@ -15,6 +15,7 @@ use App\Tenancy\CurrentTenant;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Gate;
 use Illuminate\View\View;
 
 class TermineController extends Controller
@@ -53,7 +54,7 @@ class TermineController extends Controller
     public function show(Request $request, Event $termin): View
     {
         $user = $request->user();
-        abort_unless($this->begleitung->canViewEvent($user, $termin), 403);
+        Gate::authorize('view', $termin);
         $termin->load(['program', 'resources', 'attendees.user:id,name']);
 
         return view('termine.show', [
@@ -80,7 +81,7 @@ class TermineController extends Controller
     public function dabei(Request $request, Event $termin): JsonResponse|RedirectResponse
     {
         $user = $request->user();
-        abort_unless($this->begleitung->canViewEvent($user, $termin), 403);
+        Gate::authorize('view', $termin);
         abort_if($termin->isOneOnOne(), 422);
 
         $row = EventAttendee::firstOrNew(['event_id' => $termin->id, 'user_id' => $user->id]);
@@ -99,7 +100,7 @@ class TermineController extends Controller
     public function gesehen(Request $request, Event $termin): JsonResponse|RedirectResponse
     {
         $user = $request->user();
-        abort_unless($this->begleitung->canViewEvent($user, $termin), 403);
+        Gate::authorize('view', $termin);
         $status = $request->input('status') === 'attended' ? 'attended' : 'watched';
 
         $row = EventAttendee::firstOrNew(['event_id' => $termin->id, 'user_id' => $user->id]);

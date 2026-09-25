@@ -2,7 +2,7 @@
 <x-layouts.auth title="Anmelden">
     <x-karte>
         <h1 style="margin:0 0 6px;font-size:26px">Schön, dass du da bist</h1>
-        <p class="x" style="margin:0 0 16px">Gib deine E-Mail-Adresse ein. Du bekommst einen Link, mit dem du direkt drin bist. Kein Passwort nötig.</p>
+        <p class="x m-0 mb-4">Gib deine E-Mail-Adresse ein. Du bekommst einen Link, mit dem du direkt drin bist. Kein Passwort nötig.</p>
 
         <form method="post" action="{{ route('anmelden.link') }}" class="eingabe">
             @csrf

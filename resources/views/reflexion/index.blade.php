@@ -1,7 +1,7 @@
 <x-layouts.app title="Wochenreflexion">
-    <p style="margin:0 0 8px"><a href="{{ route('journal.index') }}" class="hinweis no-underline"><i class="fa-solid fa-chevron-left" style="font-size:11px"></i> Mein Journal</a></p>
-    <h1 style="margin-bottom:4px">Wochenreflexion</h1>
-    <p class="unterzeile" style="margin:0 0 14px">Nimm dir zehn Minuten. Deine Antworten bleiben bei dir; wenn du magst, gehen sie zusätzlich an deine Coachin.</p>
+    <p class="m-0 mb-2"><a href="{{ route('journal.index') }}" class="hinweis no-underline"><i class="fa-solid fa-chevron-left text-[11px]"></i> Mein Journal</a></p>
+    <h1 class="mb-1">Wochenreflexion</h1>
+    <p class="unterzeile m-0 mb-3.5">Nimm dir zehn Minuten. Deine Antworten bleiben bei dir; wenn du magst, gehen sie zusätzlich an deine Coachin.</p>
 
     <x-karte>
         <form method="post" action="{{ route('reflexion.store') }}" class="eingabe">

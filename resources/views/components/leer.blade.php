@@ -3,5 +3,5 @@
 <div {{ $attributes->merge(['class' => 'leer']) }}>
     <i class="fa-{{ str_starts_with($icon, 'solid:') ? 'solid' : 'regular' }} fa-{{ str_replace('solid:', '', $icon) }}"></i>
     <p>{{ $slot }}</p>
-    @if ($knopf && $href)<a href="{{ $href }}" class="knopf knopf-klein" style="margin-top:12px">{{ $knopf }}</a>@endif
+    @if ($knopf && $href)<a href="{{ $href }}" class="knopf knopf-klein mt-3">{{ $knopf }}</a>@endif
 </div>

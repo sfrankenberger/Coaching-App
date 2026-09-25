@@ -6,6 +6,7 @@ use App\Http\Controllers\Auth\LoginController;
 use App\Http\Controllers\Auth\PasskeyController;
 use App\Http\Controllers\Auth\SocialController;
 use App\Http\Controllers\BuchenController;
+use App\Http\Controllers\EinheitController;
 use App\Http\Controllers\FragenController;
 use App\Http\Controllers\GespraechController;
 use App\Http\Controllers\HomeController;
@@ -83,7 +84,7 @@ Route::middleware(['auth', 'membership'])->group(function () {
 
     // Kursraum
     Route::get('/kurse', [KursController::class, 'index'])->name('kurse.index');
-    Route::post('/kurse/antwort', [KursController::class, 'antwort'])->name('kurse.antwort');
+    Route::post('/kurse/antwort', [EinheitController::class, 'antwort'])->name('kurse.antwort');
     Route::post('/kurse/antwort/aufnahme', [UebungController::class, 'aufnahme'])->middleware('throttle:20,10')->name('uebung.aufnahme');
     Route::get('/kurse/antwort/{antwort}/aufnahme', [UebungController::class, 'hoeren'])->name('uebung.aufnahme.hoeren');
     Route::post('/kurse/uebung/{uebung}/praxis', [UebungController::class, 'praxis'])->name('uebung.praxis');
@@ -91,9 +92,9 @@ Route::middleware(['auth', 'membership'])->group(function () {
     Route::post('/kurse/{program:slug}/freigabe', [KursController::class, 'freigabe'])->name('kurse.freigabe');
     Route::get('/kurse/{program:slug}/schritt/{schritt}', [KursController::class, 'schritt'])->name('kurse.schritt');
     Route::get('/kurse/{program:slug}/einheit/{einheit}', [KursController::class, 'einheit'])->name('kurse.einheit');
-    Route::post('/kurse/{program:slug}/einheit/{einheit}/erledigt', [KursController::class, 'erledigt'])->name('kurse.erledigt');
-    Route::post('/kurse/{program:slug}/einheit/{einheit}/teilen', [KursController::class, 'teilen'])->name('kurse.teilen');
-    Route::post('/kurse/{program:slug}/einheit/{einheit}/notiz', [KursController::class, 'notiz'])->name('kurse.notiz');
+    Route::post('/kurse/{program:slug}/einheit/{einheit}/erledigt', [EinheitController::class, 'erledigt'])->name('kurse.erledigt');
+    Route::post('/kurse/{program:slug}/einheit/{einheit}/teilen', [EinheitController::class, 'teilen'])->name('kurse.teilen');
+    Route::post('/kurse/{program:slug}/einheit/{einheit}/notiz', [EinheitController::class, 'notiz'])->name('kurse.notiz');
 
     // Termine
     Route::get('/termine', [TermineController::class, 'index'])->name('termine.index');

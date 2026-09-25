@@ -1,6 +1,6 @@
 <x-layouts.app title="Start" :schmal="true">
     <h1 style="margin:6px 0 2px">Hallo {{ $person->vorname() }}</h1>
-    <p class="unterzeile" style="margin:0 0 6px">{{ now()->translatedFormat('l, j. F') }}</p>
+    <p class="unterzeile m-0 mb-1.5">{{ now()->translatedFormat('l, j. F') }}</p>
 
     {{-- Was ist neu: drei Zeilen, der Rest aufklappbar --}}
     @if ($neues->isNotEmpty())
@@ -12,7 +12,7 @@
         <div class="neu-liste">
             @foreach ($neues as $i => $n)
                 @if ($i === 3)
-                    <details class="neu-mehr"><summary class="knopf knopf-anstoss knopf-breit" style="margin:4px 0 0">Weitere {{ $neues->count() - 3 }} anzeigen</summary><div class="neu-liste" style="margin-top:5px">
+                    <details class="neu-mehr"><summary class="knopf knopf-anstoss knopf-breit m-0 mt-1">Weitere {{ $neues->count() - 3 }} anzeigen</summary><div class="neu-liste" style="margin-top:5px">
                 @endif
                 <a href="{{ $n['url'] }}" class="zeile neu">
                     <span class="ic"><i class="fa-solid fa-{{ $n['icon'] }}"></i></span>
@@ -133,7 +133,7 @@
     @if ($person->canManageCurrentTenant())
         <h2 class="abschnitt"><i class="fa-solid fa-user-group"></i>Für dich als Coach</h2>
         <div class="karte">
-            <p class="x" style="margin:0 0 12px">{{ $personen }} aktive Personen. Kurse, Termine, Material und Impulse pflegst du im Coach-Bereich.</p>
+            <p class="x m-0 mb-3">{{ $personen }} aktive Personen. Kurse, Termine, Material und Impulse pflegst du im Coach-Bereich.</p>
             <a href="/coach" class="knopf">Zum Coach-Bereich</a>
         </div>
     @endif

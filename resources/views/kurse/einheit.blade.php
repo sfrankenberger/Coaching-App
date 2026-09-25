@@ -1,7 +1,7 @@
 <x-layouts.app :title="$unit->title">
     @php $videos = $unit->videoList(); $teile = $unit->answerableExercises(); @endphp
     @php $coach = app(\App\Tenancy\Branding::class)->coachName(); $avatar = app(\App\Tenancy\Branding::class)->get('avatar_url'); @endphp
-    <div class="flex items-center gap-3" style="margin:0 0 6px">
+    <div class="flex items-center gap-3 m-0 mb-1.5">
         <a href="{{ $unit->step ? route('kurse.schritt', [$program, $unit->step]) : route('kurse.show', $program) }}" class="knopf knopf-ruhig" style="width:44px;padding:0;flex:none" aria-label="Zurück"><i class="fa-solid fa-chevron-left"></i></a>
         <span class="min-w-0">
             <span class="eyebrow block">{{ $unit->step?->title ?? $program->title }}</span>
@@ -13,8 +13,8 @@
         {{ \App\Models\Unit::TYPES[$unit->type] ?? 'Schritt' }}@if ($nummer) {{ $nummer }} von {{ $anzahl }}@endif
         @if ($unit->is_core) · Kern @endif
     </p>
-    <h1 style="margin:0 0 10px">{{ $unit->title }}</h1>
-    <div class="flex flex-wrap items-center gap-2" style="margin:0 0 14px">
+    <h1 class="m-0 mb-2.5">{{ $unit->title }}</h1>
+    <div class="flex flex-wrap items-center gap-2 m-0 mb-3.5">
         <x-merken art="unit" :id="$unit->id" :an="\App\Models\Bookmark::where('user_id', auth()->id())->where('bookmarkable_type', 'unit')->where('bookmarkable_id', $unit->id)->exists()" :text="true" />
         @foreach ($unit->topics as $t)
             <a href="{{ route('themen.show', $t) }}" class="chip no-underline"><i class="fa-solid fa-tag"></i>{{ $t->name }}</a>
@@ -22,7 +22,7 @@
     </div>
     @if ($unit->intro)
         <div class="karte">
-            <p class="eyebrow flex items-center gap-2" style="margin:0 0 8px">@if ($avatar)<img src="{{ $avatar }}" alt="" style="width:22px;height:22px;border-radius:50%;object-fit:cover">@endif Von {{ $coach ?: 'deiner Coachin' }}</p>
+            <p class="eyebrow flex items-center gap-2 m-0 mb-2">@if ($avatar)<img src="{{ $avatar }}" alt="" style="width:22px;height:22px;border-radius:50%;object-fit:cover">@endif Von {{ $coach ?: 'deiner Coachin' }}</p>
             <p class="x whitespace-pre-line" style="margin:0;font-size:var(--fs-base);line-height:1.7">{{ $unit->intro }}</p>
         </div>
     @endif
@@ -84,7 +84,7 @@
     @if ($unit->exercises->isNotEmpty())
         <x-karte id="uebung" data-uebung>
             <div class="flex items-center justify-between gap-3 mb-2">
-                <h2 class="karte-titel" style="margin:0">{{ $unit->type === 'exercise_set' ? 'Deine Antworten' : 'Zum Mitmachen' }}</h2>
+                <h2 class="karte-titel m-0">{{ $unit->type === 'exercise_set' ? 'Deine Antworten' : 'Zum Mitmachen' }}</h2>
                 @if ($uebung['total'])
                     <span class="hinweis"><span data-uebung-voll>{{ $uebung['filled'] }}</span> von {{ $uebung['total'] }}</span>
                 @endif
@@ -176,11 +176,11 @@
                         <div class="mb-4 wb-spiegel">
                             <span class="eyebrow">{{ $ex->prompt ?: 'Was du gesammelt hast' }}</span>
                             @if ($quelle === '')
-                                <p class="hinweis" style="margin:6px 0 0">{{ $ex->options['leer'] ?? 'Hier steht noch nichts.' }}</p>
+                                <p class="hinweis m-0 mt-1.5">{{ $ex->options['leer'] ?? 'Hier steht noch nichts.' }}</p>
                             @elseif (str_contains($quelle, "\n"))
                                 <ul>@foreach (explode("\n", $quelle) as $z)<li>{{ $z }}</li>@endforeach</ul>
                             @else
-                                <p style="margin:6px 0 0">{{ $quelle }}</p>
+                                <p class="m-0 mt-1.5">{{ $quelle }}</p>
                             @endif
                         </div>
                         @break
@@ -189,7 +189,7 @@
                         <div class="mb-4 wb-ton" data-aufnahme-uebung="{{ $ex->id }}" data-ziel="{{ route('uebung.aufnahme') }}">
                             @if ($ex->prompt)<span class="feld-label feld-label-weich">{{ $ex->prompt }}</span>@endif
                             @if ($vorlage !== '')
-                                <div class="wb-vorlage"><span class="eyebrow">Dein Text zum Ablesen</span><div class="whitespace-pre-line" style="margin-top:6px">{{ $vorlage }}</div></div>
+                                <div class="wb-vorlage"><span class="eyebrow">Dein Text zum Ablesen</span><div class="whitespace-pre-line mt-1.5">{{ $vorlage }}</div></div>
                             @endif
                             <div class="flex flex-wrap items-center gap-2">
                                 <button type="button" class="knopf" data-ton-start><i class="fa-solid fa-microphone"></i>{{ $hatTon ? 'Nochmal aufnehmen' : 'Aufnehmen' }}</button>
@@ -203,10 +203,10 @@
                         <div class="mb-4 wb-mitnehmen" data-mitnehmen>
                             <span class="eyebrow">{{ $ex->prompt ?: 'Nimm es mit' }}</span>
                             @if ($mitnehmen->isEmpty())
-                                <p class="hinweis" style="margin:6px 0 0">Sobald du etwas aufgeschrieben hast, kannst du es hier mitnehmen.</p>
+                                <p class="hinweis m-0 mt-1.5">Sobald du etwas aufgeschrieben hast, kannst du es hier mitnehmen.</p>
                             @else
                                 <div class="wb-mitnehmen-text" data-mitnehmen-text>@foreach ($mitnehmen as $m)<h4>{{ $m['titel'] }}</h4><p class="whitespace-pre-line">{{ $m['text'] }}</p>@endforeach</div>
-                                <div class="flex flex-wrap gap-2" style="margin-top:10px">
+                                <div class="flex flex-wrap gap-2 mt-2.5">
                                     <button type="button" class="knopf knopf-ruhig" data-kopieren="{{ $mitnehmen->map(fn ($m) => $m['titel']."\n".$m['text'])->join("\n\n") }}"><i class="fa-regular fa-copy"></i>Text kopieren</button>
                                     <button type="button" class="knopf knopf-ruhig" data-drucken><i class="fa-solid fa-print"></i>Drucken oder als PDF</button>
                                 </div>
@@ -220,7 +220,7 @@
                             @if ($start)
                                 <p class="karte-titel" style="margin:6px 0">Tag {{ $tag }} von {{ $tage }}</p>
                                 <span class="balken" style="display:block"><span style="width: {{ round($tag / $tage * 100) }}%"></span></span>
-                                @if ($tag >= 7 && $tag <= 10)<p class="x" style="margin:10px 0 0">Um diese Zeit meldet sich oft der Widerstand. Das ist normal und ein gutes Zeichen. Bleib dran.</p>@endif
+                                @if ($tag >= 7 && $tag <= 10)<p class="x m-0 mt-2.5">Um diese Zeit meldet sich oft der Widerstand. Das ist normal und ein gutes Zeichen. Bleib dran.</p>@endif
                             @else
                                 <p class="x" style="margin:6px 0 10px">{{ $tage }} Tage, jeden Tag ein paar Minuten. Du bekommst dafür eine tägliche Aufgabe im Journal.</p>
                                 <form method="post" action="{{ route('uebung.praxis', $ex) }}">@csrf<button type="submit" class="knopf"><i class="fa-solid fa-play"></i>Praxis starten</button></form>
@@ -273,8 +273,8 @@
 
     @unless (auth()->user()->canManageCurrentTenant())
         <details class="baustein">
-            <summary class="knopf knopf-anstoss" style="cursor:pointer"><i class="fa-solid fa-list-check"></i>Daraus eine Aufgabe machen</summary>
-            <form method="post" action="{{ route('aufgaben.store') }}" class="eingabe" style="margin-top:12px">
+            <summary class="knopf knopf-anstoss cursor-pointer"><i class="fa-solid fa-list-check"></i>Daraus eine Aufgabe machen</summary>
+            <form method="post" action="{{ route('aufgaben.store') }}" class="eingabe mt-3">
                 @csrf
                 <input type="hidden" name="program_id" value="{{ $program->id }}">
                 <input type="hidden" name="unit_id" value="{{ $unit->id }}">
@@ -283,7 +283,7 @@
                 <input name="title" class="feld" maxlength="160" required placeholder="Was nimmst du dir aus dieser Übung vor?">
                 <div class="flex flex-wrap items-end gap-2">
                     <label class="block"><span class="feld-label">Bis wann, freiwillig</span><input type="date" name="due_at" class="feld"></label>
-                    <button type="submit" class="knopf" style="margin-left:auto"><i class="fa-solid fa-plus"></i>Aufgabe anlegen</button>
+                    <button type="submit" class="knopf ml-auto"><i class="fa-solid fa-plus"></i>Aufgabe anlegen</button>
                 </div>
             </form>
         </details>
@@ -300,7 +300,7 @@
         </form>
     </x-karte>
 
-    <p class="meldung meldung-gut" data-erledigt-hinweis hidden style="margin-top:12px"><i class="fa-solid fa-circle-check"></i> Video fast fertig geschaut, die Einheit ist als erledigt markiert.</p>
+    <p class="meldung meldung-gut mt-3" data-erledigt-hinweis hidden><i class="fa-solid fa-circle-check"></i> Video fast fertig geschaut, die Einheit ist als erledigt markiert.</p>
     <div class="mt-4 flex flex-wrap items-center justify-between gap-3">
         <form method="post" action="{{ route('kurse.erledigt', [$program, $unit]) }}" data-erledigt>
             @csrf

@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Chat\Chat;
 use App\Chat\Terminvorschlag;
+use App\Http\Requests\NachrichtRequest;
 use App\Models\Conversation;
 use App\Models\Message;
 use App\Models\Program;
@@ -35,7 +36,7 @@ class GespraechController extends Controller
     /** Gruppenaustausch eines Programms. */
     public function gruppe(Request $request, Program $program): RedirectResponse
     {
-        Gate::authorize('view-program', $program);
+        Gate::authorize('view', $program);
 
         return redirect()->route('gespraech.show', $this->chat->groupFor($program));
     }
@@ -43,7 +44,7 @@ class GespraechController extends Controller
     public function show(Request $request, Conversation $gespraech): View
     {
         $user = $request->user();
-        abort_unless($this->chat->canAccess($user, $gespraech), 403);
+        Gate::authorize('view', $gespraech);
         $gespraech->load(['participants.user:id,name', 'user:id,name', 'program:id,title,slug']);
 
         $alle = (bool) $request->query('alle');
@@ -63,22 +64,13 @@ class GespraechController extends Controller
         ]);
     }
 
-    public function senden(Request $request, Conversation $gespraech): JsonResponse|RedirectResponse
+    public function senden(NachrichtRequest $request, Conversation $gespraech): JsonResponse|RedirectResponse
     {
         $user = $request->user();
-        abort_unless($this->chat->canAccess($user, $gespraech), 403);
+        Gate::authorize('view', $gespraech);
+        $data = $request->validated();
 
-        $data = $request->validate([
-            'body' => ['nullable', 'string', 'max:10000'],
-            'file' => ['nullable', 'file', 'max:20480', 'mimes:jpg,jpeg,png,gif,webp,heic,pdf,mp3,m4a,docx,txt'],
-            'audio' => ['nullable', 'file', 'max:30720'],
-            'sek' => ['nullable', 'integer'],
-            'transkript' => ['nullable', 'string', 'max:10000'],
-            'ref_type' => ['nullable', 'in:task,note,reflection,event,resource,unit'],
-            'ref_id' => ['nullable', 'integer'],
-        ]);
-
-        if (blank($data['body'] ?? null) && ! $request->hasFile('file') && ! $request->hasFile('audio') && empty($data['ref_id'])) {
+        if ($request->leer()) {
             return $request->expectsJson() ? response()->json(['fehler' => 'Schreib etwas.'], 422) : back()->with('fehler', 'Schreib etwas.');
         }
 
@@ -102,7 +94,7 @@ class GespraechController extends Controller
     public function neu(Request $request, Conversation $gespraech): JsonResponse
     {
         $user = $request->user();
-        abort_unless($this->chat->canAccess($user, $gespraech), 403);
+        Gate::authorize('view', $gespraech);
         $seit = (int) $request->query('seit', 0);
 
         $neue = $gespraech->messages()->where('id', '>', $seit)->with(['user:id,name', 'reactions', 'ref'])->get();
@@ -120,7 +112,7 @@ class GespraechController extends Controller
 
     public function gelesen(Request $request, Conversation $gespraech): JsonResponse
     {
-        abort_unless($this->chat->canAccess($request->user(), $gespraech), 403);
+        Gate::authorize('view', $gespraech);
         $this->chat->markRead($gespraech, $request->user());
 
         return response()->json(['ok' => true]);
@@ -141,7 +133,8 @@ class GespraechController extends Controller
     {
         $user = $request->user();
         $conv = $nachricht->conversation;
-        abort_unless($conv && $this->chat->canAccess($user, $conv), 403);
+        abort_unless($conv, 404);
+        Gate::authorize('view', $conv);
         abort_if($nachricht->user_id === $user->id, 422);
         $emoji = (string) $request->input('emoji');
         abort_unless(array_key_exists($emoji, Reaction::EMOJIS), 422);
@@ -164,7 +157,8 @@ class GespraechController extends Controller
     public function datei(Request $request, Message $nachricht, string $art): StreamedResponse
     {
         $conv = $nachricht->conversation;
-        abort_unless($conv && $this->chat->canAccess($request->user(), $conv), 403);
+        abort_unless($conv, 404);
+        Gate::authorize('view', $conv);
         $path = $art === 'audio' ? $nachricht->audio_path : $nachricht->attachment_path;
         abort_unless($path && Storage::exists($path), 404);
 

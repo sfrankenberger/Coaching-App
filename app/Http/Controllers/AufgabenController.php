@@ -2,14 +2,13 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\Program;
-use App\Models\ProgramStep;
+use App\Http\Requests\AufgabeRequest;
 use App\Models\Task;
-use App\Models\Unit;
 use App\Programs\ProgramAccess;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Gate;
 use Illuminate\View\View;
 
 class AufgabenController extends Controller
@@ -35,9 +34,9 @@ class AufgabenController extends Controller
         ]);
     }
 
-    public function store(Request $request): RedirectResponse
+    public function store(AufgabeRequest $request): RedirectResponse
     {
-        $data = $this->validated($request);
+        $data = $request->daten();
         $task = Task::create($data + ['user_id' => $request->user()->id, 'source' => $data['unit_id'] ?? null ? 'exercise' : 'manual']);
 
         // Aus der Wochen- oder Einheitsseite angelegt: dorthin zurueck
@@ -49,9 +48,9 @@ class AufgabenController extends Controller
         return redirect()->route('aufgaben.index')->with('meldung', 'Aufgabe angelegt.')->withFragment('aufgabe-'.$task->id);
     }
 
-    public function update(Request $request, Task $aufgabe): RedirectResponse
+    public function update(AufgabeRequest $request, Task $aufgabe): RedirectResponse
     {
-        abort_unless($aufgabe->user_id === $request->user()->id, 403);
+        Gate::authorize('update', $aufgabe);
         $aufgabe->update($this->validated($request));
 
         return redirect()->route('aufgaben.index')->with('meldung', 'Gespeichert.');
@@ -59,7 +58,7 @@ class AufgabenController extends Controller
 
     public function haken(Request $request, Task $aufgabe): JsonResponse|RedirectResponse
     {
-        abort_unless($aufgabe->user_id === $request->user()->id, 403);
+        Gate::authorize('update', $aufgabe);
         $an = ! $aufgabe->isDone();
         $aufgabe->forceFill(['done_at' => $an ? now() : null])->save();
 
@@ -73,7 +72,7 @@ class AufgabenController extends Controller
     /** Tagesaufgabe: einen Wochentag abhaken. */
     public function tag(Request $request, Task $aufgabe): JsonResponse|RedirectResponse
     {
-        abort_unless($aufgabe->user_id === $request->user()->id, 403);
+        Gate::authorize('update', $aufgabe);
         $tag = (string) $request->input('tag');
         abort_unless(in_array($tag, ['mo', 'di', 'mi', 'do', 'fr', 'sa', 'so'], true), 422);
 
@@ -93,44 +92,9 @@ class AufgabenController extends Controller
 
     public function destroy(Request $request, Task $aufgabe): RedirectResponse
     {
-        abort_unless($aufgabe->user_id === $request->user()->id, 403);
+        Gate::authorize('update', $aufgabe);
         $aufgabe->delete();
 
         return redirect()->route('aufgaben.index')->with('meldung', 'Aufgabe gelöscht.');
-    }
-
-    protected function validated(Request $request): array
-    {
-        $data = $request->validate([
-            'title' => ['required', 'string', 'max:160'],
-            'body' => ['nullable', 'string', 'max:5000'],
-            'due_at' => ['nullable', 'date'],
-            'due_time' => ['nullable', 'date_format:H:i'],
-            'is_daily' => ['nullable', 'boolean'],
-            'program_id' => ['nullable', 'integer'],
-            'step_id' => ['nullable', 'integer'],
-            'unit_id' => ['nullable', 'integer'],
-            'visibility' => ['nullable', 'in:private,coach,program'],
-            'is_pinned' => ['nullable', 'boolean'],
-        ]);
-        $data['is_daily'] = (bool) ($data['is_daily'] ?? false);
-        $data['is_pinned'] = (bool) ($data['is_pinned'] ?? false);
-        $data['visibility'] ??= 'private';
-        if (! empty($data['program_id'])) {
-            $program = Program::find($data['program_id']);
-            $data['program_id'] = $program && $this->access->canView($request->user(), $program) ? $program->id : null;
-        }
-        // Woche und Einheit nur, wenn sie zum Programm gehoeren
-        if (! empty($data['step_id'])) {
-            $data['step_id'] = ProgramStep::where('id', $data['step_id'])->where('program_id', $data['program_id'] ?? 0)->value('id');
-        }
-        if (! empty($data['unit_id'])) {
-            $data['unit_id'] = Unit::where('id', $data['unit_id'])->where('program_id', $data['program_id'] ?? 0)->value('id');
-        }
-        if ($data['visibility'] === 'program' && empty($data['program_id'])) {
-            $data['visibility'] = 'coach';
-        }
-
-        return $data;
     }
 }

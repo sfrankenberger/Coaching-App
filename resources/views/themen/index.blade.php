@@ -1,7 +1,7 @@
 <x-layouts.app title="Themen">
-    <h1 style="margin-bottom:4px">Themen</h1>
-    <p class="unterzeile" style="margin:0 0 14px">Was beschäftigt dich gerade? Wähle ein Thema, dann findest du alles dazu: Lektionen, Impulse, Podcastfolgen, Material.</p>
-    <form method="get" class="suche" style="margin:0 0 16px">
+    <h1 class="mb-1">Themen</h1>
+    <p class="unterzeile m-0 mb-3.5">Was beschäftigt dich gerade? Wähle ein Thema, dann findest du alles dazu: Lektionen, Impulse, Podcastfolgen, Material.</p>
+    <form method="get" class="suche m-0 mb-4">
         <i class="fa-solid fa-magnifying-glass"></i>
         <input type="search" name="q" value="{{ $suche }}" placeholder="Ein Wort wie Schneekugel, oder sag, was gerade los ist" aria-label="Thema suchen">
     </form>

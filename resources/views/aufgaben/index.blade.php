@@ -1,9 +1,9 @@
 <x-layouts.app title="Meine Aufgaben">
-    <p style="margin:0 0 8px"><a href="{{ route('journal.index') }}" class="hinweis no-underline"><i class="fa-solid fa-chevron-left" style="font-size:11px"></i> Mein Journal</a></p>
+    <p class="m-0 mb-2"><a href="{{ route('journal.index') }}" class="hinweis no-underline"><i class="fa-solid fa-chevron-left text-[11px]"></i> Mein Journal</a></p>
     <h1>Meine Aufgaben</h1>
 
     <div class="baustein">
-        <p class="eyebrow" style="margin:0 0 10px">{{ $bearbeiten ? 'Aufgabe bearbeiten' : 'Neue Aufgabe' }}</p>
+        <p class="eyebrow m-0 mb-2.5">{{ $bearbeiten ? 'Aufgabe bearbeiten' : 'Neue Aufgabe' }}</p>
         <form method="post" action="{{ $bearbeiten ? route('aufgaben.update', $bearbeiten) : route('aufgaben.store') }}" class="eingabe">
             @csrf
             <input name="title" class="feld" placeholder="Was nimmst du dir vor?" maxlength="160" required value="{{ old('title', $bearbeiten?->title) }}">
@@ -31,7 +31,7 @@
         </form>
     </div>
 
-    <form method="get" class="suche" style="margin:14px 0 16px"><i class="fa-solid fa-magnifying-glass"></i><input type="search" name="q" value="{{ $suche }}" placeholder="In deinen Aufgaben suchen" aria-label="In deinen Aufgaben suchen"></form>
+    <form method="get" class="suche mt-3.5 mb-4"><i class="fa-solid fa-magnifying-glass"></i><input type="search" name="q" value="{{ $suche }}" placeholder="In deinen Aufgaben suchen" aria-label="In deinen Aufgaben suchen"></form>
 
     @forelse ($offen as $t)
         @include('aufgaben._karte', ['t' => $t])
@@ -41,7 +41,7 @@
 
     @if ($fertig->isNotEmpty())
         <details class="mt-4">
-            <summary class="knopf knopf-anstoss" style="margin:0 0 10px"><i class="fa-solid fa-check"></i>{{ $fertig->count() }} erledigt</summary>
+            <summary class="knopf knopf-anstoss m-0 mb-2.5"><i class="fa-solid fa-check"></i>{{ $fertig->count() }} erledigt</summary>
             @foreach ($fertig as $t)
                 @include('aufgaben._karte', ['t' => $t])
             @endforeach

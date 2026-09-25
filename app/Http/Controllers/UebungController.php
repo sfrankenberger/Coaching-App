@@ -23,7 +23,7 @@ class UebungController extends Controller
     {
         $data = $request->validate(['exercise_id' => ['required', 'integer'], 'ton' => ['required', 'file', 'max:40960']]);
         $ex = Exercise::with('unit.program')->findOrFail($data['exercise_id']);
-        Gate::authorize('view-program', $ex->unit->program);
+        Gate::authorize('view', $ex->unit->program);
         abort_unless($ex->type === 'audio', 422);
         $user = $request->user();
         $datei = $request->file('ton');
@@ -61,7 +61,7 @@ class UebungController extends Controller
     public function praxis(Request $request, Exercise $uebung): RedirectResponse
     {
         $uebung->load('unit.program');
-        Gate::authorize('view-program', $uebung->unit->program);
+        Gate::authorize('view', $uebung->unit->program);
         abort_unless($uebung->type === 'practice', 422);
         $user = $request->user();
 

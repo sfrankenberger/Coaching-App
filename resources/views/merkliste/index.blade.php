@@ -1,6 +1,6 @@
 <x-layouts.app title="Merkliste">
-    <h1 style="margin-bottom:4px">Merkliste</h1>
-    <p class="unterzeile" style="margin:0 0 14px">Alles, was du dir gemerkt hast. Tippe auf das Lesezeichen, um etwas wieder zu entfernen.</p>
+    <h1 class="mb-1">Merkliste</h1>
+    <p class="unterzeile m-0 mb-3.5">Alles, was du dir gemerkt hast. Tippe auf das Lesezeichen, um etwas wieder zu entfernen.</p>
 
     @forelse ($zeilen as $z)
         <x-inhalt-zeile :z="$z" :gemerkt="$gemerkt" />

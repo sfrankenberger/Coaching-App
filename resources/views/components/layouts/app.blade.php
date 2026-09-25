@@ -129,10 +129,10 @@
 
     <main @class(['seite', 'inhalt', 'seite-schmal' => $schmal])>
         @if (session('meldung'))
-            <div class="meldung meldung-gut" style="margin-bottom:12px">{{ session('meldung') }}</div>
+            <div class="meldung meldung-gut mb-3">{{ session('meldung') }}</div>
         @endif
         @if (session('fehler'))
-            <div class="meldung meldung-schlecht" style="margin-bottom:12px">{{ session('fehler') }}</div>
+            <div class="meldung meldung-schlecht mb-3">{{ session('fehler') }}</div>
         @endif
         {{ $slot }}
     </main>

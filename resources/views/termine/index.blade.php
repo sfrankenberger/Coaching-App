@@ -1,7 +1,7 @@
 <x-layouts.app title="Termine">
     <h1>{{ $zeit === 'vorbei' ? 'Vergangene Termine' : 'Deine nächsten Termine' }}</h1>
 
-    <div class="flex flex-wrap gap-2" style="margin:0 0 14px">
+    <div class="flex flex-wrap gap-2 m-0 mb-3.5">
         @if ($kalenderUrl)
             <a href="{{ preg_replace('~^https?://~', 'webcal://', $kalenderUrl) }}" class="knopf knopf-dunkel"><i class="fa-solid fa-calendar-plus"></i>Alle Termine abonnieren</a>
         @endif
@@ -50,14 +50,14 @@
                     @if ($ab) · Du bist nicht dabei @endif
                 </span>
                 @if ($live || $event->hasRecording() || ($mein && $mein->attended_at))
-                    <span class="flex flex-wrap gap-1" style="margin-top:6px">
+                    <span class="flex flex-wrap gap-1 mt-1.5">
                         @if ($live)<span class="badge badge-live"><i class="fa-solid fa-circle" style="font-size:7px"></i>Live</span>@endif
                         @if ($event->hasRecording())<span class="badge badge-rec"><i class="fa-solid fa-circle-play"></i>Aufzeichnung</span>@endif
                         @if ($mein && $mein->attended_at)<span class="badge badge-aufgabe ok"><i class="fa-solid fa-check"></i>Dabei</span>@endif
                     </span>
                 @endif
                 @if ($event->isPast() && $event->summary)
-                    <p class="x" style="margin:6px 0 0">{{ \Illuminate\Support\Str::words(trim(html_entity_decode(strip_tags($event->summary), ENT_QUOTES, 'UTF-8')), 35) }}</p>
+                    <p class="x m-0 mt-1.5">{{ \Illuminate\Support\Str::words(trim(html_entity_decode(strip_tags($event->summary), ENT_QUOTES, 'UTF-8')), 35) }}</p>
                 @endif
             </div>
             <div class="flex shrink-0 gap-1">

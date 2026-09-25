@@ -1,5 +1,5 @@
 <x-layouts.app :title="$post->title">
-    <p style="margin:0 0 8px"><a href="{{ route('impulse.index') }}" class="hinweis no-underline"><i class="fa-solid fa-chevron-left" style="font-size:11px"></i> Impulse</a></p>
+    <p class="m-0 mb-2"><a href="{{ route('impulse.index') }}" class="hinweis no-underline"><i class="fa-solid fa-chevron-left text-[11px]"></i> Impulse</a></p>
 
     <x-karte class="!p-0 overflow-hidden">
         @if ($post->image_url)

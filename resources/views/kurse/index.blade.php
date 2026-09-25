@@ -22,9 +22,9 @@
                 <span class="kurs-text">
                     <span class="eyebrow">{{ $program->typeLabel() }}</span>
                     <span class="kurs-titel">{{ $program->title }}</span>
-                    @if ($program->subtitle)<span class="x block" style="margin-top:4px">{{ \Illuminate\Support\Str::limit($program->subtitle, 110) }}</span>@endif
+                    @if ($program->subtitle)<span class="x block mt-1">{{ \Illuminate\Support\Str::limit($program->subtitle, 110) }}</span>@endif
                     @if ($stand['total'])
-                        <span class="flex items-center gap-3" style="margin-top:12px">
+                        <span class="flex items-center gap-3 mt-3">
                             <span class="balken"><span style="width: {{ $stand['percent'] }}%"></span></span>
                             <span class="balken-label">{{ $stand['done'] }} von {{ $stand['total'] }}</span>
                         </span>

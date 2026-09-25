@@ -28,7 +28,7 @@
             @if ($avatar = $branding->get('avatar_url'))
                 <img src="{{ $avatar }}" alt="" style="width:80px;height:80px;border-radius:50%;object-fit:cover;margin:0 auto 12px;display:block">
             @elseif ($logo = $branding->get('logo_url'))
-                <img src="{{ $logo }}" alt="{{ $appName }}" class="mx-auto h-12 w-auto" style="margin-bottom:12px">
+                <img src="{{ $logo }}" alt="{{ $appName }}" class="mx-auto h-12 w-auto mb-3">
             @else
                 <span style="width:80px;height:80px;border-radius:50%;background:var(--c-neutral);color:var(--c-primary);display:grid;place-items:center;margin:0 auto 12px;font-size:28px"><i class="fa-solid fa-key"></i></span>
             @endif

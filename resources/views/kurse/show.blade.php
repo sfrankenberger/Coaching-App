@@ -1,6 +1,6 @@
 <x-layouts.app :title="$program->title">
     <div style="--kc: {{ $program->color ?: '#7C8C9A' }}">
-        <p style="margin:0 0 8px"><a href="{{ route('kurse.index') }}" class="hinweis no-underline"><i class="fa-solid fa-chevron-left" style="font-size:11px"></i> Meine Kurse</a></p>
+        <p class="m-0 mb-2"><a href="{{ route('kurse.index') }}" class="hinweis no-underline"><i class="fa-solid fa-chevron-left text-[11px]"></i> Meine Kurse</a></p>
 
         <div class="bildband" @if ($program->cover_url) style="background-image:url('{{ $program->cover_url }}')" @endif>
             <div>
@@ -26,16 +26,16 @@
 
         @if ($program->description)
             <details class="karte">
-                <summary class="t" style="cursor:pointer">Worum es geht</summary>
-                <div class="prose-app" style="margin-top:10px">{!! $program->description !!}</div>
+                <summary class="t cursor-pointer">Worum es geht</summary>
+                <div class="prose-app mt-2.5">{!! $program->description !!}</div>
             </details>
         @endif
 
         @if ($freigabeOffen)
             <div class="baustein">
-                <p class="eyebrow" style="margin:0 0 8px">Bevor du anfängst</p>
+                <p class="eyebrow m-0 mb-2">Bevor du anfängst</p>
                 <p class="karte-titel">Wer liest mit?</p>
-                <p class="x" style="margin:0 0 12px">Alles, was du hier schreibst, ist zuerst nur für dich. Du kannst deine Antworten mit deiner Coachin teilen, damit sie vor eurem nächsten Gespräch weiss, wo du stehst. Du entscheidest das einmal jetzt und kannst es jederzeit ändern.</p>
+                <p class="x m-0 mb-3">Alles, was du hier schreibst, ist zuerst nur für dich. Du kannst deine Antworten mit deiner Coachin teilen, damit sie vor eurem nächsten Gespräch weiss, wo du stehst. Du entscheidest das einmal jetzt und kannst es jederzeit ändern.</p>
                 <form method="post" action="{{ route('kurse.freigabe', $program) }}" class="flex flex-wrap gap-2">
                     @csrf
                     <button type="submit" name="modus" value="alles" class="knopf"><i class="fa-solid fa-lock-open"></i>Alles teilen</button>
@@ -48,12 +48,12 @@
             @php $hallo = $coach === 'deine Coachin' ? 'Hallo, ' : 'Hallo '.$coach.', '; @endphp
             <div class="karte">
                 <span class="eyebrow"><i class="fa-solid fa-ticket"></i> Deine Sitzungen</span>
-                <div class="flex items-baseline gap-2" style="margin-top:4px">
+                <div class="flex items-baseline gap-2 mt-1">
                     <b style="font-family:var(--font-heading);font-size:26px;font-weight:400">{{ $kontingent['offen'] }}</b>
                     <span class="x">von {{ $kontingent['gesamt'] }} noch offen</span>
                 </div>
                 <span class="balken" style="display:block;margin:10px 0 6px"><span style="width: {{ round(($kontingent['gehabt'] + $kontingent['geplant']) / $kontingent['gesamt'] * 100) }}%"></span></span>
-                <p class="hinweis" style="margin:0 0 12px">{{ $kontingent['gehabt'] }} gehabt{{ $kontingent['geplant'] ? ', '.$kontingent['geplant'].' geplant' : '' }}</p>
+                <p class="hinweis m-0 mb-3">{{ $kontingent['gehabt'] }} gehabt{{ $kontingent['geplant'] ? ', '.$kontingent['geplant'].' geplant' : '' }}</p>
                 <a href="{{ route('gespraech.index', ['entwurf' => $hallo.($kontingent['offen'] ? 'ich hätte gern einen nächsten Termin. Mir passt es am besten ' : 'meine Sitzungen sind aufgebraucht. Ich hätte gern weitere. ')]) }}" class="knopf knopf-klein">
                     <i class="fa-regular fa-calendar-plus"></i>{{ $kontingent['offen'] ? 'Termin anfragen' : 'Weitere Sitzungen anfragen' }}
                 </a>

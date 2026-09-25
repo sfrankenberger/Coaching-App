@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Chat\Chat;
+use App\Http\Requests\FrageRequest;
 use App\Models\Comment;
 use App\Models\Program;
 use App\Models\Question;
@@ -27,7 +28,7 @@ class FragenController extends Controller
 
     public function index(Request $request, Program $program): View
     {
-        Gate::authorize('view-program', $program);
+        Gate::authorize('view', $program);
         $user = $request->user();
         $filter = in_array($request->query('f'), ['offen', 'call', 'erledigt'], true) ? $request->query('f') : '';
 
@@ -41,14 +42,10 @@ class FragenController extends Controller
         return view('kurse.fragen', ['program' => $program, 'fragen' => $fragen, 'filter' => $filter, 'coach' => $this->coachName()]);
     }
 
-    public function store(Request $request, Program $program): RedirectResponse
+    public function store(FrageRequest $request, Program $program): RedirectResponse
     {
-        Gate::authorize('view-program', $program);
-        $data = $request->validate([
-            'title' => ['required', 'string', 'max:200'],
-            'body' => ['nullable', 'string', 'max:10000'],
-            'visibility' => ['nullable', 'in:program,coach'],
-        ]);
+        Gate::authorize('view', $program);
+        $data = $request->validated();
         $frage = Question::create($data + ['program_id' => $program->id, 'user_id' => $request->user()->id, 'visibility' => $data['visibility'] ?? 'program']);
 
         $this->melden($this->team()->reject(fn ($id) => $id === $request->user()->id), $frage,
@@ -93,7 +90,7 @@ class FragenController extends Controller
     /** Status setzen (nur Coachin und Team). */
     public function status(Request $request, Question $frage): RedirectResponse
     {
-        abort_unless($request->user()->canManageCurrentTenant(), 403);
+        Gate::authorize('status', $frage);
         $data = $request->validate(['status' => ['required', 'in:'.implode(',', array_keys(Question::STATUS))]]);
         $frage->forceFill(['status' => $data['status'], 'answered_at' => $frage->answered_at ?? ($data['status'] !== 'offen' ? now() : null)])->save();
 
@@ -117,8 +114,7 @@ class FragenController extends Controller
 
     public function destroy(Request $request, Question $frage): RedirectResponse
     {
-        $user = $request->user();
-        abort_unless($frage->user_id === $user->id || $user->canManageCurrentTenant(), 403);
+        Gate::authorize('delete', $frage);
         $program = $frage->program;
         $frage->answers()->delete();
         $frage->reactions()->delete();
@@ -129,8 +125,8 @@ class FragenController extends Controller
 
     public function antwortLoeschen(Request $request, Comment $antwort): RedirectResponse
     {
-        $user = $request->user();
-        abort_unless($antwort->commentable_type === 'question' && ($antwort->user_id === $user->id || $user->canManageCurrentTenant()), 403);
+        abort_unless($antwort->commentable_type === 'question', 404);
+        Gate::authorize('delete', $antwort);
         $frage = $antwort->commentable;
         $antwort->delete();
 
@@ -139,8 +135,7 @@ class FragenController extends Controller
 
     protected function darf(User $user, Question $frage): void
     {
-        abort_unless($frage->program && Gate::forUser($user)->allows('view-program', $frage->program), 403);
-        abort_unless($frage->visibility === 'program' || $frage->user_id === $user->id || $user->canManageCurrentTenant(), 403);
+        Gate::forUser($user)->authorize('view', $frage);
     }
 
     protected function team()

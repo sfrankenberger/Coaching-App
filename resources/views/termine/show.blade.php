@@ -1,12 +1,12 @@
 <x-layouts.app :title="$event->title">
     @php $rec = $event->hasRecording() ? \App\Support\Video::embed($event->recording_url) : null; $live = $event->isLive(); $ab = $mein?->status === 'declined'; @endphp
-    <p style="margin:0 0 8px"><a href="{{ route('termine.index') }}" class="hinweis no-underline"><i class="fa-solid fa-chevron-left" style="font-size:11px"></i> Termine</a></p>
+    <p class="m-0 mb-2"><a href="{{ route('termine.index') }}" class="hinweis no-underline"><i class="fa-solid fa-chevron-left text-[11px]"></i> Termine</a></p>
 
     <x-karte>
         <span class="eyebrow">{{ $event->typeLabel() }}@if ($event->program) · {{ $event->program->title }}@endif</span>
-        <h1 style="margin:4px 0 0">{{ $event->title }}</h1>
-        @if ($live)<span class="badge badge-live" style="margin-top:8px"><i class="fa-solid fa-circle" style="font-size:7px"></i>Läuft gerade</span>@endif
-        <p class="x" style="margin:6px 0 0">
+        <h1 class="m-0 mt-1">{{ $event->title }}</h1>
+        @if ($live)<span class="badge badge-live mt-2"><i class="fa-solid fa-circle" style="font-size:7px"></i>Läuft gerade</span>@endif
+        <p class="x m-0 mt-1.5">
             {{ $event->starts_at->translatedFormat('l, j. F Y') }}@if (! $event->all_day), {{ $event->starts_at->format('H:i') }}@if ($event->ends_at) bis {{ $event->ends_at->format('H:i') }}@endif Uhr @else, ganzer Tag @endif
             @if ($event->location) · {{ $event->location }} @endif
         </p>

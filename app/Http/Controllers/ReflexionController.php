@@ -7,6 +7,7 @@ use App\Models\Reflection;
 use App\Programs\ProgramAccess;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Gate;
 use Illuminate\View\View;
 
 /**
@@ -84,7 +85,7 @@ class ReflexionController extends Controller
     /** Nachtrag an eine geteilte Reflexion. */
     public function nachtrag(Request $request, Reflection $reflexion): RedirectResponse
     {
-        abort_unless($reflexion->user_id === $request->user()->id, 403);
+        Gate::authorize('update', $reflexion);
         $data = $request->validate(['addendum' => ['required', 'string', 'max:10000']]);
         $reflexion->forceFill(['addendum' => trim(($reflexion->addendum ? $reflexion->addendum."\n\n" : '').$data['addendum'])])->save();
 
@@ -93,7 +94,7 @@ class ReflexionController extends Controller
 
     public function teilen(Request $request, Reflection $reflexion): RedirectResponse
     {
-        abort_unless($reflexion->user_id === $request->user()->id, 403);
+        Gate::authorize('update', $reflexion);
         $visibility = $request->input('visibility') === 'private' ? 'private' : ($reflexion->program_id && $request->input('visibility') === 'program' ? 'program' : 'coach');
         $reflexion->forceFill(['visibility' => $visibility, 'shared_at' => $visibility === 'private' ? null : ($reflexion->shared_at ?? now())])->save();
 
@@ -102,7 +103,7 @@ class ReflexionController extends Controller
 
     public function destroy(Request $request, Reflection $reflexion): RedirectResponse
     {
-        abort_unless($reflexion->user_id === $request->user()->id, 403);
+        Gate::authorize('update', $reflexion);
         $reflexion->delete();
 
         return redirect()->route('reflexion.index')->with('meldung', 'Reflexion gelöscht.');

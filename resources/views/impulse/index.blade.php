@@ -14,7 +14,7 @@
         @endif
         <a href="{{ route('themen.index') }}" class="pille"><i class="fa-solid fa-magnifying-glass"></i>Nach Thema</a>
     </div>
-    <form method="get" class="suche" style="margin:0 0 16px">
+    <form method="get" class="suche m-0 mb-4">
         <i class="fa-solid fa-magnifying-glass"></i>
         @if ($filter) <input type="hidden" name="f" value="{{ $filter }}"> @endif
         <input type="search" name="q" value="{{ $suche }}" placeholder="Impulse durchsuchen" aria-label="Impulse durchsuchen">

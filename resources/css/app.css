@@ -925,3 +925,6 @@ button.vorschlag:hover { border-color: var(--c-primary); }
 .kapitel li.aktiv button { background: var(--c-primary-tint); }
 .kapitel li.aktiv .titel { font-weight: 600; }
 .kapitel li.vorbei .titel { color: var(--c-muted); }
+
+/* Quadratischer Knopf (Zurueck, Plus) */
+.knopf-quadrat { width: 44px; padding: 0; flex: none; }

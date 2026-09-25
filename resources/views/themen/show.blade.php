@@ -1,7 +1,7 @@
 <x-layouts.app :title="$thema->name">
-    <p style="margin:0 0 8px"><a href="{{ route('themen.index') }}" class="hinweis no-underline"><i class="fa-solid fa-chevron-left" style="font-size:11px"></i> Themen</a></p>
-    <h1 style="margin-bottom:4px">{{ $thema->name }}</h1>
-    @if ($thema->description)<p class="unterzeile" style="margin:0 0 14px">{{ $thema->description }}</p>@endif
+    <p class="m-0 mb-2"><a href="{{ route('themen.index') }}" class="hinweis no-underline"><i class="fa-solid fa-chevron-left text-[11px]"></i> Themen</a></p>
+    <h1 class="mb-1">{{ $thema->name }}</h1>
+    @if ($thema->description)<p class="unterzeile m-0 mb-3.5">{{ $thema->description }}</p>@endif
 
     @forelse ($gruppen as $art => $zeilen)
         <h2 class="abschnitt">{{ \App\Content\Inhalte::ARTEN[$art] ?? $art }}{{ $zeilen->count() > 1 ? 'e' : '' }}<em>{{ $zeilen->count() }}</em></h2>

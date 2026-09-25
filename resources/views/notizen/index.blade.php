@@ -1,9 +1,9 @@
 <x-layouts.app title="Meine Notizen">
-    <p style="margin:0 0 8px"><a href="{{ route('journal.index') }}" class="hinweis no-underline"><i class="fa-solid fa-chevron-left" style="font-size:11px"></i> Mein Journal</a></p>
+    <p class="m-0 mb-2"><a href="{{ route('journal.index') }}" class="hinweis no-underline"><i class="fa-solid fa-chevron-left text-[11px]"></i> Mein Journal</a></p>
     <h1>Meine Notizen</h1>
 
     <div class="baustein">
-        <p class="eyebrow" style="margin:0 0 10px">{{ $bearbeiten ? 'Notiz bearbeiten' : 'Neue Notiz' }}</p>
+        <p class="eyebrow m-0 mb-2.5">{{ $bearbeiten ? 'Notiz bearbeiten' : 'Neue Notiz' }}</p>
         <form method="post" action="{{ $bearbeiten ? route('notizen.update', $bearbeiten) : route('notizen.store') }}" class="eingabe">
             @csrf
             <input name="title" class="feld" placeholder="Überschrift (optional)" maxlength="160" value="{{ old('title', $bearbeiten?->title) }}">
@@ -26,15 +26,15 @@
         </form>
     </div>
 
-    <form method="get" class="suche" style="margin:14px 0 16px"><i class="fa-solid fa-magnifying-glass"></i><input type="search" name="q" value="{{ $suche }}" placeholder="In deinen Notizen suchen" aria-label="In deinen Notizen suchen"></form>
+    <form method="get" class="suche mt-3.5 mb-4"><i class="fa-solid fa-magnifying-glass"></i><input type="search" name="q" value="{{ $suche }}" placeholder="In deinen Notizen suchen" aria-label="In deinen Notizen suchen"></form>
 
     @forelse ($notes as $n)
         <article id="notiz-{{ $n->id }}" @class(['karte', 'heute' => $n->is_pinned])>
             <div class="flex items-start gap-3">
                 <div class="min-w-0 flex-1">
                     @if ($n->title)<span class="t">@if ($n->is_pinned)<i class="fa-solid fa-thumbtack" style="color:var(--c-primary);font-size:12px;margin-right:6px"></i>@endif{{ $n->title }}</span>@endif
-                    <p class="lesetext whitespace-pre-line" style="margin:4px 0 0">{{ $n->body }}</p>
-                    <span class="m" style="margin-top:8px">
+                    <p class="lesetext whitespace-pre-line m-0 mt-1">{{ $n->body }}</p>
+                    <span class="m mt-2">
                         {{ $n->updated_at->translatedFormat('j. M Y, H:i') }}
                         @if ($n->notable) · zu «{{ $n->notable->title ?? '' }}» @endif
                         @if ($n->program) · {{ $n->program->title }} @endif
