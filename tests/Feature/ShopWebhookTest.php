@@ -83,6 +83,12 @@ class ShopWebhookTest extends TestCase
 
     public function test_ping_ohne_json_ist_ok(): void
     {
+        // Woo signiert den Ping nicht
+        $this->call('POST', 'http://a.test/hooks/woocommerce', [], [], [], ['CONTENT_TYPE' => 'application/x-www-form-urlencoded'], 'webhook_id=7')
+            ->assertOk()->assertJson(['note' => 'ping']);
+        // Alles andere ohne Signatur bleibt draussen
+        $this->call('POST', 'http://a.test/hooks/woocommerce', [], [], [], ['CONTENT_TYPE' => 'application/json'], json_encode($this->order('completed', [1879])))->assertForbidden();
+
         $body = 'webhook_id=7';
         $this->call('POST', 'http://a.test/hooks/woocommerce', [], [], [], ['HTTP_X_WC_WEBHOOK_SIGNATURE' => base64_encode(hash_hmac('sha256', $body, 'geheim', true))], $body)
             ->assertOk()->assertJson(['ok' => true]);
