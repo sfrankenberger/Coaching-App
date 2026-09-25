@@ -172,7 +172,7 @@ class ImportBegleitungTest extends TestCase
         $this->wpComment(11, 900, 2, 'Hallo Anna, schau mal deine Notiz an.', '2026-09-08 09:30:00', ['chat_ref' => '600', 'lea_ch_reaktionen' => serialize(['herz' => [21]])]);
         $this->wpComment(12, 900, 21, '', '2026-09-08 10:00:00', ['chat_audio' => '950', 'chat_audio_sek' => '12', 'chat_transkript' => 'Danke dir']);
         $this->wpComment(13, 900, 88, 'Fremd', '2026-09-08 11:00:00');
-        $this->umeta(2, 'lea_ch_gesehen_900', (string) gmmktime(9, 45, 0, 9, 8, 2026));
+        $this->umeta(2, 'lea_ch_gesehen_900', (string) gmmktime(7, 45, 0, 9, 8, 2026));
 
         DB::connection('wordpress')->table('jet_rel_default')->insert([
             ['rel_id' => '19', 'parent_object_id' => 1849, 'child_object_id' => 300],
@@ -312,7 +312,7 @@ class ImportBegleitungTest extends TestCase
             $this->assertSame('coach', $note->visibility);
             $this->assertSame("Mehr Ruhe am Morgen.\n\nhttps://example.com/ruhe", $note->body);
             $this->assertSame($this->hybrid->id, $note->program_id);
-            $this->assertSame('2026-09-01 08:00:00', $note->created_at->toDateTimeString());
+            $this->assertSame('2026-09-01 06:00:00', $note->created_at->utc()->toDateTimeString(), 'WordPress-Ortszeit 08:00 = 06:00 UTC');
             $kommentar = Comment::where('legacy_id', '1')->first();
             $this->assertSame('note', $kommentar->commentable_type);
             $this->assertSame($note->id, $kommentar->commentable_id);
@@ -366,7 +366,7 @@ class ImportBegleitungTest extends TestCase
             $hallo = Message::where('legacy_id', '10')->first();
             $this->assertSame('Hallo Lea', $hallo->body);
             $this->assertSame($this->anna->id, $hallo->user_id);
-            $this->assertSame('2026-09-08 09:00:00', $hallo->created_at->toDateTimeString());
+            $this->assertSame('2026-09-08 07:00:00', $hallo->created_at->utc()->toDateTimeString());
 
             $antwort = Message::where('legacy_id', '11')->first();
             $this->assertSame($this->coach->id, $antwort->user_id);
@@ -380,9 +380,9 @@ class ImportBegleitungTest extends TestCase
             $this->assertSame('Danke dir', $sprache->transcript);
             $this->assertNull($sprache->audio_path, 'ohne uploads_dir keine Datei');
 
-            $this->assertSame('2026-09-08 10:00:00', $conv->last_message_at->toDateTimeString());
+            $this->assertSame('2026-09-08 08:00:00', $conv->last_message_at->utc()->toDateTimeString());
             $gelesen = ConversationParticipant::where('conversation_id', $conv->id)->where('user_id', $this->coach->id)->value('last_read_at');
-            $this->assertSame('2026-09-08 09:45:00', (string) $gelesen);
+            $this->assertSame('2026-09-08 07:45:00', $gelesen->utc()->toDateTimeString(), 'time() aus WordPress ist schon UTC');
             $this->assertSame(1, $conv->unreadCountFor($this->coach), 'Sprachnachricht von 10:00 noch ungelesen');
         });
     }

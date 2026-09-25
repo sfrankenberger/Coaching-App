@@ -42,6 +42,11 @@ class AppServiceProvider extends ServiceProvider
     {
         $this->app->singleton(CurrentTenant::class);
         $this->app->singleton(Branding::class);
+
+        // Zeitpunkte in Abfragen immer als UTC binden (Modelle liefern Ortszeit)
+        \Illuminate\Database\Connection::resolverFor('mysql', fn ($pdo, $db, $prefix, $config) => new \App\Support\Database\MySqlVerbindung($pdo, $db, $prefix, $config));
+        \Illuminate\Database\Connection::resolverFor('mariadb', fn ($pdo, $db, $prefix, $config) => new \App\Support\Database\MariaDbVerbindung($pdo, $db, $prefix, $config));
+        \Illuminate\Database\Connection::resolverFor('sqlite', fn ($pdo, $db, $prefix, $config) => new \App\Support\Database\SqliteVerbindung($pdo, $db, $prefix, $config));
     }
 
     public function boot(): void

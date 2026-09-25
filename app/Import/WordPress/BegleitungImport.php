@@ -416,7 +416,7 @@ class BegleitungImport
                 'is_pinned' => (bool) $m('el_pin'),
             ])->save();
             $note->timestamps = false;
-            $note->forceFill(['created_at' => $post->post_date, 'updated_at' => $post->post_modified ?: $post->post_date])->saveQuietly();
+            $note->forceFill(['created_at' => $this->lokal($post->post_date), 'updated_at' => $this->lokal($post->post_modified ?: $post->post_date)])->saveQuietly();
             $this->elementMap[$id] = ['note', $note->id];
         }
     }
@@ -448,9 +448,9 @@ class BegleitungImport
                 'challenges' => trim((string) $m('refl_schwer')) ?: null,
                 'focus' => trim((string) $m('refl_fokus')) ?: null,
                 'visibility' => $visibility,
-                'shared_at' => $visibility !== 'private' ? ($r->shared_at ?? Carbon::parse($post->post_modified ?: $post->post_date)) : null,
+                'shared_at' => $visibility !== 'private' ? ($r->shared_at ?? $this->lokal($post->post_modified ?: $post->post_date)) : null,
             ])->save();
-            $r->forceFill(['created_at' => $post->post_date])->saveQuietly();
+            $r->forceFill(['created_at' => $this->lokal($post->post_date)])->saveQuietly();
             $this->elementMap[$id] = ['reflection', $r->id];
         }
     }
@@ -484,7 +484,7 @@ class BegleitungImport
                 'visibility' => $this->visibility((string) $m('el_sicht', 'privat')),
                 'settings' => array_filter(['projekt' => $m('journal_projekt'), 'schritt' => $m('journal_schritt')]),
             ])->save();
-            $j->forceFill(['created_at' => $post->post_date])->saveQuietly();
+            $j->forceFill(['created_at' => $this->lokal($post->post_date)])->saveQuietly();
             $this->elementMap[$id] = ['journal', $j->id];
         }
     }
@@ -539,7 +539,7 @@ class BegleitungImport
             }
             $comment = Comment::firstOrNew(['legacy_id' => (string) $c->comment_ID]);
             $comment->fill(['user_id' => $uid, 'commentable_type' => $type, 'commentable_id' => $elId, 'body' => trim($c->comment_content)])->save();
-            $comment->forceFill(['created_at' => $c->comment_date])->saveQuietly();
+            $comment->forceFill(['created_at' => $this->lokal($c->comment_date)])->saveQuietly();
             $this->stats['kommentare']++;
         }
         foreach ($ids as $wpId) {
@@ -617,7 +617,7 @@ class BegleitungImport
                     }
                 }
                 $msg->saveQuietly();
-                $msg->forceFill(['created_at' => $c->comment_date, 'updated_at' => $c->comment_date])->saveQuietly();
+                $msg->forceFill(['created_at' => $this->lokal($c->comment_date), 'updated_at' => $this->lokal($c->comment_date)])->saveQuietly();
                 $this->stats['nachrichten']++;
 
                 $reaktionen = WordPressSource::unserialize($cm['lea_ch_reaktionen'] ?? null);
@@ -695,6 +695,16 @@ class BegleitungImport
     }
 
     /* ---------- Helfer ---------- */
+
+    /** WordPress speichert post_date und comment_date in Ortszeit: nach UTC umrechnen. */
+    protected function lokal(?string $wann): ?Carbon
+    {
+        if (! $wann || str_starts_with($wann, '0000')) {
+            return null;
+        }
+
+        return Carbon::parse($wann, $this->tenant->timezone ?: config('app.timezone'))->utc();
+    }
 
     /** Angelegt/geaendert wie in WordPress (lokale Zeit), damit Importiertes nicht als "neu" gilt. */
     protected function keepWpTimes($model, object $post): void

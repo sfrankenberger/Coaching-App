@@ -98,7 +98,7 @@ XML;
             $this->assertSame('https://blog.test/bild.jpg', $p->image_url, 'Bild aus dem Inhalt');
             $this->assertSame(['ADHS im Alltag'], $p->categories);
             $this->assertSame('feed', $p->source);
-            $this->assertSame('2026-09-18 14:10:25', $p->published_at->toDateTimeString());
+            $this->assertSame('2026-09-18 14:10:25', $p->published_at->utc()->toDateTimeString());
             $this->assertSame('https://blog.test/zwei.jpg', Post::where('title', 'Zweiter Impuls')->first()->image_url, 'media:content');
 
             $e = PodcastEpisode::where('guid', 'Kajabi-12')->first();

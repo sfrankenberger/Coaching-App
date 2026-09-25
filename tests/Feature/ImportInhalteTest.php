@@ -164,7 +164,7 @@ class ImportInhalteTest extends TestCase
             $this->assertSame('https://example.ch/wp-content/uploads/2026/09/treppe.jpg', $p->image_url);
             $this->assertSame(['ADHS im Alltag'], $p->categories);
             $this->assertSame('wordpress', $p->source);
-            $this->assertSame('2026-09-18 14:10:25', $p->published_at->toDateTimeString(), 'Zuerich -> UTC');
+            $this->assertSame('2026-09-18 14:10:25', $p->published_at->utc()->toDateTimeString(), 'Zuerich -> UTC');
             $this->assertNotNull($p->notified_at, 'alte Beitraege nicht nachmelden');
             $this->assertStringContainsString('<p>Ich sass auf der Treppe.</p>', $p->body);
             $this->assertSame(['Innere Ruhe und Gelassenheit'], $p->topics->pluck('name')->all());
@@ -180,7 +180,7 @@ class ImportInhalteTest extends TestCase
             $this->assertSame('Kajabi-2148918467', $e->guid);
             $this->assertSame(179, $e->episode_number);
             $this->assertSame(1771, $e->duration_seconds);
-            $this->assertSame('2024-12-06 05:00:00', $e->published_at->toDateTimeString());
+            $this->assertSame('2024-12-06 05:00:00', $e->published_at->utc()->toDateTimeString());
             $this->assertSame('Ankündigung', $e->chapters[0]['titel']);
             $this->assertSame('So.', $e->faq[0]['antwort']);
             $this->assertSame(['innerer Kompass', 'Abschied'], $e->keywords);
