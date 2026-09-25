@@ -10,7 +10,7 @@ use App\Models\Reaction;
 use App\Models\User;
 use App\Notifications\Nachricht;
 use App\Notifications\Notifier;
-use App\Tenancy\CurrentTenant;
+use App\Tenancy\Branding;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Gate;
@@ -150,7 +150,7 @@ class FragenController extends Controller
 
     protected function coachName(): string
     {
-        return (string) (app(CurrentTenant::class)->get()?->setting('coach_name') ?: 'deine Coachin');
+        return app(Branding::class)->coachName();
     }
 
     protected function melden($userIds, Question $frage, string $titel, string $text): void

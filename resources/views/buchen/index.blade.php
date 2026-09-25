@@ -19,7 +19,7 @@
             <div class="karte flex items-center gap-3">
                 <a href="{{ $b->event ? route('termine.show', $b->event) : '#' }}" class="min-w-0 flex-1 no-underline">
                     <span class="t">{{ $b->type?->title ?? $b->event?->title }}</span>
-                    <span class="m">{{ $b->starts_at->translatedFormat('l, j. F, H:i') }} Uhr</span>
+                    <span class="m">{{ \App\Support\Zeit::wann($b->starts_at) }}</span>
                 </a>
                 <form method="post" action="{{ route('buchen.absagen', $b) }}" onsubmit="return confirm('Diesen Termin absagen?')">
                     @csrf

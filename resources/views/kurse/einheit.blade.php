@@ -1,6 +1,6 @@
 <x-layouts.app :title="$unit->title">
     @php $videos = $unit->videoList(); $teile = $unit->answerableExercises(); @endphp
-    @php $coach = data_get(app(\App\Tenancy\CurrentTenant::class)->get()?->settings, 'coach_name'); $avatar = app(\App\Tenancy\Branding::class)->get('avatar_url'); @endphp
+    @php $coach = app(\App\Tenancy\Branding::class)->coachName(); $avatar = app(\App\Tenancy\Branding::class)->get('avatar_url'); @endphp
     <div class="flex items-center gap-3" style="margin:0 0 6px">
         <a href="{{ $unit->step ? route('kurse.schritt', [$program, $unit->step]) : route('kurse.show', $program) }}" class="knopf knopf-ruhig" style="width:44px;padding:0;flex:none" aria-label="Zurück"><i class="fa-solid fa-chevron-left"></i></a>
         <span class="min-w-0">

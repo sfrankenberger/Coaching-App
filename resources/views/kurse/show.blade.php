@@ -61,14 +61,7 @@
         @endif
 
         @if ($naechsterCall)
-            <a href="{{ route('termine.show', $naechsterCall) }}" class="karte karte-dunkel block no-underline">
-                <span class="eyebrow">{{ $naechsterCall->isLive() ? 'Jetzt live' : 'Nächster Call' }}</span>
-                <span class="block" style="font-family:var(--font-heading);font-size:var(--fs-xl);line-height:1.3;margin-top:2px">{{ $naechsterCall->title }}</span>
-                <span class="m">{{ $naechsterCall->starts_at->translatedFormat('l, j. F, H:i') }} Uhr</span>
-                @if ($naechsterCall->zoom_url)
-                    <span class="knopf knopf-klein" style="margin-top:12px" onclick="event.preventDefault();window.open('{{ $naechsterCall->zoom_url }}','_blank','noopener')"><i class="fa-solid fa-video"></i>{{ $naechsterCall->isLive() ? 'Jetzt beitreten' : 'Zoom-Link' }}</span>
-                @endif
-            </a>
+            <x-termin-karte :termin="$naechsterCall" :status="false" />
         @endif
 
         @if ($infos->isNotEmpty())

@@ -53,7 +53,7 @@ class WillkommenController extends Controller
         if (is_array($custom) && $custom !== []) {
             return array_values($custom);
         }
-        $coach = $tenant?->setting('coach_name') ?: ($tenant?->owners()->first()?->vorname() ?? $this->branding->appName());
+        $coach = $this->branding->coachName($this->branding->appName());
         $app = $this->branding->appName();
         $einzel = $request->user()->roleIn()?->value === 'client';
 

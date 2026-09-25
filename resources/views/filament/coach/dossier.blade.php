@@ -123,7 +123,7 @@
                             <div class="mt-2 text-sm">
                                 <div class="text-gray-500">{{ $a->exercise->prompt ?: $a->exercise->title }}</div>
                                 <div class="mt-0.5 rounded-lg bg-gray-50 px-3 py-2 whitespace-pre-line">{{ $a->asText() }}</div>
-                                @include('filament.coach._kommentare', ['item' => $a, 'typ' => 'answer'])
+                                <x-kommentare :item="$a" typ="answer" stil="coach" />
                             </div>
                         @endforeach
                     </div>
@@ -140,7 +140,7 @@
                             @if ($r->$k)<div class="mt-2"><b>{{ $ico }} {{ $frage }}</b><div class="whitespace-pre-line">{{ $r->$k }}</div></div>@endif
                         @endforeach
                         @if ($r->addendum)<div class="mt-2"><b>Nachtrag</b><div class="whitespace-pre-line">{{ $r->addendum }}</div></div>@endif
-                        @include('filament.coach._kommentare', ['item' => $r, 'typ' => 'reflection'])
+                        <x-kommentare :item="$r" typ="reflection" stil="coach" />
                     </div>
                 @empty
                     <p class="text-sm text-gray-500">Noch keine geteilte Reflexion.</p>
@@ -156,7 +156,7 @@
                             <span class="text-gray-500 text-xs">{{ $t->assigned_by ? 'von Coach' : 'selbst' }}{{ $t->due_at ? ' · bis '.$t->due_at->format('d.m.') : '' }}</span>
                         </summary>
                         @if ($t->body)<div class="mt-1 ps-6 text-gray-600 whitespace-pre-line">{{ $t->body }}</div>@endif
-                        <div class="ps-6">@include('filament.coach._kommentare', ['item' => $t, 'typ' => 'task'])</div>
+                        <div class="ps-6"><x-kommentare :item="$t" typ="task" stil="coach" /></div>
                     </details>
                 @empty
                     <p class="text-sm text-gray-500">Keine geteilten Aufgaben.</p>
@@ -172,7 +172,7 @@
                         @if ($n->title)<div class="font-medium">{{ $n->title }}</div>@endif
                         <div class="whitespace-pre-line">{{ $n->body }}</div>
                         <div class="text-xs text-gray-500 mt-1">{{ $n->updated_at->format('d.m.Y H:i') }}</div>
-                        @include('filament.coach._kommentare', ['item' => $n, 'typ' => 'note'])
+                        <x-kommentare :item="$n" typ="note" stil="coach" />
                     </div>
                 @empty
                     <p class="text-sm text-gray-500">Keine geteilten Notizen.</p>

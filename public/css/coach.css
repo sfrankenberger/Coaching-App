@@ -1,0 +1,36 @@
+/* Coach-Bereich (Filament) im Stil der App: Schriften, Farben und Flaechen aus dem Branding des Mandanten.
+   Die Variablen --c-* und --font-* kommen aus Branding::cssVariables() im <head>. */
+:root {
+    --font-family: var(--font-body), system-ui, sans-serif;
+    --default-font-family: var(--font-body), system-ui, sans-serif;
+}
+body, .fi-body { background: var(--c-bg-wide, var(--c-bg)); color: var(--c-text); font-family: var(--font-body), system-ui, sans-serif; }
+.fi-sidebar, .fi-sidebar-header, .fi-topbar { background: var(--c-bar, var(--c-bg)) !important; border-color: var(--c-card-border) !important; }
+.fi-sidebar-nav-groups .fi-sidebar-item-label { font-size: 14px; }
+.fi-header-heading, .fi-section-header-heading, .fi-wi-stats-overview-stat-value, .fi-modal-heading, .fi-ta-header-cell-label {
+    font-family: var(--font-heading), Georgia, serif; font-weight: 400; letter-spacing: 0;
+}
+.fi-header-heading { font-size: 28px; }
+.fi-section-header-heading { font-size: 20px; }
+.fi-section, .fi-wi-stats-overview-stat, .fi-ta-ctn, .fi-fo-tabs, .fi-dropdown-panel, .fi-modal-window {
+    background: var(--c-card) !important; border: 1px solid var(--c-card-border) !important; border-radius: var(--radius, 18px) !important; box-shadow: none !important;
+}
+.fi-section-content, .fi-ta-content { color: var(--c-text); }
+.fi-btn-color-primary { border-radius: 999px; }
+.fi-btn { border-radius: 999px; font-weight: 600; }
+.fi-badge { border-radius: 999px; }
+.fi-input, .fi-select-input, .fi-fo-textarea textarea, .fi-input-wrp { border-radius: 12px; }
+.fi-brand { font-family: var(--font-mark, var(--font-heading)); letter-spacing: .04em; font-size: 15px; }
+.fi-ta-row:hover { background: var(--c-surface) !important; }
+.fi-ta-header-cell-label { font-size: 12px; text-transform: uppercase; letter-spacing: .08em; font-family: var(--font-body), sans-serif; color: var(--c-faint); }
+.fi-sidebar-item-active .fi-sidebar-item-btn { background: var(--c-primary-tint) !important; }
+.fi-sidebar-item-active .fi-sidebar-item-label, .fi-sidebar-item-active .fi-sidebar-item-icon { color: var(--c-primary) !important; }
+
+/* Kommentare im Dossier */
+.kommentare-coach { margin-top: 8px; display: grid; gap: 6px; }
+.kommentare-coach .kommentar { position: relative; padding: 6px 12px; border-radius: 10px; background: var(--c-ghost); font-size: 14px; line-height: 1.5; }
+.kommentare-coach .kommentar.vom-team { background: var(--c-primary-soft); }
+.kommentare-coach .kommentar .wer { display: block; font-size: 12px; color: var(--c-faint); }
+.kommentare-coach .kommentar-form { display: flex; gap: 8px; }
+.kommentare-coach .kommentar-feld { flex: 1; min-height: 36px; padding: 4px 12px; border: 1px solid var(--c-card-border); border-radius: 10px; font-size: 14px; background: var(--c-card); }
+.kommentare-coach .kommentar-senden { width: 38px; height: 36px; border-radius: 10px; border: 1px solid var(--c-card-border); background: var(--c-card); color: var(--c-text); cursor: pointer; }

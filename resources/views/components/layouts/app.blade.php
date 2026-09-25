@@ -153,7 +153,7 @@
         </nav>
 
         {{-- Hinweis-Fenster: Installieren und Push, einmal pro Tag hoechstens --}}
-        <div class="sheet" id="app-sheet" aria-hidden="true" data-coach="{{ data_get($tenant?->settings, 'coach_name') }}" data-push-schluessel="{{ route('push.schluessel') }}" data-push-abo="{{ route('push.abo') }}" data-start="{{ $ist('home') ? 1 : 0 }}">
+        <div class="sheet" id="app-sheet" aria-hidden="true" data-coach="{{ app(\App\Tenancy\Branding::class)->coachName() }}" data-push-schluessel="{{ route('push.schluessel') }}" data-push-abo="{{ route('push.abo') }}" data-start="{{ $ist('home') ? 1 : 0 }}">
             <div class="sheet-schleier" data-sheet-zu></div>
             <div class="sheet-in" role="dialog" aria-modal="true">
                 <button type="button" class="sheet-zu" aria-label="Schliessen" data-sheet-zu>&times;</button>

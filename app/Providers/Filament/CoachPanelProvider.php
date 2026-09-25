@@ -14,6 +14,7 @@ use Filament\Pages\Dashboard;
 use Filament\Panel;
 use Filament\PanelProvider;
 use Filament\Support\Colors\Color;
+use Filament\View\PanelsRenderHook;
 use Filament\Widgets\AccountWidget;
 use Illuminate\Cookie\Middleware\AddQueuedCookiesToResponse;
 use Illuminate\Cookie\Middleware\EncryptCookies;
@@ -41,6 +42,13 @@ class CoachPanelProvider extends PanelProvider
             ->favicon(fn () => app(Branding::class)->get('icon_url'))
             ->colors(['primary' => Color::Stone])
             ->darkMode(false)
+            // Schriften, Farben und Flaechen der App auch im Coach-Bereich
+            ->renderHook(PanelsRenderHook::HEAD_END, function () {
+                $b = app(Branding::class);
+                $font = $b->get('font_url') ? '<link rel="stylesheet" href="'.e($b->get('font_url')).'">' : '';
+
+                return $font.'<style>'.$b->cssVariables().'</style><link rel="stylesheet" href="'.asset('css/coach.css').'?v='.filemtime(public_path('css/coach.css')).'">';
+            })
             ->sidebarCollapsibleOnDesktop()
             ->discoverResources(in: app_path('Filament/Coach/Resources'), for: 'App\Filament\Coach\Resources')
             ->discoverPages(in: app_path('Filament/Coach/Pages'), for: 'App\Filament\Coach\Pages')

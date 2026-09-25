@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Coach\Lage;
 use App\Content\Inhalte;
 use App\Models\Answer;
 use App\Models\Event;
@@ -17,7 +18,7 @@ use App\Models\Unit;
 use App\Programs\Begleitung;
 use App\Programs\ProgramAccess;
 use App\Programs\ProgressTracker;
-use App\Tenancy\CurrentTenant;
+use App\Tenancy\Branding;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -63,8 +64,8 @@ class KursController extends Controller
             'infos' => app(Inhalte::class)->postsQuery($user)->published()->where('visibility', 'program')->where('program_id', $program->id)
                 ->latest('published_at')->limit(3)->get(),
             'fragen' => Question::where('program_id', $program->id)->sichtbarFuer($user)->whereIn('status', ['offen', 'call'])->count(),
-            'coach' => (string) (app(CurrentTenant::class)->get()?->setting('coach_name') ?: 'deine Coachin'),
-            'kontingent' => $program->type === 'one_on_one' ? app(\App\Coach\Lage::class)->kontingent($user) : null,
+            'coach' => app(Branding::class)->coachName(),
+            'kontingent' => $program->type === 'one_on_one' ? app(Lage::class)->kontingent($user) : null,
             'program' => $program,
             'stand' => $this->progress->summary($user, $program),
             'done' => $done,

@@ -31,7 +31,7 @@
                     @if ($gebucht)
                         @if ((int) $gebucht['i'] === $i)<span class="vorschlag an"><i class="fa-solid fa-check"></i>{{ $zeit->translatedFormat('D j. M, H:i') }} gebucht</span>@endif
                     @elseif ($fuerMich && $zeit->isFuture())
-                        <form method="post" action="{{ route('nachricht.termin', $m) }}" onsubmit="return confirm('{{ $zeit->translatedFormat('l, j. F, H:i') }} Uhr buchen?')">
+                        <form method="post" action="{{ route('nachricht.termin', $m) }}" onsubmit="return confirm('{{ \App\Support\Zeit::wann($zeit) }} buchen?')">
                             @csrf<input type="hidden" name="i" value="{{ $i }}">
                             <button class="vorschlag"><i class="fa-regular fa-calendar"></i>{{ $zeit->translatedFormat('D j. M, H:i') }}</button>
                         </form>

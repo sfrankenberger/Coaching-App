@@ -92,6 +92,15 @@ class Branding
         return $value ?? $default ?? (self::DEFAULTS[$key] ?? null);
     }
 
+    /** Name der Coachin fuer Texte ("Fragen an Lea"): settings.coach_name, sonst Vorname der Inhaberin, sonst Fallback. */
+    public function coachName(?string $fallback = null): string
+    {
+        $tenant = $this->current->get();
+        $name = $tenant?->setting('coach_name') ?: $tenant?->owners()->orderBy('memberships.id')->first()?->vorname();
+
+        return (string) ($name ?: ($fallback ?? 'deine Coachin'));
+    }
+
     public function appName(): string
     {
         return (string) ($this->get('app_name') ?? $this->tenant()?->name ?? config('app.name'));

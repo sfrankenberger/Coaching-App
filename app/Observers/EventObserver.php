@@ -6,6 +6,7 @@ use App\Models\Event;
 use App\Models\ProgramMember;
 use App\Notifications\Nachricht;
 use App\Notifications\Notifier;
+use App\Support\Zeit;
 use Illuminate\Support\Collection;
 
 /**
@@ -30,7 +31,7 @@ class EventObserver
         if ($ids->isEmpty()) {
             return;
         }
-        $wann = $event->starts_at->translatedFormat('l, j. F, H:i').' Uhr';
+        $wann = Zeit::wann($event->starts_at);
         app(Notifier::class)->send($ids, new Nachricht(
             titel: ($event->user_id ? 'Neuer Termin für dich: ' : 'Neuer Termin: ').$event->title,
             text: $wann.'. Du findest ihn unter Termine und kannst ihn in deinen Kalender übernehmen.',

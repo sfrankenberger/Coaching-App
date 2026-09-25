@@ -17,13 +17,15 @@ use Throwable;
  */
 class MaterialVideo
 {
+    use HoltAbschrift;
+
     public const VERSUCHE = 6;
 
     public function __construct(protected CurrentTenant $current, protected Vimeo $vimeo, protected Summarizer $summarizer) {}
 
     public static function vimeoId(Resource $r): ?string
     {
-        return $r->vimeo_id ?: Vimeo::nummerAus($r->url) ?: Vimeo::nummerAus($r->file_path) ?: Vimeo::nummerAus($r->body);
+        return self::vimeoNummer($r->vimeo_id, $r->url, $r->file_path, $r->body);
     }
 
     /** Material mit Video, dem noch Abschrift oder Zusammenfassung fehlt. */
@@ -74,12 +76,7 @@ class MaterialVideo
         $r->saveQuietly();
 
         if ($neu || blank($r->transcript)) {
-            $text = null;
-            try {
-                $text = $this->vimeo->abschrift($id);
-            } catch (Throwable $e) {
-                report($e);
-            }
+            $text = $this->abschriftHolen($id);
             if (! $text) {
                 $versuche = $r->prepare_tries + 1;
                 $r->forceFill(['prepare_tries' => $versuche])->saveQuietly();

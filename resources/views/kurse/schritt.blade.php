@@ -26,24 +26,7 @@
 
         {{-- Calls dieser Woche: vorher Zoom, danach Aufzeichnung --}}
         @foreach ($termine->reject(fn ($t) => in_array($t->type, \App\Models\Event::ALL_DAY_TYPES, true)) as $t)
-            @php $mein = $t->attendees->first(); $live = $t->isLive(); $vorbei = $t->isPast(); @endphp
-            <a href="{{ route('termine.show', $t) }}" @class(['karte karte-dunkel', 'block no-underline']) style="margin-top:12px">
-                <span class="eyebrow">{{ $live ? 'Jetzt live' : ($vorbei ? 'Call dieser Woche' : 'Nächster Call') }}</span>
-                <span class="block" style="font-family:var(--font-heading);font-size:var(--fs-xl);line-height:1.3;margin-top:2px">{{ $t->title }}</span>
-                <span class="m">{{ $t->starts_at->translatedFormat('l, j. F, H:i') }} Uhr</span>
-                <span class="flex flex-wrap gap-2" style="margin-top:12px">
-                    @if (! $vorbei && $t->zoom_url)
-                        <span class="knopf knopf-klein" onclick="event.preventDefault();window.open('{{ $t->zoom_url }}','_blank','noopener')"><i class="fa-solid fa-video"></i>{{ $live ? 'Jetzt beitreten' : 'Zoom-Link' }}</span>
-                    @elseif ($t->hasRecording())
-                        <span class="knopf knopf-klein"><i class="fa-solid fa-circle-play"></i>Aufzeichnung ansehen</span>
-                    @elseif ($vorbei)
-                        <span class="chip" style="background:rgba(255,255,255,.14);color:#fff">Aufzeichnung folgt</span>
-                    @endif
-                    @if ($mein && in_array($mein->status, ['attended', 'watched'], true))
-                        <span class="chip chip-gut"><i class="fa-solid fa-check"></i>{{ $mein->status === 'attended' ? 'Live dabei' : 'Gesehen' }}</span>
-                    @endif
-                </span>
-            </a>
+            <x-termin-karte :termin="$t" style="margin-top:12px" />
         @endforeach
 
         <h2 class="abschnitt"><i class="fa-solid fa-circle-play"></i>{{ $program->pacing === 'weekly' ? 'Diese Woche' : 'Lektionen' }}<em>{{ $units->count() }}</em></h2>

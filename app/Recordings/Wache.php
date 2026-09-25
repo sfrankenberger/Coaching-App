@@ -12,7 +12,6 @@ use App\Notifications\Notifier;
 use App\Tenancy\CurrentTenant;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Collection;
-use Throwable;
 
 /**
  * Wache nach jedem Termin (wie novamira-aufzeichnungen): Aufzeichnung auf Vimeo finden,
@@ -24,6 +23,8 @@ use Throwable;
  */
 class Wache
 {
+    use HoltAbschrift;
+
     public const OFFEN = [null, 'wartet', 'gefunden', 'abschrift'];
 
     protected ?array $videos = null;
@@ -84,12 +85,8 @@ class Wache
             $e->refresh();
             // 2. Abschrift
             if (blank($e->transcript)) {
-                $id = $e->vimeo_id ?: (preg_match('~vimeo\.com/(?:video/)?(\d+)~', (string) $e->recording_url, $m) ? $m[1] : null);
-                $text = null;
-                try {
-                    $text = $id ? $this->vimeo->abschrift($id) : null;
-                } catch (Throwable) {
-                }
+                $id = self::vimeoNummer($e->vimeo_id, $e->recording_url);
+                $text = $this->abschriftHolen($id);
                 if ($text) {
                     $e->forceFill(['transcript' => $text, 'recording_status' => 'abschrift', 'recording_tries' => 0])->saveQuietly();
                     $bericht['abschriften']++;

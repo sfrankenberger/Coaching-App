@@ -12,6 +12,7 @@ use App\Models\Membership;
 use App\Models\User;
 use App\Notifications\Nachricht;
 use App\Notifications\Notifier;
+use App\Support\Zeit;
 use App\Tenancy\CurrentTenant;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Cache;
@@ -85,7 +86,7 @@ class Buchung
                 report($e);
             }
 
-            $wann = $start->translatedFormat('l, j. F, H:i').' Uhr';
+            $wann = Zeit::wann($start);
             $this->notifier->send([$user->id], new Nachricht(
                 titel: 'Gebucht: '.$event->title,
                 text: $wann.'. Den Zoom-Link und den Kalendereintrag findest du beim Termin.',
@@ -117,7 +118,7 @@ class Buchung
                 report($e);
             }
         }
-        $wann = $booking->starts_at->translatedFormat('l, j. F, H:i').' Uhr';
+        $wann = Zeit::wann($booking->starts_at);
         if ($team) {
             $this->notifier->send([$booking->user_id], new Nachricht(titel: 'Termin abgesagt', text: 'Dein Termin am '.$wann.' fällt aus. Buch dir gern eine neue Zeit.', url: route('buchen.index'), anlass: 'buchung', tag: 'buchung-'.$booking->id));
         } else {

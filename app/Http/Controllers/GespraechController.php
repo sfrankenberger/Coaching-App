@@ -5,11 +5,10 @@ namespace App\Http\Controllers;
 use App\Chat\Chat;
 use App\Chat\Terminvorschlag;
 use App\Models\Conversation;
-use App\Models\Membership;
 use App\Models\Message;
 use App\Models\Program;
 use App\Models\Reaction;
-use App\Tenancy\CurrentTenant;
+use App\Tenancy\Branding;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -181,15 +180,8 @@ class GespraechController extends Controller
     {
         if ($conv->isDirect()) {
             if ($conv->user_id === $user->id) {
-                // Die Coachin, nicht das erste Teammitglied: Name aus den Einstellungen, sonst die Inhaberin
-                if ($name = app(CurrentTenant::class)->get()?->setting('coach_name')) {
-                    return $name;
-                }
-                $inhaberin = Membership::where('role', 'owner')->orderBy('id')->value('user_id');
-                $coach = $conv->participants->firstWhere('user_id', $inhaberin)?->user
-                    ?? $conv->participants->firstWhere('user_id', '!=', $user->id)?->user;
-
-                return $coach?->vorname() ?: 'deine Coachin';
+                // Die Coachin, nicht das erste Teammitglied
+                return app(Branding::class)->coachName($conv->participants->firstWhere('user_id', '!=', $user->id)?->user?->vorname());
             }
 
             return $conv->user?->vorname() ?: 'die Person';

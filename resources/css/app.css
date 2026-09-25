@@ -874,7 +874,10 @@
     body.drucke-mitnehmen .wird-gedruckt button { display: none; }
 }
 
-/* Kommentare unter Geteiltem */
+/* Kommentare unter Geteiltem (App und Dossier) */
+.kommentar-form { display: flex; gap: 8px; margin-top: 8px; }
+.kommentar-form .feld { flex: 1; }
+.kommentar-senden { flex: none; width: 44px; padding: 0; }
 .kommentare { margin-top: 12px; padding-top: 10px; border-top: 1px solid var(--c-line-soft); display: grid; gap: 8px; }
 .kommentar { position: relative; padding: 8px 32px 8px 12px; border-radius: 12px; background: var(--c-ghost); font-size: var(--fs-md); line-height: 1.5; }
 .kommentar.vom-team { background: var(--c-primary-soft); }
@@ -895,3 +898,7 @@ button.vorschlag:hover { border-color: var(--c-primary); }
 .zeit-wahl span { display: inline-flex; align-items: center; min-height: 44px; padding: 0 16px; border-radius: 999px; border: 1px solid var(--c-line-strong); background: var(--c-card); font-size: var(--fs-md); cursor: pointer; }
 .zeit-wahl input:checked + span { background: var(--c-text); color: var(--c-bg); border-color: var(--c-text); }
 .zeit-wahl input:focus-visible + span { outline: 2px solid var(--c-primary); outline-offset: 2px; }
+
+/* Dunkle Terminkarte */
+.karte-dunkel-titel { display: block; font-family: var(--font-heading); font-size: var(--fs-xl); line-height: 1.3; margin-top: 2px; }
+.chip-hell { background: rgba(255, 255, 255, .14); color: #fff; }
