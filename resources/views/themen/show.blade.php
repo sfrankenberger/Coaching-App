@@ -1,10 +1,10 @@
 <x-layouts.app :title="$thema->name">
-    <p class="mb-2"><a href="{{ route('themen.index') }}" class="hinweis no-underline">&larr; Themen</a></p>
-    <h1 class="mb-1">{{ $thema->name }}</h1>
-    @if ($thema->description)<p class="text-ink-soft mb-3">{{ $thema->description }}</p>@endif
+    <p style="margin:0 0 8px"><a href="{{ route('themen.index') }}" class="hinweis no-underline"><i class="fa-solid fa-chevron-left" style="font-size:11px"></i> Themen</a></p>
+    <h1 style="margin-bottom:4px">{{ $thema->name }}</h1>
+    @if ($thema->description)<p class="unterzeile" style="margin:0 0 14px">{{ $thema->description }}</p>@endif
 
     @forelse ($gruppen as $art => $zeilen)
-        <h2 class="mt-4 mb-1">{{ \App\Content\Inhalte::ARTEN[$art] ?? $art }}{{ $zeilen->count() > 1 ? 'e' : '' }}</h2>
+        <h2 class="abschnitt">{{ \App\Content\Inhalte::ARTEN[$art] ?? $art }}{{ $zeilen->count() > 1 ? 'e' : '' }}<em>{{ $zeilen->count() }}</em></h2>
         @foreach ($zeilen as $z)
             @php $f = $z['model']->finder ?? null; @endphp
             <article class="karte flex items-start gap-3">
@@ -25,6 +25,6 @@
             </article>
         @endforeach
     @empty
-        <x-karte><p class="text-ink-soft">Zu diesem Thema ist für dich gerade nichts freigeschaltet.</p></x-karte>
+        <div class="leer"><i class="fa-regular fa-bookmark"></i>Zu diesem Thema ist für dich gerade nichts freigeschaltet.</div>
     @endforelse
 </x-layouts.app>

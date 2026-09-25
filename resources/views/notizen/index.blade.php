@@ -1,17 +1,18 @@
 <x-layouts.app title="Meine Notizen">
-    <p class="mb-2"><a href="{{ route('journal.index') }}" class="hinweis no-underline">&larr; Mein Journal</a></p>
-    <h1 class="mb-3">Meine Notizen</h1>
+    <p style="margin:0 0 8px"><a href="{{ route('journal.index') }}" class="hinweis no-underline"><i class="fa-solid fa-chevron-left" style="font-size:11px"></i> Mein Journal</a></p>
+    <h1>Meine Notizen</h1>
 
-    <x-karte :titel="$bearbeiten ? 'Notiz bearbeiten' : null">
+    <div class="baustein">
+        <p class="eyebrow" style="margin:0 0 10px">{{ $bearbeiten ? 'Notiz bearbeiten' : 'Neue Notiz' }}</p>
         <form method="post" action="{{ $bearbeiten ? route('notizen.update', $bearbeiten) : route('notizen.store') }}" class="eingabe">
             @csrf
             <input name="title" class="feld" placeholder="Überschrift (optional)" maxlength="160" value="{{ old('title', $bearbeiten?->title) }}">
             <textarea name="body" class="feld" rows="4" placeholder="Was dir gerade durch den Kopf geht ..." required>{{ old('body', $bearbeiten?->body) }}</textarea>
             <div class="flex flex-wrap gap-2">
                 @if ($kurse->count())
-                    <label class="hinweis">Kurs<br><select name="program_id" class="feld"><option value="">Allgemein</option>@foreach ($kurse as $id => $t)<option value="{{ $id }}" @selected((int) old('program_id', $bearbeiten?->program_id) === $id)>{{ $t }}</option>@endforeach</select></label>
+                    <label class="block"><span class="feld-label">Kurs</span><select name="program_id" class="feld"><option value="">Allgemein</option>@foreach ($kurse as $id => $t)<option value="{{ $id }}" @selected((int) old('program_id', $bearbeiten?->program_id) === $id)>{{ $t }}</option>@endforeach</select></label>
                 @endif
-                <label class="hinweis">Wer sieht das?<br><select name="visibility" class="feld">
+                <label class="block"><span class="feld-label">Wer sieht das?</span><select name="visibility" class="feld">
                     @foreach (\App\Models\Note::VISIBILITIES as $k => $l)
                         @if ($k !== 'program' || $kurse->count())<option value="{{ $k }}" @selected(old('visibility', $bearbeiten?->visibility ?? 'private') === $k)>{{ $l }}</option>@endif
                     @endforeach
@@ -23,17 +24,17 @@
                 <button type="submit" class="knopf">{{ $bearbeiten ? 'Speichern' : 'Notiz speichern' }}</button>
             </div>
         </form>
-    </x-karte>
+    </div>
 
-    <form method="get" class="my-3"><input type="search" name="q" value="{{ $suche }}" class="feld" placeholder="In deinen Notizen suchen"></form>
+    <form method="get" class="suche" style="margin:14px 0 16px"><i class="fa-solid fa-magnifying-glass"></i><input type="search" name="q" value="{{ $suche }}" placeholder="In deinen Notizen suchen" aria-label="In deinen Notizen suchen"></form>
 
     @forelse ($notes as $n)
-        <article id="notiz-{{ $n->id }}" @class(['karte', 'border-primary' => $n->is_pinned])>
+        <article id="notiz-{{ $n->id }}" @class(['karte', 'heute' => $n->is_pinned])>
             <div class="flex items-start gap-3">
                 <div class="min-w-0 flex-1">
-                    @if ($n->title)<h2 class="text-lg">{{ $n->title }}</h2>@endif
-                    <p class="text-base whitespace-pre-line">{{ $n->body }}</p>
-                    <span class="hinweis block mt-2">
+                    @if ($n->title)<span class="t">@if ($n->is_pinned)<i class="fa-solid fa-thumbtack" style="color:var(--c-primary);font-size:12px;margin-right:6px"></i>@endif{{ $n->title }}</span>@endif
+                    <p class="x whitespace-pre-line" style="margin:4px 0 0;font-size:var(--fs-base)">{{ $n->body }}</p>
+                    <span class="m" style="margin-top:8px">
                         {{ $n->updated_at->translatedFormat('j. M Y, H:i') }}
                         @if ($n->notable) · zu «{{ $n->notable->title ?? '' }}» @endif
                         @if ($n->program) · {{ $n->program->title }} @endif
@@ -41,15 +42,15 @@
                     </span>
                 </div>
                 <details class="relative shrink-0">
-                    <summary class="list-none cursor-pointer size-8 grid place-items-center rounded-full hover:bg-page" aria-label="Mehr">···</summary>
-                    <div class="absolute right-0 z-10 mt-1 w-44 rounded-xl border border-line bg-card p-1 shadow">
-                        <a href="{{ route('notizen.index', ['bearbeiten' => $n->id]) }}" class="block rounded-lg px-3 py-2 text-md no-underline text-ink hover:bg-page">Bearbeiten</a>
-                        <form method="post" action="{{ route('notizen.destroy', $n) }}" onsubmit="return confirm('Notiz löschen?')">@csrf @method('DELETE')<button class="block w-full rounded-lg px-3 py-2 text-left text-md text-danger hover:bg-page">Löschen</button></form>
+                    <summary class="list-none cursor-pointer knopf-rund grid place-items-center" aria-label="Mehr"><i class="fa-solid fa-ellipsis-vertical"></i></summary>
+                    <div class="menue" style="right:0;top:36px">
+                        <a href="{{ route('notizen.index', ['bearbeiten' => $n->id]) }}" class="e"><i class="fa-solid fa-pen"></i>Bearbeiten</a>
+                        <form method="post" action="{{ route('notizen.destroy', $n) }}" onsubmit="return confirm('Notiz löschen?')">@csrf @method('DELETE')<button class="e gefahr"><i class="fa-solid fa-trash"></i>Löschen</button></form>
                     </div>
                 </details>
             </div>
         </article>
     @empty
-        <x-karte><p class="text-ink-soft">Noch keine Notiz. Alles, was du dir merken willst, kommt hierher.</p></x-karte>
+        <div class="leer"><i class="fa-regular fa-note-sticky"></i>Noch keine Notiz. Alles, was du dir merken willst, kommt hierher.</div>
     @endforelse
 </x-layouts.app>

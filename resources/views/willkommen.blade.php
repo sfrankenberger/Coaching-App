@@ -1,13 +1,14 @@
-<x-layouts.app title="Willkommen">
-    <div data-willkommen>
-        <div class="h-1.5 rounded-full bg-line overflow-hidden mb-3"><span class="block h-full rounded-full bg-primary transition-all" data-balken style="width: {{ round(100 / count($schritte)) }}%"></span></div>
+<x-layouts.app title="Willkommen" :schmal="true">
+    <div data-willkommen class="willkommen">
+        <span class="balken balken-duenn" style="display:block;margin:0 0 18px"><span data-balken style="width: {{ round(100 / count($schritte)) }}%;transition:width .3s"></span></span>
 
         <form method="post" action="{{ route('willkommen.fertig') }}" id="willkommen-form">
             @csrf
             @foreach ($schritte as $i => $s)
-                <section class="karte" data-schritt @if ($i > 0) hidden @endif>
+                <section data-schritt @if ($i > 0) hidden @endif>
+                    @if (! empty($s['icon']))<span class="willkommen-ic"><i class="fa-solid fa-{{ $s['icon'] }}"></i></span>@endif
                     <span class="eyebrow">Schritt {{ $i + 1 }} von {{ count($schritte) }}</span>
-                    <h1 class="mt-1">{{ $s['titel'] }}</h1>
+                    <h1 style="margin:4px 0 0">{{ $s['titel'] }}</h1>
                     <div class="prose-app mt-2">{!! $s['text'] !!}</div>
                     @if (! empty($s['push']) && $pushMoeglich)
                         <div class="mt-3" data-push data-schluessel="{{ route('push.schluessel') }}" data-abo="{{ route('push.abo') }}">
@@ -24,8 +25,9 @@
                 </section>
             @endforeach
 
+            <div class="willkommen-punkte" aria-hidden="true">@foreach ($schritte as $i => $s)<span data-punkt></span>@endforeach</div>
             <div class="flex items-center justify-between gap-2 mt-3">
-                <button type="button" class="knopf knopf-leise" data-zurueck hidden>Zurück</button>
+                <button type="button" class="knopf knopf-text" data-zurueck hidden>Zurück</button>
                 <span class="flex-1"></span>
                 @if ($gesehen)
                     <a href="{{ route('home') }}" class="knopf knopf-leise" data-willkommen-zu>Schliessen</a>
@@ -46,6 +48,7 @@
             function zeig() {
                 s.forEach(function (el, k) { el.hidden = k !== i; });
                 balken.style.width = Math.round((i + 1) / s.length * 100) + '%';
+                wrap.querySelectorAll('[data-punkt]').forEach(function (p, k) { p.classList.toggle('an', k === i); });
                 zurueck.hidden = i === 0;
                 weiter.hidden = i === s.length - 1;
                 los.hidden = i !== s.length - 1;

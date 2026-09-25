@@ -34,8 +34,15 @@ class ImpulseController extends Controller
             $zeilen = $zeilen->filter(fn ($z) => str_contains(mb_strtolower($z['titel'].' '.$z['text']), $suche));
         }
 
+        // Seitenweise, 24 je Seite: die Liste mit Bildkarten wird sonst sehr lang
+        $alle = $zeilen->sortByDesc('ts')->values();
+        $seite = max(1, (int) $request->query('seite', 1));
+        $proSeite = 24;
+
         return view('impulse.index', [
-            'zeilen' => $zeilen->sortByDesc('ts')->values(),
+            'zeilen' => $alle->slice(0, $seite * $proSeite)->values(),
+            'mehr' => $alle->count() > $seite * $proSeite ? $seite + 1 : null,
+            'gesamt' => $alle->count(),
             'filter' => $filter,
             'suche' => $suche,
             'shows' => $shows,

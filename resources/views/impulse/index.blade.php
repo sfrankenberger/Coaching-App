@@ -22,6 +22,9 @@
 
     @forelse ($zeilen as $z)
         <x-inhalt-zeile :z="$z" :gemerkt="$gemerkt" />
+        @if ($loop->last && $mehr)
+            <a href="{{ route('impulse.index', array_filter(['f' => $filter, 'q' => $suche, 'seite' => $mehr])) }}#mehr-{{ $loop->iteration }}" id="mehr-{{ $loop->iteration }}" class="knopf knopf-anstoss knopf-breit">Weitere anzeigen ({{ $gesamt - $zeilen->count() }})</a>
+        @endif
     @empty
         <div class="leer"><i class="fa-regular fa-lightbulb"></i>{{ $suche ? 'Nichts gefunden.' : 'Hier kommen Impulse und Podcastfolgen hin, sobald es welche gibt.' }}</div>
     @endforelse

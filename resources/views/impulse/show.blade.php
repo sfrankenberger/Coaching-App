@@ -1,5 +1,5 @@
 <x-layouts.app :title="$post->title">
-    <p class="mb-2"><a href="{{ route('impulse.index') }}" class="hinweis no-underline">&larr; Impulse</a></p>
+    <p style="margin:0 0 8px"><a href="{{ route('impulse.index') }}" class="hinweis no-underline"><i class="fa-solid fa-chevron-left" style="font-size:11px"></i> Impulse</a></p>
 
     <x-karte class="!p-0 overflow-hidden">
         @if ($post->image_url)
@@ -22,10 +22,10 @@
     </x-karte>
 
     @if ($post->topics->isNotEmpty())
-        <x-karte titel="Themen">
+        <x-karte titel="Themen" icon="tag">
             <div class="flex flex-wrap gap-2">
                 @foreach ($post->topics as $t)
-                    <a href="{{ route('themen.show', $t) }}" class="knopf knopf-leise no-underline" style="min-height:32px;padding:4px 12px">{{ $t->name }}</a>
+                    <a href="{{ route('themen.show', $t) }}" class="chip no-underline"><i class="fa-solid fa-tag"></i>{{ $t->name }}</a>
                 @endforeach
             </div>
         </x-karte>

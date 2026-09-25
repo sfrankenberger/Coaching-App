@@ -1,5 +1,5 @@
 <x-layouts.app :title="$folge->title">
-    <p class="mb-2"><a href="{{ route('impulse.index') }}" class="hinweis no-underline">&larr; Impulse</a></p>
+    <p style="margin:0 0 8px"><a href="{{ route('impulse.index') }}" class="hinweis no-underline"><i class="fa-solid fa-chevron-left" style="font-size:11px"></i> Impulse</a></p>
 
     <x-karte>
         <div class="flex items-start gap-4">
@@ -27,7 +27,7 @@
     </x-karte>
 
     @if ($folge->chapters)
-        <x-karte titel="Kapitel">
+        <x-karte titel="Kapitel" icon="list-ol">
             <ol class="divide-y divide-line">
                 @foreach ($folge->chapters as $k)
                     <li>
@@ -66,10 +66,10 @@
     @endif
 
     @if ($folge->topics->isNotEmpty() || $folge->keywords)
-        <x-karte titel="Themen">
+        <x-karte titel="Themen" icon="tag">
             <div class="flex flex-wrap gap-2">
                 @foreach ($folge->topics as $t)
-                    <a href="{{ route('themen.show', $t) }}" class="knopf knopf-leise no-underline" style="min-height:32px;padding:4px 12px">{{ $t->name }}</a>
+                    <a href="{{ route('themen.show', $t) }}" class="chip no-underline"><i class="fa-solid fa-tag"></i>{{ $t->name }}</a>
                 @endforeach
             </div>
             @if ($folge->keywords)

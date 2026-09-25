@@ -1,7 +1,7 @@
 <x-layouts.app title="Wochenreflexion">
-    <p class="mb-2"><a href="{{ route('journal.index') }}" class="hinweis no-underline">&larr; Mein Journal</a></p>
-    <h1 class="mb-1">Wochenreflexion</h1>
-    <p class="text-ink-soft mb-3">Nimm dir zehn Minuten. Deine Antworten bleiben bei dir; wenn du magst, gehen sie zusätzlich an deine Coachin.</p>
+    <p style="margin:0 0 8px"><a href="{{ route('journal.index') }}" class="hinweis no-underline"><i class="fa-solid fa-chevron-left" style="font-size:11px"></i> Mein Journal</a></p>
+    <h1 style="margin-bottom:4px">Wochenreflexion</h1>
+    <p class="unterzeile" style="margin:0 0 14px">Nimm dir zehn Minuten. Deine Antworten bleiben bei dir; wenn du magst, gehen sie zusätzlich an deine Coachin.</p>
 
     <x-karte>
         <form method="post" action="{{ route('reflexion.store') }}" class="eingabe">
@@ -10,16 +10,16 @@
             <p class="hinweis">{{ $entwurf?->week_label ?? $woche }}</p>
             @foreach ($fragen as $k => [$ico, $frage, $tipp])
                 <div>
-                    <label for="refl-{{ $k }}" class="block font-heading text-lg leading-snug">{{ $ico }} {{ $frage }}</label>
+                    <label for="refl-{{ $k }}" class="block font-heading" style="font-size:var(--fs-xl);line-height:1.3">{{ $ico }} {{ $frage }}</label>
                     <span class="hinweis block mb-1">{{ $tipp }}</span>
                     <textarea id="refl-{{ $k }}" name="{{ $k }}" rows="4" class="feld" placeholder="Schreib oder diktiere ...">{{ old($k, $entwurf?->$k) }}</textarea>
                 </div>
             @endforeach
             <div class="flex flex-wrap gap-2">
                 @if ($kurse->count())
-                    <label class="hinweis">Kurs<br><select name="program_id" class="feld"><option value="">Allgemein</option>@foreach ($kurse as $id => $t)<option value="{{ $id }}" @selected((int) old('program_id', $entwurf?->program_id) === $id)>{{ $t }}</option>@endforeach</select></label>
+                    <label class="block"><span class="feld-label">Kurs</span><select name="program_id" class="feld"><option value="">Allgemein</option>@foreach ($kurse as $id => $t)<option value="{{ $id }}" @selected((int) old('program_id', $entwurf?->program_id) === $id)>{{ $t }}</option>@endforeach</select></label>
                 @endif
-                <label class="hinweis">Wer sieht das?<br><select name="visibility" class="feld">
+                <label class="block"><span class="feld-label">Wer sieht das?</span><select name="visibility" class="feld">
                     <option value="private">Nur ich</option>
                     <option value="coach">Meine Coachin</option>
                     @if ($kurse->count())<option value="program">Mein Kurs</option>@endif
@@ -33,7 +33,7 @@
     </x-karte>
 
     @if ($meine->isNotEmpty())
-        <h2 class="mt-5 mb-2">Deine bisherigen Reflexionen</h2>
+        <h2 class="abschnitt"><i class="fa-solid fa-clock-rotate-left"></i>Deine bisherigen Reflexionen<em>{{ $meine->count() }}</em></h2>
         @foreach ($meine as $r)
             <article class="karte">
                 <div class="flex items-start gap-3">
@@ -56,10 +56,10 @@
                         </div>
                     </div>
                     <details class="relative shrink-0">
-                        <summary class="list-none cursor-pointer size-8 grid place-items-center rounded-full hover:bg-page" aria-label="Mehr">···</summary>
-                        <div class="absolute right-0 z-10 mt-1 w-44 rounded-xl border border-line bg-card p-1 shadow">
-                            @if ($r->isShared())<form method="post" action="{{ route('reflexion.teilen', $r) }}">@csrf<input type="hidden" name="visibility" value="private"><button class="block w-full rounded-lg px-3 py-2 text-left text-md hover:bg-page">Nicht mehr teilen</button></form>@endif
-                            <form method="post" action="{{ route('reflexion.destroy', $r) }}" onsubmit="return confirm('Reflexion löschen?')">@csrf @method('DELETE')<button class="block w-full rounded-lg px-3 py-2 text-left text-md text-danger hover:bg-page">Löschen</button></form>
+                        <summary class="list-none cursor-pointer knopf-rund grid place-items-center" aria-label="Mehr"><i class="fa-solid fa-ellipsis-vertical"></i></summary>
+                        <div class="menue" style="right:0;top:36px">
+                            @if ($r->isShared())<form method="post" action="{{ route('reflexion.teilen', $r) }}">@csrf<input type="hidden" name="visibility" value="private"><button class="e"><i class="fa-solid fa-lock"></i>Nicht mehr teilen</button></form>@endif
+                            <form method="post" action="{{ route('reflexion.destroy', $r) }}" onsubmit="return confirm('Reflexion löschen?')">@csrf @method('DELETE')<button class="e gefahr"><i class="fa-solid fa-trash"></i>Löschen</button></form>
                         </div>
                     </details>
                 </div>
