@@ -29,6 +29,11 @@ class TenantSeeder extends Seeder
                 'shop' => ['driver' => 'woocommerce', 'url' => 'https://leawernli.ch', 'webhook_secret' => null, 'rechnung_zahlarten' => ['lea_rechnung']],
                 'links' => ['website' => 'https://leawernli.ch', 'impressum' => 'https://leawernli.ch/impressum/', 'datenschutz' => 'https://leawernli.ch/datenschutz/', 'kontakt' => 'mail@leawernli.ch'],
                 'support' => ['email' => 'mail@sfrankenberger.com', 'whatsapp' => '491709323103', 'name' => 'Sebastian'],
+                'wochencheck' => ['haken' => [
+                    'community' => 'Community und Nachrichten gesichtet, offene Fragen an Lea weitergegeben',
+                    'material' => 'Material von Lea (WhatsApp) eingepflegt',
+                    'basecamp' => 'Basecamp-To-dos nachgeführt',
+                ]],
                 'website' => 'https://leawernli.ch',
                 'mail' => [
                     'from_address' => 'hallo@leawernli.ch',
