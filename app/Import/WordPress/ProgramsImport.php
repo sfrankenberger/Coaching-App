@@ -134,6 +134,7 @@ class ProgramsImport
                     'zugang_tage' => $m('zugang_tage') !== null && $m('zugang_tage') !== '' ? (int) $m('zugang_tage') : null,
                     'produkte' => $this->productIds($id),
                     'einzel_person' => $m('einzel_person') ? (int) $m('einzel_person') : null,
+                    'gratis' => (bool) $m('kurs_gratis') ?: null,
                 ], fn ($v) => $v !== null && $v !== false && $v !== []),
             ];
 

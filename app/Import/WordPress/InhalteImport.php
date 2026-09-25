@@ -46,6 +46,9 @@ class InhalteImport
             'post_visibility' => ['taxonomy' => 'sichtbarkeit', 'slug' => 'free'],
             'news_categories' => [],            // Kategorien, die "Neuigkeit" statt "Impuls" sind
             'post_exclude_ids' => [],
+            'post_exclude_categories' => [],     // z. B. Kategorie fuer Kampagnen-Mails
+            'club_visibility_slug' => null,      // Sichtbarkeit "Club-intern" -> Neuigkeit fuer das Club-Programm
+            'course_news_meta' => null,          // Kurs-Meta mit der Sichtbarkeits-ID fuer Kurs-Neuigkeiten
             'podcast_series_taxonomy' => 'series',
             'topic_taxonomies' => ['thema', 'podcast_thema'],
             'finder_meta' => ['summary' => 'lea_th_kurz', 'helps' => 'lea_th_hilft', 'keywords' => 'lea_th_stich', 'checked' => 'lea_th_geprueft'],
@@ -150,23 +153,49 @@ class InhalteImport
             }
         }
         $visObjects = $visTermId ? $this->source->objectTerms($vis['taxonomy']) : [];
+
+        // Neuigkeiten nur fuer ein Programm: Sichtbarkeit "Club-intern" oder die Sichtbarkeit eines Kurses
+        $programFor = [];
+        if ($slug = $this->config['club_visibility_slug']) {
+            $clubTerm = collect($visTerms)->search(fn ($t) => $t['slug'] === $slug);
+            $club = Program::where('type', 'club')->orderBy('id')->first();
+            if ($clubTerm !== false && $club) {
+                $programFor[(int) $clubTerm] = $club->id;
+            }
+        }
+        if ($metaKey = $this->config['course_news_meta']) {
+            foreach (Program::whereNotNull('legacy_id')->get(['id', 'legacy_id']) as $prog) {
+                $term = (int) $this->source->meta((int) $prog->legacy_id, $metaKey, 0);
+                if ($term) {
+                    $programFor[$term] = $prog->id;
+                }
+            }
+        }
+
         $cats = $this->source->terms('category');
         $catObjects = $this->source->objectTerms('category');
         $objectTerms = $this->allObjectTerms();
         $exclude = array_map('intval', (array) $this->config['post_exclude_ids']);
+        $excludeCats = array_map('intval', (array) $this->config['post_exclude_categories']);
         $news = array_map('intval', (array) $this->config['news_categories']);
 
         foreach ($this->source->posts('post', ['publish']) as $post) {
             $id = (int) $post->ID;
-            if (in_array($id, $exclude, true)) {
+            if (in_array($id, $exclude, true) || array_intersect($catObjects[$id] ?? [], $excludeCats) !== []) {
                 continue;
             }
-            if ($visTermId && ! in_array($visTermId, $visObjects[$id] ?? [], true)) {
+            $hat = $visObjects[$id] ?? [];
+            $frei = $visTermId && in_array($visTermId, $hat, true);
+            $programId = null;
+            foreach ($hat as $t) {
+                $programId ??= $programFor[(int) $t] ?? null;
+            }
+            if ($visTermId && ! $frei && ! $programId) {
                 continue;
             }
             $postCats = $catObjects[$id] ?? [];
             $catNames = array_values(array_filter(array_map(fn ($c) => ($cats[$c]['slug'] ?? '') === 'uncategorized' ? null : ($cats[$c]['name'] ?? null), $postCats)));
-            $type = array_intersect($postCats, $news) !== [] ? 'neuigkeit' : 'impuls';
+            $type = (array_intersect($postCats, $news) !== [] || (! $frei && $programId)) ? 'neuigkeit' : 'impuls';
 
             $this->say("Beitrag #{$id} {$post->post_title} -> {$type}");
             $this->stats['beitraege']++;
@@ -184,7 +213,8 @@ class InhalteImport
                 'url' => $this->config['website'] ? rtrim($this->config['website'], '/').'/?p='.$id : null,
                 'source' => 'wordpress',
                 'categories' => $catNames ?: null,
-                'visibility' => 'members',
+                'visibility' => $frei || ! $programId ? 'members' : 'program',
+                'program_id' => $frei ? null : $programId,
                 'published_at' => Carbon::parse($post->post_date, $this->tenant->timezone ?: config('app.timezone'))->utc(),
                 'is_published' => true,
                 'notified_at' => $p->notified_at ?? now(),   // alte Beitraege nicht nachmelden

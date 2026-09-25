@@ -93,11 +93,14 @@
                     <div class="flex items-start gap-2 py-1.5 text-sm border-b border-gray-100 last:border-0">
                         <span class="{{ $t->isDone() ? 'text-success-600' : 'text-gray-300' }}">{{ $t->isDone() ? '✓' : '○' }}</span>
                         <span class="flex-1 {{ $t->isDone() ? 'line-through text-gray-400' : '' }}">{{ $t->title }}</span>
-                        <span class="text-gray-500 text-xs">{{ $t->assigned_by ? 'von Coach' : 'selbst' }}{{ $t->due_at ? ' · bis '.$t->due_at->format('d.m.') : '' }}{{ $t->visibility === 'private' ? ' · privat' : '' }}</span>
+                        <span class="text-gray-500 text-xs">{{ $t->assigned_by ? 'von Coach' : 'selbst' }}{{ $t->due_at ? ' · bis '.$t->due_at->format('d.m.') : '' }}</span>
                     </div>
                 @empty
-                    <p class="text-sm text-gray-500">Keine Aufgaben.</p>
+                    <p class="text-sm text-gray-500">Keine geteilten Aufgaben.</p>
                 @endforelse
+                @if ($privateAufgaben)
+                    <p class="text-xs text-gray-500 mt-2">Dazu {{ $privateAufgaben }} private {{ $privateAufgaben === 1 ? 'Aufgabe' : 'Aufgaben' }}, die nur {{ $person->vorname() }} sieht.</p>
+                @endif
             </x-filament::section>
 
             <x-filament::section heading="Geteilte Notizen">

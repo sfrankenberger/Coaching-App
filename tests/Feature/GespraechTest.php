@@ -4,6 +4,7 @@ namespace Tests\Feature;
 
 use App\Chat\Chat;
 use App\Enums\Role;
+use App\Jobs\ConvertAudio;
 use App\Models\Conversation;
 use App\Models\Message;
 use App\Models\Program;
@@ -14,6 +15,7 @@ use App\Models\User;
 use App\Tenancy\CurrentTenant;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\UploadedFile;
+use Illuminate\Support\Facades\Queue;
 use Illuminate\Support\Facades\Storage;
 use Tests\TestCase;
 
@@ -88,6 +90,7 @@ class GespraechTest extends TestCase
 
     public function test_sprachnachricht_und_datei(): void
     {
+        Queue::fake();
         $conv = $this->in(fn () => app(Chat::class)->directFor($this->anna));
 
         $this->actingAs($this->lea)->postJson("http://a.test/gespraech/{$conv->id}/senden", [
@@ -98,6 +101,7 @@ class GespraechTest extends TestCase
         $this->assertSame(42, $m->audio_seconds);
         Storage::disk('local')->assertExists($m->audio_path);
         $this->assertStringStartsWith("tenants/{$this->a->id}/chat/", $m->audio_path);
+        Queue::assertPushed(ConvertAudio::class, fn ($j) => $j->messageId === $m->id && $j->tenantId === $this->a->id);
 
         $this->actingAs($this->anna)->get("http://a.test/nachricht/{$m->id}/audio")->assertOk();
         $this->actingAs($this->bea)->get("http://a.test/nachricht/{$m->id}/audio")->assertForbidden();
@@ -108,6 +112,18 @@ class GespraechTest extends TestCase
         $f = $this->in(fn () => Message::latest('id')->first());
         $this->assertTrue($f->attachmentIsImage());
         $this->assertSame('foto.jpg', $f->attachment_name);
+    }
+
+    public function test_gegenueber_ist_die_coachin_nicht_das_team(): void
+    {
+        $andrea = User::factory()->create(['name' => 'Andrea Team']);
+        $this->a->users()->attach($andrea, ['role' => Role::Team->value, 'status' => 'active']);
+        $conv = $this->in(fn () => app(Chat::class)->directFor($this->anna));
+
+        $this->actingAs($this->anna)->get("http://a.test/gespraech/{$conv->id}")->assertOk()->assertSee('Gespräch mit Lea')->assertDontSee('Gespräch mit Andrea');
+
+        $this->a->forceFill(['settings' => ['coach_name' => 'Lea W.']])->save();
+        $this->actingAs($this->anna)->get("http://a.test/gespraech/{$conv->id}")->assertOk()->assertSee('Gespräch mit Lea W.');
     }
 
     public function test_gruppe_je_programm(): void

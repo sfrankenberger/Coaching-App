@@ -41,6 +41,7 @@ class ProgramForm
                 TextInput::make('position')->label('Reihenfolge')->numeric()->default(0),
                 Toggle::make('is_published')->label('Veröffentlicht')->default(true),
                 Toggle::make('is_internal')->label('Nur intern')->helperText('Fertig gebaut, aber nur für Team und direkt eingetragene Personen sichtbar.'),
+                Toggle::make('settings.gratis')->label('Offen für alle')->helperText('Gratiskurs: alle Personen mit Zugang zum Bereich sehen ihn, ohne Kauf.'),
                 Select::make('topics')->label('Themen')->relationship('topics', 'name')->multiple()->preload()->searchable()->columnSpanFull()->createOptionForm([TextInput::make('name')->label('Thema')->required()->maxLength(120)]),
             ])->columns(3)->collapsed(),
         ]);

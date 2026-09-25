@@ -138,9 +138,10 @@ class CoachPanelTest extends TestCase
             Answer::create(['user_id' => $anna->id, 'exercise_id' => $ex->id, 'value' => ['v' => 'Mehr Ruhe im Alltag'], 'shared_with_coach' => true]);
             Reflection::create(['user_id' => $anna->id, 'went_well' => 'Geteilte Reflexion', 'visibility' => 'coach', 'shared_at' => now()]);
             Reflection::create(['user_id' => $anna->id, 'went_well' => 'Private Reflexion']);
-            Task::create(['user_id' => $anna->id, 'title' => 'Aufgabe von Anna']);
+            Task::create(['user_id' => $anna->id, 'title' => 'Private Aufgabe von Anna']);
+            Task::create(['user_id' => $anna->id, 'title' => 'Geteilte Aufgabe von Anna', 'visibility' => 'coach']);
         });
         $this->actingAs($owner)->get("http://a.test/coach/memberships/{$m->id}/dossier")->assertOk()
-            ->assertSee('Anna Dossier')->assertSee('Mehr Ruhe im Alltag')->assertSee('Geteilte Reflexion')->assertDontSee('Private Reflexion')->assertSee('Aufgabe von Anna')->assertSee('wa.me/0791112233');
+            ->assertSee('Anna Dossier')->assertSee('Mehr Ruhe im Alltag')->assertSee('Geteilte Reflexion')->assertDontSee('Private Reflexion')->assertSee('Geteilte Aufgabe von Anna')->assertDontSee('Private Aufgabe von Anna')->assertSee('1 private Aufgabe')->assertSee('wa.me/41791112233');
     }
 }

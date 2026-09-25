@@ -6,6 +6,7 @@ use App\Models\Offer;
 use App\Models\OfferProduct;
 use App\Models\Tenant;
 use App\Models\WebhookLog;
+use App\Tenancy\CurrentTenant;
 use Carbon\Carbon;
 use Illuminate\Support\Collection;
 
@@ -29,7 +30,23 @@ class WooCommerce
 
     public const SUB_ENDED = ['on-hold', 'cancelled', 'expired', 'trash', 'switched'];
 
-    public function __construct(protected Zugang $zugang) {}
+    public function __construct(protected Zugang $zugang, protected CurrentTenant $current) {}
+
+    /**
+     * Kauf auf Rechnung: Woo setzt solche Bestellungen auf "on-hold", der Zugang soll
+     * trotzdem sofort offen sein. Welche Zahlarten das sind, steht je Mandant in
+     * settings.shop.rechnung_zahlarten.
+     */
+    protected function isActive(array $o): bool
+    {
+        $status = (string) ($o['status'] ?? '');
+        if (in_array($status, self::ORDER_ACTIVE, true)) {
+            return true;
+        }
+        $rechnung = (array) ($this->current->get()?->setting('shop.rechnung_zahlarten') ?? []);
+
+        return $status === 'on-hold' && in_array((string) ($o['payment_method'] ?? ''), $rechnung, true);
+    }
 
     public static function verify(Tenant $tenant, string $body, ?string $signature): bool
     {
@@ -71,7 +88,7 @@ class WooCommerce
         }
         $ref = 'order-'.($o['id'] ?? '?');
 
-        if (in_array($status, self::ORDER_ACTIVE, true)) {
+        if ($this->isActive($o)) {
             $email = (string) ($o['billing']['email'] ?? '');
             if ($email === '') {
                 return ['error', 'Bestellung ohne Mailadresse'];

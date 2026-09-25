@@ -16,6 +16,8 @@ use App\Models\TelegramLink;
 use App\Programs\ProgramAccess;
 use App\Programs\ProgressTracker;
 use App\Shop\Zugang;
+use App\Support\Telefon;
+use App\Tenancy\CurrentTenant;
 use Filament\Actions\Action;
 use Filament\Notifications\Notification;
 use Filament\Resources\Pages\Concerns\InteractsWithRecord;
@@ -52,7 +54,7 @@ class Dossier extends Page
                 ->url(fn () => route('gespraech.show', app(Chat::class)->directFor($user))),
             Action::make('mail')->label('Mail')->icon('heroicon-o-envelope')->url('mailto:'.$user->email)->openUrlInNewTab(),
             Action::make('whatsapp')->label('WhatsApp')->icon('heroicon-o-device-phone-mobile')
-                ->url('https://wa.me/'.preg_replace('~\D+~', '', (string) $user->phone))->openUrlInNewTab()->visible(filled($user->phone)),
+                ->url(Telefon::whatsapp($user->phone, app(CurrentTenant::class)->get()))->openUrlInNewTab()->visible(filled($user->phone)),
             Action::make('anrufen')->label('Anrufen')->icon('heroicon-o-phone')->url('tel:'.$user->phone)->visible(filled($user->phone)),
             Action::make('einladen')->label('Einladung')->icon('heroicon-o-paper-airplane')->color('gray')->requiresConfirmation()
                 ->modalHeading('Willkommensmail mit Anmeldelink schicken?')->modalDescription('Der Link gilt sieben Tage.')
@@ -86,7 +88,10 @@ class Dossier extends Page
             'mitgliedschaft' => $this->record,
             'programme' => $programs,
             'antworten' => $answers,
-            'aufgaben' => Task::where('user_id', $user->id)->orderByRaw('CASE WHEN done_at IS NULL THEN 0 ELSE 1 END')->orderBy('due_at')->limit(30)->get(),
+            // Private Aufgaben bleiben privat, sie werden nur gezaehlt (wie im alten Bereich)
+            'aufgaben' => Task::where('user_id', $user->id)->where(fn ($q) => $q->where('visibility', '!=', 'private')->orWhereNotNull('assigned_by'))
+                ->orderByRaw('CASE WHEN done_at IS NULL THEN 0 ELSE 1 END')->orderBy('due_at')->limit(30)->get(),
+            'privateAufgaben' => Task::where('user_id', $user->id)->where('visibility', 'private')->whereNull('assigned_by')->count(),
             'reflexionen' => Reflection::where('user_id', $user->id)->where('visibility', '!=', 'private')->latest()->limit(10)->get(),
             'notizen' => Note::where('user_id', $user->id)->whereIn('visibility', ['coach', 'program', 'all'])->latest()->limit(20)->get(),
             'termine' => EventAttendee::where('user_id', $user->id)->with('event')->get()->filter(fn ($a) => $a->event)->sortByDesc(fn ($a) => $a->event->starts_at)->take(15),

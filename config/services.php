@@ -43,4 +43,10 @@ return [
         ],
     ],
 
+    // Sprachnachrichten nach m4a wandeln (iPhone, Mac)
+    'ffmpeg' => [
+        'enabled' => env('FFMPEG_ENABLED', true),
+        'bin' => env('FFMPEG_BIN', 'ffmpeg'),
+    ],
+
 ];

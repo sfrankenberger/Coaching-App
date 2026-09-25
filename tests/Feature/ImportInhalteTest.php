@@ -76,13 +76,13 @@ class ImportInhalteTest extends TestCase
         });
 
         $this->lea = Tenant::create(['slug' => 'lea', 'name' => 'Lea', 'timezone' => 'Europe/Zurich', 'settings' => ['website' => 'https://example.ch', 'import' => ['wordpress' => [
-            'news_categories' => [89], 'post_exclude_ids' => [999],
+            'news_categories' => [89], 'post_exclude_ids' => [999], 'club_visibility_slug' => 'club-intern', 'course_news_meta' => 'news_sichtbarkeit',
         ]]]]);
         $this->anna = User::factory()->create();
         $this->lea->users()->attach($this->anna, ['role' => Role::Member->value, 'status' => 'active', 'legacy_id' => '21']);
 
         // Taxonomien: sichtbarkeit (24 free), category (5, 89), thema (164, 172), series (90), podcast_thema (112)
-        foreach ([[24, 'Free', 'free', 'sichtbarkeit'], [5, 'ADHS im Alltag', 'adhs-im-alltag', 'category'], [89, 'Neuigkeiten', 'neuigkeiten', 'category'], [1, 'Uncategorized', 'uncategorized', 'category'],
+        foreach ([[30, 'Club intern', 'club-intern', 'sichtbarkeit'], [31, 'Kurs Hybrid', 'kurs-hybrid', 'sichtbarkeit'], [24, 'Free', 'free', 'sichtbarkeit'], [5, 'ADHS im Alltag', 'adhs-im-alltag', 'category'], [89, 'Neuigkeiten', 'neuigkeiten', 'category'], [1, 'Uncategorized', 'uncategorized', 'category'],
             [164, 'Innere Ruhe und Gelassenheit', 'innere-ruhe-und-gelassenheit', 'thema'], [172, 'Transformation', 'transformation', 'thema'], [90, 'Abenteuer Leben', 'abenteuer-leben', 'series'], [112, 'Innere Ruhe und Gelassenheit', 'innere-ruhe-und-gelassenheit', 'podcast_thema']] as [$id, $name, $slug, $tax]) {
             $wp->table('terms')->insert(['term_id' => $id, 'name' => $name, 'slug' => $slug]);
             $wp->table('term_taxonomy')->insert(['term_taxonomy_id' => $id, 'term_id' => $id, 'taxonomy' => $tax]);
@@ -102,6 +102,13 @@ class ImportInhalteTest extends TestCase
         $this->wpPost(1000, 'post', 'Entwurf', 'entwurf', 'Text', [], 'draft');
         $rel(1000, 24);
 
+        // Neuigkeiten nur fuer den Club und nur fuer einen Kurs (Sichtbarkeit am Kurs: news_sichtbarkeit)
+        $this->wpPost(3000, 'post', 'Club-Call am Montag', 'club-call', 'Text', []);
+        $rel(3000, 30);
+        $this->wpPost(3001, 'post', 'Nur fuer Hybrid', 'nur-hybrid', 'Text', []);
+        $rel(3001, 31);
+        DB::connection('wordpress')->table('postmeta')->insert(['post_id' => 1849, 'meta_key' => 'news_sichtbarkeit', 'meta_value' => '31']);
+
         // Podcast
         $this->wpPost(2900, 'podcast', '#179 Das Leben ist ein Fluss', '179-das-leben', '<p>Shownotes</p>', [
             'audio_file' => 'https://app.kajabi.com/podcasts/medias/2148918467.mp3', 'duration' => '1771', 'date_recorded' => '2024-12-06 06:00:00', 'itunes_episode_number' => '179',
@@ -116,6 +123,7 @@ class ImportInhalteTest extends TestCase
         // Themen an Kurs und Lektion, Merkliste
         app(CurrentTenant::class)->run($this->lea, function () {
             $kurs = Program::create(['title' => 'Hybrid', 'slug' => 'hybrid', 'legacy_id' => '1849']);
+            Program::create(['title' => 'Club', 'slug' => 'club', 'type' => 'club']);
             Unit::create(['program_id' => $kurs->id, 'title' => 'Willkommen', 'legacy_id' => '200']);
             Resource::create(['title' => 'Handout', 'legacy_id' => '400']);
         });
@@ -143,7 +151,11 @@ class ImportInhalteTest extends TestCase
         $stats = $this->import();
 
         app(CurrentTenant::class)->run($this->lea, function () use ($stats) {
-            $this->assertSame(2, $stats['beitraege'], 'nur Free, ohne Ausschluss und Entwurf');
+            $this->assertSame(4, $stats['beitraege'], 'Free, Club und Kurs, ohne Ausschluss und Entwurf');
+            $club = Post::where('legacy_id', '3000')->first();
+            $this->assertSame(['neuigkeit', 'program', 'club'], [$club->type, $club->visibility, $club->program->slug]);
+            $kursNews = Post::where('legacy_id', '3001')->first();
+            $this->assertSame(['program', 'hybrid'], [$kursNews->visibility, $kursNews->program->slug]);
             $this->assertSame(1, $stats['folgen']);
 
             $p = Post::where('legacy_id', '2681')->first();
@@ -192,7 +204,7 @@ class ImportInhalteTest extends TestCase
         // Wiederholbar
         $this->import();
         app(CurrentTenant::class)->run($this->lea, function () {
-            $this->assertSame(2, Post::count());
+            $this->assertSame(4, Post::count());
             $this->assertSame(1, PodcastEpisode::count());
             $this->assertSame(2, Topic::count());
             $this->assertSame(4, Bookmark::count());

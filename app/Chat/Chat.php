@@ -4,6 +4,7 @@ namespace App\Chat;
 
 use App\Enums\Role;
 use App\Events\MessageSent;
+use App\Jobs\ConvertAudio;
 use App\Models\Conversation;
 use App\Models\ConversationParticipant;
 use App\Models\Membership;
@@ -131,6 +132,9 @@ class Chat
             $msg->transcript = filled($data['transkript'] ?? null) ? trim($data['transkript']) : null;
         }
         $msg->save();
+        if (ConvertAudio::noetig($msg->audio_path) && config('services.ffmpeg.enabled', true)) {
+            ConvertAudio::dispatch((int) $msg->tenant_id, $msg->id);
+        }
 
         $conv->forceFill(['last_message_at' => now()])->save();
         $this->markRead($conv, $from);

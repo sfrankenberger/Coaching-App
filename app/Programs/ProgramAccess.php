@@ -14,7 +14,8 @@ use Illuminate\Support\Collection;
  * Eine Person sieht ein Programm, wenn
  * - sie den Mandanten verwaltet (owner, team, Plattform-Admin), oder
  * - sie direkt als Mitglied im Programm steht (program_members), oder
- * - ein laufender Zugang (entitlement) zu einem Angebot besteht, das das Programm enthaelt.
+ * - ein laufender Zugang (entitlement) zu einem Angebot besteht, das das Programm enthaelt, oder
+ * - das Programm offen fuer alle ist (settings.gratis, z. B. Gratiskurse; wie lea_gratis_kurse).
  * Interne Programme (is_internal) sehen nur Verwaltende und direkte Mitglieder.
  */
 class ProgramAccess
@@ -35,7 +36,9 @@ class ProgramAccess
             ->get()
             ->flatMap(fn (Entitlement $e) => $e->offer?->programs->reject(fn ($p) => $p->is_internal)->pluck('id') ?? collect());
 
-        return $direct->merge($viaOffers)->unique()->values();
+        $offen = Program::query()->where('is_internal', false)->where('settings->gratis', true)->pluck('id');
+
+        return $direct->merge($viaOffers)->merge($offen)->unique()->values();
     }
 
     public function canView(User $user, Program $program): bool

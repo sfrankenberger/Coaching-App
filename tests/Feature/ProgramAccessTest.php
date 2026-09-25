@@ -98,9 +98,16 @@ class ProgramAccessTest extends TestCase
             $this->assertTrue($access->canView($lea, $p1));
             $this->assertTrue($access->canView($lea, $intern));
             $this->assertTrue($access->canView($lea, $unpublished));
+
             $this->assertFalse($access->canView($anna, $unpublished));
 
             $this->assertSame([$p1->id], $access->programsFor($anna)->pluck('id')->all());
+
+            // Gratiskurs: alle sehen ihn ohne Kauf, ausser er ist intern
+            $gratis = Program::create(['title' => 'Gratis', 'slug' => 'gratis', 'settings' => ['gratis' => true]]);
+            $gratisIntern = Program::create(['title' => 'Gratis intern', 'slug' => 'gratis-intern', 'settings' => ['gratis' => true], 'is_internal' => true]);
+            $this->assertTrue($access->canView($bea, $gratis));
+            $this->assertFalse($access->canView($bea, $gratisIntern));
         });
     }
 }

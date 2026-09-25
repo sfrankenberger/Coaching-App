@@ -26,7 +26,9 @@ class TenantSeeder extends Seeder
                 'coach_name' => 'Lea',
                 // Parallelbetrieb: Benachrichtigungen nur an freigegebene Adressen (im Coach-Bereich unter Einstellungen erweiterbar)
                 'notifications' => ['test_only' => true, 'test_emails' => ['mail@sfrankenberger.com']],
-                'shop' => ['driver' => 'woocommerce', 'url' => 'https://leawernli.ch', 'webhook_secret' => null],
+                'shop' => ['driver' => 'woocommerce', 'url' => 'https://leawernli.ch', 'webhook_secret' => null, 'rechnung_zahlarten' => ['lea_rechnung']],
+                'links' => ['website' => 'https://leawernli.ch', 'impressum' => 'https://leawernli.ch/impressum/', 'datenschutz' => 'https://leawernli.ch/datenschutz/', 'kontakt' => 'mail@leawernli.ch'],
+                'support' => ['email' => 'mail@sfrankenberger.com', 'whatsapp' => '491709323103', 'name' => 'Sebastian'],
                 'website' => 'https://leawernli.ch',
                 'mail' => [
                     'from_address' => 'hallo@leawernli.ch',
@@ -55,7 +57,10 @@ class TenantSeeder extends Seeder
                     // Inhalte: Blog-Beitraege mit Sichtbarkeit "Free", Kategorie 89 = Neuigkeiten, Podcast-Serien aus "series"
                     'post_visibility' => ['taxonomy' => 'sichtbarkeit', 'slug' => 'free'],
                     'news_categories' => [89],
-                    'post_exclude_ids' => [],
+                    'post_exclude_ids' => [2505, 1845, 1843],              // Einladungen zu Gruppencalls, keine Impulse
+                    'post_exclude_categories' => [],
+                    'club_visibility_slug' => 'club-intern',
+                    'course_news_meta' => 'news_sichtbarkeit',
                     'podcast_series_taxonomy' => 'series',
                     'topic_taxonomies' => ['thema', 'podcast_thema'],
                     'meta' => [

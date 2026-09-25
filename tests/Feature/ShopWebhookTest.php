@@ -159,6 +159,19 @@ class ShopWebhookTest extends TestCase
         });
     }
 
+    public function test_kauf_auf_rechnung_gibt_sofort_zugang(): void
+    {
+        $this->a->forceFill(['settings' => array_merge($this->a->settings, ['shop' => ['webhook_secret' => 'geheim', 'rechnung_zahlarten' => ['rechnung']]])])->save();
+
+        // Andere Zahlart im Wartestatus: noch kein Zugang
+        $this->hook(array_merge($this->order('on-hold', [1879], 'vorkasse@example.com', 801), ['payment_method' => 'bacs']), 'order.updated')->assertJson(['status' => 'ignored']);
+        $this->assertNull(User::where('email', 'vorkasse@example.com')->first());
+
+        $this->hook(array_merge($this->order('on-hold', [1879], 'rechnung@example.com', 802), ['payment_method' => 'rechnung']), 'order.updated')->assertJson(['status' => 'ok']);
+        $user = User::where('email', 'rechnung@example.com')->first();
+        app(CurrentTenant::class)->run($this->a, fn () => $this->assertTrue(app(ProgramAccess::class)->canView($user, $this->kurs)));
+    }
+
     public function test_im_testbetrieb_keine_willkommensmail_an_fremde(): void
     {
         $this->a->forceFill(['settings' => array_merge($this->a->settings, ['notifications' => ['test_only' => true, 'test_emails' => ['test@example.com']]])])->save();

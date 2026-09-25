@@ -22,7 +22,8 @@ class Kapitel
             return new HtmlString('');
         }
 
-        $html = $text !== strip_tags($text) ? self::saeubern($text) : nl2br(e($text), false);
+        $istHtml = (bool) preg_match('~</?(p|br|h[1-6]|ul|ol|li|strong|b|em|i|a|div|span|blockquote)\b[^>]*>~i', $text);
+        $html = $istHtml ? self::saeubern($text) : nl2br(e($text), false);
 
         return new HtmlString(self::spruenge($html));
     }
