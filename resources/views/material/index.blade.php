@@ -26,7 +26,7 @@
             <span class="ic"><i class="fa-solid fa-{{ $icons[$z['typ']] ?? 'file' }}"></i></span>
             <div class="tx">
                 @if ($z['url'])
-                    <a href="{{ $z['url'] }}" @if ($z['art'] === 'resource') target="_blank" rel="noopener" @endif class="no-underline text-ink"><b>{{ $z['titel'] }}</b></a>
+                    <a href="{{ $z['url'] }}" @if ($z['art'] === 'resource' && empty($z['seite'])) target="_blank" rel="noopener" @endif class="no-underline text-ink"><b>{{ $z['titel'] }}</b></a>
                 @else
                     <b>{{ $z['titel'] }}</b>
                 @endif

@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use App\Content\Concerns\HasTopics;
+use App\Support\Video;
 use App\Tenancy\Concerns\BelongsToTenant;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
@@ -24,6 +25,14 @@ class Resource extends Model
         'link' => 'Link',
         'text' => 'Text',
         'image' => 'Bild',
+    ];
+
+    /** Stand der Videoaufbereitung (Vimeo). */
+    public const PREPARE_STATUS = [
+        'wartet' => 'Wartet auf die Textspur',
+        'bereit' => 'Abschrift und Zusammenfassung da',
+        'ohne_abschrift' => 'Ohne Abschrift (Vimeo liefert keine Textspur)',
+        'fehler' => 'Aufbereitung nicht möglich',
     ];
 
     protected $guarded = [];
@@ -68,6 +77,12 @@ class Resource extends Model
         }
 
         return $this->url;
+    }
+
+    /** Video oder Audio, das in der App selbst laeuft (mit eigener Seite). */
+    public function hatSeite(): bool
+    {
+        return filled($this->summary) || ($this->type === 'video' && Video::embed($this->url)) || (in_array($this->type, ['audio', 'podcast'], true) && $this->target());
     }
 
     public function typeLabel(): string

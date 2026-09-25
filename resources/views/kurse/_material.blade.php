@@ -14,7 +14,9 @@
             <span class="t">{{ $r->title }}</span>
             <span class="m">{{ $r->typeLabel() }}@if ($r->description) · {{ \Illuminate\Support\Str::limit(strip_tags($r->description), 80) }}@endif</span>
         </span>
-        @if ($ziel)
+        @if ($r->hatSeite())
+            <a href="{{ route('material.show', $r) }}" class="knopf knopf-rund" style="background:var(--c-neutral)" aria-label="Eigene Seite"><i class="fa-solid fa-expand"></i></a>
+        @elseif ($ziel)
             <a href="{{ $ziel }}" target="_blank" rel="noopener" class="knopf knopf-rund" style="background:var(--c-neutral)" aria-label="Öffnen oder herunterladen"><i class="fa-solid fa-{{ $istDatei ? 'download' : 'arrow-up-right-from-square' }}"></i></a>
         @endif
     </div>
@@ -26,5 +28,11 @@
         <div class="video" data-medien="resource-{{ $r->id }}" style="margin-top:12px">
             @if ($video['kind'] === 'iframe')<iframe src="{{ $video['src'] }}" allow="autoplay; fullscreen; picture-in-picture" allowfullscreen loading="lazy" title="{{ $r->title }}"></iframe>@else<video controls preload="metadata" src="{{ $video['src'] }}"></video>@endif
         </div>
+    @endif
+    @if ($r->summary)
+        <details style="margin-top:10px">
+            <summary class="hinweis cursor-pointer"><i class="fa-solid fa-list-ul"></i> Worum es geht</summary>
+            <div class="prose-app" style="margin-top:8px">{{ \App\Support\Kapitel::html($r->summary) }}</div>
+        </details>
     @endif
 </div>

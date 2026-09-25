@@ -45,6 +45,18 @@ class Vimeo
         ])['data'] ?? [];
     }
 
+    /** Stammdaten eines Videos: name, duration, link, pictures. */
+    public function video(string $id): array
+    {
+        return $this->get('/videos/'.$id, ['fields' => 'name,duration,link,pictures.sizes']);
+    }
+
+    /** Vimeo-Nummer aus einem Link oder Text. */
+    public static function nummerAus(?string $text): ?string
+    {
+        return preg_match('~vimeo\.com/(?:video/)?(\d+)~', (string) $text, $m) ? $m[1] : null;
+    }
+
     public static function id(array $video): string
     {
         return basename((string) ($video['uri'] ?? ''));

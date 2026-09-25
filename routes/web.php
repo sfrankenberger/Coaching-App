@@ -109,6 +109,7 @@ Route::middleware(['auth', 'membership'])->group(function () {
 
     // Material und Merkliste
     Route::get('/material', [MaterialController::class, 'index'])->name('material.index');
+    Route::get('/material/{material}', [MaterialController::class, 'show'])->name('material.show');
     Route::get('/material/{material}/datei', [MaterialController::class, 'datei'])->name('material.datei');
     Route::post('/merken', [MaterialController::class, 'merken'])->name('merken');
     Route::get('/merkliste', [MerklisteController::class, 'index'])->name('merkliste');

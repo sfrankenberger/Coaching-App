@@ -284,6 +284,10 @@ class BegleitungImport
                 'duration' => $m('ressource_dauer') ?: null,
                 'image_url' => $m('ressource_bild') ?: null,
                 'body' => WordPressSource::autop($m('ressource_text') ?: $post->post_content),
+                'vimeo_id' => $m('ressource_vimeo_id') ? (string) $m('ressource_vimeo_id') : $resource->vimeo_id,
+                'transcript' => $m('recording_abschrift') ?: $resource->transcript,
+                'summary' => is_string($m('ki_zusammenfassung')) && $m('ki_zusammenfassung') !== '' ? $m('ki_zusammenfassung') : $resource->summary,
+                'prepare_status' => $m('recording_abschrift') && $m('ki_zusammenfassung') ? 'bereit' : $resource->prepare_status,
                 'is_archived' => (bool) $m('nur_archiv') || $post->post_status !== 'publish',
             ])->save();
             $this->keepWpTimes($resource, $post);

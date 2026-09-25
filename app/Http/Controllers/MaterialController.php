@@ -35,7 +35,7 @@ class MaterialController extends Controller
         $zeilen = collect();
         foreach ($resources as $r) {
             $pid = $r->links->firstWhere('resourceable_type', 'program')?->resourceable_id;
-            $zeilen->push(['art' => 'resource', 'id' => $r->id, 'titel' => $r->title, 'text' => $r->description, 'typ' => $r->type, 'url' => $r->target(), 'kurs' => $pid, 'ts' => $r->created_at, 'geteilt' => $r->links->contains(fn ($l) => $l->resourceable_type === 'user'), 'dauer' => $r->duration, 'model' => $r]);
+            $zeilen->push(['art' => 'resource', 'id' => $r->id, 'titel' => $r->title, 'text' => $r->description, 'typ' => $r->type, 'url' => $r->hatSeite() ? route('material.show', $r) : $r->target(), 'seite' => $r->hatSeite(), 'kurs' => $pid, 'ts' => $r->created_at, 'geteilt' => $r->links->contains(fn ($l) => $l->resourceable_type === 'user'), 'dauer' => $r->duration, 'model' => $r]);
         }
         foreach ($recordings as $e) {
             $zeilen->push(['art' => 'event', 'id' => $e->id, 'titel' => $e->title, 'text' => $e->recording_duration, 'typ' => 'aufzeichnung', 'url' => route('termine.show', $e), 'kurs' => $e->program_id, 'ts' => $e->starts_at, 'geteilt' => false, 'dauer' => $e->recording_duration, 'model' => $e]);
@@ -58,6 +58,22 @@ class MaterialController extends Controller
         });
 
         return view('material.index', ['zeilen' => $zeilen, 'filter' => $filter, 'suche' => $suche, 'kurse' => $kurse, 'gemerkt' => $gemerkt]);
+    }
+
+    /** Eigene Seite fuer Video und Audio: Player, Zusammenfassung mit Sprungmarken, Abschrift. */
+    public function show(Request $request, Resource $material): View|RedirectResponse
+    {
+        abort_unless($this->begleitung->canViewResource($request->user(), $material), 403);
+        if (! $material->hatSeite()) {
+            return redirect()->away($material->target() ?: route('material.index'));
+        }
+        $kurs = $material->links->firstWhere('resourceable_type', 'program')?->resourceable_id;
+
+        return view('material.show', [
+            'r' => $material,
+            'kurs' => $kurs ? Program::find($kurs) : null,
+            'gemerkt' => Bookmark::where('user_id', $request->user()->id)->where('bookmarkable_type', 'resource')->where('bookmarkable_id', $material->id)->exists(),
+        ]);
     }
 
     /** Datei ausliefern (nur mit Zugang). */

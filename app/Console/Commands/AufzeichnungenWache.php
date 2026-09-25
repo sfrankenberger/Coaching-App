@@ -3,6 +3,7 @@
 namespace App\Console\Commands;
 
 use App\Models\Tenant;
+use App\Recordings\MaterialVideo;
 use App\Recordings\Wache;
 use App\Tenancy\CurrentTenant;
 use Illuminate\Console\Command;
@@ -30,6 +31,10 @@ class AufzeichnungenWache extends Command
             try {
                 $b = $current->run($tenant, fn () => app(Wache::class)->lauf());
                 $this->line("{$tenant->slug}: {$b['zugeordnet']} zugeordnet, {$b['abschriften']} Abschriften, {$b['zusammenfassungen']} Zusammenfassungen, {$b['freigegeben']} freigegeben, {$b['gemeldet']} gemeldet");
+                $m = $current->run($tenant, fn () => app(MaterialVideo::class)->lauf());
+                if (array_sum($m)) {
+                    $this->line("{$tenant->slug}: Material {$m['fertig']} aufbereitet, {$m['wartet']} wartet auf die Textspur, {$m['offen']} ohne Abschrift");
+                }
             } catch (\Throwable $e) {
                 report($e);
                 $this->error("{$tenant->slug}: ".$e->getMessage());

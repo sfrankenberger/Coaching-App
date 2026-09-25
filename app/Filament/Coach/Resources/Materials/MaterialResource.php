@@ -7,10 +7,12 @@ use App\Filament\Coach\Resources\Materials\Pages\EditMaterial;
 use App\Filament\Coach\Resources\Materials\Pages\ListMaterials;
 use App\Models\Membership;
 use App\Models\Resource as Material;
+use App\Recordings\MaterialVideo;
 use App\Tenancy\CurrentTenant;
 use BackedEnum;
 use Filament\Actions\EditAction;
 use Filament\Forms\Components\FileUpload;
+use Filament\Forms\Components\Placeholder;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\Textarea;
 use Filament\Forms\Components\TextInput;
@@ -58,6 +60,14 @@ class MaterialResource extends Resource
                 TextInput::make('url')->label('Adresse (Link)')->url()->maxLength(1000)->columnSpanFull(),
                 TextInput::make('image_url')->label('Vorschaubild (URL)')->url()->maxLength(500)->columnSpanFull(),
                 Textarea::make('description')->label('Beschreibung')->rows(3)->columnSpanFull(),
+                Placeholder::make('stand')->label('Video')
+                    ->content(fn (?Material $record) => Material::PREPARE_STATUS[$record?->prepare_status ?? ''] ?? 'Mit Vimeo-Link holt die App Dauer, Bild, Abschrift und Zusammenfassung von selbst.')
+                    ->visible(fn (?Material $record) => $record && MaterialVideo::vimeoId($record)),
+                Textarea::make('summary')->label('Zusammenfassung')->rows(8)->columnSpanFull()
+                    ->helperText('HTML ist erlaubt. Zeitmarken wie "(ab 12:34)" werden zu Sprungmarken ins Video.')
+                    ->visible(fn (?Material $record) => $record && ($record->summary || $record->transcript || MaterialVideo::vimeoId($record))),
+                Textarea::make('transcript')->label('Abschrift')->rows(5)->columnSpanFull()
+                    ->visible(fn (?Material $record) => $record && ($record->summary || $record->transcript || MaterialVideo::vimeoId($record))),
                 Toggle::make('is_archived')->label('Archiviert (nicht mehr anzeigen)'),
                 Select::make('topics')->label('Themen')->relationship('topics', 'name')->multiple()->preload()->searchable()->columnSpanFull()->createOptionForm([TextInput::make('name')->label('Thema')->required()->maxLength(120)]),
             ])->columns(2),
@@ -81,6 +91,11 @@ class MaterialResource extends Resource
                 TextColumn::make('type')->label('Art')->badge()->formatStateUsing(fn (string $state) => Material::TYPES[$state] ?? $state),
                 TextColumn::make('programs.title')->label('Programme')->listWithLineBreaks()->limitList(2)->toggleable(),
                 TextColumn::make('users.name')->label('Für Personen')->listWithLineBreaks()->limitList(2)->toggleable(),
+                TextColumn::make('prepare_status')->label('Video')->badge()->toggleable()
+                    ->formatStateUsing(fn (?string $state) => Material::PREPARE_STATUS[$state] ?? $state)
+                    ->color(fn (?string $state) => match ($state) {
+                        'bereit' => 'success', 'wartet' => 'warning', 'ohne_abschrift', 'fehler' => 'danger', default => 'gray'
+                    }),
                 TextColumn::make('created_at')->label('Angelegt')->date('d.m.Y')->sortable()->toggleable(),
             ])
             ->defaultSort('created_at', 'desc')

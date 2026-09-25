@@ -5,6 +5,10 @@ namespace App\Filament\Coach\Resources\Materials\Pages;
 use App\Filament\Coach\Resources\Materials\MaterialResource;
 use App\Models\Resourceable;
 use App\Observers\ResourceableObserver;
+use App\Recordings\MaterialVideo;
+use App\Recordings\Vimeo;
+use Filament\Actions\Action;
+use Filament\Notifications\Notification;
 use Filament\Resources\Pages\EditRecord;
 
 class EditMaterial extends EditRecord
@@ -12,6 +16,23 @@ class EditMaterial extends EditRecord
     protected static string $resource = MaterialResource::class;
 
     protected array $vorher = [];
+
+    protected function getHeaderActions(): array
+    {
+        return [
+            Action::make('video')->label('Video aufbereiten')->icon('heroicon-o-film')->color('gray')
+                ->visible(fn () => app(Vimeo::class)->konfiguriert() && MaterialVideo::vimeoId($this->record))
+                ->requiresConfirmation()->modalHeading('Dauer, Bild, Abschrift und Zusammenfassung von Vimeo holen?')
+                ->modalDescription('Eine vorhandene Zusammenfassung wird neu geschrieben. Dauert etwa eine Minute.')
+                ->action(function () {
+                    $stand = app(MaterialVideo::class)->aufbereiten($this->record, true);
+                    $this->record->refresh();
+                    $this->fillForm();
+                    Notification::make()->title(\App\Models\Resource::PREPARE_STATUS[$stand] ?? $stand)
+                        ->{$stand === 'bereit' ? 'success' : 'warning'}()->send();
+                }),
+        ];
+    }
 
     protected function beforeSave(): void
     {
