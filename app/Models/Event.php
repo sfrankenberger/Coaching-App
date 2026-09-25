@@ -29,6 +29,17 @@ class Event extends Model
 
     public const ALL_DAY_TYPES = ['reflection_day', 'question_day'];
 
+    /** Stand der Aufzeichnung (Wache und Freigabe). */
+    public const RECORDING_STATUS = [
+        'wartet' => 'Wird gesucht',
+        'gefunden' => 'Gefunden, Abschrift folgt',
+        'abschrift' => 'Abschrift da, Zusammenfassung folgt',
+        'bereit' => 'Bereit zur Freigabe',
+        'freigegeben' => 'Freigegeben',
+        'nicht_gefunden' => 'Nicht gefunden',
+        'ohne_abschrift' => 'Ohne Abschrift',
+    ];
+
     protected $guarded = [];
 
     protected $attributes = ['type' => 'group_call', 'all_day' => false, 'is_published' => true];

@@ -48,6 +48,7 @@ class Terminvorschlag
             'zoom_url' => $tenant?->setting('termine.einzel_zoom_url') ?: null,
             'location' => $tenant?->setting('termine.einzel_zoom_url') ? 'Online via Zoom' : null,
             'is_published' => true,
+            'settings' => ['gebucht_von' => $person->id, 'vorschlag' => $vorschlag->id],
         ]);
 
         $vorschlag->forceFill(['meta' => ($vorschlag->meta ?? []) + ['gebucht' => ['i' => $i, 'event_id' => $event->id, 'am' => now()->toIso8601String()]]])->save();

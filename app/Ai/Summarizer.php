@@ -2,16 +2,27 @@
 
 namespace App\Ai;
 
+use App\Chat\Chat;
+use App\Coach\Lage;
+use App\Http\Controllers\ReflexionController;
 use App\Models\AiSummary;
+use App\Models\Answer;
+use App\Models\CoachNote;
 use App\Models\Event;
 use App\Models\FinderProfile;
+use App\Models\Membership;
+use App\Models\Message;
+use App\Models\Note;
 use App\Models\PodcastEpisode;
 use App\Models\ProgramMember;
 use App\Models\Reflection;
 use App\Models\Task;
 use App\Models\Topic;
 use App\Models\User;
+use App\Programs\ProgramAccess;
+use App\Programs\ProgressTracker;
 use App\Tenancy\Branding;
+use App\Tenancy\CurrentTenant;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Str;
 use Throwable;
@@ -41,19 +52,24 @@ class Summarizer
 
         $person = $event->user_id ? $event->user?->vorname() : null;
         $coach = app(Branding::class)->appName();
+        // Abschrift mit Zeitmarken [MM:SS] (Vimeo): Kapitel mit Sprungmarken wie im alten Bereich
+        $mitZeit = (bool) preg_match('~\[\d{2}:\d{2}\]~', $stoff);
         $prompt = "Du hilfst der Coachin ({$coach}) beim Aufbereiten einer Aufzeichnung.\n"
             .($person ? "Es ist eine 1:1-Sitzung mit {$person}. Sprich {$person} in der Zusammenfassung direkt an (Du).\n" : "Es ist ein Gruppencall. Sprich die Teilnehmerinnen direkt an (Du).\n")
             ."Titel: {$event->title}\nDatum: ".$event->starts_at->translatedFormat('j. F Y')."\n\nAbschrift:\n".mb_substr($stoff, 0, 120000)."\n\n"
             ."Antworte AUSSCHLIESSLICH mit einem JSON-Objekt, ohne Vorrede, ohne Code-Zaun, mit genau diesen Schlüsseln:\n"
-            .'{"zusammenfassung": "Fliesstext mit kurzen Absätzen (Leerzeile dazwischen): worum ging es, die wichtigsten Erkenntnisse, was gesagt wurde, das bleibt. 150 bis 350 Wörter.", '
-            .'"kernsaetze": ["2 bis 4 kurze Sätze, die hängen bleiben sollen"], '
+            .($mitZeit
+                ? '{"zusammenfassung_html": "HTML nach dem Aufbau unten", '
+                : '{"zusammenfassung": "Fliesstext mit kurzen Absätzen (Leerzeile dazwischen): worum ging es, die wichtigsten Erkenntnisse, was gesagt wurde, das bleibt. 150 bis 350 Wörter.", '
+                    .'"kernsaetze": ["2 bis 4 kurze Sätze, die hängen bleiben sollen"], ')
             .'"aufgaben": [{"titel": "kurz, als Handlung", "text": "1 bis 2 Sätze, was genau und warum", "fuer": "alle oder der Vorname, falls es an eine bestimmte Person ging"}]}'
+            .($mitZeit ? "\n\n".$this->aufbauMitKapiteln() : '')
             ."\n\nRegeln: 0 bis 6 Aufgaben, nur was wirklich als Aufgabe oder Vorsatz besprochen wurde. Keine Werbesprache. Nichts erfinden.";
 
         try {
             $r = $this->ai->json($prompt, Anthropic::STIL);
             $d = $r['data'];
-            $text = trim((string) ($d['zusammenfassung'] ?? ''));
+            $text = trim((string) ($d['zusammenfassung_html'] ?? $d['zusammenfassung'] ?? ''));
             if (! empty($d['kernsaetze']) && is_array($d['kernsaetze'])) {
                 $text .= "\n\nKernsätze:\n".implode("\n", array_map(fn ($s) => '• '.trim((string) $s), $d['kernsaetze']));
             }
@@ -77,7 +93,7 @@ class Summarizer
      * Wo sie steht, was auffaellt, Fragen, woran denken. Nur aus dem, was die Person geteilt hat,
      * dazu die eigenen Notizen der Coachin und das 1:1-Gespraech.
      */
-    public function vorbereitung(\App\Models\Membership $m, ?int $requestedBy = null): AiSummary
+    public function vorbereitung(Membership $m, ?int $requestedBy = null): AiSummary
     {
         $summary = AiSummary::firstOrNew(['summarizable_type' => 'membership', 'summarizable_id' => $m->id, 'kind' => 'vorbereitung']);
         $summary->fill(['status' => 'pending', 'error' => null, 'requested_by' => $requestedBy ?? $summary->requested_by])->save();
@@ -112,16 +128,16 @@ class Summarizer
     }
 
     /** Stoff fuer die Vorbereitung: nur Geteiltes, eigene Notizen der Coachin, 1:1-Gespraech. */
-    public function stoffFuerVorbereitung(\App\Models\Membership $m): string
+    public function stoffFuerVorbereitung(Membership $m): string
     {
         $u = $m->user;
         $teile = [];
-        $programme = app(\App\Programs\ProgramAccess::class)->programsFor($u);
+        $programme = app(ProgramAccess::class)->programsFor($u);
         if ($programme->isNotEmpty()) {
-            $tracker = app(\App\Programs\ProgressTracker::class);
+            $tracker = app(ProgressTracker::class);
             $teile[] = "PROGRAMME\n".$programme->map(fn ($p) => '- '.$p->title.': '.$tracker->summary($u, $p)['done'].' von '.$tracker->summary($u, $p)['total'].' erledigt')->implode("\n");
         }
-        $lage = app(\App\Coach\Lage::class)->fuer($m);
+        $lage = app(Lage::class)->fuer($m);
         $teile[] = "LAGE\n- zuletzt da: ".($m->last_seen_at?->diffForHumans() ?? 'noch nie')
             ."\n- Aufgaben von der Coachin: {$lage['aufgaben'][0]} von {$lage['aufgaben'][1]} erledigt, {$lage['ueberfaellig']} überfällig"
             .($lage['verpasst'] ? "\n- {$lage['verpasst']} Gruppencalls verpasst" : '')
@@ -131,13 +147,13 @@ class Summarizer
         $refl = Reflection::where('user_id', $u->id)->where('visibility', '!=', 'private')->latest()->limit(5)->get();
         if ($refl->isNotEmpty()) {
             $teile[] = "GETEILTE REFLEXIONEN\n".$refl->map(fn ($r) => '- '.($r->week_label ?: $r->created_at->format('d.m.Y')).': '
-                .collect(\App\Http\Controllers\ReflexionController::FRAGEN)->map(fn ($f, $k) => $r->$k ? $f[1].' '.Str::limit($r->$k, 600) : null)->filter()->implode(' | '))->implode("\n");
+                .collect(ReflexionController::FRAGEN)->map(fn ($f, $k) => $r->$k ? $f[1].' '.Str::limit($r->$k, 600) : null)->filter()->implode(' | '))->implode("\n");
         }
-        $antworten = \App\Models\Answer::where('user_id', $u->id)->where('shared_with_coach', true)->with('exercise')->latest('updated_at')->limit(20)->get()->filter->isFilled();
+        $antworten = Answer::where('user_id', $u->id)->where('shared_with_coach', true)->with('exercise')->latest('updated_at')->limit(20)->get()->filter->isFilled();
         if ($antworten->isNotEmpty()) {
             $teile[] = "GETEILTE ÜBUNGSANTWORTEN\n".$antworten->map(fn ($a) => '- '.Str::limit((string) ($a->exercise?->prompt ?: $a->exercise?->title), 120).': '.Str::limit($a->asText(), 500))->implode("\n");
         }
-        $notizen = \App\Models\Note::where('user_id', $u->id)->whereIn('visibility', ['coach', 'program', 'all'])->latest()->limit(8)->get();
+        $notizen = Note::where('user_id', $u->id)->whereIn('visibility', ['coach', 'program', 'all'])->latest()->limit(8)->get();
         if ($notizen->isNotEmpty()) {
             $teile[] = "GETEILTE NOTIZEN\n".$notizen->map(fn ($n) => '- '.Str::limit(trim(($n->title ? $n->title.': ' : '').$n->body), 500))->implode("\n");
         }
@@ -145,18 +161,34 @@ class Summarizer
         if ($aufgaben->isNotEmpty()) {
             $teile[] = "AUFGABEN\n".$aufgaben->map(fn ($t) => '- '.($t->isDone() ? '[erledigt] ' : '[offen] ').$t->title)->implode("\n");
         }
-        $eigene = \App\Models\CoachNote::where('user_id', $u->id)->latest()->limit(10)->get();
+        $eigene = CoachNote::where('user_id', $u->id)->latest()->limit(10)->get();
         if ($eigene->isNotEmpty()) {
             $teile[] = "NOTIZEN DER COACHIN\n".$eigene->map(fn ($n) => '- '.$n->created_at->format('d.m.Y').': '.Str::limit($n->body, 600))->implode("\n");
         }
-        if ($conv = app(\App\Chat\Chat::class)->directFor($u, false)) {
-            $msgs = \App\Models\Message::where('conversation_id', $conv->id)->latest('id')->limit(30)->get()->reverse();
+        if ($conv = app(Chat::class)->directFor($u, false)) {
+            $msgs = Message::where('conversation_id', $conv->id)->latest('id')->limit(30)->get()->reverse();
             if ($msgs->isNotEmpty()) {
                 $teile[] = "1:1-GESPRÄCH (neueste zuletzt)\n".$msgs->map(fn ($x) => '- '.$x->created_at->format('d.m. H:i').' '.($x->user_id === $u->id ? $u->vorname() : 'Coachin').': '.Str::limit((string) ($x->body ?: $x->transcript ?: '[Anhang]'), 400))->implode("\n");
             }
         }
 
         return mb_substr(implode("\n\n", $teile), 0, 60000);
+    }
+
+    /** Aufbau der Zusammenfassung mit Kapiteln, pro Mandant ueberschreibbar (settings.ai.prompts.recording). */
+    protected function aufbauMitKapiteln(): string
+    {
+        $eigen = app(CurrentTenant::class)->get()?->setting('ai.prompts.recording');
+        if (filled($eigen)) {
+            return (string) $eigen;
+        }
+
+        return "Aufbau von zusammenfassung_html (nur <p>, <h3>, <ul>, <li>, <strong>, keine Überschrift ganz oben):\n"
+            ."1. Ein Absatz, der mit <strong>Worum es ging:</strong> beginnt. Drei bis fünf Sätze, die den roten Faden erzählen.\n"
+            ."2. Direkt danach <h3>Deine Aufgaben für die Woche</h3> mit einer <ul>, jedes <li> mit <strong>Kurzform</strong> und einem erklärenden Satz. Nur wenn im Call Aufgaben genannt wurden.\n"
+            .'3. Danach die Kapitel in der Reihenfolge des Gesprächs, jedes als <h3>Sprechender Titel (ab MM:SS)</h3>, genau in dieser Form, die Zeitmarke aus der Abschrift (nächstliegende eckige Klammer). '
+            ."Darunter ein bis drei Absätze, die den Inhalt wirklich wiedergeben, bei Schritten eine <ul>. Sechs bis zehn Kapitel je nach Länge.\n"
+            .'Nenne keine Namen von Teilnehmerinnen. Etwa 4000 bis 6000 Zeichen, lieber genau als knapp.';
     }
 
     /** Aus den Vorschlaegen echte Aufgaben machen (Indizes der gewaehlten Vorschlaege). */

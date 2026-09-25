@@ -12,6 +12,9 @@
             <p style="margin:0 0 12px;font-size:16px;line-height:1.5;">Hallo {{ $user->vorname() }}</p>
             <p style="margin:0 0 8px;font-size:17px;font-weight:600;line-height:1.4;">{{ $nachricht->titel }}</p>
             <div style="margin:0 0 20px;font-size:16px;line-height:1.55;white-space:pre-line;">{!! nl2br(e($nachricht->text)) !!}</div>
+            @if ($nachricht->html)
+                <div style="margin:0 0 20px;padding-left:14px;border-left:3px solid {{ $branding->get('card_border') }};font-size:15px;line-height:1.55;">{{ \App\Support\Kapitel::sauber($nachricht->html) }}</div>
+            @endif
             @if ($nachricht->url)
                 <p style="margin:0 0 8px;text-align:center;">
                     <a href="{{ $nachricht->url }}" style="display:inline-block;background:{{ $branding->get('primary') }};color:{{ $branding->get('primary_contrast') }};text-decoration:none;font-weight:600;font-size:16px;padding:13px 26px;border-radius:999px;">{{ $nachricht->knopf ?: 'Ansehen' }}</a>

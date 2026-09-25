@@ -184,7 +184,15 @@ class BegleitungImport
                 'transcript' => $m('recording_abschrift') ?: null,
                 'summary' => is_string($m('ki_zusammenfassung')) ? $m('ki_zusammenfassung') : null,
                 'is_published' => $post->post_status === 'publish',
-                'recording_notified_at' => $m('recording_url') ? now() : null,
+                // Freigabe wie in WordPress (nva_versandt, aufzeichnung_freigegeben); alte Aufzeichnungen gelten als verschickt
+                'recording_notified_at' => $event->recording_notified_at ?? match (true) {
+                    (bool) $m('nva_versandt') => Carbon::createFromTimestampUTC((int) $m('nva_versandt')),
+                    (bool) $m('aufzeichnung_freigegeben') => now(),
+                    $m('recording_url') && $start < now()->subDays(7)->getTimestamp() => now(),
+                    default => null,
+                },
+                'vimeo_id' => $event->vimeo_id ?? (($vid = (string) $m('recording_vimeo_id')) && ! Event::where('vimeo_id', $vid)->where('id', '!=', (int) $event->id)->exists() ? $vid : null),
+                'recording_thumb' => $m('recording_bild') ?: $event->recording_thumb,
                 'settings' => array_filter(['zugriffsart' => $m('zugriffsart'), 'nvc_art' => $m('nvc_art')]),
             ]);
             // Kein Nachholen alter Erinnerungen

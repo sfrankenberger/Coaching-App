@@ -116,20 +116,6 @@ class BenachrichtigungenTest extends TestCase
         $this->assertNotNull($event->fresh()->reminded_hour_at);
     }
 
-    public function test_abgesagte_bekommen_keine_aufzeichnung(): void
-    {
-        Notification::fake();
-        $event = $this->in(fn () => Event::create(['program_id' => $this->program->id, 'title' => 'Call', 'starts_at' => now()->subDay()]));
-        $this->in(fn () => EventAttendee::create(['event_id' => $event->id, 'user_id' => $this->bea->id, 'status' => 'declined']));
-        $this->in(fn () => PushSubscription::create(['user_id' => $this->anna->id, 'endpoint' => 'https://push.example/1', 'endpoint_hash' => hash('sha256', 'https://push.example/1')]));
-        $this->in(fn () => PushSubscription::create(['user_id' => $this->bea->id, 'endpoint' => 'https://push.example/2', 'endpoint_hash' => hash('sha256', 'https://push.example/2')]));
-        $this->in(fn () => $event->update(['recording_url' => 'https://vimeo.com/1']));
-
-        Notification::assertSentTo($this->anna, AppNotification::class, fn (AppNotification $n, $channels) => $n->nachricht->anlass === 'aufzeichnung' && $channels === [WebPushChannel::class]);
-        Notification::assertNotSentTo($this->bea, AppNotification::class);
-        $this->assertNotNull($event->fresh()->recording_notified_at);
-    }
-
     public function test_aufgabe_von_coach_und_material_geteilt(): void
     {
         Notification::fake();

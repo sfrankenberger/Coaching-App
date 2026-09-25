@@ -66,7 +66,7 @@ class Notifier
         if ($telegram) {
             $channels[] = TelegramChannel::class;
         }
-        if (! $push && ! $telegram && $nachricht->mailWennKeinPush && filled($user->email)) {
+        if ((($nachricht->mailImmer) || (! $push && ! $telegram && $nachricht->mailWennKeinPush)) && filled($user->email)) {
             $channels[] = 'mail';
         }
 
@@ -104,7 +104,7 @@ class Notifier
     public function wants(Membership $membership, string $anlass): bool
     {
         return match ($anlass) {
-            'termin' => (bool) $membership->setting('notifications.termine', true),
+            'termin', 'termin_neu' => (bool) $membership->setting('notifications.termine', true),
             'aufgabe_erinnerung' => (bool) $membership->setting('notifications.aufgaben', true),
             'abendmail' => (bool) $membership->setting('notifications.abendmail', true),
             default => true,

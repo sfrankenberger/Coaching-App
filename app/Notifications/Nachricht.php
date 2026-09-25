@@ -14,6 +14,8 @@ class Nachricht
         public bool $mailWennKeinPush = true,
         public ?string $mailBetreff = null,
         public ?string $knopf = null,
+        public ?string $html = null,          // nur Mail: zusaetzlicher Inhalt, z. B. die Zusammenfassung
+        public bool $mailImmer = false,       // Mail auch an Personen mit Push (z. B. Aufzeichnung mit Zusammenfassung)
     ) {
         $this->tag ??= $anlass;
     }

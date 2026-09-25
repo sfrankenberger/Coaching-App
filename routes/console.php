@@ -28,3 +28,6 @@ Schedule::command('inhalte:feeds')->hourly()->withoutOverlapping();
 // Parallelbetrieb: geplante WordPress-Importe je Mandant (settings.import.wordpress.schedule)
 Schedule::command('import:geplant')->hourlyAt(17)->withoutOverlapping(50)->runInBackground();
 Schedule::command('inhalte:veroeffentlichen')->everyTenMinutes()->withoutOverlapping();
+
+// Aufzeichnungen: nach jedem Termin auf Vimeo suchen, Abschrift und Zusammenfassung, dann melden
+Schedule::command('aufzeichnungen:wache')->everyFifteenMinutes()->withoutOverlapping(30)->runInBackground();

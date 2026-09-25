@@ -28,6 +28,18 @@ class Kapitel
         return new HtmlString(self::spruenge($html));
     }
 
+    /** Nur saeubern, ohne Sprungknoepfe (fuer Mails). */
+    public static function sauber(?string $text): HtmlString
+    {
+        $text = trim((string) $text);
+        if ($text === '') {
+            return new HtmlString('');
+        }
+        $istHtml = (bool) preg_match('~</?(p|br|h[1-6]|ul|ol|li|strong|b|em|i|a|div|span|blockquote)\b[^>]*>~i', $text);
+
+        return new HtmlString($istHtml ? self::saeubern($text) : nl2br(e($text), false));
+    }
+
     /** "12:34" oder "1:02:03" in Sekunden. */
     public static function sekunden(string $zeit): int
     {

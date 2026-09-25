@@ -12,6 +12,7 @@ use App\Models\ProgramStep;
 use BackedEnum;
 use Filament\Actions\EditAction;
 use Filament\Forms\Components\DateTimePicker;
+use Filament\Forms\Components\Placeholder;
 use Filament\Forms\Components\RichEditor;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\Textarea;
@@ -69,9 +70,13 @@ class EventResource extends Resource
 
             Section::make('Aufzeichnung')->schema([
                 TextInput::make('recording_url')->label('Aufzeichnung (Vimeo-Link)')->url()->maxLength(500)->columnSpanFull()
-                    ->helperText('Sobald hier ein Link steht, bekommen die Teilnehmerinnen Bescheid.'),
+                    ->helperText('Mit Vimeo-Zugang sucht die App die Aufzeichnung nach dem Termin selbst. Bescheid bekommen die Teilnehmerinnen erst, wenn du oben auf "Aufzeichnung freigeben" tippst.'),
                 TextInput::make('recording_duration')->label('Dauer')->placeholder('z. B. 58 Min.')->maxLength(60),
-                Textarea::make('summary')->label('Zusammenfassung')->rows(6)->columnSpanFull(),
+                Placeholder::make('stand')->label('Stand')
+                    ->content(fn (?Event $record) => Event::RECORDING_STATUS[$record?->recording_status ?? ''] ?? ($record?->hasRecording() ? 'Link eingetragen' : 'Noch keine Aufzeichnung'))
+                    ->visible(fn (?Event $record) => (bool) $record),
+                Textarea::make('summary')->label('Zusammenfassung')->rows(10)->columnSpanFull()
+                    ->helperText('HTML ist erlaubt. Zeitmarken wie "(ab 12:34)" werden zu Sprungmarken ins Video.'),
                 Textarea::make('transcript')->label('Abschrift')->rows(6)->columnSpanFull(),
             ])->columns(2)->collapsed(),
         ]);
@@ -85,7 +90,12 @@ class EventResource extends Resource
                 TextColumn::make('title')->label('Titel')->searchable()->description(fn (Event $r) => $r->typeLabel()),
                 TextColumn::make('program.title')->label('Programm')->toggleable(),
                 TextColumn::make('user.name')->label('Person')->toggleable(),
-                IconColumn::make('recording_url')->label('Aufzeichnung')->boolean(),
+                TextColumn::make('recording_status')->label('Aufzeichnung')->badge()
+                    ->state(fn (Event $r) => $r->recording_status ?: ($r->hasRecording() ? ($r->recording_notified_at ? 'freigegeben' : 'bereit') : null))
+                    ->formatStateUsing(fn (?string $state) => Event::RECORDING_STATUS[$state] ?? $state)
+                    ->color(fn (?string $state) => match ($state) {
+                        'freigegeben' => 'success', 'bereit' => 'warning', 'nicht_gefunden', 'ohne_abschrift' => 'danger', default => 'gray'
+                    }),
                 TextColumn::make('attendees_count')->label('Absagen')->counts(['attendees' => fn ($q) => $q->where('status', 'declined')]),
                 IconColumn::make('is_published')->label('Sichtbar')->boolean()->toggleable(),
             ])
