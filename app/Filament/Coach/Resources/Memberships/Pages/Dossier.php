@@ -3,8 +3,11 @@
 namespace App\Filament\Coach\Resources\Memberships\Pages;
 
 use App\Chat\Chat;
+use App\Coach\Kommentare;
+use App\Coach\Lage;
 use App\Filament\Coach\Resources\Memberships\MembershipResource;
 use App\Models\Answer;
+use App\Models\CoachNote;
 use App\Models\Event;
 use App\Models\EventAttendee;
 use App\Models\Note;
@@ -35,9 +38,48 @@ class Dossier extends Page
 
     protected string $view = 'filament.coach.dossier';
 
+    /** Neue private Notiz der Coachin. */
+    public string $notiz = '';
+
+    /** Antworten auf Geteiltes, Schluessel "typ-id". */
+    public array $antwort = [];
+
     public function mount(int|string $record): void
     {
         $this->record = $this->resolveRecord($record);
+    }
+
+    public function notizSpeichern(): void
+    {
+        $this->validate(['notiz' => ['required', 'string', 'max:10000']]);
+        CoachNote::create(['user_id' => $this->record->user_id, 'author_id' => auth()->id(), 'body' => trim($this->notiz)]);
+        $this->notiz = '';
+        Notification::make()->title('Notiz gespeichert')->success()->send();
+    }
+
+    public function notizAnheften(int $id): void
+    {
+        $n = CoachNote::where('user_id', $this->record->user_id)->findOrFail($id);
+        $n->forceFill(['is_pinned' => ! $n->is_pinned])->save();
+    }
+
+    public function notizLoeschen(int $id): void
+    {
+        CoachNote::where('user_id', $this->record->user_id)->findOrFail($id)->delete();
+    }
+
+    public function antworten(string $typ, int $id): void
+    {
+        $text = trim((string) ($this->antwort[$typ.'-'.$id] ?? ''));
+        if ($text === '') {
+            return;
+        }
+        $k = app(Kommentare::class);
+        $item = $k->finden($typ, $id);
+        abort_unless($item && $item->user_id === $this->record->user_id, 404);
+        $k->schreiben(auth()->user(), $item, $text);
+        unset($this->antwort[$typ.'-'.$id]);
+        Notification::make()->title($this->record->user->vorname().' bekommt Bescheid')->success()->send();
     }
 
     public function getTitle(): string
@@ -79,7 +121,7 @@ class Dossier extends Page
             return $p;
         });
 
-        $answers = Answer::where('user_id', $user->id)->where('shared_with_coach', true)->with('exercise.unit.program')
+        $answers = Answer::where('user_id', $user->id)->where('shared_with_coach', true)->with(['exercise.unit.program', 'comments.user'])
             ->get()->filter(fn (Answer $a) => $a->isFilled() && $a->exercise?->unit)
             ->groupBy(fn (Answer $a) => $a->exercise->unit_id);
 
@@ -90,10 +132,12 @@ class Dossier extends Page
             'antworten' => $answers,
             // Private Aufgaben bleiben privat, sie werden nur gezaehlt (wie im alten Bereich)
             'aufgaben' => Task::where('user_id', $user->id)->where(fn ($q) => $q->where('visibility', '!=', 'private')->orWhereNotNull('assigned_by'))
-                ->orderByRaw('CASE WHEN done_at IS NULL THEN 0 ELSE 1 END')->orderBy('due_at')->limit(30)->get(),
+                ->with('comments.user')->orderByRaw('CASE WHEN done_at IS NULL THEN 0 ELSE 1 END')->orderBy('due_at')->limit(30)->get(),
             'privateAufgaben' => Task::where('user_id', $user->id)->where('visibility', 'private')->whereNull('assigned_by')->count(),
-            'reflexionen' => Reflection::where('user_id', $user->id)->where('visibility', '!=', 'private')->latest()->limit(10)->get(),
-            'notizen' => Note::where('user_id', $user->id)->whereIn('visibility', ['coach', 'program', 'all'])->latest()->limit(20)->get(),
+            'reflexionen' => Reflection::where('user_id', $user->id)->where('visibility', '!=', 'private')->with('comments.user')->latest()->limit(10)->get(),
+            'notizen' => Note::where('user_id', $user->id)->whereIn('visibility', ['coach', 'program', 'all'])->with('comments.user')->latest()->limit(20)->get(),
+            'coachNotizen' => CoachNote::where('user_id', $user->id)->with('author')->orderByDesc('is_pinned')->latest()->get(),
+            'lage' => app(Lage::class)->fuer($this->record),
             'termine' => EventAttendee::where('user_id', $user->id)->with('event')->get()->filter(fn ($a) => $a->event)->sortByDesc(fn ($a) => $a->event->starts_at)->take(15),
             'einzeltermine' => Event::where('user_id', $user->id)->orderByDesc('starts_at')->limit(10)->get(),
             'push' => PushSubscription::where('user_id', $user->id)->count(),

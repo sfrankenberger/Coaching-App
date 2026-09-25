@@ -64,6 +64,7 @@ class KursController extends Controller
                 ->latest('published_at')->limit(3)->get(),
             'fragen' => Question::where('program_id', $program->id)->sichtbarFuer($user)->whereIn('status', ['offen', 'call'])->count(),
             'coach' => (string) (app(CurrentTenant::class)->get()?->setting('coach_name') ?: 'deine Coachin'),
+            'kontingent' => $program->type === 'one_on_one' ? app(\App\Coach\Lage::class)->kontingent($user) : null,
             'program' => $program,
             'stand' => $this->progress->summary($user, $program),
             'done' => $done,

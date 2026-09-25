@@ -33,6 +33,9 @@ class MembersRelationManager extends RelationManager
                 ->options(fn () => Membership::query()->with('user')->get()->mapWithKeys(fn (Membership $m) => [$m->user_id => $m->user->name.' ('.$m->user->email.')'])->all()),
             Select::make('role_in_program')->label('Rolle')->options(['participant' => 'Teilnehmerin', 'coach' => 'Coach'])->default('participant')->native(false),
             TextInput::make('cohort')->label('Gruppe / Kohorte')->maxLength(60),
+            TextInput::make('settings.sitzungen_extra')->label('Zusätzliche Sitzungen')->numeric()->minValue(0)->maxValue(100)
+                ->helperText('Nur 1:1: zusätzlich zum Paket gebuchte Sitzungen.')
+                ->visible(fn () => $this->getOwnerRecord()->type === 'one_on_one'),
         ])->columns(3);
     }
 

@@ -44,6 +44,22 @@
             </div>
         @endif
 
+        @if ($kontingent)
+            @php $hallo = $coach === 'deine Coachin' ? 'Hallo, ' : 'Hallo '.$coach.', '; @endphp
+            <div class="karte">
+                <span class="eyebrow"><i class="fa-solid fa-ticket"></i> Deine Sitzungen</span>
+                <div class="flex items-baseline gap-2" style="margin-top:4px">
+                    <b style="font-family:var(--font-heading);font-size:26px;font-weight:400">{{ $kontingent['offen'] }}</b>
+                    <span class="x">von {{ $kontingent['gesamt'] }} noch offen</span>
+                </div>
+                <span class="balken" style="display:block;margin:10px 0 6px"><span style="width: {{ round(($kontingent['gehabt'] + $kontingent['geplant']) / $kontingent['gesamt'] * 100) }}%"></span></span>
+                <p class="hinweis" style="margin:0 0 12px">{{ $kontingent['gehabt'] }} gehabt{{ $kontingent['geplant'] ? ', '.$kontingent['geplant'].' geplant' : '' }}</p>
+                <a href="{{ route('gespraech.index', ['entwurf' => $hallo.($kontingent['offen'] ? 'ich hätte gern einen nächsten Termin. Mir passt es am besten ' : 'meine Sitzungen sind aufgebraucht. Ich hätte gern weitere. ')]) }}" class="knopf knopf-klein">
+                    <i class="fa-regular fa-calendar-plus"></i>{{ $kontingent['offen'] ? 'Termin anfragen' : 'Weitere Sitzungen anfragen' }}
+                </a>
+            </div>
+        @endif
+
         @if ($naechsterCall)
             <a href="{{ route('termine.show', $naechsterCall) }}" class="karte karte-dunkel block no-underline">
                 <span class="eyebrow">{{ $naechsterCall->isLive() ? 'Jetzt live' : 'Nächster Call' }}</span>

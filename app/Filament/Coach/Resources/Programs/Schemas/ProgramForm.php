@@ -25,9 +25,12 @@ class ProgramForm
                 TextInput::make('slug')->label('Adresse (Slug)')->required()->alphaDash()->maxLength(120)
                     ->unique(ignoreRecord: true, modifyRuleUsing: fn ($rule) => $rule->where('tenant_id', app(CurrentTenant::class)->id())),
                 TextInput::make('subtitle')->label('Untertitel')->maxLength(200)->columnSpanFull(),
-                Select::make('type')->label('Art')->options(Program::TYPES)->required()->native(false),
+                Select::make('type')->label('Art')->options(Program::TYPES)->required()->native(false)->live(),
                 Select::make('pacing')->label('Taktung')->options(Program::PACINGS)->required()->native(false)
                     ->helperText('Wöchentlich: Schritte schalten sich zum eingetragenen Zeitpunkt frei. Alles offen: Selbstlernen. Keine Schritte: 1:1.'),
+                TextInput::make('settings.sitzungen_gesamt')->label('Sitzungen im Paket')->numeric()->minValue(0)->maxValue(200)
+                    ->helperText('Nur 1:1: so viele Sitzungen sind enthalten. Die Person sieht, wie viele noch offen sind.')
+                    ->visible(fn ($get) => $get('type') === 'one_on_one'),
                 DatePicker::make('starts_at')->label('Start')->native(false)->displayFormat('d.m.Y'),
                 DatePicker::make('ends_at')->label('Ende')->native(false)->displayFormat('d.m.Y'),
                 RichEditor::make('description')->label('Beschreibung')->columnSpanFull()

@@ -86,6 +86,7 @@ class AmpelTest extends TestCase
         });
 
         $this->assertSame(['gesamt' => 6, 'gehabt' => 1, 'geplant' => 1, 'offen' => 4], $k);
+        $this->actingAs($kim)->get('http://a.test/kurse/einzel')->assertOk()->assertSee('von 6 noch offen')->assertSee('Termin anfragen');
     }
 
     public function test_mandant_b_sieht_die_lage_von_a_nicht(): void
