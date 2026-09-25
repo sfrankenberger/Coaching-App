@@ -5,14 +5,15 @@ use App\Http\Controllers\Auth\BridgeController;
 use App\Http\Controllers\Auth\LoginController;
 use App\Http\Controllers\Auth\PasskeyController;
 use App\Http\Controllers\Auth\SocialController;
+use App\Http\Controllers\BuchenController;
 use App\Http\Controllers\FragenController;
 use App\Http\Controllers\GespraechController;
 use App\Http\Controllers\HomeController;
-use App\Http\Controllers\KommentarController;
 use App\Http\Controllers\Hooks\WooCommerceController;
 use App\Http\Controllers\ImpulseController;
 use App\Http\Controllers\JournalController;
 use App\Http\Controllers\KalenderController;
+use App\Http\Controllers\KommentarController;
 use App\Http\Controllers\KursController;
 use App\Http\Controllers\MaterialController;
 use App\Http\Controllers\MedienController;
@@ -96,6 +97,10 @@ Route::middleware(['auth', 'membership'])->group(function () {
 
     // Termine
     Route::get('/termine', [TermineController::class, 'index'])->name('termine.index');
+    Route::get('/buchen', [BuchenController::class, 'index'])->name('buchen.index');
+    Route::get('/buchen/{art}', [BuchenController::class, 'zeiten'])->name('buchen.zeiten');
+    Route::post('/buchen/{art}', [BuchenController::class, 'store'])->middleware('throttle:10,1')->name('buchen.store');
+    Route::post('/buchungen/{booking}/absagen', [BuchenController::class, 'absagen'])->name('buchen.absagen');
     Route::get('/termine/{termin}', [TermineController::class, 'show'])->name('termine.show');
     Route::post('/termine/{termin}/dabei', [TermineController::class, 'dabei'])->name('termine.dabei');
     Route::post('/termine/{termin}/gesehen', [TermineController::class, 'gesehen'])->name('termine.gesehen');

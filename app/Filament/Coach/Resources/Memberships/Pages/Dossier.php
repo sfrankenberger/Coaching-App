@@ -2,11 +2,16 @@
 
 namespace App\Filament\Coach\Resources\Memberships\Pages;
 
+use App\Ai\Anthropic;
 use App\Chat\Chat;
+use App\Chat\Terminvorschlag;
 use App\Coach\Kommentare;
 use App\Coach\Lage;
 use App\Filament\Coach\Resources\Memberships\MembershipResource;
+use App\Jobs\VorbereitungErstellen;
+use App\Models\AiSummary;
 use App\Models\Answer;
+use App\Models\Booking;
 use App\Models\CoachNote;
 use App\Models\Event;
 use App\Models\EventAttendee;
@@ -22,6 +27,10 @@ use App\Shop\Zugang;
 use App\Support\Telefon;
 use App\Tenancy\CurrentTenant;
 use Filament\Actions\Action;
+use Filament\Forms\Components\DateTimePicker;
+use Filament\Forms\Components\Repeater;
+use Filament\Forms\Components\Textarea;
+use Filament\Forms\Components\TextInput;
 use Filament\Notifications\Notification;
 use Filament\Resources\Pages\Concerns\InteractsWithRecord;
 use Filament\Resources\Pages\Page;
@@ -97,24 +106,24 @@ class Dossier extends Page
             Action::make('zeiten')->label('Zeiten vorschlagen')->icon('heroicon-o-calendar-days')
                 ->modalHeading('Zeiten vorschlagen')->modalDescription($user->vorname().' sieht die Zeiten im Gespräch und tippt eine an. Daraus wird der Termin.')
                 ->schema([
-                    \Filament\Forms\Components\Repeater::make('zeiten')->label('Zeiten')->simple(
-                        \Filament\Forms\Components\DateTimePicker::make('start')->required()->native(false)->seconds(false)->displayFormat('D d.m.Y H:i')->minDate(now())
+                    Repeater::make('zeiten')->label('Zeiten')->simple(
+                        DateTimePicker::make('start')->required()->native(false)->seconds(false)->displayFormat('D d.m.Y H:i')->minDate(now())
                     )->minItems(1)->maxItems(6)->default([null])->addActionLabel('Weitere Zeit'),
-                    \Filament\Forms\Components\TextInput::make('dauer')->label('Dauer (Minuten)')->numeric()->default(60)->minValue(15)->maxValue(240)->required(),
-                    \Filament\Forms\Components\Textarea::make('text')->label('Nachricht dazu')->rows(2)
+                    TextInput::make('dauer')->label('Dauer (Minuten)')->numeric()->default(60)->minValue(15)->maxValue(240)->required(),
+                    Textarea::make('text')->label('Nachricht dazu')->rows(2)
                         ->default('Hallo '.$user->vorname().', diese Zeiten hätte ich für unser nächstes Gespräch. Tipp einfach die an, die dir passt.'),
                 ])
                 ->action(function (array $data) use ($user) {
-                    app(\App\Chat\Terminvorschlag::class)->vorschlagen(auth()->user(), $user, collect($data['zeiten'])->all(), (int) $data['dauer'], $data['text'] ?? null);
+                    app(Terminvorschlag::class)->vorschlagen(auth()->user(), $user, collect($data['zeiten'])->all(), (int) $data['dauer'], $data['text'] ?? null);
                     Notification::make()->title('Zeiten sind im Gespräch mit '.$user->vorname())->success()->send();
                 }),
             Action::make('vorbereitung')->label(fn () => $this->vorbereitung() ? 'Vorbereitung neu' : 'Vorbereitung (KI)')->icon('heroicon-o-sparkles')->color('gray')
-                ->visible(fn () => \App\Ai\Anthropic::configured(app(CurrentTenant::class)->get()))
+                ->visible(fn () => Anthropic::configured(app(CurrentTenant::class)->get()))
                 ->requiresConfirmation()->modalHeading('Vorbereitung auf das Gespräch erstellen?')
                 ->modalDescription('Aus dem, was '.$user->vorname().' geteilt hat, deinen Notizen und dem Gespräch. Dauert etwa eine Minute, du bekommst Bescheid.')
                 ->action(function () {
-                    \App\Models\AiSummary::updateOrCreate(['summarizable_type' => 'membership', 'summarizable_id' => $this->record->id, 'kind' => 'vorbereitung'], ['status' => 'pending', 'error' => null]);
-                    \App\Jobs\VorbereitungErstellen::dispatch(app(CurrentTenant::class)->id(), $this->record->id, auth()->id());
+                    AiSummary::updateOrCreate(['summarizable_type' => 'membership', 'summarizable_id' => $this->record->id, 'kind' => 'vorbereitung'], ['status' => 'pending', 'error' => null]);
+                    VorbereitungErstellen::dispatch(app(CurrentTenant::class)->id(), $this->record->id, auth()->id());
                     Notification::make()->title('Läuft. Du bekommst Bescheid, sobald es fertig ist.')->success()->send();
                 }),
             Action::make('mail')->label('Mail')->icon('heroicon-o-envelope')->url('mailto:'.$user->email)->openUrlInNewTab(),
@@ -132,9 +141,9 @@ class Dossier extends Page
     }
 
     /** Gespeicherte Vorbereitung, drei Tage gueltig. */
-    public function vorbereitung(): ?\App\Models\AiSummary
+    public function vorbereitung(): ?AiSummary
     {
-        return \App\Models\AiSummary::where('summarizable_type', 'membership')->where('summarizable_id', $this->record->id)
+        return AiSummary::where('summarizable_type', 'membership')->where('summarizable_id', $this->record->id)
             ->where('kind', 'vorbereitung')->where('updated_at', '>=', now()->subDays(3))->first();
     }
 
@@ -171,6 +180,7 @@ class Dossier extends Page
             'lage' => app(Lage::class)->fuer($this->record),
             'termine' => EventAttendee::where('user_id', $user->id)->with('event')->get()->filter(fn ($a) => $a->event)->sortByDesc(fn ($a) => $a->event->starts_at)->take(15),
             'einzeltermine' => Event::where('user_id', $user->id)->orderByDesc('starts_at')->limit(10)->get(),
+            'buchungen' => Booking::where('user_id', $user->id)->get()->keyBy('event_id'),
             'push' => PushSubscription::where('user_id', $user->id)->count(),
             'telegram' => TelegramLink::where('user_id', $user->id)->where('active', true)->exists(),
         ];

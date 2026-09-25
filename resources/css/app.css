@@ -888,3 +888,10 @@
 button.vorschlag:hover { border-color: var(--c-primary); }
 .vorschlag.an { background: var(--c-success-soft); border-color: transparent; }
 .vorschlag.vorbei { opacity: .5; text-decoration: line-through; }
+
+/* Buchung: Zeit waehlen */
+.zeit-wahl { position: relative; }
+.zeit-wahl input { position: absolute; opacity: 0; pointer-events: none; }
+.zeit-wahl span { display: inline-flex; align-items: center; min-height: 44px; padding: 0 16px; border-radius: 999px; border: 1px solid var(--c-line-strong); background: var(--c-card); font-size: var(--fs-md); cursor: pointer; }
+.zeit-wahl input:checked + span { background: var(--c-text); color: var(--c-bg); border-color: var(--c-text); }
+.zeit-wahl input:focus-visible + span { outline: 2px solid var(--c-primary); outline-offset: 2px; }

@@ -21,6 +21,10 @@
             @if (! $event->isPast())
                 <a href="{{ route('termine.ics', $event) }}" class="knopf knopf-ruhig"><i class="fa-solid fa-calendar-plus"></i>In den Kalender</a>
             @endif
+            @php $buchung = $event->isOneOnOne() && ! $event->isPast() ? \App\Models\Booking::where('event_id', $event->id)->where('status', 'gebucht')->where('user_id', auth()->id())->first() : null; @endphp
+            @if ($buchung)
+                <form method="post" action="{{ route('buchen.absagen', $buchung) }}" onsubmit="return confirm('Diesen Termin absagen?')">@csrf<button class="knopf knopf-leise">Absagen</button></form>
+            @endif
             @if (! $event->isPast() && ! $event->isOneOnOne())
                 <form method="post" action="{{ route('termine.dabei', $event) }}">@csrf<button class="knopf knopf-leise">{{ $ab ? 'Doch dabei' : 'Nicht dabei' }}</button></form>
             @endif

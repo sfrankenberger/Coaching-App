@@ -6,7 +6,7 @@
             <a href="{{ preg_replace('~^https?://~', 'webcal://', $kalenderUrl) }}" class="knopf knopf-dunkel"><i class="fa-solid fa-calendar-plus"></i>Alle Termine abonnieren</a>
         @endif
         @if ($buchenUrl)
-            <a href="{{ $buchenUrl }}" target="_blank" rel="noopener" class="knopf"><i class="fa-solid fa-calendar-check"></i>Termin buchen</a>
+            <a href="{{ $buchenUrl }}" @unless (str_starts_with($buchenUrl, url('/'))) target="_blank" rel="noopener" @endunless class="knopf"><i class="fa-solid fa-calendar-check"></i>Termin buchen</a>
         @endif
     </div>
 

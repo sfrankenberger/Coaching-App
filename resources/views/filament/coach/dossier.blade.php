@@ -69,9 +69,18 @@
 
             <x-filament::section heading="Termine">
                 @foreach ($einzeltermine as $e)
+                    @php $b = $buchungen->get($e->id); @endphp
                     <div class="py-1.5 text-sm border-b border-gray-100 last:border-0">
                         <span class="font-medium">{{ $e->title }}</span>
-                        <span class="text-gray-500">· {{ $e->starts_at->format('d.m.Y H:i') }} · 1:1</span>
+                        <span class="text-gray-500">· {{ $e->starts_at->format('d.m.Y H:i') }} · 1:1{{ $b ? ' · selbst gebucht am '.$b->created_at->format('d.m.') : '' }}{{ $b && $b->status === 'abgesagt' ? ' · abgesagt' : '' }}</span>
+                        @if ($b && $b->answers)
+                            <details class="mt-1">
+                                <summary class="cursor-pointer text-xs text-primary-600">Was {{ $person->vorname() }} vorab geschrieben hat</summary>
+                                @foreach ($b->answers as $a)
+                                    <div class="mt-1"><div class="text-xs text-gray-500">{{ $a['frage'] }}</div><div class="whitespace-pre-line">{{ $a['antwort'] }}</div></div>
+                                @endforeach
+                            </details>
+                        @endif
                     </div>
                 @endforeach
                 @foreach ($termine as $a)

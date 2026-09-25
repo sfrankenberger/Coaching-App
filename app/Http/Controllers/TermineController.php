@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Ai\Summarizer;
+use App\Booking\GoogleCalendar;
 use App\Models\AiSummary;
 use App\Models\Event;
 use App\Models\EventAttendee;
@@ -44,7 +45,8 @@ class TermineController extends Controller
         return view('termine.index', [
             'events' => $events, 'zeit' => $zeit, 'kurs' => $kurs, 'kurse' => $kurse,
             'kalenderUrl' => $m ? route('kalender.abo', ['token' => Ics::tokenFor($m)]) : null,
-            'buchenUrl' => data_get($this->current->get()?->settings, 'links.buchung'),
+            // Eigene Buchung, wenn der Kalender angebunden ist, sonst ein Link nach aussen
+            'buchenUrl' => app(GoogleCalendar::class)->aktiv() ? route('buchen.index') : data_get($this->current->get()?->settings, 'links.buchung'),
         ]);
     }
 
