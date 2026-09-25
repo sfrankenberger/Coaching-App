@@ -2,12 +2,15 @@
 
 namespace Tests\Feature;
 
+use App\Chat\Chat;
 use App\Enums\Role;
+use App\Models\Post;
 use App\Models\Tenant;
 use App\Models\User;
 use App\Notifications\AppNotification;
 use App\Notifications\Nachricht;
 use App\Notifications\Notifier;
+use App\Notifications\Runden;
 use App\Tenancy\CurrentTenant;
 use Database\Seeders\TenantSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -38,6 +41,34 @@ class TestbetriebTest extends TestCase
         $a->forceFill(['settings' => ['notifications' => ['test_only' => false]]])->save();
         app(CurrentTenant::class)->run($a->fresh(), fn () => app(Notifier::class)->send([$anna], new Nachricht('Hallo', 'Text')));
         Notification::assertSentTo($anna, AppNotification::class);
+    }
+
+    public function test_abendmail_und_nachfassen_halten_den_testbetrieb_ein(): void
+    {
+        Notification::fake();
+        $a = Tenant::create(['slug' => 'a', 'name' => 'A', 'settings' => ['notifications' => ['test_only' => true, 'test_emails' => ['seb@example.com']]]]);
+        $lea = User::factory()->create(['email' => 'lea@example.com']);
+        $seb = User::factory()->create(['email' => 'seb@example.com']);
+        $anna = User::factory()->create(['email' => 'anna@example.com']);
+        $a->users()->attach($lea, ['role' => Role::Owner->value, 'status' => 'active']);
+        foreach ([$seb, $anna] as $u) {
+            $a->users()->attach($u, ['role' => Role::Member->value, 'status' => 'active']);
+        }
+
+        app(CurrentTenant::class)->run($a, function () use ($lea, $seb, $anna) {
+            Post::create(['title' => 'Neuer Impuls', 'published_at' => now()->subHour()]);
+            foreach ([$seb, $anna] as $u) {
+                $conv = app(Chat::class)->directFor($u);
+                $m = app(Chat::class)->send($conv, $lea, ['body' => 'Hallo']);
+                $m->forceFill(['created_at' => now()->subMinutes(30)])->saveQuietly();
+            }
+            $runden = app(Runden::class);
+            $runden->nachfassen();
+            $runden->abendmail();
+        });
+
+        Notification::assertSentTo($seb, AppNotification::class);
+        Notification::assertNotSentTo($anna, AppNotification::class);
     }
 
     public function test_seeder_ueberschreibt_spaeter_gesetzte_werte_nicht(): void

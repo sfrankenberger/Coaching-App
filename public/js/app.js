@@ -581,3 +581,21 @@ document.addEventListener('click', function (e) {
         });
     });
 })();
+
+/* Entwurf einer Frage im Browser merken, bis sie abgeschickt ist */
+(function () {
+    document.querySelectorAll('form[data-entwurf]').forEach(function (f) {
+        var key = 'entwurf-' + f.dataset.entwurf;
+        var felder = f.querySelectorAll('input[name="title"], textarea[name="body"]');
+        try {
+            var alt = JSON.parse(localStorage.getItem(key) || '{}');
+            felder.forEach(function (el) { if (!el.value && alt[el.name]) el.value = alt[el.name]; });
+            if (alt.title || alt.body) { var d = f.closest('details'); if (d) d.open = true; }
+        } catch (e) {}
+        f.addEventListener('input', function () {
+            var w = {}; felder.forEach(function (el) { w[el.name] = el.value; });
+            try { localStorage.setItem(key, JSON.stringify(w)); } catch (e) {}
+        });
+        f.addEventListener('submit', function () { try { localStorage.removeItem(key); } catch (e) {} });
+    });
+})();

@@ -2,18 +2,22 @@
 
 namespace App\Http\Controllers;
 
+use App\Content\Inhalte;
 use App\Models\Answer;
+use App\Models\Event;
 use App\Models\Exercise;
 use App\Models\MediaPosition;
 use App\Models\Note;
 use App\Models\Program;
 use App\Models\ProgramMember;
 use App\Models\ProgramStep;
+use App\Models\Question;
 use App\Models\Task;
 use App\Models\Unit;
 use App\Programs\Begleitung;
 use App\Programs\ProgramAccess;
 use App\Programs\ProgressTracker;
+use App\Tenancy\CurrentTenant;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -51,7 +55,15 @@ class KursController extends Controller
         $done = $this->progress->completedUnitIds($user, $program);
         $member = ProgramMember::where('program_id', $program->id)->where('user_id', $user->id)->first();
 
+        $begleitung = app(Begleitung::class);
+
         return view('kurse.show', [
+            'naechsterCall' => $begleitung->eventsQuery($user)->where('program_id', $program->id)->whereNull('user_id')
+                ->whereNotIn('type', Event::ALL_DAY_TYPES)->upcoming()->limit(5)->get()->first(fn ($e) => ! $e->isPast()),
+            'infos' => app(Inhalte::class)->postsQuery($user)->published()->where('visibility', 'program')->where('program_id', $program->id)
+                ->latest('published_at')->limit(3)->get(),
+            'fragen' => Question::where('program_id', $program->id)->sichtbarFuer($user)->whereIn('status', ['offen', 'call'])->count(),
+            'coach' => (string) (app(CurrentTenant::class)->get()?->setting('coach_name') ?: 'deine Coachin'),
             'program' => $program,
             'stand' => $this->progress->summary($user, $program),
             'done' => $done,

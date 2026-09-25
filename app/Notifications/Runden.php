@@ -2,11 +2,13 @@
 
 namespace App\Notifications;
 
+use App\Chat\Chat;
 use App\Content\Inhalte;
 use App\Models\Conversation;
 use App\Models\Event;
 use App\Models\Membership;
 use App\Models\Message;
+use App\Models\Question;
 use App\Models\Task;
 use App\Models\Tenant;
 use App\Models\User;
@@ -108,7 +110,7 @@ class Runden
                     continue;
                 }
                 $user = User::find($p->user_id);
-                if (! $user || ! filled($user->email) || ! $user->membershipIn()?->isActive()) {
+                if (! $user || ! filled($user->email) || ! $user->membershipIn()?->isActive() || ! $this->notifier->allowedInTestMode($user)) {
                     continue;
                 }
                 $user->notify(new AppNotification(new Nachricht(
@@ -168,7 +170,7 @@ class Runden
 
         foreach ($memberships as $m) {
             $user = $m->user;
-            if (! $user || ! filled($user->email) || $user->canManageCurrentTenant()) {
+            if (! $user || ! filled($user->email) || $user->canManageCurrentTenant() || ! $this->notifier->allowedInTestMode($user)) {
                 continue;
             }
             if (! $this->notifier->wants($m, 'abendmail') || $this->notifier->hasPushOrTelegram($user)) {
@@ -194,6 +196,45 @@ class Runden
             ), ['mail'], $this->current->id()));
             $m->forceFill(['digest_sent_at' => now()])->save();
             $n++;
+        }
+
+        return $n;
+    }
+
+    /**
+     * Sammelmail an Coachin und Team: offene Fragen aus dem Kursraum fuer den naechsten Call.
+     * Am Wochentag aus settings.fragen.sammeltag (1 = Montag, Vorgabe 4 = Donnerstag).
+     */
+    public function fragenSammelmail(): int
+    {
+        $tenant = $this->current->get();
+        if ((int) now($tenant?->timezone ?: config('app.timezone'))->dayOfWeekIso !== (int) ($tenant?->setting('fragen.sammeltag') ?? 4)) {
+            return 0;
+        }
+        $fragen = Question::whereIn('status', ['offen', 'call'])->with(['user:id,name', 'program:id,title'])
+            ->withCount(['answers', 'reactions as call_wuensche' => fn ($r) => $r->where('emoji', Question::CALLWUNSCH)])
+            ->orderByDesc('call_wuensche')->orderBy('created_at')->get();
+        if ($fragen->isEmpty()) {
+            return 0;
+        }
+        $text = $fragen->groupBy(fn ($f) => $f->program?->title ?? 'Ohne Kurs')->map(fn ($g, $kurs) => $kurs.":\n".$g->map(fn ($f) => '• '.$f->title
+            .' ('.$f->user?->vorname().($f->call_wuensche ? ', '.$f->call_wuensche.'× für den Call' : '').($f->answers_count ? ', '.$f->answers_count.' Antworten' : '').')')->join("\n"))->join("\n\n");
+
+        $team = app(Chat::class)->teamIds();
+        $n = 0;
+        foreach (User::whereIn('id', $team)->get() as $u) {
+            if (! $this->notifier->allowedInTestMode($u)) {
+                continue;
+            }
+            $n++;
+            $u->notify(new AppNotification(new Nachricht(
+                titel: $fragen->count() === 1 ? 'Eine offene Frage für den Call' : $fragen->count().' offene Fragen für den Call',
+                text: $text,
+                url: url('/coach/questions'),
+                anlass: 'fragen',
+                tag: 'fragen',
+                knopf: 'Fragen ansehen',
+            ), ['mail'], $this->current->id()));
         }
 
         return $n;

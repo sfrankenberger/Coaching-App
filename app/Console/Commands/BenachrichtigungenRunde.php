@@ -14,7 +14,7 @@ use Illuminate\Console\Command;
  */
 class BenachrichtigungenRunde extends Command
 {
-    protected $signature = 'benachrichtigungen:runde {was : termine | nachfassen | aufgaben | abendmail} {--wann=morgen}';
+    protected $signature = 'benachrichtigungen:runde {was : termine | nachfassen | aufgaben | abendmail | fragen} {--wann=morgen}';
 
     protected $description = 'Termin-Erinnerungen, Nachfassen, Aufgaben-Hinweise und Abendmail fuer alle Mandanten';
 
@@ -26,6 +26,7 @@ class BenachrichtigungenRunde extends Command
             'nachfassen' => $runden->nachfassen(),
             'aufgaben' => $runden->aufgabenHinweis((string) $this->option('wann')),
             'abendmail' => $runden->abendmail(),
+            'fragen' => $runden->fragenSammelmail(),
             default => throw new \InvalidArgumentException("Unbekannt: {$was}"),
         });
 

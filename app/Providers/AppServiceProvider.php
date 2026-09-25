@@ -14,6 +14,7 @@ use App\Models\Post;
 use App\Models\Program;
 use App\Models\ProgramMember;
 use App\Models\ProgramStep;
+use App\Models\Question;
 use App\Models\Reflection;
 use App\Models\Resourceable;
 use App\Models\Task;
@@ -59,6 +60,7 @@ class AppServiceProvider extends ServiceProvider
             'journal' => JournalEntry::class,
             'message' => Message::class,
             'comment' => Comment::class,
+            'question' => Question::class,
             'post' => Post::class,
             'episode' => PodcastEpisode::class,
             'topic' => Topic::class,

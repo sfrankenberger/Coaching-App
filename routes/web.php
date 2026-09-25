@@ -5,6 +5,7 @@ use App\Http\Controllers\Auth\BridgeController;
 use App\Http\Controllers\Auth\LoginController;
 use App\Http\Controllers\Auth\PasskeyController;
 use App\Http\Controllers\Auth\SocialController;
+use App\Http\Controllers\FragenController;
 use App\Http\Controllers\GespraechController;
 use App\Http\Controllers\HomeController;
 use App\Http\Controllers\Hooks\WooCommerceController;
@@ -136,4 +137,14 @@ Route::middleware(['auth', 'membership'])->group(function () {
     Route::post('/nachricht/{nachricht}/reaktion', [GespraechController::class, 'reaktion'])->name('nachricht.reaktion');
     Route::get('/nachricht/{nachricht}/{art}', [GespraechController::class, 'datei'])->name('nachricht.datei')->where('art', 'audio|datei');
     Route::get('/kurse/{program:slug}/austausch', [GespraechController::class, 'gruppe'])->name('kurse.austausch');
+
+    // Fragen an die Coachin im Kursraum
+    Route::get('/kurse/{program:slug}/fragen', [FragenController::class, 'index'])->name('kurse.fragen');
+    Route::post('/kurse/{program:slug}/fragen', [FragenController::class, 'store'])->middleware('throttle:20,10')->name('kurse.fragen.store');
+    Route::get('/fragen/{frage}', [FragenController::class, 'show'])->name('fragen.show');
+    Route::post('/fragen/{frage}/antworten', [FragenController::class, 'antworten'])->middleware('throttle:30,10')->name('fragen.antworten');
+    Route::post('/fragen/{frage}/status', [FragenController::class, 'status'])->name('fragen.status');
+    Route::post('/fragen/{frage}/call', [FragenController::class, 'call'])->name('fragen.call');
+    Route::delete('/fragen/{frage}', [FragenController::class, 'destroy'])->name('fragen.destroy');
+    Route::delete('/antworten/{antwort}', [FragenController::class, 'antwortLoeschen'])->name('fragen.antwort.loeschen');
 });

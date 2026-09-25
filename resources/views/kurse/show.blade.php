@@ -44,7 +44,34 @@
             </div>
         @endif
 
+        @if ($naechsterCall)
+            <a href="{{ route('termine.show', $naechsterCall) }}" class="karte karte-dunkel block no-underline">
+                <span class="eyebrow">{{ $naechsterCall->isLive() ? 'Jetzt live' : 'Nächster Call' }}</span>
+                <span class="block" style="font-family:var(--font-heading);font-size:var(--fs-xl);line-height:1.3;margin-top:2px">{{ $naechsterCall->title }}</span>
+                <span class="m">{{ $naechsterCall->starts_at->translatedFormat('l, j. F, H:i') }} Uhr</span>
+                @if ($naechsterCall->zoom_url)
+                    <span class="knopf knopf-klein" style="margin-top:12px" onclick="event.preventDefault();window.open('{{ $naechsterCall->zoom_url }}','_blank','noopener')"><i class="fa-solid fa-video"></i>{{ $naechsterCall->isLive() ? 'Jetzt beitreten' : 'Zoom-Link' }}</span>
+                @endif
+            </a>
+        @endif
+
+        @if ($infos->isNotEmpty())
+            <h2 class="abschnitt"><i class="fa-solid fa-bullhorn"></i>Infos von {{ $coach }}</h2>
+            @foreach ($infos as $p)
+                <a href="{{ route('impulse.show', $p) }}" class="zeile">
+                    <span class="ic"><i class="fa-solid fa-bullhorn"></i></span>
+                    <span class="tx"><b>{{ $p->title }}</b><span>{{ $p->published_at?->translatedFormat('j. F') }} · {{ $p->excerptText(60) }}</span></span>
+                    <i class="fa-solid fa-chevron-right pf"></i>
+                </a>
+            @endforeach
+        @endif
+
         @if ($program->isGroup() && ! $program->isWorkbook())
+            <a href="{{ route('kurse.fragen', $program) }}" class="zeile">
+                <span class="ic"><i class="fa-solid fa-circle-question"></i></span>
+                <span class="tx"><b>Fragen an {{ $coach }}</b><span>{{ $fragen ? $fragen.' offen' : 'Frag, was dich beschäftigt' }}</span></span>
+                <i class="fa-solid fa-chevron-right pf"></i>
+            </a>
             <a href="{{ route('kurse.austausch', $program) }}" class="zeile">
                 <span class="ic"><i class="fa-solid fa-user-group"></i></span>
                 <span class="tx"><b>Austausch in der Gruppe</b><span>Fragen an alle, Erfahrungen teilen</span></span>
