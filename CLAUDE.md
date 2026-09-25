@@ -37,13 +37,17 @@ php84 artisan push:keys lea                            # VAPID-Schluessel fuer W
 php84 artisan bridge:secret lea                        # Geheimnis der SSO-Bruecke (in WordPress eintragen)
 php84 artisan benachrichtigungen:runde termine         # Laeufe (termine, nachfassen, aufgaben, abendmail), sonst Scheduler
 php84 artisan inhalte:feeds lea                        # Impulse und Podcast per RSS, sonst stuendlich
+php84 artisan aufzeichnungen:wache lea                 # Vimeo-Aufzeichnungen zuordnen, Abschrift, Zusammenfassung (alle 15 Min)
+php84 artisan zoom:anwesenheit lea --trocken           # wer war im Zoom-Call (stuendlich, ohne --trocken setzt es "live dabei")
 php84 artisan themen:profil lea --limit=20             # Themenfinder per KI
 php84 artisan branding:icons lea <ordner>              # App-Icons uebernehmen
 php84 artisan filament:assets                          # nach Filament-Updates, laeuft im Deploy
 bin/build-css                                          # Tailwind bauen (bin/build-css --watch beim Entwickeln)
 ```
 
-Weitere Ordner: `app/Programs` (Zugriff, Fortschritt, Begleitung), `app/Chat`, `app/Notifications` (Notifier, Kanaele, Runden), `app/Shop` (Zugaenge, WooCommerce), `app/Content` (Feeds, Inhalte, Themen), `app/Ai` (Anthropic, Summarizer), `app/Import/WordPress`. Einstellungen je Mandant in `tenants.settings`: `mail`, `oauth`, `push.vapid`, `telegram`, `shop.webhook_secret`, `bridge.secret`, `feeds`, `ai`, `import.wordpress`.
+Weitere Ordner: `app/Programs` (Zugriff, Fortschritt, Begleitung), `app/Chat`, `app/Notifications` (Notifier, Kanaele, Runden), `app/Shop` (Zugaenge, WooCommerce), `app/Content` (Feeds, Inhalte, Themen), `app/Ai` (Anthropic, Summarizer), `app/Import/WordPress`, `app/Coach` (Lage/Ampel, Kommentare, Wochencheck), `app/Recordings` (Vimeo, Wache, Freigabe), `app/Zoom` (Anwesenheit), `app/Booking` (Google-Kalender, Verfuegbarkeit, Buchung). Einstellungen je Mandant in `tenants.settings`: `mail`, `oauth`, `push.vapid`, `telegram`, `shop.webhook_secret`, `bridge.secret`, `feeds`, `ai`, `import.wordpress`, `vimeo.token`, `recordings`, `zoom`, `google.service_account`, `booking` (`enabled` schaltet die Buchung frei), `wochencheck.haken`.
+
+Zeiten: in der Datenbank UTC, Modelle lesen in der Zeitzone des Mandanten (`Ortszeit` in `BelongsToTenant`), Abfragen binden immer UTC (`UtcBindings`). Beim Testen Zeiten also in UTC in die DB schreiben und in Ortszeit erwarten.
 
 Anmeldung: Magic Link (`App\Auth\MagicLink`, Tabelle `login_tokens`), Passwort optional, Google/Apple je Mandant, Passkeys (Laragear WebAuthn, RP-ID je Mandant ueber `TenantWebAuthn`), Bruecke aus WordPress (`App\Auth\Bridge`). Seitenhülle: `resources/views/components/layouts/app.blade.php`, Branding-Variablen aus `App\Tenancy\Branding`. Coach-Bereich: Filament-Panel `coach` unter `app/Filament/Coach`, Plattform unter `app/Filament/Plattform`. Filament-Routen laufen nicht über die `web`-Gruppe, darum steht `IdentifyTenant` in jedem Panel als erste Middleware.
 

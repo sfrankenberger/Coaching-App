@@ -70,6 +70,29 @@ Reihenfolge nach Wirkung für Lea und die Teilnehmerinnen. Jeder Block wird einz
    - Coaching-Buchung mit Google-Kalender.
    - Buchungen und Rechnungen im Profil.
 
+## Stand der Umsetzung (25.09.2026, abends)
+
+Alle fünf Blöcke sind gebaut, getestet (129 Tests) und auf dem Server.
+
+- **Design, Fehler, Kursraum:** wie im Plan. Zusätzlich gefunden und behoben: Die App zeigte alle Zeiten in UTC (ein Call um 20:00 stand als 18:00 da), der Coach-Bereich speicherte eingegebene Zeiten als UTC, und der Import las Zeiten aus WordPress als UTC. Modelle lesen jetzt in der Zeitzone des Mandanten, gespeichert wird UTC (`App\Tenancy\Concerns\Ortszeit`, `App\Support\Database\UtcBindings`).
+- **Chat:** Jede Nachricht löste zwei Benachrichtigungen aus (Listener doppelt registriert). Behoben. Im 1:1 bekommt nur noch die Person Bescheid, wenn das Team schreibt, nicht die Kolleginnen.
+- **Coach-Werkzeuge:**
+  - Ampel auf dem Dashboard und in der Personenliste (`App\Coach\Lage`): wer wartet, wer still ist, verpasste Calls, überfällige Aufgaben, Sitzungen offen. "Zuletzt da" kommt im Parallelbetrieb auch aus WordPress (`lea_zuletzt_da`, `wc_last_active`, `lea_last_login`).
+  - Kommentare auf Reflexion, Notiz, Aufgabe und Übungsantwort, in der App und im Dossier.
+  - Private Notizen der Coachin (`coach_notes`) und Sitzungskontingent (`programs.settings.sitzungen_gesamt` plus `program_members.settings.sitzungen_extra`).
+  - Terminvorschlag im Chat (antippen bucht).
+  - KI-Vorbereitung im Dossier, nur aus Geteiltem.
+  - Rundnachricht an Einzelne und persönlich ins 1:1.
+  - Wochencheck mit frei einstellbaren Haken (`settings.wochencheck.haken`).
+- **Integrationen:**
+  - Aufzeichnungs-Wache alle 15 Minuten (`aufzeichnungen:wache`): Vimeo-Video über die Zeit im Zoom-Titel (UTC) finden, Abschrift aus der Textspur, Zusammenfassung mit Kapiteln "(ab MM:SS)", Meldung an die Coachin. Freigabe per Knopf am Termin mit Mail (Zusammenfassung im Text) und Push, an alle im Kurs. Kursvideos im selben Vimeo-Ordner werden nicht zugeordnet (Upload-Zeit nur mit `recordings.match_upload_time`). Gegen die echten Videos geprüft: alle Zuordnungen wie in WordPress.
+  - Neue Termine werden sofort gemeldet.
+  - Zoom-Anwesenheit stündlich (`zoom:anwesenheit`), Zuordnung über Mail, Namen, Vor- oder Nachname, Zoom-Name wird gemerkt. Gegen die echten Calls geprüft.
+  - Buchung (`/buchen`): freie Zeiten aus Google-Kalender-Blöcken mit Stichwort, Buchungsarten im Coach-Bereich, Vorbereitungsfragen, Antworten im Dossier, Kalendereintrag, Absagen bis zur Frist, Kontingent. **Noch ausgeschaltet** (`settings.booking.enabled`), weil jede Buchung einen echten Eintrag in Leas Kalender macht. Einstellungen und Arten sind aus WordPress übernommen.
+  - Profil: "Meine Buchungen" mit Zugängen, Laufzeit, Kurswoche, Sitzungen und Link "Abo verwalten".
+
+Noch offen: Rechnungen aus bexio (die App dürfte nicht denselben OAuth-Zugang wie WordPress erneuern, sonst bricht dort die Verbindung; besser später über einen kleinen Endpunkt in WordPress), Verschieben einer Buchung (heute: absagen und neu buchen), Buchung für Gäste ohne Konto, Material mit Vimeo-Abschrift.
+
 Bewusst in WordPress bleiben die öffentliche Website, Kasse, Preise, Mailster und Newsletter, der Blog, Weiterleitungen, Admin-Kosmetik und die bexio-Buchhaltung (die App liest dort später nur Rechnungen).
 
 Offene Entscheidungen, die nicht die Technik betreffen, stehen am Ende von `abgleich/huelle-design.md` (Gratis-Tür in die App?) und `abgleich/kommunikation.md` (Mailster-Listen nach dem Umschalten).

@@ -59,6 +59,15 @@ Stand nach Etappe 1: Lea kann sich per Link anmelden, sieht Start und Profil, im
 - [x] Coach-Bereich: Einstellungen (Aussehen, Absender, Feeds, Telegram-Name), Rundnachricht an alle oder ein Programm, Einladungen mit Anmeldelink
 - [x] Startseite mit Tagesüberblick (Neu seit dem letzten Besuch, aktuelle Woche, nächster Termin, Aufgaben, Impuls), Kalender-Abo je Person (webcal) und Termin-Datei
 
+## Etappe 6 - Abgleich mit dem alten Bereich (25.09., siehe 08-ABGLEICH)
+
+- [x] Design wie der alte Mitgliederbereich, Fehler aus dem Abgleich, Kursraum mit Wochenseite, Workbook-Bausteinen und Fragen
+- [x] Zeiten in Ortszeit anzeigen und eingeben, UTC speichern
+- [x] Coach-Werkzeuge: Ampel, Kommentare, private Notizen, Kontingent, Terminvorschlag, KI-Vorbereitung, Rundnachricht an Einzelne, Wochencheck
+- [x] Aufzeichnungs-Wache mit Vimeo, Freigabe mit Mail und Push, neue Termine melden, Zoom-Anwesenheit
+- [x] Buchung mit Google-Kalender (eingerichtet, noch ausgeschaltet: `settings.booking.enabled`), Meine Buchungen im Profil
+- [ ] Rechnungen aus bexio (über WordPress), Buchung verschieben, Buchung für Gäste
+
 ## Umschalten (nach Leas Freigabe)
 
 1. Schreibstopp im alten Mitgliederbereich (Hinweis an Teilnehmerinnen)
@@ -68,4 +77,4 @@ Stand nach Etappe 1: Lea kann sich per Link anmelden, sieht Start und Profil, im
 
 ## Später
 
-Community, Auswertung, Zoom-Anwesenheit, Stripe als zweite Zugangsquelle, Mandanten-Onboarding, Abrechnung der Plattform, Reverb für Echtzeit, native Apps.
+Community, Auswertung, Stripe als zweite Zugangsquelle, Mandanten-Onboarding, Abrechnung der Plattform, Reverb für Echtzeit, native Apps.
