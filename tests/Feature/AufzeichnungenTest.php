@@ -78,8 +78,8 @@ class AufzeichnungenTest extends TestCase
             'starts_at' => '2026-09-21 18:00:00', 'ends_at' => '2026-09-21 19:00:00', 'is_published' => true])));
         Http::fake([
             'api.vimeo.com/me/videos*' => Http::response(['data' => [
-                ['uri' => '/videos/111', 'name' => 'Anderes Video', 'link' => 'https://vimeo.com/111', 'duration' => 60, 'created_time' => '2026-09-10T10:00:00+00:00'],
-                ['uri' => '/videos/222', 'name' => 'Lea Zoom Meeting 2026-09-21 20:01:28', 'link' => 'https://vimeo.com/222', 'duration' => 3725, 'created_time' => '2026-09-21T19:40:00+00:00',
+                ['uri' => '/videos/111', 'name' => 'Schritt 7: Feiern', 'link' => 'https://vimeo.com/111', 'duration' => 60, 'created_time' => '2026-09-21T19:30:00+00:00'],
+                ['uri' => '/videos/222', 'name' => 'Persönlicher Meetingraum von Lea 2026-09-21 18:01:28', 'link' => 'https://vimeo.com/222', 'duration' => 3725, 'created_time' => '2026-09-21T19:40:00+00:00',
                     'pictures' => ['sizes' => [['width' => 320, 'link' => 'klein.jpg'], ['width' => 640, 'link' => 'gross.jpg']]]],
             ]]),
             'api.vimeo.com/videos/222/texttracks' => Http::response(['data' => [['language' => 'de', 'link' => 'https://captions.vimeo.test/222.vtt']]]),

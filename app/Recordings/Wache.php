@@ -73,7 +73,8 @@ class Wache
                 $versuche = $e->recording_tries + 1;
                 $nichtGefunden = $versuche >= (int) $this->opt('max_tries', 24);
                 $e->forceFill(['recording_tries' => $versuche, 'recording_status' => $nichtGefunden ? 'nicht_gefunden' : 'wartet'])->saveQuietly();
-                if ($nichtGefunden) {
+                // 1:1-Sitzungen werden oft nicht aufgezeichnet: dort nicht melden
+                if ($nichtGefunden && ! $e->user_id) {
                     $bericht['gemeldet'] += $this->melden($e, 'Keine Aufzeichnung gefunden: '.$e->title, 'Auf Vimeo ist nach dem Termin nichts aufgetaucht. Trag den Link selbst ein, wenn es eine Aufzeichnung gibt.');
                 }
             }
@@ -167,20 +168,28 @@ class Wache
         return $n;
     }
 
-    /** @return array{0: ?Carbon, 1: int} Zeitpunkt und Suchfenster in Sekunden */
+    /**
+     * Zeitpunkt eines Videos und Suchfenster in Sekunden.
+     * Zoom schreibt Datum und Uhrzeit in UTC in den Titel ("... 2026-09-21 18:01:28"),
+     * einstellbar ueber recordings.title_timezone. Ein Datum ohne Zeit ("11.09.2026") gilt
+     * als Mittag Ortszeit mit grossem Fenster. Die Upload-Zeit nur, wenn recordings.match_upload_time
+     * an ist: im selben Konto liegen oft auch Kursvideos, die sonst falsch zugeordnet wuerden.
+     *
+     * @return array{0: ?Carbon, 1: int}
+     */
     public function zeitpunkt(array $video): array
     {
         $tz = $this->current->get()?->timezone ?: config('app.timezone');
         $name = (string) ($video['name'] ?? '');
         if (preg_match('~(\d{4})-(\d{2})-(\d{2})[ _T](\d{2})[:.](\d{2})~u', $name, $m)) {
-            return [Carbon::create((int) $m[1], (int) $m[2], (int) $m[3], (int) $m[4], (int) $m[5], 0, $tz), 4 * 3600];
+            return [Carbon::create((int) $m[1], (int) $m[2], (int) $m[3], (int) $m[4], (int) $m[5], 0, (string) $this->opt('title_timezone', 'UTC')), 3 * 3600];
         }
         if (preg_match('~(\d{1,2})\.(\d{1,2})\.(\d{4})~u', $name, $m)) {
             return [Carbon::create((int) $m[3], (int) $m[2], (int) $m[1], 12, 0, 0, $tz), 18 * 3600];
         }
         $c = $video['created_time'] ?? null;
 
-        return [$c ? Carbon::parse($c) : null, 18 * 3600];
+        return [$c && $this->opt('match_upload_time', false) ? Carbon::parse($c) : null, 12 * 3600];
     }
 
     protected function melden(Event $e, string $titel, string $text): int
