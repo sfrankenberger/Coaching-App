@@ -90,6 +90,17 @@ class Zugang
         return $n;
     }
 
+    /** Automatische Willkommensmail (Shop): im Testbetrieb nur an freigegebene Adressen. */
+    public function welcomeAutomatic(User $user, ?Offer $offer = null): bool
+    {
+        if (! $this->notifier->allowedInTestMode($user)) {
+            return false;
+        }
+        $this->welcome($user, $offer);
+
+        return true;
+    }
+
     /** Willkommensmail mit Anmeldelink (7 Tage gueltig). */
     public function welcome(User $user, ?Offer $offer = null): void
     {

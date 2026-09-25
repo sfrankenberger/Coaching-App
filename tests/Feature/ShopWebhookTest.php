@@ -152,4 +152,16 @@ class ShopWebhookTest extends TestCase
             $this->assertFalse(app(ProgramAccess::class)->canView($user, $this->club));
         });
     }
+
+    public function test_im_testbetrieb_keine_willkommensmail_an_fremde(): void
+    {
+        $this->a->forceFill(['settings' => array_merge($this->a->settings, ['notifications' => ['test_only' => true, 'test_emails' => ['test@example.com']]])])->save();
+
+        $this->hook($this->order('completed', [1879], 'neu@example.com', 700), 'order.updated')->assertJson(['status' => 'ok']);
+        $this->hook($this->order('completed', [1879], 'test@example.com', 701), 'order.updated')->assertJson(['status' => 'ok']);
+
+        Mail::assertNotSent(WillkommenMail::class, fn (WillkommenMail $m) => $m->hasTo('neu@example.com'));
+        Mail::assertSent(WillkommenMail::class, fn (WillkommenMail $m) => $m->hasTo('test@example.com'));
+        $this->assertNotNull(User::where('email', 'neu@example.com')->first(), 'Zugang trotzdem angelegt');
+    }
 }

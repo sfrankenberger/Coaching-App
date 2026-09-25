@@ -82,7 +82,7 @@ class WooCommerce
                 $this->zugang->grant($user, $offer, 'woocommerce', $ref, $paid, notify: ! $neu);
             }
             if ($neu) {
-                $this->zugang->welcome($user, $offers->first());
+                $this->zugang->welcomeAutomatic($user, $offers->first());
             }
 
             return ['ok', 'Zugang: '.$offers->pluck('title')->implode(', ').' für '.$email];
@@ -120,7 +120,7 @@ class WooCommerce
                 }
             }
             if ($neu) {
-                $this->zugang->welcome($user, $offers->first());
+                $this->zugang->welcomeAutomatic($user, $offers->first());
             }
 
             return ['ok', 'Abo aktiv: '.$offers->pluck('title')->implode(', ').' für '.$email];

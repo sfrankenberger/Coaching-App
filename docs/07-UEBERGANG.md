@@ -30,42 +30,11 @@ define('LEA_APP_BRIDGE_SECRET', '...');
 define('LEA_APP_URL', 'https://app.leawernli.ch');
 ```
 
-Snippet für `wp-content/novamira-sandbox/lea-app-bruecke.php` (als Plugin oder per `include`): Shortcode `[lea_app_knopf]` zeigt angemeldeten Personen den Knopf "Zur neuen App". Wer ihn sieht, steuert die Option `lea_app_kurse` (Kurs-IDs, kommagetrennt): nur Personen mit Zugang zu einem dieser Kurse. Leer heisst: alle.
+Das Snippet liegt im Repository unter `docs/wordpress/lea-neueapp-bruecke.php` und auf dem Server als `wp-content/novamira-sandbox/lea-neueapp-bruecke.php` (eingerichtet am 25.09.2026). Novamira lädt jede Datei im Sandbox-Ordner automatisch, ein Fehler schaltet alle Sandbox-Dateien in den abgesicherten Modus: darum eigener Präfix `lea_neueapp_` und `function_exists`-Wächter, und vor jeder Änderung `php -l`.
 
-```php
-<?php
-/**
- * Plugin Name: Lea - Bruecke zur neuen App
- * Description: Knopf "Zur neuen App" mit signiertem Einmal-Link. Angelegt: 25.09.2026
- */
-if (!defined('ABSPATH')) exit;
+Shortcode `[lea_neueapp_knopf]` (Optionen `text`, `weiter`). Sichtbar für Lea und das Team, dazu für Personen in den Kursen aus der Konstante `LEA_NEUEAPP_KURSE` im Snippet (kommagetrennte Kurs-IDs, anfangs leer). Für den Testkurs dort die Kurs-ID eintragen und den Shortcode auf der Kursseite oder im Dashboard des alten Mitgliederbereichs platzieren.
 
-function lea_app_token($weiter = '/') {
-    if (!defined('LEA_APP_BRIDGE_SECRET') || !is_user_logged_in()) return '';
-    $u = wp_get_current_user();
-    $daten = rtrim(strtr(base64_encode(wp_json_encode(array(
-        'e' => strtolower($u->user_email), 't' => time() + 60, 'n' => bin2hex(random_bytes(8)), 'w' => $weiter,
-    ))), '+/', '-_'), '=');
-    return $daten . '.' . hash_hmac('sha256', $daten, LEA_APP_BRIDGE_SECRET);
-}
-
-function lea_app_darf() {
-    $kurse = array_filter(array_map('intval', explode(',', (string) get_option('lea_app_kurse', ''))));
-    if (!$kurse) return is_user_logged_in();
-    if (!function_exists('lea_zugang_darf')) return current_user_can('manage_options');
-    foreach ($kurse as $k) { if (lea_zugang_darf($k)) return true; }
-    return current_user_can('manage_options');
-}
-
-add_shortcode('lea_app_knopf', function ($a) {
-    if (!lea_app_darf()) return '';
-    $a = shortcode_atts(array('text' => 'Zur neuen App', 'weiter' => '/'), $a);
-    $url = (defined('LEA_APP_URL') ? LEA_APP_URL : 'https://app.leawernli.ch') . '/sso?token=' . rawurlencode(lea_app_token($a['weiter']));
-    return '<a class="lea-app-knopf" href="' . esc_url($url) . '">' . esc_html($a['text']) . '</a>';
-});
-```
-
-Der Link wird beim Seitenaufbau erzeugt und gilt 60 Sekunden. Wer länger wartet, landet auf `/anmelden` mit dem Hinweis, sich dort anzumelden (Magic Link), das ist der Normalweg. Testen: `[lea_app_knopf weiter="/kurse"]` auf der Testkurs-Seite, Option `lea_app_kurse` = ID des Testkurses.
+Der Link wird beim Seitenaufbau erzeugt und gilt 60 Sekunden. Wer länger wartet, landet auf `/anmelden` mit dem Hinweis, sich dort anzumelden (Magic Link), das ist der Normalweg. Testen: als Lea angemeldet `[lea_neueapp_knopf weiter="/kurse"]` auf einer Seite in der Vorschau.
 
 ## 3. Was während des Parallelbetriebs wo gepflegt wird
 
@@ -81,7 +50,7 @@ Der Import ist wiederholbar (legacy_id) und überschreibt Inhaltsfelder aus Word
 
 ## 4. Umschalten (nach Leas Freigabe)
 
-1. Schreibstopp im alten Mitgliederbereich (Hinweis an alle, Knopf "Zur neuen App" für alle sichtbar: Option `lea_app_kurse` leeren)
+1. Schreibstopp im alten Mitgliederbereich (Hinweis an alle, Knopf "Zur neuen App" für alle: in `lea_neueapp_darf()` den Kursfilter entfernen)
 2. Letzter Import: `import:wordpress lea --only=alles`
 3. `/mitgliederbereich/*` auf leawernli.ch per 301 auf `https://app.leawernli.ch` umleiten
 4. Sandbox-Module im WordPress abschalten (nicht löschen), nach 30 Tagen aufräumen
