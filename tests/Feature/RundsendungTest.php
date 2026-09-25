@@ -70,4 +70,26 @@ class RundsendungTest extends TestCase
         Notification::assertSentToTimes($this->bea, AppNotification::class, 1);
         $this->in(fn () => $this->assertSame(1, Message::where('user_id', $this->lea->id)->where('body', 'like', 'Nur Kurs%')->count()));
     }
+
+    public function test_an_einzelne_persoenlich_ins_1_zu_1(): void
+    {
+        $andrea = User::factory()->create(['name' => 'Andrea Team']);
+        $this->a->users()->attach($andrea, ['role' => Role::Team->value, 'status' => 'active']);
+        $fremd = User::factory()->create();
+
+        $r = $this->in(fn () => app(Rundsendung::class)->send([
+            'an' => 'einzelne', 'user_ids' => [$this->anna->id, $fremd->id], 'text' => 'Hallo {vorname}, wie geht es dir?', 'persoenlich' => true,
+        ], $this->lea));
+
+        $this->assertSame(1, $r['empfaenger'], 'nur aktive Personen dieses Mandanten');
+        $this->assertSame(1, $r['persoenlich']);
+        $this->in(function () {
+            $m = Message::first();
+            $this->assertSame('Hallo Anna, wie geht es dir?', $m->body);
+            $this->assertSame($this->anna->id, $m->conversation->user_id);
+        });
+        Notification::assertSentToTimes($this->anna, AppNotification::class, 1);
+        Notification::assertNotSentTo($this->bea, AppNotification::class);
+        Notification::assertNotSentTo($andrea, AppNotification::class, 'das Team bekommt die eigene Nachricht nicht gemeldet');
+    }
 }
