@@ -17,4 +17,5 @@ $PHP artisan optimize
 $PHP artisan filament:optimize || true
 # Worker neu starten, damit er den neuen Code laedt (Dienst darf von diesem Benutzer neu gestartet werden, siehe sudoers)
 sudo -n systemctl restart lea-app-queue 2>/dev/null || $PHP artisan queue:restart
+sudo -n systemctl restart lea-app-reverb 2>/dev/null || true
 echo "Deploy fertig: $(git log -1 --oneline)"

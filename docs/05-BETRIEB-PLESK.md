@@ -104,6 +104,8 @@ Scheduler-Laeufe (`routes/console.php`): Termin-Erinnerungen und Nachfassen alle
 * * * * * cd /var/www/vhosts/leawernli.ch/app.leawernli.ch && /opt/plesk/php/8.4/bin/php artisan schedule:run >> /dev/null 2>&1
 ```
 
+Reverb (WebSockets fuer den Chat): Systemd-Dienst `lea-app-reverb.service` (`reverb:start --host=127.0.0.1 --port=8080`), Apache leitet `/app/` per `ProxyPass ws://` weiter (`/var/www/vhosts/system/app.leawernli.ch/conf/vhost.conf` und `vhost_ssl.conf`, danach `plesk sbin httpdmng --reconfigure-domain`). In der `.env`: `BROADCAST_CONNECTION=reverb`, `REVERB_APP_ID/KEY/SECRET`, `REVERB_HOST=app.leawernli.ch`, `REVERB_PORT=443`, `REVERB_SCHEME=https`, `REVERB_SERVER_HOST=127.0.0.1`, `REVERB_SERVER_PORT=8080`. Ohne Reverb fragt der Chat wie bisher alle 5 Sekunden nach. Deploy startet beide Dienste neu (`/etc/sudoers.d/lea-app`).
+
 Queue-Worker: Systemd-Dienst `lea-app-queue.service` (`queue:work --sleep=2 --tries=3 --max-time=3600`, startet sich nach einer Stunde und nach jedem Deploy neu: `systemctl restart lea-app-queue`). Stand: `systemctl status lea-app-queue`, Log `storage/logs/queue.log`.
 
 ## Backups

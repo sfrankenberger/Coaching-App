@@ -12,7 +12,7 @@
         </span>
     </div>
 
-    <div id="verlauf" class="flex flex-col gap-2" data-verlauf="{{ route('gespraech.neu', $conv) }}" data-letzte="{{ $messages->last()?->id ?? 0 }}" data-ich="{{ $ich->id }}">
+    <div id="verlauf" class="flex flex-col gap-2" data-verlauf="{{ route('gespraech.neu', $conv) }}" data-kanal="gespraech.{{ $conv->id }}" data-letzte="{{ $messages->last()?->id ?? 0 }}" data-ich="{{ $ich->id }}">
         @if ($versteckt)
             <a href="{{ route('gespraech.show', [$conv, 'alle' => 1]) }}" class="knopf knopf-leise self-center knopf-klein">{{ $versteckt }} ältere Nachrichten zeigen</a>
         @endif

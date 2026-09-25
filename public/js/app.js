@@ -184,8 +184,10 @@
             .catch(function () {})
             .finally(function () { laeuft = false; });
     }
-    setInterval(nachfragen, 5000);
+    var takt = setInterval(nachfragen, 5000);
     window.gespraechNachfragen = nachfragen;
+    /* Mit Reverb kommt die Nachricht sofort, dann reicht seltenes Nachfragen als Netz */
+    window.gespraechTakt = function (ms) { clearInterval(takt); takt = setInterval(nachfragen, ms); };
     document.addEventListener('visibilitychange', function () { if (!document.hidden) nachfragen(); });
 
     /* Senden */
@@ -722,4 +724,45 @@ document.addEventListener('medien:zeit', function (e) {
             }, 50);
         });
     }
+})();
+
+
+/* ---------- Reverb: offene Gespraeche erfahren sofort von neuen Nachrichten (Pusher-Protokoll, ohne Bibliothek) ---------- */
+(function () {
+    var meta = document.querySelector('meta[name="reverb"]');
+    var verlauf = document.querySelector('[data-verlauf][data-kanal]');
+    if (!meta || !verlauf || !window.WebSocket) return;
+    var cfg; try { cfg = JSON.parse(meta.content); } catch (e) { return; }
+    var kanal = 'private-' + verlauf.dataset.kanal;
+    var csrf = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
+    var versuch = 0, ws;
+
+    function verbinden() {
+        var port = cfg.port && cfg.port !== 443 && cfg.port !== 80 ? ':' + cfg.port : '';
+        ws = new WebSocket((cfg.scheme === 'https' ? 'wss' : 'ws') + '://' + cfg.host + port + '/app/' + cfg.key + '?protocol=7&client=js&version=1.0&flash=false');
+        ws.onopen = function () { versuch = 0; };
+        ws.onmessage = function (e) {
+            var m; try { m = JSON.parse(e.data); } catch (x) { return; }
+            if (m.event === 'pusher:connection_established') {
+                var d = typeof m.data === 'string' ? JSON.parse(m.data) : m.data;
+                fetch('/broadcasting/auth', { method: 'POST', credentials: 'same-origin', headers: { 'Content-Type': 'application/json', 'Accept': 'application/json', 'X-CSRF-TOKEN': csrf }, body: JSON.stringify({ socket_id: d.socket_id, channel_name: kanal }) })
+                    .then(function (r) { return r.ok ? r.json() : null; })
+                    .then(function (a) { if (a && a.auth) ws.send(JSON.stringify({ event: 'pusher:subscribe', data: { channel: kanal, auth: a.auth } })); })
+                    .catch(function () {});
+            } else if (m.event === 'pusher_internal:subscription_succeeded') {
+                if (window.gespraechTakt) window.gespraechTakt(20000);
+            } else if (m.event === 'pusher:ping') {
+                ws.send(JSON.stringify({ event: 'pusher:pong', data: {} }));
+            } else if (m.event === 'nachricht' && window.gespraechNachfragen) {
+                window.gespraechNachfragen();
+            }
+        };
+        ws.onclose = function () {
+            if (window.gespraechTakt) window.gespraechTakt(5000);
+            setTimeout(verbinden, Math.min(30000, 1000 * Math.pow(2, versuch++)));
+        };
+        ws.onerror = function () { try { ws.close(); } catch (x) {} };
+    }
+    verbinden();
+    document.addEventListener('visibilitychange', function () { if (!document.hidden && ws && ws.readyState === WebSocket.CLOSED) verbinden(); });
 })();
