@@ -7,6 +7,7 @@ use App\Import\WordPress\ProgramsImport;
 use App\Import\WordPress\WordPressSource;
 use App\Models\Answer;
 use App\Models\Entitlement;
+use App\Models\Exercise;
 use App\Models\Offer;
 use App\Models\Program;
 use App\Models\ProgramMember;
@@ -81,6 +82,21 @@ class ImportProgramsTest extends TestCase
         ]]));
         file_put_contents($this->dir.'/arbeitsbuch-geld.json', json_encode(['buch' => ['titel' => 'Geldbuch'], 'schritte' => [['nr' => 1, 'key' => 'g01', 'titel' => 'Start', 'uebungen' => [['nr' => 1, 'key' => 'g01-u01', 'titel' => 'Kontostand', 'teile' => [['t' => 'frage', 'text' => 'Wie viel?']]]]]]]));
 
+        // Arbeitsbuch mit den neuen Bausteinen (Liste, zwei Spalten, Brief, Spiegel, Aufnahme, Mitnehmen, Praxis)
+        file_put_contents($this->dir.'/arbeitsbuch-liebesbrief.json', json_encode(['buch' => ['titel' => 'Liebesbrief'], 'schritte' => [
+            ['nr' => 1, 'key' => 'lb01', 'titel' => 'Sammeln', 'uebungen' => [['nr' => 1, 'key' => 'lb01-u01', 'titel' => 'Wuensche', 'teile' => [
+                ['t' => 'liste', 'text' => 'Was du dir wuenschst', 'platzhalter' => 'Ich wuensche mir ...', 'mehr' => 'Noch einer'],
+                ['t' => 'liste2', 'links' => 'Der Gedanke', 'rechts' => 'Umgedreht'],
+                ['t' => 'brieffeld', 'text' => 'Dein Brief', 'zeilen' => 18],
+            ]]]],
+            ['nr' => 2, 'key' => 'lb02', 'titel' => 'Lesen', 'uebungen' => [['nr' => 1, 'key' => 'lb02-u01', 'titel' => 'Laut lesen', 'teile' => [
+                ['t' => 'spiegel', 'feld' => 'lb01-u01-f1', 'text' => 'Das hast du dir gewuenscht'],
+                ['t' => 'aufnahme', 'text' => 'Deine Aufnahme', 'spiegel' => 'lb01-u01-f3'],
+                ['t' => 'mitnehmen', 'text' => 'Nimm ihn mit'],
+                ['t' => 'praxis'],
+            ]]]],
+        ]]));
+
         $this->lea = Tenant::create(['slug' => 'lea', 'name' => 'Lea', 'settings' => ['import' => ['wordpress' => [
             'club_product_id' => 1524, 'program_types' => ['1849' => 'hybrid'], 'workbook_dir' => $this->dir,
         ]]]]);
@@ -115,6 +131,8 @@ class ImportProgramsTest extends TestCase
         $this->umeta(21, 'lea_wb_geteilt', 'alles');
         $this->umeta(22, 'lea_wb_antworten', serialize(['s01-u01-f2' => 'Privat']));
         $this->umeta(22, 'lea_wb_antworten_geld', serialize(['g01-u01-f1' => '500']));
+        $this->umeta(21, 'lea_wb_antworten_liebesbrief', serialize(['lb01-u01-f1' => "Mehr Ruhe\nMehr Mut\n", 'lb01-u01-f2' => "Ich bin zu laut :: ich bin lebendig\nIch bin zu viel", 'lb01-u01-f3' => 'Liebe Anna, du darfst.']));
+
         $this->umeta(22, 'lea_wb_geteilt_geld', serialize(['g01-u01' => time()]));
     }
 
@@ -148,7 +166,7 @@ class ImportProgramsTest extends TestCase
         $stats = $this->import();
 
         app(CurrentTenant::class)->run($this->lea, function () use ($stats) {
-            $this->assertSame(4 + 1, $stats['programme'], '3 Kurse + Workbook (eigenes) + Geldbuch (im Kurs)');
+            $this->assertSame(4 + 2, $stats['programme'], '3 Kurse + Workbook und Liebesbrief (eigene) + Geldbuch (im Kurs)');
             $hybrid = Program::where('legacy_id', '1849')->first();
             $this->assertSame('hybrid', $hybrid->type);
             $this->assertSame('weekly', $hybrid->pacing);
@@ -239,6 +257,41 @@ class ImportProgramsTest extends TestCase
         });
     }
 
+    public function test_arbeitsbuch_bausteine_antworten_freigabe_und_haken(): void
+    {
+        // Cara hat im alten Bereich "alles teilen" gewaehlt und eine Uebung selbst abgehakt
+        $cara = User::factory()->create();
+        $this->lea->users()->attach($cara, ['role' => Role::Member->value, 'status' => 'active', 'legacy_id' => '23']);
+        $this->umeta(23, 'lea_wb_antworten', serialize(['s01-u01-f2' => 'Mehr Mut']));
+        $this->umeta(23, 'lea_wb_freigabe', 'alles');
+        $this->umeta(23, 'lea_wb_antworten_erledigt', serialize(['s01-u01']));
+        $this->import();
+
+        app(CurrentTenant::class)->run($this->lea, function () use ($cara) {
+            $buch = Program::where('legacy_id', 'buch-liebesbrief')->first();
+            $ex = Exercise::whereIn('unit_id', $buch->units()->pluck('id'))->get()->keyBy('legacy_key');
+            $this->assertSame(['list', 'pairs', 'letter'], [$ex['lb01-u01-f1']->type, $ex['lb01-u01-f2']->type, $ex['lb01-u01-f3']->type]);
+            $this->assertSame('Ich wuensche mir ...', $ex['lb01-u01-f1']->options['platzhalter']);
+            $this->assertSame(18, $ex['lb01-u01-f3']->options['zeilen']);
+            $this->assertSame(['mirror', 'audio', 'takeaway', 'practice'], [$ex['lb02-u01-f1']->type, $ex['lb02-u01-f2']->type, $ex['lb02-u01-f3']->type, $ex['lb02-u01-f4']->type]);
+            $this->assertSame($ex['lb01-u01-f1']->id, $ex['lb02-u01-f1']->options['exercise_id'], 'Spiegel zeigt auf die Liste');
+            $this->assertSame($ex['lb01-u01-f3']->id, $ex['lb02-u01-f2']->options['exercise_id'], 'Aufnahme liest den Brief vor');
+            $this->assertSame(21, $ex['lb02-u01-f4']->options['tage']);
+
+            $a = Answer::where('user_id', $this->anna->id)->get()->keyBy('exercise_id');
+            $this->assertSame(['Mehr Ruhe', 'Mehr Mut'], $a[$ex['lb01-u01-f1']->id]->value['v']);
+            $this->assertSame([['Ich bin zu laut', 'ich bin lebendig'], ['Ich bin zu viel', '']], $a[$ex['lb01-u01-f2']->id]->value['v']);
+            $this->assertSame('Liebe Anna, du darfst.', $a[$ex['lb01-u01-f3']->id]->value['v']);
+
+            // Cara: "alles teilen" aus lea_wb_freigabe, Erledigt-Haken wird Fortschritt
+            $wb = Program::where('legacy_id', 'buch-workbook')->first();
+            $this->assertSame('alles', ProgramMember::where('program_id', $wb->id)->where('user_id', $cara->id)->value('share_mode'));
+            $this->assertTrue(Answer::where('user_id', $cara->id)->whereHas('exercise', fn ($q) => $q->where('legacy_key', 's01-u01-f2'))->first()->shared_with_coach);
+            $unit = Unit::where('legacy_id', 'wb-workbook-s01-u01')->first();
+            $this->assertTrue(Progress::where('user_id', $cara->id)->where('unit_id', $unit->id)->whereNotNull('completed_at')->exists());
+        });
+    }
+
     public function test_import_ist_wiederholbar(): void
     {
         $this->import();
@@ -246,7 +299,7 @@ class ImportProgramsTest extends TestCase
         $this->import();
 
         app(CurrentTenant::class)->run($this->lea, function () {
-            $this->assertSame(4, Program::count(), '3 Kurse + eigenstaendiges Workbook');
+            $this->assertSame(5, Program::count(), '3 Kurse + eigenstaendiges Workbook und Liebesbrief');
             $this->assertSame('mein-hybrid', Program::where('legacy_id', '1849')->first()->slug, 'Slug bleibt');
             $this->assertSame(2, Unit::where('program_id', Program::where('legacy_id', '1849')->first()->id)->count());
             $this->assertSame(1, Entitlement::where('user_id', $this->anna->id)->where('source_ref', '2757')->count());

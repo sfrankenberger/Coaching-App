@@ -848,3 +848,28 @@
     .mikro.an { background: var(--c-danger); color: #fff; animation: pulsieren 1.2s ease-in-out infinite; }
     @keyframes pulsieren { 50% { box-shadow: 0 0 0 6px color-mix(in srgb, var(--c-danger) 25%, transparent); } }
 }
+
+@layer components {
+    /* Arbeitsbuch-Bausteine */
+    .wb-liste ul { list-style: none; margin: 6px 0 4px; padding: 0; }
+    .wb-liste li { display: flex; gap: 8px; align-items: center; margin: 0 0 8px; }
+    .wb-liste li .feld { padding: 10px 13px; }
+    .wb-paare-kopf { display: grid; grid-template-columns: 1fr 1fr 32px; gap: 8px; font-size: var(--fs-sm); font-weight: 700; color: var(--c-muted); margin-top: 6px; }
+    .wb-paare li { display: grid; grid-template-columns: 1fr 1fr 32px; }
+    .wb-brief { font-size: 16px; line-height: 1.75; }
+    .wb-spiegel, .wb-vorlage { background: var(--c-surface); border-radius: 12px; padding: 14px 16px; }
+    .wb-vorlage { margin: 6px 0 12px; max-height: 260px; overflow: auto; }
+    .wb-spiegel ul { margin: 6px 0 0; padding-left: 20px; list-style: disc; }
+    .wb-mitnehmen-text { background: #fff; border: 1px solid var(--c-card-border); border-radius: 12px; padding: 14px 16px; margin-top: 8px; max-height: 320px; overflow: auto; }
+    .wb-mitnehmen-text h4 { font-family: var(--font-heading); font-size: var(--fs-lg); margin: 10px 0 4px; }
+    .wb-mitnehmen-text h4:first-child { margin-top: 0; }
+    .wb-rad svg { width: min(100%, 320px); display: block; margin: 0 auto; }
+}
+
+@media print {
+    body.drucke-mitnehmen * { visibility: hidden; }
+    body.drucke-mitnehmen .wird-gedruckt, body.drucke-mitnehmen .wird-gedruckt * { visibility: visible; }
+    body.drucke-mitnehmen .wird-gedruckt { position: absolute; inset: 0; }
+    body.drucke-mitnehmen .wird-gedruckt .wb-mitnehmen-text { max-height: none; border: 0; }
+    body.drucke-mitnehmen .wird-gedruckt button { display: none; }
+}

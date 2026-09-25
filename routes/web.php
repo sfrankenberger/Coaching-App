@@ -23,6 +23,7 @@ use App\Http\Controllers\ReflexionController;
 use App\Http\Controllers\TelegramController;
 use App\Http\Controllers\TermineController;
 use App\Http\Controllers\ThemenController;
+use App\Http\Controllers\UebungController;
 use App\Http\Controllers\WillkommenController;
 use App\Tenancy\Branding;
 use Illuminate\Support\Facades\Route;
@@ -81,6 +82,9 @@ Route::middleware(['auth', 'membership'])->group(function () {
     // Kursraum
     Route::get('/kurse', [KursController::class, 'index'])->name('kurse.index');
     Route::post('/kurse/antwort', [KursController::class, 'antwort'])->name('kurse.antwort');
+    Route::post('/kurse/antwort/aufnahme', [UebungController::class, 'aufnahme'])->middleware('throttle:20,10')->name('uebung.aufnahme');
+    Route::get('/kurse/antwort/{antwort}/aufnahme', [UebungController::class, 'hoeren'])->name('uebung.aufnahme.hoeren');
+    Route::post('/kurse/uebung/{uebung}/praxis', [UebungController::class, 'praxis'])->name('uebung.praxis');
     Route::get('/kurse/{program:slug}', [KursController::class, 'show'])->name('kurse.show');
     Route::post('/kurse/{program:slug}/freigabe', [KursController::class, 'freigabe'])->name('kurse.freigabe');
     Route::get('/kurse/{program:slug}/schritt/{schritt}', [KursController::class, 'schritt'])->name('kurse.schritt');

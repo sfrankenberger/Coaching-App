@@ -75,6 +75,24 @@ class UnitsRelationManager extends RelationManager
                             Textarea::make('prompt')->label('Frage oder Text')->rows(2)->columnSpanFull(),
                             TagsInput::make('options.values')->label('Werte, eine je Eintrag')
                                 ->visible(fn ($get) => in_array($get('type'), ['values', 'choice'], true))->columnSpanFull(),
+                            TextInput::make('options.platzhalter')->label('Platzhalter im Feld')->maxLength(160)
+                                ->visible(fn ($get) => in_array($get('type'), ['list', 'letter'], true)),
+                            TextInput::make('options.mehr')->label('Knopf für eine neue Zeile')->placeholder('Noch eine')->maxLength(60)
+                                ->visible(fn ($get) => in_array($get('type'), ['list', 'pairs'], true)),
+                            TextInput::make('options.links')->label('Überschrift links')->placeholder('Der Gedanke')->maxLength(60)
+                                ->visible(fn ($get) => $get('type') === 'pairs'),
+                            TextInput::make('options.rechts')->label('Überschrift rechts')->placeholder('Umgedreht')->maxLength(60)
+                                ->visible(fn ($get) => $get('type') === 'pairs'),
+                            TextInput::make('options.zeilen')->label('Höhe in Zeilen')->numeric()->minValue(4)->maxValue(40)->placeholder('16')
+                                ->visible(fn ($get) => $get('type') === 'letter'),
+                            Select::make('options.exercise_id')->label(fn ($get) => $get('type') === 'audio' ? 'Text zum Ablesen aus' : 'Zeigt die Antwort von')->native(false)->searchable()
+                                ->options(fn () => Exercise::whereIn('unit_id', $this->getOwnerRecord()->units()->pluck('id'))->whereIn('type', Exercise::TEXTLIKE)->with('unit:id,title')->get()
+                                    ->mapWithKeys(fn (Exercise $e) => [$e->id => $e->unit->title.': '.Str::limit($e->prompt ?: $e->title ?: Exercise::TYPES[$e->type], 50)])->all())
+                                ->visible(fn ($get) => in_array($get('type'), ['mirror', 'audio'], true))->columnSpanFull(),
+                            TextInput::make('options.tage')->label('Anzahl Tage')->numeric()->minValue(1)->maxValue(365)->placeholder('21')
+                                ->visible(fn ($get) => $get('type') === 'practice'),
+                            TextInput::make('options.aufgabe')->label('Tägliche Aufgabe')->placeholder('Deinen Brief laut lesen')->maxLength(160)
+                                ->visible(fn ($get) => $get('type') === 'practice'),
                         ])->columns(2)->defaultItems(0)->addActionLabel('Übungsteil hinzufügen')->reorderableWithButtons()->collapsible()
                         ->itemLabel(fn (array $state) => ($state['title'] ?? null) ?: Str::limit($state['prompt'] ?? 'Übungsteil', 60)),
                 ]),

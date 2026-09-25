@@ -149,7 +149,23 @@ class KursController extends Controller
         $material = app(Begleitung::class)->resourcesQuery($user)
             ->whereHas('links', fn ($l) => $l->where('resourceable_type', 'unit')->where('resourceable_id', $einheit->id))->orderBy('title')->get();
 
+        // Spiegel, Aufnahme-Vorlage und Mitnehmen brauchen Antworten aus anderen Einheiten
+        $quellIds = $einheit->exercises->map(fn ($e) => $e->options['exercise_id'] ?? null)->filter()->values();
+        $quellen = $quellIds->isEmpty() ? collect() : Answer::where('user_id', $user->id)->whereIn('exercise_id', $quellIds)->get()->keyBy('exercise_id');
+        $mitnehmen = collect();
+        if ($einheit->exercises->contains('type', 'takeaway')) {
+            $unitIds = $ordered->pluck('id');
+            $mitnehmen = Answer::where('user_id', $user->id)
+                ->whereHas('exercise', fn ($q) => $q->whereIn('unit_id', $unitIds)->whereIn('type', ['list', 'pairs', 'letter']))
+                ->with('exercise.unit')->get()
+                ->sortBy(fn ($a) => sprintf('%05d-%05d', $unitIds->search($a->exercise->unit_id), $a->exercise->position))
+                ->map(fn ($a) => ['titel' => $a->exercise->prompt ?: $a->exercise->unit->title, 'text' => Exercise::alsText($a->value['v'] ?? null)])
+                ->filter(fn ($z) => $z['text'] !== '')->values();
+        }
+
         return view('kurse.einheit', [
+            'quellen' => $quellen,
+            'mitnehmen' => $mitnehmen,
             'material' => $material,
             'position' => MediaPosition::where('user_id', $user->id)->where('key', 'unit-'.$einheit->id)->value('seconds'),
             'program' => $program,
@@ -200,7 +216,11 @@ class KursController extends Controller
             'scale' => filled($value) ? max(1, min(10, (int) $value)) : null,
             'values', 'choice' => array_values(array_filter(array_map('strval', (array) $value))),
             'checkbox' => (bool) $value,
-            default => mb_substr(strip_tags((string) $value), 0, 20000),
+            'list' => collect((array) $value)->map(fn ($z) => mb_substr(trim(strip_tags((string) $z)), 0, 1000))->filter()->take(200)->values()->all(),
+            'pairs' => collect((array) $value)->map(fn ($z) => array_map(fn ($x) => mb_substr(trim(strip_tags((string) $x)), 0, 1000), array_slice(array_pad((array) $z, 2, ''), 0, 2)))
+                ->filter(fn ($z) => $z[0] !== '' || $z[1] !== '')->take(200)->values()->all(),
+            'audio' => abort(422),
+            default => mb_substr(strip_tags((string) $value), 0, 50000),
         };
 
         $user = $request->user();

@@ -38,24 +38,34 @@ class ConvertAudio implements ShouldQueue
             if (! $msg || ! $msg->audio_path || str_ends_with($msg->audio_path, '.m4a')) {
                 return;
             }
-            $ein = Storage::path($msg->audio_path);
-            if (! is_file($ein)) {
-                return;
-            }
-            $ziel = preg_replace('~\.[a-z0-9]+$~i', '', $msg->audio_path).'.m4a';
-            $aus = Storage::path($ziel);
-
-            $r = Process::timeout(240)->run([config('services.ffmpeg.bin', 'ffmpeg'), '-y', '-loglevel', 'error', '-i', $ein, '-vn', '-c:a', 'aac', '-b:a', '64k', '-movflags', '+faststart', $aus]);
-            if (! $r->successful() || ! is_file($aus) || filesize($aus) < 100) {
-                Log::warning('Sprachnachricht nicht umgewandelt', ['message' => $msg->id, 'fehler' => mb_substr($r->errorOutput(), 0, 500)]);
-                @unlink($aus);
-
+            $ziel = self::m4a($msg->audio_path);
+            if (! $ziel) {
                 return;
             }
             $alt = $msg->audio_path;
             $msg->forceFill(['audio_path' => $ziel])->saveQuietly();
             Storage::delete($alt);
         });
+    }
+
+    /** Wandelt eine Datei im Speicher nach m4a, gibt den neuen Pfad zurueck oder null. */
+    public static function m4a(string $pfad): ?string
+    {
+        $ein = Storage::path($pfad);
+        if (! is_file($ein)) {
+            return null;
+        }
+        $ziel = preg_replace('~\.[a-z0-9]+$~i', '', $pfad).'.m4a';
+        $aus = Storage::path($ziel);
+        $r = Process::timeout(240)->run([config('services.ffmpeg.bin', 'ffmpeg'), '-y', '-loglevel', 'error', '-i', $ein, '-vn', '-c:a', 'aac', '-b:a', '64k', '-movflags', '+faststart', $aus]);
+        if (! $r->successful() || ! is_file($aus) || filesize($aus) < 100) {
+            Log::warning('Audio nicht umgewandelt', ['pfad' => $pfad, 'fehler' => mb_substr($r->errorOutput(), 0, 500)]);
+            @unlink($aus);
+
+            return null;
+        }
+
+        return $ziel;
     }
 
     /** Braucht diese Datei eine Umwandlung? */

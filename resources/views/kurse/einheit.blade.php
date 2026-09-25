@@ -137,6 +137,117 @@
                             <span class="text-base {{ $v ? 'text-muted line-through' : '' }}">{{ $ex->prompt ?: $ex->title }}</span>
                         </label>
                         @break
+                    @case('list')
+                        @php $zeilen = array_values(array_filter((array) $v, fn ($z) => is_string($z) && trim($z) !== '')); @endphp
+                        <div class="mb-4 wb-liste" data-antwort-liste="{{ $ex->id }}">
+                            @if ($ex->prompt)<span class="feld-label feld-label-weich">{{ $ex->prompt }}</span>@endif
+                            <ul>
+                                @foreach ([...$zeilen, ''] as $z)
+                                    <li><input type="text" class="feld" value="{{ $z }}" placeholder="{{ $ex->options['platzhalter'] ?? 'Schreib eine Zeile ...' }}"><button type="button" class="knopf-rund" data-zeile-weg aria-label="Zeile entfernen"><i class="fa-solid fa-xmark"></i></button></li>
+                                @endforeach
+                            </ul>
+                            <div class="flex items-center gap-3"><button type="button" class="knopf knopf-text knopf-klein" data-zeile-mehr><i class="fa-solid fa-plus"></i>{{ $ex->options['mehr'] ?? 'Noch eine' }}</button><span class="hinweis" data-status></span></div>
+                        </div>
+                        @break
+                    @case('pairs')
+                        @php $paare = array_values(array_filter((array) $v, fn ($z) => is_array($z))); @endphp
+                        <div class="mb-4 wb-liste wb-paare" data-antwort-paare="{{ $ex->id }}">
+                            @if ($ex->prompt)<span class="feld-label feld-label-weich">{{ $ex->prompt }}</span>@endif
+                            <div class="wb-paare-kopf"><span>{{ $ex->options['links'] ?? 'Der Gedanke' }}</span><span>{{ $ex->options['rechts'] ?? 'Umgedreht' }}</span></div>
+                            <ul>
+                                @foreach ([...$paare, ['', '']] as $p)
+                                    <li><input type="text" class="feld" value="{{ $p[0] ?? '' }}" placeholder="{{ $ex->options['platzhalter_links'] ?? '' }}"><input type="text" class="feld" value="{{ $p[1] ?? '' }}" placeholder="{{ $ex->options['platzhalter_rechts'] ?? '' }}"><button type="button" class="knopf-rund" data-zeile-weg aria-label="Zeile entfernen"><i class="fa-solid fa-xmark"></i></button></li>
+                                @endforeach
+                            </ul>
+                            <div class="flex items-center gap-3"><button type="button" class="knopf knopf-text knopf-klein" data-zeile-mehr><i class="fa-solid fa-plus"></i>{{ $ex->options['mehr'] ?? 'Noch einer' }}</button><span class="hinweis" data-status></span></div>
+                        </div>
+                        @break
+                    @case('letter')
+                        <div class="mb-4">
+                            @if ($ex->prompt)<label for="ex-{{ $ex->id }}" class="feld-label feld-label-weich">{{ $ex->prompt }}</label>@endif
+                            <div class="relative">
+                                <textarea id="ex-{{ $ex->id }}" class="feld wb-brief" rows="{{ (int) ($ex->options['zeilen'] ?? 16) }}" placeholder="{{ $ex->options['platzhalter'] ?? 'Ich bin ...' }}" data-antwort="{{ $ex->id }}">{{ is_string($v) ? $v : '' }}</textarea>
+                                <span class="absolute right-3 bottom-2 text-xs text-muted" data-status></span>
+                            </div>
+                        </div>
+                        @break
+                    @case('mirror')
+                        @php $quelle = \App\Models\Exercise::alsText($quellen->get($ex->options['exercise_id'] ?? 0)?->value['v'] ?? null); @endphp
+                        <div class="mb-4 wb-spiegel">
+                            <span class="eyebrow">{{ $ex->prompt ?: 'Was du gesammelt hast' }}</span>
+                            @if ($quelle === '')
+                                <p class="hinweis" style="margin:6px 0 0">{{ $ex->options['leer'] ?? 'Hier steht noch nichts.' }}</p>
+                            @elseif (str_contains($quelle, "\n"))
+                                <ul>@foreach (explode("\n", $quelle) as $z)<li>{{ $z }}</li>@endforeach</ul>
+                            @else
+                                <p style="margin:6px 0 0">{{ $quelle }}</p>
+                            @endif
+                        </div>
+                        @break
+                    @case('audio')
+                        @php $vorlage = \App\Models\Exercise::alsText($quellen->get($ex->options['exercise_id'] ?? 0)?->value['v'] ?? null); $hatTon = is_string($v) && $v !== ''; @endphp
+                        <div class="mb-4 wb-ton" data-aufnahme-uebung="{{ $ex->id }}" data-ziel="{{ route('uebung.aufnahme') }}">
+                            @if ($ex->prompt)<span class="feld-label feld-label-weich">{{ $ex->prompt }}</span>@endif
+                            @if ($vorlage !== '')
+                                <div class="wb-vorlage"><span class="eyebrow">Dein Text zum Ablesen</span><div class="whitespace-pre-line" style="margin-top:6px">{{ $vorlage }}</div></div>
+                            @endif
+                            <div class="flex flex-wrap items-center gap-2">
+                                <button type="button" class="knopf" data-ton-start><i class="fa-solid fa-microphone"></i>{{ $hatTon ? 'Nochmal aufnehmen' : 'Aufnehmen' }}</button>
+                                <button type="button" class="knopf knopf-dunkel" data-ton-stopp hidden><i class="fa-solid fa-stop"></i>Fertig</button>
+                                <span class="hinweis" data-ton-zeit></span>
+                            </div>
+                            <audio controls preload="none" data-ton-spieler @if ($hatTon) src="{{ route('uebung.aufnahme.hoeren', $a) }}" @else hidden @endif style="width:100%;margin-top:10px"></audio>
+                        </div>
+                        @break
+                    @case('takeaway')
+                        <div class="mb-4 wb-mitnehmen" data-mitnehmen>
+                            <span class="eyebrow">{{ $ex->prompt ?: 'Nimm es mit' }}</span>
+                            @if ($mitnehmen->isEmpty())
+                                <p class="hinweis" style="margin:6px 0 0">Sobald du etwas aufgeschrieben hast, kannst du es hier mitnehmen.</p>
+                            @else
+                                <div class="wb-mitnehmen-text" data-mitnehmen-text>@foreach ($mitnehmen as $m)<h4>{{ $m['titel'] }}</h4><p class="whitespace-pre-line">{{ $m['text'] }}</p>@endforeach</div>
+                                <div class="flex flex-wrap gap-2" style="margin-top:10px">
+                                    <button type="button" class="knopf knopf-ruhig" data-kopieren="{{ $mitnehmen->map(fn ($m) => $m['titel']."\n".$m['text'])->join("\n\n") }}"><i class="fa-regular fa-copy"></i>Text kopieren</button>
+                                    <button type="button" class="knopf knopf-ruhig" data-drucken><i class="fa-solid fa-print"></i>Drucken oder als PDF</button>
+                                </div>
+                            @endif
+                        </div>
+                        @break
+                    @case('practice')
+                        @php $start = is_string($v) ? \Illuminate\Support\Carbon::parse($v) : null; $tage = (int) ($ex->options['tage'] ?? 21); $tag = $start ? min($tage, (int) $start->copy()->startOfDay()->diffInDays(now()->startOfDay()) + 1) : 0; @endphp
+                        <div class="mb-4 karte flaeche">
+                            <span class="eyebrow">{{ $ex->prompt ?: 'Deine tägliche Praxis' }}</span>
+                            @if ($start)
+                                <p class="karte-titel" style="margin:6px 0">Tag {{ $tag }} von {{ $tage }}</p>
+                                <span class="balken" style="display:block"><span style="width: {{ round($tag / $tage * 100) }}%"></span></span>
+                                @if ($tag >= 7 && $tag <= 10)<p class="x" style="margin:10px 0 0">Um diese Zeit meldet sich oft der Widerstand. Das ist normal und ein gutes Zeichen. Bleib dran.</p>@endif
+                            @else
+                                <p class="x" style="margin:6px 0 10px">{{ $tage }} Tage, jeden Tag ein paar Minuten. Du bekommst dafür eine tägliche Aufgabe im Journal.</p>
+                                <form method="post" action="{{ route('uebung.praxis', $ex) }}">@csrf<button type="submit" class="knopf"><i class="fa-solid fa-play"></i>Praxis starten</button></form>
+                            @endif
+                        </div>
+                        @break
+                    @case('wheel')
+                        @php
+                            $skalen = $unit->exercises->where('type', 'scale')->values();
+                            $n = max(3, $skalen->count());
+                            $punkte = $skalen->map(function ($s, $i) use ($answers, $n) {
+                                $w = (int) ($answers->get($s->id)?->value['v'] ?? 0);
+                                $winkel = -M_PI / 2 + 2 * M_PI * $i / $n;
+                                return [round(100 + cos($winkel) * 8 * $w, 1), round(100 + sin($winkel) * 8 * $w, 1), $s, $winkel];
+                            });
+                        @endphp
+                        @if ($skalen->count() >= 3)
+                            <figure class="mb-4 wb-rad" data-lebensrad>
+                                <svg viewBox="0 0 200 200" role="img" aria-label="Lebensrad">
+                                    @foreach ([2, 4, 6, 8, 10] as $r)<circle cx="100" cy="100" r="{{ $r * 8 }}" fill="none" stroke="var(--c-card-border)" stroke-width=".6"/>@endforeach
+                                    @foreach ($punkte as [$x, $y, $s, $w])<line x1="100" y1="100" x2="{{ round(100 + cos($w) * 80, 1) }}" y2="{{ round(100 + sin($w) * 80, 1) }}" stroke="var(--c-card-border)" stroke-width=".6"/>@endforeach
+                                    <polygon data-rad-flaeche points="{{ $punkte->map(fn ($p) => $p[0].','.$p[1])->join(' ') }}" fill="color-mix(in srgb, var(--c-primary) 25%, transparent)" stroke="var(--c-primary)" stroke-width="1.5"/>
+                                </svg>
+                                <figcaption class="hinweis" style="text-align:center">{{ $ex->prompt ?: 'Dein Lebensrad' }}: {{ $skalen->map(fn ($s) => rtrim($s->prompt ?: $s->title, ':'))->join(' · ') }}</figcaption>
+                            </figure>
+                        @endif
+                        @break
                 @endswitch
             @endforeach
 

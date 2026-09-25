@@ -14,6 +14,7 @@ use App\Models\ProgramStep;
 use App\Models\Progress;
 use App\Models\Tenant;
 use App\Models\Unit;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 
 /**
@@ -284,6 +285,7 @@ class ProgramsImport
 
             $this->stats['programme']++;
             $this->importBookSteps($program, $key, (array) $steps);
+            $this->resolveReferences($program);
             $this->importBookAnswers($program, $key, $book);
         }
     }
@@ -347,6 +349,14 @@ class ProgramsImport
                 'werte' => ['values', ['values' => collect((array) ($teil['zeilen'] ?? []))->flatten()->map(fn ($v) => (string) $v)->values()->all()]],
                 'sub' => ['heading', null],
                 'lead', 'text' => ['hint', null],
+                'liste' => ['list', array_filter(['platzhalter' => $teil['platzhalter'] ?? null, 'mehr' => $teil['mehr'] ?? null])],
+                'liste2' => ['pairs', array_filter(['links' => $teil['links'] ?? null, 'rechts' => $teil['rechts'] ?? null, 'platzhalter_links' => $teil['platzhalter_links'] ?? null, 'platzhalter_rechts' => $teil['platzhalter_rechts'] ?? null, 'mehr' => $teil['mehr'] ?? null])],
+                'brieffeld' => ['letter', array_filter(['platzhalter' => $teil['platzhalter'] ?? null, 'zeilen' => isset($teil['zeilen']) ? (int) $teil['zeilen'] : null])],
+                'spiegel' => ['mirror', array_filter(['quelle' => $teil['feld'] ?? null, 'leer' => $teil['leer'] ?? null])],
+                'aufnahme' => ['audio', array_filter(['quelle' => $teil['spiegel'] ?? null])],
+                'mitnehmen' => ['takeaway', null],
+                'praxis' => ['practice', ['tage' => (int) ($teil['tage'] ?? 21), 'aufgabe' => $teil['aufgabe'] ?? 'Deinen Brief laut lesen']],
+                'grafik' => ($teil['bild'] ?? '') === 'lebensrad' ? ['wheel', null] : [null, null],
                 default => [null, null],
             };
             if ($t === 'sub') {
@@ -356,24 +366,91 @@ class ProgramsImport
                 continue;
             }
             $ex = Exercise::firstOrNew(['unit_id' => $unit->id, 'legacy_key' => $ukey.'-f'.$i]);
+            // Verweise auf andere Felder (Spiegel, Aufnahme) bleiben erhalten, die Aufloesung macht resolveReferences
+            $options = $options ? array_merge($ex->options ?? [], $options) : null;
             $ex->fill([
                 'type' => $type,
                 'position' => $i,
                 'title' => $t === 'sub' ? $text : ($type === 'scale' && $lastSub ? $lastSub : null),
                 'prompt' => $t === 'sub' ? null : ($text ?: ($type === 'note' ? 'Notizen' : null)),
-                'options' => $options,
+                'options' => $options ?: null,
             ])->save();
             $this->stats['uebungsteile']++;
         }
+    }
+
+    /** Spiegel und Aufnahme zeigen die Antwort eines anderen Feldes: Feldschluessel -> exercise_id. */
+    protected function resolveReferences(Program $program): void
+    {
+        $exercises = Exercise::whereIn('unit_id', $program->units()->pluck('id'))->get();
+        $byKey = $exercises->whereNotNull('legacy_key')->pluck('id', 'legacy_key');
+        foreach ($exercises->whereIn('type', ['mirror', 'audio']) as $ex) {
+            $quelle = $ex->options['quelle'] ?? null;
+            if ($quelle && isset($byKey[$quelle])) {
+                $ex->options = array_merge($ex->options ?? [], ['exercise_id' => $byKey[$quelle]]);
+                $ex->save();
+            }
+        }
+    }
+
+    /** Antwortwert aus WordPress in die Form des Uebungsteils bringen. */
+    protected function convertAnswer(string $type, mixed $value, int $userId): mixed
+    {
+        $zeilen = fn ($v) => array_values(array_filter(array_map('trim', explode("\n", str_replace("\r", '', (string) $v))), fn ($z) => $z !== ''));
+
+        return match ($type) {
+            'list' => is_array($value) ? array_values($value) : $zeilen($value),
+            'pairs' => is_array($value) ? array_values($value) : array_map(fn ($z) => array_pad(array_map('trim', explode(' :: ', $z, 2)), 2, ''), $zeilen($value)),
+            'scale' => is_numeric($value) ? (int) $value : $value,
+            'audio' => $this->copyRecording((string) $value, $userId),
+            'values', 'choice' => is_string($value) && str_contains($value, '|') ? array_values(array_filter(array_map('trim', explode('|', $value)))) : $value,
+            default => $value,
+        };
+    }
+
+    /** Aufnahme aus den WordPress-Uploads in den privaten Speicher des Mandanten kopieren. */
+    protected function copyRecording(string $url, int $userId): ?string
+    {
+        $base = rtrim((string) ($this->config['uploads_url'] ?? ''), '/');
+        $dir = rtrim((string) ($this->config['uploads_dir'] ?? ''), '/');
+        if ($url === '' || $base === '' || ! str_starts_with($url, $base.'/')) {
+            return null;
+        }
+        $quelle = $dir.substr($url, strlen($base));
+        if (! is_file($quelle)) {
+            return null;
+        }
+        $ziel = 'tenants/'.$this->tenant->id.'/answers/'.$userId.'/'.basename($quelle);
+        if (! Storage::exists($ziel)) {
+            Storage::put($ziel, file_get_contents($quelle));
+        }
+
+        return $ziel;
     }
 
     protected function importBookAnswers(Program $program, string $key, array $book): void
     {
         $exercises = Exercise::whereIn('unit_id', $program->units()->pluck('id'))->whereNotNull('legacy_key')->pluck('id', 'legacy_key');
         $unitOfExercise = Exercise::whereIn('unit_id', $program->units()->pluck('id'))->pluck('unit_id', 'id');
+        $types = Exercise::whereIn('unit_id', $program->units()->pluck('id'))->pluck('type', 'id');
         $unitByKey = $program->units()->whereNotNull('legacy_id')->get()->mapWithKeys(fn (Unit $u) => [str_replace('wb-'.$key.'-', '', $u->legacy_id) => $u->id]);
 
         $shared = $this->source->userMetaByKey($book['shared']);
+        // "Darf Lea mitlesen?" einmal am Anfang (lea_wb_freigabe) und selbst gesetzte Erledigt-Haken je Uebung
+        $freigabe = $this->source->userMetaByKey($this->config['meta']['workbook_release'] ?? 'lea_wb_freigabe');
+        foreach ($this->source->userMetaByKey($book['meta'].'_erledigt') as $wpUid => $raw) {
+            $uid = $this->userMap[(int) $wpUid] ?? null;
+            $keys = WordPressSource::unserialize($raw);
+            if (! $uid || ! is_array($keys) || $this->dryRun) {
+                continue;
+            }
+            foreach ($keys as $k) {
+                if (($unitId = $unitByKey[(string) $k] ?? null) && ! Progress::where('user_id', $uid)->where('unit_id', $unitId)->whereNotNull('completed_at')->exists()) {
+                    Progress::updateOrCreate(['user_id' => $uid, 'unit_id' => $unitId], ['completed_at' => now()]);
+                    $this->stats['fortschritt']++;
+                }
+            }
+        }
 
         foreach ($this->source->userMetaByKey($book['meta']) as $wpUid => $raw) {
             $uid = $this->userMap[(int) $wpUid] ?? null;
@@ -385,7 +462,7 @@ class ProgramsImport
                 continue;
             }
             $sharedRaw = WordPressSource::unserialize($shared[$wpUid] ?? null);
-            $shareAll = $sharedRaw === 'alles';
+            $shareAll = $sharedRaw === 'alles' || ($freigabe[$wpUid] ?? null) === 'alles';
             $sharedUnits = is_array($sharedRaw) ? array_keys($sharedRaw) : [];
 
             $member = ProgramMember::firstOrCreate(['program_id' => $program->id, 'user_id' => $uid], ['joined_at' => now()]);
@@ -403,9 +480,9 @@ class ProgramsImport
                 }
                 $unitKey = preg_replace('~-f\d+$~', '', $fieldKey);
                 $isShared = $shareAll || in_array($unitKey, $sharedUnits, true);
-                $v = is_string($value) && str_contains($value, '|') ? array_values(array_filter(array_map('trim', explode('|', $value)))) : $value;
-                if (is_string($v) && is_numeric($v) && Exercise::find($exId)?->type === 'scale') {
-                    $v = (int) $v;
+                $v = $this->convertAnswer($types[$exId] ?? 'text', $value, $uid);
+                if ($v === null) {
+                    continue;
                 }
                 $answer = Answer::firstOrNew(['user_id' => $uid, 'exercise_id' => $exId]);
                 if (! $answer->exists) {

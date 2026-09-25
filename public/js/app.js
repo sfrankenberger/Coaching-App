@@ -599,3 +599,112 @@ document.addEventListener('click', function (e) {
         f.addEventListener('submit', function () { try { localStorage.removeItem(key); } catch (e) {} });
     });
 })();
+
+/* ---------- Arbeitsbuch: Liste, zwei Spalten, Aufnahme, Mitnehmen ---------- */
+(function () {
+    var csrf = document.querySelector('meta[name="csrf-token"]');
+    if (!csrf || !window.KURS) return;
+    csrf = csrf.getAttribute('content');
+    var timer = {};
+    function speichern(box, id, wert) {
+        var s = box.querySelector('[data-status]');
+        clearTimeout(timer[id]);
+        timer[id] = setTimeout(function () {
+            if (s) s.textContent = 'speichert ...';
+            fetch(window.KURS.antwort, { method: 'POST', credentials: 'same-origin', headers: { 'Content-Type': 'application/json', 'Accept': 'application/json', 'X-CSRF-TOKEN': csrf }, body: JSON.stringify({ exercise_id: id, value: wert }) })
+                .then(function (r) { if (!r.ok) throw 0; if (s) s.textContent = 'gespeichert'; })
+                .catch(function () { if (s) s.textContent = 'nicht gespeichert, bitte nochmals'; });
+        }, 900);
+    }
+    function wert(box) {
+        var paare = box.hasAttribute('data-antwort-paare'), out = [];
+        box.querySelectorAll('li').forEach(function (li) {
+            var f = li.querySelectorAll('input');
+            if (paare) { if (f[0].value.trim() || f[1].value.trim()) out.push([f[0].value.trim(), f[1].value.trim()]); }
+            else if (f[0].value.trim()) out.push(f[0].value.trim());
+        });
+        return out;
+    }
+    function id(box) { return box.dataset.antwortListe || box.dataset.antwortPaare; }
+    function neueZeile(box) {
+        var ul = box.querySelector('ul'), li = ul.lastElementChild.cloneNode(true);
+        li.querySelectorAll('input').forEach(function (i) { i.value = ''; });
+        ul.appendChild(li);
+        return li;
+    }
+    document.querySelectorAll('[data-antwort-liste], [data-antwort-paare]').forEach(function (box) {
+        box.addEventListener('input', function (e) {
+            var li = e.target.closest('li');
+            if (li && li === box.querySelector('ul').lastElementChild && e.target.value.trim()) neueZeile(box);
+            speichern(box, id(box), wert(box));
+        });
+        box.addEventListener('keydown', function (e) {
+            if (e.key !== 'Enter' || e.target.tagName !== 'INPUT') return;
+            e.preventDefault();
+            var li = e.target.closest('li'), next = li.nextElementSibling || neueZeile(box);
+            next.querySelector('input').focus();
+        });
+        box.addEventListener('click', function (e) {
+            if (e.target.closest('[data-zeile-mehr]')) { neueZeile(box).querySelector('input').focus(); return; }
+            var weg = e.target.closest('[data-zeile-weg]');
+            if (weg) {
+                var ul = box.querySelector('ul'), li = weg.closest('li');
+                if (ul.children.length > 1) li.remove(); else li.querySelectorAll('input').forEach(function (i) { i.value = ''; });
+                speichern(box, id(box), wert(box));
+            }
+        });
+    });
+
+    /* Aufnahme im Arbeitsbuch */
+    document.querySelectorAll('[data-aufnahme-uebung]').forEach(function (box) {
+        var start = box.querySelector('[data-ton-start]'), stopp = box.querySelector('[data-ton-stopp]'), zeit = box.querySelector('[data-ton-zeit]'), spieler = box.querySelector('[data-ton-spieler]');
+        if (!navigator.mediaDevices || !window.MediaRecorder) { start.hidden = true; zeit.textContent = 'Dieser Browser kann nicht aufnehmen.'; return; }
+        var rec = null, teile = [], t0 = 0, uhr = null;
+        start.addEventListener('click', function () {
+            navigator.mediaDevices.getUserMedia({ audio: true }).then(function (stream) {
+                var typ = ['audio/mp4', 'audio/webm;codecs=opus', 'audio/webm'].find(function (t) { return MediaRecorder.isTypeSupported(t); }) || '';
+                rec = new MediaRecorder(stream, typ ? { mimeType: typ } : {}); teile = []; t0 = Date.now();
+                rec.ondataavailable = function (e) { if (e.data.size) teile.push(e.data); };
+                rec.onstop = function () {
+                    stream.getTracks().forEach(function (t) { t.stop(); }); clearInterval(uhr);
+                    start.hidden = false; stopp.hidden = true; zeit.textContent = 'speichert ...';
+                    var blob = new Blob(teile, { type: rec.mimeType || 'audio/webm' }), fd = new FormData();
+                    fd.append('exercise_id', box.dataset.aufnahmeUebung);
+                    fd.append('ton', blob, 'aufnahme.' + ((rec.mimeType || '').indexOf('mp4') >= 0 ? 'm4a' : 'webm'));
+                    fetch(box.dataset.ziel, { method: 'POST', credentials: 'same-origin', headers: { 'Accept': 'application/json', 'X-CSRF-TOKEN': csrf }, body: fd })
+                        .then(function (r) { return r.json(); })
+                        .then(function (j) { spieler.src = j.url + '?t=' + Date.now(); spieler.hidden = false; zeit.textContent = 'gespeichert'; start.innerHTML = '<i class="fa-solid fa-microphone"></i>Nochmal aufnehmen'; })
+                        .catch(function () { zeit.textContent = 'nicht gespeichert, bitte nochmals'; });
+                };
+                rec.start(); start.hidden = true; stopp.hidden = false;
+                uhr = setInterval(function () { var s = Math.round((Date.now() - t0) / 1000); zeit.textContent = 'Aufnahme ' + Math.floor(s / 60) + ':' + ('0' + (s % 60)).slice(-2); }, 500);
+            }).catch(function () { zeit.textContent = 'Kein Zugriff auf das Mikrofon.'; });
+        });
+        stopp.addEventListener('click', function () { if (rec && rec.state !== 'inactive') rec.stop(); });
+    });
+
+    /* Mitnehmen: nur diesen Teil drucken (oder als PDF sichern) */
+    document.addEventListener('click', function (e) {
+        var b = e.target.closest('[data-drucken]'); if (!b) return;
+        var box = b.closest('[data-mitnehmen]');
+        document.body.classList.add('drucke-mitnehmen'); box.classList.add('wird-gedruckt');
+        window.print();
+        setTimeout(function () { document.body.classList.remove('drucke-mitnehmen'); box.classList.remove('wird-gedruckt'); }, 500);
+    });
+
+    /* Lebensrad zeichnet sich neu, wenn eine Skala angeklickt wird */
+    var rad = document.querySelector('[data-lebensrad] [data-rad-flaeche]');
+    if (rad) {
+        document.addEventListener('click', function (e) {
+            if (!e.target.closest('[data-antwort-skala]')) return;
+            setTimeout(function () {
+                var skalen = document.querySelectorAll('[data-antwort-skala]'), n = Math.max(3, skalen.length), pts = [];
+                skalen.forEach(function (s, i) {
+                    var an = s.querySelector('[data-wert].bg-primary'), w = an ? parseInt(an.dataset.wert, 10) : 0, a = -Math.PI / 2 + 2 * Math.PI * i / n;
+                    pts.push((100 + Math.cos(a) * 8 * w).toFixed(1) + ',' + (100 + Math.sin(a) * 8 * w).toFixed(1));
+                });
+                rad.setAttribute('points', pts.join(' '));
+            }, 50);
+        });
+    }
+})();

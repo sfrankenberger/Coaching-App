@@ -24,9 +24,20 @@ class Exercise extends Model
         'checkbox' => 'Zum Abhaken',
         'heading' => 'Zwischentitel',
         'hint' => 'Hinweistext',
+        'list' => 'Liste, Zeile für Zeile',
+        'pairs' => 'Zwei Spalten (Gedanke und Umkehrung)',
+        'letter' => 'Brief, grosses Feld',
+        'mirror' => 'Spiegel: zeigt eine frühere Antwort',
+        'audio' => 'Aufnahme: eigenen Text einsprechen',
+        'takeaway' => 'Mitnehmen: Antworten kopieren oder drucken',
+        'practice' => 'Tägliche Praxis mit Tageszähler',
+        'wheel' => 'Lebensrad aus den Skalen der Einheit',
     ];
 
-    public const ANSWERABLE = ['text', 'note', 'scale', 'values', 'choice', 'checkbox'];
+    public const ANSWERABLE = ['text', 'note', 'scale', 'values', 'choice', 'checkbox', 'list', 'pairs', 'letter', 'audio'];
+
+    /** Teile, deren Antwort Text ist (fuer Spiegel und Mitnehmen). */
+    public const TEXTLIKE = ['text', 'note', 'list', 'pairs', 'letter'];
 
     protected $guarded = [];
 
@@ -51,5 +62,16 @@ class Exercise extends Model
     public function isAnswerable(): bool
     {
         return in_array($this->type, self::ANSWERABLE, true);
+    }
+
+    /** Antwortwert als lesbarer Text (Liste zeilenweise, Paare mit Pfeil). */
+    public static function alsText(mixed $v): string
+    {
+        if (! is_array($v)) {
+            return trim((string) $v);
+        }
+
+        return collect($v)->map(fn ($z) => is_array($z) ? trim(implode(' → ', array_filter(array_map('trim', array_map('strval', $z))))) : trim((string) $z))
+            ->filter()->join("\n");
     }
 }
