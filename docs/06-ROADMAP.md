@@ -75,6 +75,14 @@ Stand nach Etappe 1: Lea kann sich per Link anmelden, sieht Start und Profil, im
 - [x] Mitteilungen mit Glocke, Suche ueber alles (Scout), Funktionen je Mandant (Pennant), JSON-API v1 (Sanctum), Queue-Worker und Reverb als Systemd-Dienste, Chat in Echtzeit
 - [ ] Livewire fuer Workbook-Bausteine (spaeter, wenn es hakt)
 
+## Etappe 8 - Zweiter Rundgang: Nachschlagen, Werkzeuge, Assistent, Coachees (26.09.)
+
+- [x] Nachschlagen mit KI-Suche, Themen nach Gruppen, Vorschau, Merken, Teilen, Sammlungen, Meine Suchen, Mein Archiv
+- [x] Werkzeuge fuer die Coach-Ausbildung (Kennzeichen an der Mitgliedschaft, Tuer fuer alle anderen)
+- [x] Digitaler Assistent im Coach-Bereich (Fragen mit App-Wissen und Fakten zu Menschen, Themen pruefen, Werkzeuge, Geteiltes)
+- [x] Coachees als Seite in der App-Huelle (Ampel, Freigegebenes, Personenkarten, Auskunft)
+- [x] Coach-Bereich: Hilfsklassen fuer eigene Ansichten, Neues gebuendelt, Platzhalter in Beitraegen, Marken fuer Entwuerfe
+
 ## Umschalten (nach Leas Freigabe)
 
 1. Schreibstopp im alten Mitgliederbereich (Hinweis an Teilnehmerinnen)

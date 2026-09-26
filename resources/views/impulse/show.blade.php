@@ -11,7 +11,7 @@
             @if ($post->categories)
                 <p class="hinweis mt-1">{{ implode(' · ', $post->categories) }}</p>
             @endif
-            <div class="prose-app mt-3">{!! $post->body ?: nl2br(e($post->excerpt)) !!}</div>
+            <div class="prose-app mt-3">{!! $post->bodyFor(auth()->user()) !!}</div>
             <div class="mt-4 flex flex-wrap items-center gap-2">
                 <x-merken art="post" :id="$post->id" :an="$gemerkt->has('post-'.$post->id)" :text="true" />
                 @if ($post->url)

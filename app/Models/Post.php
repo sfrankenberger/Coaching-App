@@ -80,6 +80,18 @@ class Post extends Model
         return self::TYPES[$this->type] ?? $this->type;
     }
 
+    /**
+     * Text fuer eine Person: Platzhalter aus Newsletter-Kampagnen ({firstname}, {emailaddress},
+     * {login_link}) werden ersetzt, damit importierte Beitraege nicht mit Klammern dastehen.
+     */
+    public function bodyFor(?User $user): string
+    {
+        $html = (string) ($this->body ?: nl2br(e((string) $this->excerpt)));
+        $ersatz = ['{firstname}' => e($user?->vorname() ?? ''), '{lastname}' => '', '{fullname}' => e($user?->name ?? ''), '{emailaddress}' => e($user?->email ?? ''), '{login_link}' => e(url('/')), '{}' => ''];
+
+        return preg_replace('~\{[a-z_]+\}~', '', strtr($html, $ersatz));
+    }
+
     public function excerptText(int $limit = 200): string
     {
         return Str::limit(trim(html_entity_decode(strip_tags((string) ($this->excerpt ?: $this->body)), ENT_QUOTES, 'UTF-8')), $limit);

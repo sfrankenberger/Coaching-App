@@ -22,7 +22,9 @@ class ImpulseController extends Controller
         $zeilen = collect();
         if ($filter === '' || $filter === 'impuls' || $filter === 'neuigkeit') {
             $posts = $this->inhalte->postsQuery($user)->when(in_array($filter, ['impuls', 'neuigkeit'], true), fn ($q) => $q->where('type', $filter))->orderByDesc('published_at')->limit(200)->get();
-            $zeilen = $zeilen->merge($posts->map(fn (Post $p) => $this->inhalte->row($p)));
+            // Verwaltende sehen auch Entwuerfe und Team-Beitraege, mit Hinweis, was die Personen nicht sehen
+            $sichtbar = $user->canManageCurrentTenant() ? Post::query()->published()->where('visibility', '!=', 'team')->pluck('id')->flip() : null;
+            $zeilen = $zeilen->merge($posts->map(fn (Post $p) => $this->inhalte->row($p) + ['versteckt' => $sichtbar !== null && ! $sichtbar->has($p->id) ? ($p->visibility === 'team' ? 'Nur Team' : (! $p->is_published ? 'Ausgeschaltet' : 'Geplant')) : null]));
         }
         $shows = $this->inhalte->episodesQuery($user)->select('show')->distinct()->orderBy('show')->pluck('show');
         if ($filter === '' || str_starts_with($filter, 'podcast')) {
