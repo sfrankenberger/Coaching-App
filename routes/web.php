@@ -6,6 +6,7 @@ use App\Http\Controllers\Auth\LoginController;
 use App\Http\Controllers\Auth\PasskeyController;
 use App\Http\Controllers\Auth\SocialController;
 use App\Http\Controllers\BuchenController;
+use App\Http\Controllers\CoacheesController;
 use App\Http\Controllers\EinheitController;
 use App\Http\Controllers\FragenController;
 use App\Http\Controllers\GespraechController;
@@ -20,6 +21,7 @@ use App\Http\Controllers\MaterialController;
 use App\Http\Controllers\MedienController;
 use App\Http\Controllers\MerklisteController;
 use App\Http\Controllers\MitteilungenController;
+use App\Http\Controllers\NachschlagenController;
 use App\Http\Controllers\NotizenController;
 use App\Http\Controllers\ProfilController;
 use App\Http\Controllers\PushController;
@@ -29,6 +31,7 @@ use App\Http\Controllers\TelegramController;
 use App\Http\Controllers\TermineController;
 use App\Http\Controllers\ThemenController;
 use App\Http\Controllers\UebungController;
+use App\Http\Controllers\WerkzeugeController;
 use App\Http\Controllers\WillkommenController;
 use App\Tenancy\Branding;
 use Illuminate\Support\Facades\Route;
@@ -126,6 +129,21 @@ Route::middleware(['auth', 'membership'])->group(function () {
     Route::get('/impulse/{post:slug}', [ImpulseController::class, 'show'])->name('impulse.show');
     Route::get('/themen', [ThemenController::class, 'index'])->name('themen.index');
     Route::get('/themen/{thema:slug}', [ThemenController::class, 'show'])->name('themen.show');
+
+    // Nachschlagen (Fundus): ein Feld fuer alles, Vorschau, Teilen, Sammlungen
+    Route::get('/nachschlagen', [NachschlagenController::class, 'index'])->name('nachschlagen.index');
+    Route::get('/nachschlagen/vorschau/{art}/{id}', [NachschlagenController::class, 'vorschau'])->name('nachschlagen.vorschau')->where('art', '[a-z]+');
+    Route::post('/nachschlagen/teilen', [NachschlagenController::class, 'teilen'])->name('nachschlagen.teilen');
+    Route::delete('/nachschlagen/verlauf', [NachschlagenController::class, 'verlaufLeeren'])->name('nachschlagen.verlauf.leeren');
+    Route::get('/sammlung/{sammlung}/{key}', [NachschlagenController::class, 'sammlung'])->name('nachschlagen.sammlung');
+
+    // Coachees in der App-Huelle (Team): Ampel, Freigegebenes, Personen, Auskunft
+    Route::get('/coachees', [CoacheesController::class, 'index'])->name('coachees.index');
+    Route::post('/coachees/frage', [CoacheesController::class, 'frage'])->name('coachees.frage');
+
+    // Werkzeuge fuer die Coach-Ausbildung
+    Route::get('/werkzeuge', [WerkzeugeController::class, 'index'])->name('werkzeuge.index');
+    Route::get('/werkzeuge/{tool:slug}', [WerkzeugeController::class, 'show'])->name('werkzeuge.show');
 
     // Mein Journal: Aufgaben, Notizen, Reflexion
     Route::get('/journal', [JournalController::class, 'index'])->name('journal.index');

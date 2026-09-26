@@ -934,3 +934,71 @@ button.vorschlag:hover { border-color: var(--c-primary); }
 .zeile.neu .tx b::before { content: ''; display: inline-block; width: 7px; height: 7px; border-radius: 50%; background: var(--c-primary); margin: 0 6px 2px 0; }
 
 mark { background: var(--c-primary-tint); color: var(--c-text); padding: 0 2px; border-radius: 3px; }
+
+/* ---------- Nachschlagen (Fundus) ---------- */
+.fu-feld { margin: 0 0 18px; }
+.fu-feld textarea.feld { width: 100%; min-height: 64px; }
+.fu-tun { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; margin-top: 10px; }
+.fu-thema { flex: 1 1 220px; }
+.fu-thema select.feld { width: 100%; padding: 10px 12px; }
+.fu-antwort { background: var(--c-primary-tint); border-radius: 14px; padding: 14px 16px; font-size: var(--fs-base); line-height: 1.55; margin: 0 0 12px; }
+.fu-zahl { font-size: var(--fs-sm); color: var(--c-muted); margin: 0 0 10px; }
+.fu-liste { display: flex; flex-direction: column; gap: 8px; }
+.fu-karte { position: relative; padding-right: 96px; cursor: pointer; margin: 0; }
+.fu-karte:hover, .fu-karte:focus-visible { border-color: var(--c-primary); outline: none; }
+.fu-karte.zu { background: var(--c-surface); }
+.fu-karte.gewaehlt { border-color: var(--c-primary); box-shadow: 0 0 0 1px var(--c-primary) inset; }
+.fu-karte .eyebrow i { color: var(--c-primary); margin-right: 3px; }
+.fu-titel { font-family: var(--font-body); font-size: var(--fs-base); font-weight: 600; line-height: 1.4; margin: 2px 0 0; }
+.fu-titel a { color: var(--c-text); text-decoration: none; }
+.fu-fundort { font-size: var(--fs-sm); color: var(--c-muted); margin: 2px 0 0; }
+.fu-kurz { font-size: var(--fs-md); color: var(--c-text-soft); line-height: 1.55; margin: 6px 0 0; }
+.fu-hilft { font-size: var(--fs-sm); color: var(--c-success-ink); font-style: italic; margin: 6px 0 0; line-height: 1.5; }
+.fu-themen { font-size: var(--fs-xs); color: var(--c-faint); margin: 6px 0 0; }
+.fu-warum { font-size: var(--fs-sm); color: var(--c-text); margin: 8px 0 0; padding: 8px 10px; background: var(--c-surface); border-radius: 10px; line-height: 1.5; }
+.fu-warum i { color: var(--c-primary); margin-right: 4px; font-size: 11px; }
+.fu-tuer { font-size: var(--fs-sm); color: var(--c-muted); margin: 8px 0 0; }
+.fu-tuer i { margin-right: 4px; }
+.fu-tuer a { color: var(--c-primary); font-weight: 600; }
+.fu-symbole { position: absolute; right: 10px; top: 10px; display: flex; align-items: center; gap: 2px; }
+.fu-symbole .merken { width: 36px; height: 36px; border: 0; background: transparent; color: var(--c-ghost); font-size: 16px; cursor: pointer; border-radius: 50%; display: grid; place-items: center; }
+.fu-symbole .merken.an, .fu-symbole .merken:hover { color: var(--c-primary); }
+.fu-wahl { width: 36px; height: 36px; display: grid; place-items: center; cursor: pointer; }
+.fu-wahl span { width: 22px; height: 22px; border: 2px solid var(--c-line-strong); border-radius: 7px; background: #fff; display: grid; place-items: center; }
+.fu-wahl input:checked + span { background: var(--c-primary); border-color: var(--c-primary); }
+.fu-wahl input:checked + span::after { content: ''; width: 6px; height: 11px; border: solid #fff; border-width: 0 2px 2px 0; transform: translateY(-1px) rotate(45deg); }
+.fu-vorschau h3 { margin: 4px 0 6px; }
+.fu-vorschau .eyebrow i { color: var(--c-primary); margin-right: 3px; }
+.fu-vorschau .fu-anriss { margin-top: 10px; font-size: var(--fs-md); color: var(--c-text-soft); }
+.fu-vtun { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin-top: 14px; }
+.fu-schicken { display: none; margin-top: 16px; padding-top: 14px; border-top: 1px solid var(--c-line-soft); }
+.fu-schicken.an { display: block; }
+.fu-wer { display: flex; flex-wrap: wrap; gap: 6px; margin: 6px 0 10px; max-height: 160px; overflow: auto; }
+.fu-pers { display: inline-flex; align-items: center; gap: 6px; padding: 6px 11px; border: 1.5px solid var(--c-card-border); border-radius: 999px; background: var(--c-surface); font-size: var(--fs-sm); cursor: pointer; }
+.fu-pers:has(input:checked) { background: var(--c-text); border-color: var(--c-text); color: #fff; }
+.fu-pers input { width: 14px; height: 14px; accent-color: var(--c-primary); }
+.fu-schicken textarea.feld { width: 100%; margin-bottom: 8px; }
+.fu-stand { min-height: 1.4em; margin: 8px 0 0; }
+.fu-leiste { position: fixed; left: 12px; right: 12px; bottom: calc(76px + env(safe-area-inset-bottom)); z-index: 45; background: #fff; border: 1px solid var(--c-card-border); border-radius: 20px; padding: 14px 16px; box-shadow: var(--shadow-modal, 0 18px 50px rgba(46,45,41,.28)); transform: translateY(120%); opacity: 0; visibility: hidden; transition: transform .25s, opacity .25s, visibility 0s linear .25s; max-height: 70vh; overflow: auto; max-width: 560px; margin: 0 auto; }
+.fu-leiste.offen { transform: none; opacity: 1; visibility: visible; transition: transform .25s, opacity .25s; }
+.fu-leiste-kopf { display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px; font-size: var(--fs-md); }
+.fu-leiste-kopf .sheet-zu { position: static; }
+.fu-leiste .feld { width: 100%; }
+.knopf-text { background: transparent; border: 0; color: var(--c-primary); font: inherit; font-weight: 600; cursor: pointer; padding: 0; }
+@media (min-width: 900px) { .fu-leiste { bottom: 24px; } }
+
+/* ---------- Coachees (Team) ---------- */
+.ampel-karte { border-left: 4px solid var(--c-line-strong); }
+.ampel-karte.rot { border-left-color: var(--c-danger); }
+.ampel-karte.gelb { border-left-color: #C9A227; }
+.ampel-karte.gruen { border-left-color: var(--c-success); }
+.ampel-punkt { width: 10px; height: 10px; border-radius: 50%; margin-top: 7px; flex: none; background: var(--c-line-strong); }
+.ampel-karte.rot .ampel-punkt { background: var(--c-danger); }
+.ampel-karte.gelb .ampel-punkt { background: #C9A227; }
+.ampel-karte.gruen .ampel-punkt { background: var(--c-success); }
+.ampel-grund { font-size: var(--fs-sm); color: var(--c-danger); font-weight: 600; }
+.ampel-karte.gelb .ampel-grund { color: #9A7B14; }
+.badge-wartet { background: var(--c-danger); color: #fff; margin-left: 6px; }
+.coachee-karte .badge { vertical-align: middle; margin-left: 6px; }
+.coachee-karte .tx span i { width: 14px; color: var(--c-ghost); font-size: 11px; }
+.suche button.knopf { margin-left: auto; flex: none; }

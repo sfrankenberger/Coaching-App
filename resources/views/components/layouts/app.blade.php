@@ -20,6 +20,8 @@
             ->where('is_published', true)->orderBy('position')->orderBy('title')
             ->get(['id', 'slug', 'title', 'icon', 'color']);
     }
+    // Werkzeuge nur fuer die Coach-Ausbildung und das Team, und nur wenn es welche gibt
+    $werkzeuge = $person && App\Models\Tool::darf($person) && ($kannVerwalten || App\Models\Tool::where('is_published', true)->exists());
     $ist = fn ($muster) => request()->routeIs($muster);
 @endphp
 <!doctype html>
@@ -99,9 +101,13 @@
                     <li><a href="{{ route('termine.index') }}" @class(['aktiv' => $ist('termine.*')])><i class="fa-solid fa-calendar"></i>Termine</a></li>
                     <li><a href="{{ route('material.index') }}" @class(['aktiv' => $ist('material.*')])><i class="fa-solid fa-folder-open"></i>Material</a></li>
                     <li><a href="{{ route('impulse.index') }}" @class(['aktiv' => $ist('impulse.*')])><i class="fa-solid fa-lightbulb"></i>Impulse</a></li>
-                    <li class="unter"><a href="{{ route('themen.index') }}"><i class="fa-solid fa-tags"></i>Nachschlagen</a></li>
-                    <li class="unter"><a href="{{ route('suche') }}"><i class="fa-solid fa-magnifying-glass"></i>Suchen</a></li>
+                    <li><a href="{{ route('nachschlagen.index') }}" @class(['aktiv' => $ist(['nachschlagen.*', 'themen.*', 'merkliste'])])><i class="fa-solid fa-magnifying-glass"></i>Nachschlagen</a></li>
+                    <li class="unter"><a href="{{ route('themen.index') }}"><i class="fa-solid fa-tags"></i>Themen</a></li>
+                    <li class="unter"><a href="{{ route('suche') }}"><i class="fa-solid fa-file-magnifying-glass"></i>Volltext suchen</a></li>
                     <li class="unter"><a href="{{ route('merkliste') }}"><i class="fa-solid fa-bookmark"></i>Gemerkt</a></li>
+                    @if ($werkzeuge)
+                        <li class="unter"><a href="{{ route('werkzeuge.index') }}"><i class="fa-solid fa-hammer"></i>Werkzeuge</a></li>
+                    @endif
                     <li><a href="{{ route('journal.index') }}" @class(['aktiv' => $ist('journal.*')])><i class="fa-solid fa-book-open"></i>Mein Journal</a></li>
                     <li class="unter"><a href="{{ route('aufgaben.index') }}"><i class="fa-solid fa-list-check"></i>Aufgaben</a></li>
                     <li class="unter"><a href="{{ route('notizen.index') }}"><i class="fa-solid fa-note-sticky"></i>Notizen</a></li>
@@ -110,7 +116,9 @@
                     <li><a href="{{ route('mitteilungen') }}" @class(['aktiv' => $ist('mitteilungen*')])><i class="fa-solid fa-bell"></i>Mitteilungen @if ($mitteilungen)<span class="zahl">{{ $mitteilungen }}</span>@endif</a></li>
                     <li><a href="{{ route('profil') }}" @class(['aktiv' => $ist('profil*')])><i class="fa-solid fa-user"></i>Profil</a></li>
                     @if ($kannVerwalten)
-                        <li><a href="/coach"><i class="fa-solid fa-user-group"></i>Coach-Bereich</a></li>
+                        <li><a href="{{ route('coachees.index') }}" @class(['aktiv' => $ist('coachees.*')])><i class="fa-solid fa-people-group"></i>Coachees</a></li>
+                        <li class="unter"><a href="/coach"><i class="fa-solid fa-table-columns"></i>Coach-Bereich</a></li>
+                        <li class="unter"><a href="/coach/assistent"><i class="fa-solid fa-wand-magic-sparkles"></i>Assistent</a></li>
                     @endif
                     <li><a href="{{ route('profil') }}#hilfe"><i class="fa-solid fa-life-ring"></i>Hilfe</a></li>
                     <li>

@@ -766,3 +766,133 @@ document.addEventListener('medien:zeit', function (e) {
     verbinden();
     document.addEventListener('visibilitychange', function () { if (!document.hidden && ws && ws.readyState === WebSocket.CLOSED) verbinden(); });
 })();
+
+/* ---------- Nachschlagen: ein Feld fuer alles, Vorschau im Fenster, Teilen, Sammlungen ---------- */
+(function () {
+    var form = document.querySelector('form[data-nachschlagen]');
+    var csrf = (document.querySelector('meta[name="csrf-token"]') || {}).getAttribute ? document.querySelector('meta[name="csrf-token"]').getAttribute('content') : '';
+    if (form) {
+        var ziel = document.querySelector(form.dataset.ziel), los = form.querySelector('[data-los]'), feld = form.querySelector('textarea'), thema = form.querySelector('[data-thema]');
+        function holen(mitThema) {
+            var d = new URLSearchParams();
+            if (mitThema && thema && thema.value) { d.set('thema', thema.value); feld.value = ''; } else { d.set('q', feld.value.trim()); if (thema) thema.value = ''; }
+            if (!d.get('q') && !d.get('thema')) { feld.focus(); return; }
+            var alt = los.textContent; los.disabled = true; los.textContent = 'Ich schaue nach …';
+            ziel.innerHTML = '';
+            var url = form.action + '?' + d.toString();
+            fetch(url, { credentials: 'same-origin', headers: { 'X-Requested-With': 'fetch' } })
+                .then(function (r) { return r.text(); })
+                .then(function (html) { ziel.innerHTML = html; history.replaceState(null, '', url); ziel.scrollIntoView({ behavior: 'smooth', block: 'nearest' }); })
+                .catch(function () { ziel.innerHTML = '<p class="fu-antwort">Das hat nicht geklappt. Probier es gleich noch einmal.</p>'; })
+                .then(function () { los.disabled = false; los.textContent = alt; });
+        }
+        form.addEventListener('submit', function (e) { e.preventDefault(); holen(false); });
+        feld.addEventListener('keydown', function (e) { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); holen(false); } });
+        if (thema) thema.addEventListener('change', function () { if (thema.value) holen(true); });
+    }
+
+    /* Vorschau im Fenster (Karte antippen oder Teilen-Zeichen) */
+    var basis = document.querySelector('[data-fu-vorschau-url]');
+    var vorschauUrl = basis ? basis.dataset.fuVorschauUrl : '/nachschlagen/vorschau';
+    function vorschau(key, teilen) {
+        if (!window.appSheet) return;
+        var teile = key.split('-');
+        window.appSheet.auf('<p class="hinweis">Einen Moment …</p>');
+        fetch(vorschauUrl + '/' + teile[0] + '/' + teile[1], { credentials: 'same-origin', headers: { 'X-Requested-With': 'fetch' } })
+            .then(function (r) { return r.ok ? r.text() : Promise.reject(); })
+            .then(function (html) {
+                window.appSheet.auf(html);
+                var s = document.querySelector('[data-fu-schicken]');
+                if (s) s.classList.toggle('an', !!teilen);
+            })
+            .catch(function () { window.appSheet.auf('<p>Das konnte nicht geladen werden.</p>'); });
+    }
+    document.addEventListener('click', function (e) {
+        var t = e.target.closest('[data-fu-teilen]');
+        if (t) { e.preventDefault(); e.stopPropagation(); vorschau(t.dataset.fuTeilen, true); return; }
+        if (e.target.closest('form[data-merken]') || e.target.closest('.fu-wahl') || e.target.closest('.fu-tuer a')) return;
+        var k = e.target.closest('[data-fu-karte]');
+        if (k && !e.target.closest('a')) { vorschau(k.dataset.fuKarte, false); }
+    });
+    document.addEventListener('keydown', function (e) {
+        if (e.key !== 'Enter') return;
+        var k = e.target.closest && e.target.closest('[data-fu-karte]');
+        if (k && e.target === k) vorschau(k.dataset.fuKarte, false);
+    });
+
+    /* Im Fenster: Link teilen (Handy) oder kopieren, in den Chat schicken */
+    document.addEventListener('click', function (e) {
+        var v = e.target.closest('[data-fu-vorschau]'); if (!v) return;
+        var stand = v.querySelector('[data-fu-stand]');
+        if (e.target.closest('[data-fu-link]')) {
+            var link = v.dataset.link, titel = v.dataset.titel;
+            if (!link) return;
+            if (navigator.share) { navigator.share({ title: titel, url: link }).catch(function () {}); }
+            else if (navigator.clipboard) { navigator.clipboard.writeText(link).then(function () { if (stand) stand.textContent = 'Link kopiert.'; }); }
+            else { window.prompt('Link kopieren:', link); }
+        }
+        var s = e.target.closest('[data-fu-senden]');
+        if (s) {
+            var an = [].map.call(v.querySelectorAll('[data-fu-an]:checked'), function (x) { return x.value; });
+            if (!an.length) { if (stand) stand.textContent = 'Wähl aus, wer es bekommen soll.'; return; }
+            if (stand) stand.textContent = 'Wird geschickt …';
+            var d = new FormData();
+            d.append('items[]', v.dataset.fuVorschau);
+            d.append('gruss', (v.querySelector('[data-fu-gruss]') || {}).value || '');
+            an.forEach(function (x) { d.append('an[]', x); });
+            fetch(s.dataset.fuSenden, { method: 'POST', credentials: 'same-origin', headers: { 'Accept': 'application/json', 'X-CSRF-TOKEN': csrf }, body: d })
+                .then(function (r) { return r.json().then(function (j) { return r.ok ? j : Promise.reject(j); }); })
+                .then(function (j) { if (stand) stand.textContent = 'An ' + j.an + ' geschickt.'; v.querySelectorAll('[data-fu-an]:checked').forEach(function (x) { x.checked = false; }); })
+                .catch(function (j) { if (stand) stand.textContent = (j && j.msg) || 'Das hat nicht geklappt.'; });
+        }
+    });
+
+    /* Leiste fuer Sammlungen (Coachin) */
+    var leiste = document.querySelector('[data-fu-leiste]');
+    if (!leiste) return;
+    function gewaehlt() { return [].map.call(document.querySelectorAll('[data-fu-wahl]:checked'), function (x) { return x.value; }); }
+    function auffrischen() {
+        var g = gewaehlt();
+        leiste.querySelector('[data-fu-zahl]').textContent = g.length;
+        leiste.classList.toggle('offen', g.length > 0);
+        leiste.setAttribute('aria-hidden', g.length ? 'false' : 'true');
+        document.querySelectorAll('[data-fu-wahl]').forEach(function (x) { var k = x.closest('[data-fu-karte]'); if (k) k.classList.toggle('gewaehlt', x.checked); });
+    }
+    document.addEventListener('change', function (e) { if (e.target.matches('[data-fu-wahl]')) auffrischen(); });
+    leiste.querySelector('[data-fu-leeren]').addEventListener('click', function () { document.querySelectorAll('[data-fu-wahl]:checked').forEach(function (x) { x.checked = false; }); auffrischen(); });
+    function schicken(nurLink) {
+        var g = gewaehlt(); if (!g.length) return;
+        var st = leiste.querySelector('[data-fu-leiste-stand]'); st.textContent = 'Wird gemacht …';
+        var d = new FormData();
+        g.forEach(function (x) { d.append('items[]', x); });
+        d.append('name', leiste.querySelector('[data-fu-name]').value);
+        d.append('gruss', leiste.querySelector('[data-fu-leiste-gruss]').value);
+        if (!nurLink) [].forEach.call(leiste.querySelectorAll('[data-fu-leiste-an]:checked'), function (x) { d.append('an[]', x.value); });
+        fetch(leiste.dataset.senden, { method: 'POST', credentials: 'same-origin', headers: { 'Accept': 'application/json', 'X-CSRF-TOKEN': csrf }, body: d })
+            .then(function (r) { return r.json().then(function (j) { return r.ok ? j : Promise.reject(j); }); })
+            .then(function (j) {
+                st.innerHTML = (j.an ? 'An ' + j.an + ' Person' + (j.an > 1 ? 'en' : '') + ' geschickt. ' : '') + '<a href="' + j.link + '" target="_blank" rel="noopener">Link öffnen</a> · <button type="button" class="knopf-text" data-kopieren="' + j.link + '">Link kopieren</button>';
+            })
+            .catch(function (j) { st.textContent = (j && j.msg) || 'Das hat nicht geklappt.'; });
+    }
+    leiste.querySelector('[data-fu-leiste-senden]').addEventListener('click', function () { schicken(false); });
+    leiste.querySelector('[data-fu-leiste-link]').addEventListener('click', function () { schicken(true); });
+})();
+
+/* ---------- Coachees: Auskunft ("Frag mich etwas zu deinem Betrieb") ---------- */
+(function () {
+    var box = document.querySelector('[data-auskunft]'); if (!box) return;
+    var form = box.querySelector('[data-auskunft-form]'), feld = form.querySelector('input[name=frage]'), ziel = box.querySelector('[data-auskunft-antwort]'), los = form.querySelector('[data-auskunft-los]');
+    var csrf = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
+    function fragen() {
+        var q = feld.value.trim(); if (q.length < 3) { ziel.innerHTML = '<p class="fu-antwort">Stell mir eine ganze Frage.</p>'; return; }
+        ziel.innerHTML = '<p class="fu-antwort">Ich schaue nach …</p>'; los.disabled = true;
+        var d = new FormData(); d.append('frage', q);
+        fetch(box.dataset.url, { method: 'POST', credentials: 'same-origin', headers: { 'X-CSRF-TOKEN': csrf, 'X-Requested-With': 'fetch' }, body: d })
+            .then(function (r) { return r.text(); }).then(function (html) { ziel.innerHTML = html; })
+            .catch(function () { ziel.innerHTML = '<p class="fu-antwort">Das hat nicht geklappt.</p>'; })
+            .then(function () { los.disabled = false; });
+    }
+    form.addEventListener('submit', function (e) { e.preventDefault(); fragen(); });
+    box.querySelectorAll('[data-auskunft-beispiel]').forEach(function (b) { b.addEventListener('click', function () { feld.value = b.textContent; fragen(); }); });
+})();

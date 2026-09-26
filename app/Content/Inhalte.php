@@ -10,6 +10,7 @@ use App\Models\Program;
 use App\Models\ProgramStep;
 use App\Models\Resource;
 use App\Models\Taggable;
+use App\Models\Tool;
 use App\Models\Topic;
 use App\Models\Unit;
 use App\Models\User;
@@ -25,7 +26,7 @@ use Illuminate\Support\Collection;
  */
 class Inhalte
 {
-    public const ARTEN = ['post' => 'Impuls', 'episode' => 'Podcast', 'unit' => 'Einheit', 'step' => 'Schritt', 'program' => 'Programm', 'resource' => 'Material', 'event' => 'Termin'];
+    public const ARTEN = ['post' => 'Impuls', 'episode' => 'Podcast', 'unit' => 'Einheit', 'step' => 'Schritt', 'program' => 'Programm', 'resource' => 'Material', 'event' => 'Termin', 'tool' => 'Werkzeug'];
 
     public function __construct(protected ProgramAccess $access, protected Begleitung $begleitung) {}
 
@@ -98,6 +99,7 @@ class Inhalte
                 $m instanceof Unit => ($manages || ($m->is_published && $programIds->contains($m->program_id))),
                 $m instanceof Resource => ($resourceIds ??= $this->begleitung->resourcesQuery($user)->pluck('id'))->contains($m->id),
                 $m instanceof Event => ($eventIds ??= $this->begleitung->eventsQuery($user)->pluck('id'))->contains($m->id),
+                $m instanceof Tool => Tool::darf($user) && ($manages || $m->is_published),
                 default => false,
             };
             if ($ok) {
@@ -119,6 +121,7 @@ class Inhalte
             $m instanceof Unit => ['art' => 'unit', 'id' => $m->id, 'titel' => $m->title, 'text' => $m->program?->title, 'url' => $m->program ? route('kurse.einheit', [$m->program, $m]) : null, 'bild' => null, 'typ' => 'Einheit', 'ts' => $m->created_at, 'model' => $m],
             $m instanceof Resource => ['art' => 'resource', 'id' => $m->id, 'titel' => $m->title, 'text' => $m->description, 'url' => $m->target(), 'bild' => $m->image_url, 'typ' => $m->typeLabel(), 'ts' => $m->created_at, 'model' => $m],
             $m instanceof Event => ['art' => 'event', 'id' => $m->id, 'titel' => $m->title, 'text' => $m->starts_at->translatedFormat('j. F Y'), 'url' => route('termine.show', $m), 'bild' => null, 'typ' => $m->typeLabel(), 'ts' => $m->starts_at, 'model' => $m],
+            $m instanceof Tool => ['art' => 'tool', 'id' => $m->id, 'titel' => $m->title, 'text' => $m->purpose, 'url' => route('werkzeuge.show', $m), 'bild' => null, 'typ' => 'Werkzeug', 'ts' => $m->created_at, 'model' => $m],
             default => ['art' => 'x', 'id' => $m->getKey(), 'titel' => (string) ($m->title ?? ''), 'text' => null, 'url' => null, 'bild' => null, 'typ' => '', 'ts' => $m->created_at, 'model' => $m],
         };
     }

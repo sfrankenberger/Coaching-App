@@ -20,8 +20,10 @@ use App\Models\ProgramStep;
 use App\Models\Question;
 use App\Models\Reflection;
 use App\Models\Resourceable;
+use App\Models\Sammlung;
 use App\Models\Task;
 use App\Models\Tenant;
+use App\Models\Tool;
 use App\Models\Topic;
 use App\Models\Unit;
 use App\Models\User;
@@ -87,6 +89,8 @@ class AppServiceProvider extends ServiceProvider
             'post' => Post::class,
             'episode' => PodcastEpisode::class,
             'topic' => Topic::class,
+            'tool' => Tool::class,
+            'sammlung' => Sammlung::class,
         ]);
 
         // Funktionen je Mandant (Pennant): Schalter in tenants.settings, hier an einer Stelle aufgeloest

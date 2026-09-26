@@ -35,6 +35,7 @@ class MembershipForm
                     Select::make('status')->label('Status')->required()
                         ->options(Membership::statusLabels())->default('active')->native(false),
                     TextInput::make('legacy_id')->label('WordPress-ID')->disabled()->dehydrated(false),
+                    Toggle::make('settings.ausbildung')->label('Coach-Ausbildung')->helperText('Sieht die Werkzeuge im Nachschlagen und unter Werkzeuge.')->default(false),
                 ])->columns(3),
 
             Section::make('Was die Person erreicht')

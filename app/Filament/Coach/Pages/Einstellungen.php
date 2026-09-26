@@ -9,6 +9,7 @@ use Filament\Forms\Components\ColorPicker;
 use Filament\Forms\Components\Repeater;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\TagsInput;
+use Filament\Forms\Components\Textarea;
 use Filament\Forms\Components\TextInput;
 use Filament\Forms\Components\Toggle;
 use Filament\Notifications\Notification;
@@ -56,6 +57,10 @@ class Einstellungen extends Page
             'icon_url' => $b['icon_url'] ?? null,
             'coach_name' => $s['coach_name'] ?? null,
             'website' => $s['website'] ?? null,
+            'shop_url' => $s['shop']['url'] ?? null,
+            'ausbildung_url' => $s['ausbildung_url'] ?? null,
+            'ai_wissen' => $s['ai']['wissen'] ?? null,
+            'ai_fundus_hinweis' => $s['ai']['fundus_hinweis'] ?? null,
             'from_name' => $s['mail']['from_name'] ?? null,
             'from_address' => $s['mail']['from_address'] ?? null,
             'reply_to' => $s['mail']['reply_to'] ?? null,
@@ -85,7 +90,15 @@ class Einstellungen extends Page
             Section::make('Du und deine Website')->schema([
                 TextInput::make('coach_name')->label('Dein Vorname (für die Anrede in Texten)')->maxLength(60),
                 TextInput::make('website')->label('Website')->url()->maxLength(200),
+                TextInput::make('shop_url')->label('Wo man deine Angebote kauft')->url()->maxLength(300)->helperText('Dorthin führt im Nachschlagen die Tür bei gesperrten Kursen, wenn der Kurs keine eigene Verkaufsseite hat.'),
+                TextInput::make('ausbildung_url')->label('Seite der Coach-Ausbildung')->url()->maxLength(300)->helperText('Dorthin führt die Tür bei den Werkzeugen.'),
             ])->columns(2),
+            Section::make('KI')->description('Der Schlüssel liegt in der Plattform. Hier, was die KI von dir wissen soll.')->schema([
+                Textarea::make('ai_wissen')->label('Was dein Assistent zusätzlich wissen soll')->rows(6)->maxLength(8000)
+                    ->helperText('Eigene Regeln, Abläufe, Namen. Der Assistent kennt die App schon, das hier kommt dazu.'),
+                Textarea::make('ai_fundus_hinweis')->label('Hinweis für die Suche im Nachschlagen')->rows(2)->maxLength(500)
+                    ->helperText('Ein Satz über deinen Ansatz, zum Beispiel mit welcher Methode du arbeitest. Hilft der KI beim Auswählen.'),
+            ]),
             Section::make('Absender der Mails')->schema([
                 TextInput::make('from_name')->label('Absendername')->maxLength(80),
                 TextInput::make('from_address')->label('Absenderadresse')->email()->maxLength(190)->helperText('Muss zur Mail-Domain passen, die der Server verschicken darf.'),
@@ -116,6 +129,9 @@ class Einstellungen extends Page
         }
         $s['coach_name'] = filled($data['coach_name']) ? $data['coach_name'] : null;
         $s['website'] = filled($data['website']) ? $data['website'] : null;
+        $s['shop'] = array_merge($s['shop'] ?? [], ['url' => filled($data['shop_url'] ?? null) ? $data['shop_url'] : null]);
+        $s['ausbildung_url'] = filled($data['ausbildung_url'] ?? null) ? $data['ausbildung_url'] : null;
+        $s['ai'] = array_merge($s['ai'] ?? [], ['wissen' => filled($data['ai_wissen'] ?? null) ? $data['ai_wissen'] : null, 'fundus_hinweis' => filled($data['ai_fundus_hinweis'] ?? null) ? $data['ai_fundus_hinweis'] : null]);
         $s['mail'] = array_merge($s['mail'] ?? [], ['from_name' => $data['from_name'] ?: null, 'from_address' => $data['from_address'] ?: null, 'reply_to' => $data['reply_to'] ?: null]);
         $s['feeds'] = array_values(array_map(fn ($f) => array_filter(['type' => $f['type'] ?? 'post', 'url' => $f['url'] ?? null, 'show' => $f['show'] ?? null, 'limit' => (int) ($f['limit'] ?? 0) ?: null]), $data['feeds'] ?? []));
         $s['telegram'] = array_merge($s['telegram'] ?? [], ['bot_username' => $data['telegram_bot_username'] ?: null]);

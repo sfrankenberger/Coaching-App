@@ -42,6 +42,7 @@ class TopicResource extends Resource
             Section::make('Thema')->schema([
                 TextInput::make('name')->label('Name')->required()->maxLength(120),
                 TextInput::make('position')->label('Reihenfolge')->numeric()->default(0),
+                TextInput::make('group')->label('Gruppe')->maxLength(80)->helperText('Für die Auswahlliste im Nachschlagen, zum Beispiel "Beziehung" oder "Arbeit".')->datalist(fn () => Topic::whereNotNull('group')->distinct()->pluck('group')->all()),
                 Textarea::make('description')->label('Kurz beschrieben')->rows(2)->columnSpanFull(),
                 Toggle::make('is_visible')->label('Im Themenfinder sichtbar')->default(true),
             ])->columns(2),

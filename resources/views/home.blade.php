@@ -124,7 +124,7 @@
             ['material.index', 'folder-open', 'Material', 'PDFs, Audios, Links'],
             ['journal.index', 'book-open', 'Mein Journal', 'Aufgaben, Notizen, Reflexion'],
             ['impulse.index', 'lightbulb', 'Impulse', 'Beiträge und Podcast'],
-            ['themen.index', 'magnifying-glass', 'Nachschlagen', 'Finde, was dich beschäftigt'],
+            ['nachschlagen.index', 'magnifying-glass', 'Nachschlagen', 'Finde, was dich beschäftigt'],
         ] as [$r, $ic, $t, $x])
             <a href="{{ route($r) }}" class="kachel"><i class="fa-solid fa-{{ $ic }}"></i><span class="tx"><b>{{ $t }}</b><small>{{ $x }}</small></span></a>
         @endforeach
@@ -134,7 +134,8 @@
         <h2 class="abschnitt"><i class="fa-solid fa-user-group"></i>Für dich als Coach</h2>
         <div class="karte">
             <p class="x m-0 mb-3">{{ $personen }} aktive Personen. Kurse, Termine, Material und Impulse pflegst du im Coach-Bereich.</p>
-            <a href="/coach" class="knopf">Zum Coach-Bereich</a>
+            <a href="{{ route('coachees.index') }}" class="knopf"><i class="fa-solid fa-people-group"></i>Coachees</a>
+            <a href="/coach" class="knopf knopf-leise">Coach-Bereich</a>
         </div>
     @endif
 </x-layouts.app>
