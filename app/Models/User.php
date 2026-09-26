@@ -4,18 +4,30 @@ namespace App\Models;
 
 use App\Enums\Role;
 use App\Tenancy\CurrentTenant;
+use Filament\Models\Contracts\FilamentUser;
+use Filament\Panel;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
+use Illuminate\Database\Eloquent\Relations\MorphMany;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
+use Illuminate\Support\Str;
+use Laragear\WebAuthn\Contracts\WebAuthnAuthenticatable;
+use Laragear\WebAuthn\WebAuthnAuthentication;
 
 /**
  * Person, plattformweit eindeutig ueber die Mailadresse.
  * Rollen haengen NICHT hier, sondern an der Mitgliedschaft je Mandant.
  */
-class User extends Authenticatable
+class User extends Authenticatable implements FilamentUser, WebAuthnAuthenticatable
 {
-    use HasFactory, Notifiable;
+    use HasFactory, \Laravel\Sanctum\HasApiTokens, Notifiable, WebAuthnAuthentication;
+
+    /** Mitteilungen in der App (Glocke), nur im aktuellen Mandanten. */
+    public function notifications(): MorphMany
+    {
+        return $this->morphMany(Mitteilung::class, 'notifiable')->latest();
+    }
 
     protected $fillable = ['name', 'email', 'password', 'phone', 'avatar_path', 'is_platform_admin'];
 
@@ -34,28 +46,70 @@ class User extends Authenticatable
     {
         return $this->belongsToMany(Tenant::class, 'memberships')
             ->using(Membership::class)
-            ->withPivot(['role', 'status', 'legacy_id', 'joined_at'])
+            ->withPivot(['role', 'status', 'legacy_id', 'joined_at', 'settings'])
             ->withTimestamps();
     }
 
-    /** Rolle im aktuellen (oder angegebenen) Mandanten, null = kein Zugang. */
-    public function roleIn(?Tenant $tenant = null): ?Role
+    /** Mitgliedschaft im aktuellen (oder angegebenen) Mandanten, egal welcher Status. */
+    public function membershipIn(?Tenant $tenant = null): ?Membership
     {
         $tenant ??= app(CurrentTenant::class)->get();
         if (! $tenant) {
             return null;
         }
 
-        $role = $this->tenants()
-            ->where('tenants.id', $tenant->id)
-            ->wherePivot('status', 'active')
-            ->first()?->pivot?->role;
+        return Membership::withoutGlobalScopes()
+            ->where('tenant_id', $tenant->id)
+            ->where('user_id', $this->id)
+            ->first();
+    }
 
-        return $role instanceof Role ? $role : ($role ? Role::from($role) : null);
+    /** Rolle im aktuellen (oder angegebenen) Mandanten, null = kein aktiver Zugang. */
+    public function roleIn(?Tenant $tenant = null): ?Role
+    {
+        $membership = $this->membershipIn($tenant);
+
+        if (! $membership || ! $membership->isActive()) {
+            return null;
+        }
+
+        return $membership->role;
+    }
+
+    public function hasAccessTo(?Tenant $tenant = null): bool
+    {
+        return $this->is_platform_admin || $this->roleIn($tenant) !== null;
     }
 
     public function canManageCurrentTenant(): bool
     {
         return $this->is_platform_admin || (bool) $this->roleIn()?->canManage();
+    }
+
+    /** Filament: coach nur fuer owner/team, plattform nur fuer Plattform-Admins. */
+    public function canAccessPanel(Panel $panel): bool
+    {
+        return match ($panel->getId()) {
+            'coach' => $this->canManageCurrentTenant(),
+            'plattform' => (bool) $this->is_platform_admin,
+            default => false,
+        };
+    }
+
+    public function vorname(): string
+    {
+        return Str::of($this->name)->trim()->before(' ')->toString() ?: $this->name;
+    }
+
+    /** Kuerzel fuer Listen, die andere Teilnehmende sehen (z. B. "M. S."). */
+    public function kuerzel(): string
+    {
+        return collect(preg_split('~\s+~u', trim((string) $this->name)))->filter()->take(2)
+            ->map(fn ($t) => mb_strtoupper(mb_substr($t, 0, 1)).'.')->join(' ') ?: '?';
+    }
+
+    public function hasPassword(): bool
+    {
+        return filled($this->password);
     }
 }

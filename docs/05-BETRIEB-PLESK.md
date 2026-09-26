@@ -25,9 +25,78 @@ Cloudflare-Proxy fuer `app` aus lassen (DNS only), die Subdomain nicht ueber Lit
 1. Privates Repository anlegen (z. B. `sfrankenberger/coaching-app`), auf dem Server `git remote add origin ...` und pushen (Deploy-Key für den Server).
 2. Lokal klonen, mit Laravel Herd laufen lassen (`lea.localhost` ist im Seeder schon als Domain eingetragen, `TENANCY_FALLBACK=lea` für lokal).
 3. Claude Code arbeitet lokal, testet, committet, pusht.
-4. Auf dem Server `./deploy.sh` (pull, composer install --no-dev, migrate --force, optimize, Tailwind bauen).
+4. Auf dem Server `./deploy.sh` (pull, composer install --no-dev, migrate --force, Tailwind bauen, `filament:assets`, optimize).
 
 **Alternative: Claude Code direkt auf dem Server per SSH.** Schneller für den Anfang, aber ohne lokale Tests und mit Risiko für die Live-Seite. Nur, wenn SSH für den Benutzer freigeschaltet ist.
+
+## Erste Schritte nach dem ersten Deploy (Etappe 1)
+
+```bash
+PHP=/opt/plesk/php/8.4/bin/php
+cd /var/www/vhosts/leawernli.ch/app.leawernli.ch
+./deploy.sh                                   # pull, composer, migrate, CSS, Filament-Assets
+$PHP artisan db:seed                          # Mandant lea mit Branding und Import-Zuordnung (idempotent)
+$PHP artisan user:platform-admin mail@sfrankenberger.com --name="Sebastian"
+$PHP artisan import:wordpress lea --only=users --dry-run -v   # erst schauen
+$PHP artisan import:wordpress lea --only=users                # dann schreiben
+```
+
+In der `.env` muessen dafuer stehen: `WP_DB_DATABASE`, `WP_DB_USERNAME`, `WP_DB_PASSWORD`, `WP_DB_PREFIX=sWmOBXK94_` (nur lesend), `MAIL_*` fuer Mailgun, `TENANCY_FALLBACK` leer, `APP_LOCALE=de_CH`, `APP_FALLBACK_LOCALE=de` (sonst spricht Filament Englisch), `REDIS_PREFIX=lea_app_`.
+
+Anmelden: `https://app.leawernli.ch/anmelden`, Mailadresse eingeben, Link aus der Mail klicken. Wer keine Mitgliedschaft im Mandanten hat, bekommt keinen Link (die Seite verraet das nicht). Google/Apple: Client-ID und Secret unter `/plattform` beim Mandanten in `settings.oauth.google` bzw. `settings.oauth.apple` eintragen, Redirect-URL ist `https://app.leawernli.ch/anmelden/dienst/google/zurueck` bzw. `.../apple/zurueck`.
+
+Import-Zuordnung (in `tenants.settings.import.wordpress`, vom Seeder gesetzt): WordPress-ID 2 = owner, Rollen `administrator` und `lea_redaktion` = team, Kurszugang (`lea_zugaenge` gueltig oder Relation 13) = member, Rest = guest (nur mit `--with-guests`). Uebernommen werden Name, Mailadresse, Telefon (`lea_telefon`), die drei Schalter (`lea_te_aus`, `lea_am_aus`, `lea_ap_erinnerung_aus`) und ob die Einfuehrung gesehen wurde. Passwoerter werden nicht uebernommen, der Magic Link ersetzt sie. Der Import ist wiederholbar und ueberschreibt nichts, was die Person in der App selbst geaendert hat.
+
+## Stand auf dem Server (25.09.2026)
+
+Eingerichtet und geprueft, die App laeuft unter https://app.leawernli.ch:
+
+- Branch `claude/etappe-1-seitenhulle-magic-link-p0y0lb` ausgecheckt (nach dem Merge wieder `git checkout main && git pull`), `deploy.sh` gelaufen, alle Migrationen durch
+- `db:seed`, Plattform-Admin mail@sfrankenberger.com, Import `--only=alles`: 12 Personen (Lea, 2 Team, 8 Teilnehmerinnen, 1 Klientin), 19 Programme, 206 Einheiten, 69 Termine, Chats, 48 Impulse, 100 Podcastfolgen, 68 Themen
+- Mail ueber Mailgun (Domain mail.leawernli.ch, EU, Schluessel aus Mailster), Absender mail@leawernli.ch. Direkter Versand vom Server wurde von Gmail abgewiesen (IPv6 ohne SPF)
+- **Testbetrieb an**: Benachrichtigungen gehen nur an mail@sfrankenberger.com. Weitere Adressen im Coach-Bereich unter Einstellungen freigeben, zum Umschalten dort ausschalten
+- Web Push (VAPID), App-Icons, KI (Anthropic-Schluessel aus WordPress in `settings.ai`), Bruecke (Geheimnis in App und wp-config.php), Woo-Webhooks 1 (Bestellungen) und 2 (Abos) aktiv
+- Scheduler per Cron, Queue-Worker als Systemd-Dienst `lea-app-queue.service` (Root, `/etc/systemd/system/`, Log in `storage/logs/queue.log`), stuendlich `import:geplant` (Personen und Inhalte aus WordPress)
+- Nicht eingerichtet: Telegram (der Bot haengt an WordPress, ein zweiter Webhook wuerde ihn dort abhaengen), Google/Apple-Anmeldung (Redirect-URLs muessen in den Konsolen von Google und Apple eingetragen werden). Passkeys der Website werden nicht uebernommen (es gibt genau einen), in der App einmal neu anlegen
+- Backups: `.env` unter `storage/app/env-backup-*`, wp-config.php unter `/var/www/vhosts/leawernli.ch/private/wp-config.php.bak-vor-neueapp-*`
+
+## Etappen 2 bis 4 auf dem Server (nach dem Deploy)
+
+```bash
+PHP=/opt/plesk/php/8.4/bin/php
+cd /var/www/vhosts/leawernli.ch/app.leawernli.ch
+./deploy.sh
+$PHP artisan db:seed                                    # ergaenzt Feeds und Import-Zuordnung (idempotent)
+$PHP artisan import:wordpress lea --only=alles --dry-run # users, programs, begleitung, inhalte
+nohup nice -n 10 $PHP artisan import:wordpress lea --only=alles > storage/logs/import.log 2>&1 &
+$PHP artisan push:keys lea                              # Web Push (VAPID)
+$PHP artisan bridge:secret lea                          # SSO-Bruecke, Geheimnis in die wp-config.php (siehe 07)
+$PHP artisan import:wordpress lea --only=inhalte        # Impulse, Podcast, Themen aus WordPress, sonst stuendlich (import:geplant)
+$PHP artisan themen:profil lea --limit=20               # Themenfinder per KI (braucht ANTHROPIC_API_KEY)
+$PHP artisan branding:icons lea /var/www/vhosts/leawernli.ch/httpdocs/wp-content/uploads/lea-app   # App-Icons
+```
+
+Zusaetzlich in der `.env`: `ANTHROPIC_API_KEY` (KI), `QUEUE_CONNECTION=database` (Worker laeuft als Systemd-Dienst). Der Import kopiert Dateien aus `wp-content/uploads` nach `storage/app/tenants/1/` (Pfad in `settings.import.wordpress.uploads_dir`), das dauert beim ersten Mal.
+
+Die Coachin pflegt Aussehen, Absender, Website, Feeds und den Telegram-Bot-Namen selbst unter `/coach/einstellungen` (nur Rolle owner). Rundnachrichten an alle oder an ein Programm unter `/coach/rundnachricht`, Einladungen mit Anmeldelink aus der Personenliste. Alles andere, vor allem Geheimnisse, unter `/plattform` (JSON in `tenants.settings`):
+
+| Schluessel | Wofuer |
+|---|---|
+| `mail.from_address`, `mail.from_name`, `mail.reply_to` | Absender aller Mails |
+| `oauth.google`, `oauth.apple` | Anmeldung mit Google/Apple |
+| `push.vapid` | Web Push (von `push:keys` gesetzt) |
+| `telegram.bot_token`, `telegram.bot_username`, `telegram.webhook_secret` | Telegram-Bot; Webhook des Bots auf `https://app.leawernli.ch/hooks/telegram/{webhook_secret}` setzen |
+| `shop.webhook_secret` | WooCommerce-Webhook (siehe 07) |
+| `bridge.secret` | SSO-Bruecke (von `bridge:secret` gesetzt) |
+| `feeds` | RSS-Quellen fuer Impulse und Podcast (fuer Mandanten ohne WordPress; bei Lea leer, dort kommt alles aus dem WordPress-Import) |
+| `import.wordpress.schedule` | Teile des WordPress-Imports, die stuendlich laufen (`import:geplant`), bei Lea `['users', 'inhalte']`. `programs` und `begleitung` bewusst nicht: sie wuerden Aenderungen am Testkurs in der App ueberschreiben |
+| `notifications.test_only`, `notifications.test_emails` | Testbetrieb: Benachrichtigungen nur an diese Adressen (im Coach-Bereich unter Einstellungen) |
+| `ai.anthropic_key`, `ai.model` | eigener KI-Schluessel des Mandanten (sonst Plattform) |
+| `passkeys.rp_id`, `passkeys.origins` | Relying Party fuer Passkeys (fuer Lea `leawernli.ch`, damit Website und App dieselben Passkeys nutzen) |
+| `onboarding.steps` | eigene Texte der Einfuehrung (sonst Vorgabe mit dem Namen der Coachin), `coach_name` fuer die Anrede |
+| `import.wordpress` | Zuordnung fuer den Import |
+
+Scheduler-Laeufe (`routes/console.php`): Termin-Erinnerungen und Nachfassen alle zehn Minuten, Aufgaben-Hinweise 8 und 18 Uhr, Abendmail 19:30, Feeds stuendlich, geplante WordPress-Importe stuendlich um :17, geplante Beitraege alle zehn Minuten. Zeiten gelten in der Zeitzone des Mandanten.
 
 ## Cron (bereits eingetragen)
 
@@ -35,7 +104,9 @@ Cloudflare-Proxy fuer `app` aus lassen (DNS only), die Subdomain nicht ueber Lit
 * * * * * cd /var/www/vhosts/leawernli.ch/app.leawernli.ch && /opt/plesk/php/8.4/bin/php artisan schedule:run >> /dev/null 2>&1
 ```
 
-Queue-Worker wird im Scheduler selbst gestartet (`routes/console.php`): `queue:work --stop-when-empty --max-time=50`, einmal pro Minute, ohne Überlappung.
+Reverb (WebSockets fuer den Chat): Systemd-Dienst `lea-app-reverb.service` (`reverb:start --host=127.0.0.1 --port=8080`), Apache leitet `/app/` per `ProxyPass ws://` weiter (`/var/www/vhosts/system/app.leawernli.ch/conf/vhost.conf` und `vhost_ssl.conf`, danach `plesk sbin httpdmng --reconfigure-domain`). In der `.env`: `BROADCAST_CONNECTION=reverb`, `REVERB_APP_ID/KEY/SECRET`, `REVERB_HOST=127.0.0.1`, `REVERB_PORT=8080`, `REVERB_SCHEME=http` (PHP-Client spricht Reverb direkt an), `REVERB_PUBLIC_HOST=app.leawernli.ch`, `REVERB_PUBLIC_PORT=443`, `REVERB_PUBLIC_SCHEME=https` (fuer den Browser), `REVERB_SERVER_HOST=127.0.0.1`, `REVERB_SERVER_PORT=8080`. Ohne Reverb fragt der Chat wie bisher alle 5 Sekunden nach. Deploy startet beide Dienste neu (`/etc/sudoers.d/lea-app`).
+
+Queue-Worker: Systemd-Dienst `lea-app-queue.service` (`queue:work --sleep=2 --tries=3 --max-time=3600`, startet sich nach einer Stunde und nach jedem Deploy neu: `systemctl restart lea-app-queue`). Stand: `systemctl status lea-app-queue`, Log `storage/logs/queue.log`.
 
 ## Backups
 

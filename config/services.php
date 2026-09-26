@@ -14,6 +14,14 @@ return [
     |
     */
 
+    // Mailgun (Versand aller Mails, fuer Lea dieselbe Domain wie WordPress/Mailster)
+    'mailgun' => [
+        'domain' => env('MAILGUN_DOMAIN'),
+        'secret' => env('MAILGUN_SECRET'),
+        'endpoint' => env('MAILGUN_ENDPOINT', 'api.eu.mailgun.net'),
+        'scheme' => 'https',
+    ],
+
     'postmark' => [
         'key' => env('POSTMARK_API_KEY'),
     ],
@@ -33,6 +41,12 @@ return [
             'bot_user_oauth_token' => env('SLACK_BOT_USER_OAUTH_TOKEN'),
             'channel' => env('SLACK_BOT_USER_DEFAULT_CHANNEL'),
         ],
+    ],
+
+    // Sprachnachrichten nach m4a wandeln (iPhone, Mac)
+    'ffmpeg' => [
+        'enabled' => env('FFMPEG_ENABLED', true),
+        'bin' => env('FFMPEG_BIN', 'ffmpeg'),
     ],
 
 ];

@@ -31,7 +31,33 @@ php84 artisan migrate
 php84 artisan db:seed
 php84 artisan test
 php84 artisan tenant:create <slug> "<Name>" <domain> --owner-email=...
+php84 artisan user:platform-admin <email>              # Plattform-Admin (nur Sebastian)
+php84 artisan import:wordpress lea --only=users --dry-run -v   # auch programs, begleitung, inhalte, alles
+php84 artisan push:keys lea                            # VAPID-Schluessel fuer Web Push
+php84 artisan bridge:secret lea                        # Geheimnis der SSO-Bruecke (in WordPress eintragen)
+php84 artisan benachrichtigungen:runde termine         # Laeufe (termine, nachfassen, aufgaben, abendmail), sonst Scheduler
+php84 artisan inhalte:feeds lea                        # Impulse und Podcast per RSS, sonst stuendlich
+php84 artisan aufzeichnungen:wache lea                 # Vimeo-Aufzeichnungen zuordnen, Abschrift, Zusammenfassung (alle 15 Min)
+php84 artisan zoom:anwesenheit lea --trocken           # wer war im Zoom-Call (stuendlich, ohne --trocken setzt es "live dabei")
+php84 artisan api:token <email>                        # Token fuer die JSON-API /api/v1 (Sanctum)
+php artisan test --parallel                            # lokal, mit paratest etwa dreimal so schnell
+php84 artisan themen:profil lea --limit=20             # Themenfinder per KI
+php84 artisan branding:icons lea <ordner>              # App-Icons uebernehmen
+php84 artisan filament:assets                          # nach Filament-Updates, laeuft im Deploy
+bin/build-css                                          # Tailwind bauen (bin/build-css --watch beim Entwickeln)
 ```
+
+Nachschlagen: `App\Content\Fundus` (Wort sucht, Satz fragt die KI, Tuer fuer Gesperrtes), Sammlungen `App\Models\Sammlung`, Suchverlauf `SearchHistory`, Werkzeuge `App\Models\Tool` (nur `memberships.settings.ausbildung` und Team). Coach-Werkzeuge in der App-Huelle: `/coachees` (`CoacheesController`, `App\Coach\Lage`, `App\Coach\Neues`), Assistent `App\Ai\Assistent` (Filament-Seite `coach/assistent`, Wissen fest im Code plus `settings.ai.wissen`). Eigene Blade-Ansichten im Filament-Panel brauchen ihre Hilfsklassen aus `public/css/coach.css`, Filament 5 liefert keine Tailwind-Utilities mit.
+
+Weitere Ordner: `app/Programs` (Zugriff, Fortschritt, Begleitung), `app/Chat`, `app/Notifications` (Notifier, Kanaele, Runden), `app/Shop` (Zugaenge, WooCommerce), `app/Content` (Feeds, Inhalte, Themen), `app/Ai` (Anthropic, Summarizer), `app/Import/WordPress`, `app/Coach` (Lage/Ampel, Kommentare, Wochencheck), `app/Recordings` (Vimeo, Wache, Freigabe), `app/Zoom` (Anwesenheit), `app/Booking` (Google-Kalender, Verfuegbarkeit, Buchung). Einstellungen je Mandant in `tenants.settings`: `mail`, `oauth`, `push.vapid`, `telegram`, `shop.webhook_secret`, `bridge.secret`, `feeds`, `ai`, `import.wordpress`, `vimeo.token`, `recordings`, `zoom`, `google.service_account`, `booking` (`enabled` schaltet die Buchung frei), `wochencheck.haken`.
+
+Wer darf was: Policies in `app/Policies` (`Gate::authorize('view', $program)` usw.), Regeln liegen in `ProgramAccess`, `Begleitung`, `Chat`. Formulare pruefen `app/Http/Requests`. Funktionen je Mandant ueber Pennant (`Feature::for($tenant)->active('buchung')`, definiert in `AppServiceProvider`). Mitteilungen in der App (Glocke): `App\Models\Mitteilung`, jede `Nachricht` aus dem `Notifier` landet dort. Suche: Scout mit Datenbank-Treiber (`Searchable` an Unit, Resource, Event, Post, PodcastEpisode). Chat in Echtzeit: Reverb (`MessageSent` auf `gespraech.{id}`), ohne Reverb fragt der Browser alle 5 Sekunden nach.
+
+Schriften: `font_body` (Mono) fuer Titel, Zeilen und Meta, `font_read` (Serifen) fuer Lesetexte ab drei Zeilen (`.prose-app`, `.lesetext`), `font_heading` fuer Ueberschriften. Coach-Bereich nutzt dieselben Variablen (`public/css/coach.css`).
+
+Zeiten: in der Datenbank UTC, Modelle lesen in der Zeitzone des Mandanten (`Ortszeit` in `BelongsToTenant`), Abfragen binden immer UTC (`UtcBindings`). Beim Testen Zeiten also in UTC in die DB schreiben und in Ortszeit erwarten.
+
+Anmeldung: Magic Link (`App\Auth\MagicLink`, Tabelle `login_tokens`), Passwort optional, Google/Apple je Mandant, Passkeys (Laragear WebAuthn, RP-ID je Mandant ueber `TenantWebAuthn`), Bruecke aus WordPress (`App\Auth\Bridge`). Seitenhülle: `resources/views/components/layouts/app.blade.php`, Branding-Variablen aus `App\Tenancy\Branding`. Coach-Bereich: Filament-Panel `coach` unter `app/Filament/Coach`, Plattform unter `app/Filament/Plattform`. Filament-Routen laufen nicht über die `web`-Gruppe, darum steht `IdentifyTenant` in jedem Panel als erste Middleware.
 
 ## Harte Regeln für Mandantenfähigkeit
 

@@ -36,6 +36,10 @@ class IdentifyTenant
         abort_unless($tenant && $tenant->is_active, 404);
 
         $this->current->set($tenant);
+        // Coach-Bereich: Datums- und Zeitfelder in Ortszeit anzeigen und eingeben, gespeichert wird UTC
+        if ($tenant->timezone) {
+            \Filament\Support\Facades\FilamentTimezone::set($tenant->timezone);
+        }
         app()->setLocale($tenant->locale ?? config('app.locale'));
 
         return $next($request);

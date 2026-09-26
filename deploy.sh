@@ -5,11 +5,17 @@ cd /var/www/vhosts/leawernli.ch/app.leawernli.ch
 PHP=/opt/plesk/php/8.4/bin/php
 COMPOSER="$PHP /opt/psa/var/modules/composer/composer.phar"
 
+# Die CSS-Datei ist committet, der Server baut sie neu: vor dem Holen zuruecksetzen, sonst blockiert sie den Pull
+git checkout -- public/css/app.css 2>/dev/null || true
 git pull --ff-only
 $COMPOSER install --no-dev --no-interaction --prefer-dist --optimize-autoloader
 $PHP artisan migrate --force
 [ -x bin/build-css ] && bin/build-css
+$PHP artisan filament:assets
 $PHP artisan optimize:clear
 $PHP artisan optimize
 $PHP artisan filament:optimize || true
+# Worker neu starten, damit er den neuen Code laedt (Dienst darf von diesem Benutzer neu gestartet werden, siehe sudoers)
+sudo -n systemctl restart lea-app-queue 2>/dev/null || $PHP artisan queue:restart
+sudo -n systemctl restart lea-app-reverb 2>/dev/null || true
 echo "Deploy fertig: $(git log -1 --oneline)"

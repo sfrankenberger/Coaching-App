@@ -3,17 +3,30 @@
     "name": "laravel/laravel",
     "type": "project",
     "description": "The skeleton application for the Laravel framework.",
-    "keywords": ["laravel", "framework"],
+    "keywords": [
+        "laravel",
+        "framework"
+    ],
     "license": "MIT",
     "require": {
         "php": "^8.3",
         "filament/filament": "^5.8",
+        "laragear/webauthn": "^5.0",
         "laravel/framework": "^13.17",
+        "laravel/pennant": "^1.26",
+        "laravel/reverb": "^1.12",
+        "laravel/sanctum": "^4.0",
+        "laravel/scout": "^11.8",
         "laravel/socialite": "^5.31",
         "laravel/tinker": "^3.0",
-        "livewire/livewire": "^4.4"
+        "livewire/livewire": "^4.4",
+        "minishlink/web-push": "^11.0",
+        "socialiteproviders/apple": "^6.1",
+        "symfony/http-client": "^8.1",
+        "symfony/mailgun-mailer": "^8.1"
     },
     "require-dev": {
+        "brianium/paratest": "^7.20",
         "fakerphp/faker": "^1.23",
         "laravel/pail": "^1.2.5",
         "laravel/pao": "^1.0.6",
@@ -40,8 +53,9 @@
             "@php -r \"file_exists('.env') || copy('.env.example', '.env');\"",
             "@php artisan key:generate",
             "@php artisan migrate --force",
-            "npm install --ignore-scripts",
-            "npm run build"
+            "@php artisan filament:assets",
+            "bin/build-css",
+            "@php artisan db:seed"
         ],
         "dev": [
             "Composer\\Config::disableProcessTimeout",

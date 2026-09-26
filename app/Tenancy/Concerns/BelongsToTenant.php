@@ -11,10 +11,13 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * Pflicht fuer JEDES Modell mit Mandantendaten.
  * - filtert automatisch auf den aktuellen Mandanten
  * - setzt tenant_id beim Anlegen
+ * - liest Zeitpunkte in der Ortszeit des Mandanten (Ortszeit)
  * Ausnahme nur bewusst: Model::withoutGlobalScope(TenantScope::class)
  */
 trait BelongsToTenant
 {
+    use Ortszeit;
+
     public static function bootBelongsToTenant(): void
     {
         static::addGlobalScope(new TenantScope);

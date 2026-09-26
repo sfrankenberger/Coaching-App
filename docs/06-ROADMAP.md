@@ -14,40 +14,74 @@ Jede Etappe endet mit einem Stand, den Lea anschauen kann.
 
 ## Etappe 1 - Anmelden und Hülle (Tage 1 bis 3)
 
-- [ ] Seitenhülle als Blade-Layout mit Branding aus `tenants.branding` (CSS-Variablen), Kartenmass und Schriftleiter aus 04
-- [ ] Tailwind-Standalone einrichten, `bin/build-css`
-- [ ] Anmeldung: Magic Link als Standard, Passwort optional, Google und Apple über Socialite (Zugangsdaten je Mandant in settings)
-- [ ] Passkeys (WebAuthn), RP-ID konfigurierbar je Mandant; Übernahme aus `secure_passkeys_webauthns` prüfen
-- [ ] PWA: Manifest je Mandant, Service Worker, App-Icons (liegen in WordPress unter `uploads/lea-app/`)
-- [ ] Filament-Panel `coach` (Pfad `/coach`) mit Zugriff nur für owner/team, Panel `plattform` nur für Plattform-Admin
-- [ ] Import 1: Personen und Rollen (`php84 artisan import:wordpress lea --only=users`)
+- [x] Seitenhülle als Blade-Layout (`components/layouts/app`, `auth`) mit Branding aus `tenants.branding` als CSS-Variablen (`App\Tenancy\Branding`), Kartenmass und Schriftleiter aus 04, Leiste unten auf dem Handy
+- [x] Tailwind-Standalone eingerichtet, `bin/build-css` (laedt die CLI bei Bedarf, baut `public/css/app.css`)
+- [x] Anmeldung: Magic Link als Standard (15 Minuten, einmalig, je Mandant), Passwort optional (im Profil setzbar), Google und Apple über Socialite (Zugangsdaten je Mandant in `settings.oauth`, Knopf erscheint nur mit Zugangsdaten)
+- [x] Profil: Name, Handynummer, drei Schalter "Was dich erreicht", Passwort
+- [x] Passkeys (WebAuthn, Laragear) mit RP-ID je Mandant (`settings.passkeys.rp_id`, für Lea `leawernli.ch`, damit die Passkeys der Website weitergelten). Übernahme der Website-Passkeys aus `secure_passkeys_webauthns` noch offen (Format prüfen), sonst einmal neu anlegen
+- [x] PWA: Manifest je Mandant (`/manifest.webmanifest`), Service Worker ohne Cache. App-Icons: `php84 artisan branding:icons lea /var/www/vhosts/leawernli.ch/httpdocs/wp-content/uploads/lea-app`
+- [x] Filament-Panel `coach` (`/coach`, nur owner/team, Ressource Personen) und `plattform` (`/plattform`, nur Plattform-Admin, Ressource Mandanten). Anmeldung läuft über die App, nicht über Filament
+- [x] Import 1: Personen und Rollen (`php84 artisan import:wordpress lea --only=users`, wiederholbar, `--dry-run`, `--with-guests`)
 
-## Etappe 2 - Kursraum (Tage 4 bis 8)
+Stand nach Etappe 1: Lea kann sich per Link anmelden, sieht Start und Profil, im Coach-Bereich die importierten Personen. Zum Testen auf dem Server: Deploy, `.env` ergänzen (`WP_DB_*`), Import laufen lassen, Sebastian als Plattform-Admin setzen (siehe 05).
 
-- [ ] Datenmodell Programme (03), Filament-Ressourcen dafür
-- [ ] Kursraum für Teilnehmerinnen: Übersicht, Woche/Schritt, Einheit mit Video und Text, Übungen, Fortschritt
-- [ ] Taktung: wöchentlich freischalten, alles frei, keine Schritte (1:1)
-- [ ] Notizen, Aufgabenknöpfe je Übung, Freigabe einmal am Anfang (Workbook-Prinzip)
-- [ ] Import 2: Kurse, Module, Lektionen, Workbook
-- [ ] **Testkurs** in der App vollständig befüllt
+## Etappe 2 - Kursraum (erledigt 25.09.)
 
-## Etappe 3 - Begleitung (Tage 9 bis 13)
+- [x] Datenmodell Programme (03): programs, program_steps, units, exercises, progress, answers, program_members, offers, offer_products, offer_program, entitlements, notes. Zugriff an einer Stelle: `App\Programs\ProgramAccess` (Gate `view-program`)
+- [x] Filament: Programme (Schritte, Einheiten mit Übungsteilen, Mitglieder), Angebote mit Produktzuordnung und Zugängen
+- [x] Kursraum: Meine Kurse, Programm, Schritt, Einheit mit Videos, Text, Links, Übungen (Text, Skala, Werte, Haken), Fortschritt, Notiz je Einheit
+- [x] Taktung: wöchentlich (unlocks_at je Schritt), alles frei, keine Schritte (1:1)
+- [x] Freigabe an die Coachin: einmal "alles" am Anfang oder je Einheit (Workbook-Prinzip)
+- [x] Import 2: Kurse, Module, Lektionen, Workbooks (JSON), Fortschritt, Antworten, Zugänge (`--only=programs`)
+- [x] Kurse auf dem Server befüllt (Import 25.09.)
+- [ ] Mit Lea anschauen, Testkurs festlegen (Kurs-ID in `LEA_NEUEAPP_KURSE` im Bruecken-Snippet, Adressen im Testbetrieb freigeben)
 
-- [ ] Termine mit Kalender, Zoom-Link, Aufzeichnung (Vimeo), Anhänge
-- [ ] Ressourcen mit polymorpher Zuordnung, Teilen an Coachees
-- [ ] Aufgaben mit Fälligkeit und Erinnerung
-- [ ] Chat 1:1 und Gruppe, Sprachnachrichten, Gelesen-Haken, Reaktionen, schwebender Knopf
-- [ ] Benachrichtigungen: Mail (Mailgun), Web Push, Telegram, Abendmail, Schalter im Profil
-- [ ] Coachee-Dossier für Lea
-- [ ] Import 3: Termine, Ressourcen, Aufgaben, Notizen, Reflexionen, Chats
+## Etappe 3 - Begleitung (erledigt 25.09.)
 
-## Etappe 4 - Übergang (Tage 14 bis 18)
+- [x] Termine: Liste (kommend, vorbei), Detail mit Zoom, Aufzeichnung (Vimeo), Absagen, "live dabei", "gesehen", Material zum Termin
+- [x] Material mit polymorpher Zuordnung (Programm, Schritt, Einheit, Termin, Person), Teilen an Coachees mit Benachrichtigung, Datei-Auslieferung nur mit Zugang
+- [x] Aufgaben (eigene und von der Coachin, täglich mit Wochentagen, fällig), Notizen, Reflexion (Woche, teilen), Journal
+- [x] Chat 1:1 und Gruppe je Programm: Polling, Gelesen-Haken, Reaktionen, Sprachnachrichten, Dateien, Verweise auf Elemente, schwebender Knopf; Antworten der Coachin per Telegram
+- [x] Benachrichtigungen: ein Dienst (`Notifier`) wählt Push, Telegram, Mail; Termin-Erinnerungen (9 Uhr, 60 Minuten vorher), Nachfassen bei Ungelesenem, Aufgaben-Hinweise, Abendmail; Schalter im Profil
+- [x] Coachee-Dossier im Coach-Bereich (Programme mit Stand, geteilte Antworten, Aufgaben, Reflexionen, Notizen, Termine, Kontaktknöpfe, Weg ins Gespräch)
+- [x] Import 3: Termine, Material, Aufgaben, Notizen, Reflexionen, Journal, Kommentare, Chats, Wochenstruktur (`--only=begleitung`)
 
-- [ ] WooCommerce-Webhook → entitlements; Angebote und Produktzuordnung in Filament
-- [ ] SSO-Brücke aus WordPress (signierter Link), Knopf "Zur neuen App" im alten Mitgliederbereich nur für Testkurs-Teilnehmerinnen
-- [ ] Impulse und Podcast (per RSS aus WordPress), Themenfinder, Merkliste
-- [ ] KI-Zusammenfassung von Terminen, Aufgaben aus Zusammenfassung
+## Etappe 4 - Übergang (Code erledigt 25.09., Betrieb offen)
+
+- [x] WooCommerce-Webhook `POST /hooks/woocommerce` (Woo-Signatur) → entitlements, neue Personen mit Mitgliedschaft und Willkommensmail; Abos über `subscription.*`. Produktzuordnung in Filament (Angebote)
+- [x] SSO-Brücke `GET /sso?token=` (HMAC, 60 Sekunden, einmalig), `bridge:secret lea`; WordPress-Snippet und Knopf "Zur neuen App" in `docs/07-UEBERGANG.md` (im WordPress noch einzubauen)
+- [x] Impulse und Podcast per RSS (`inhalte:feeds`, stündlich) und aus WordPress (`--only=inhalte`), Themenfinder (Themen an allen Inhalten, KI-Zuordnung), Merkliste
+- [x] KI-Zusammenfassung von Aufzeichnungen mit Aufgabenvorschlägen (Coach-Bereich und für die Person in ihrer 1:1-Sitzung), Podcast-Aufbereitung, Themenfinder-Texte
+- [x] Deploy, `.env` (Mailgun, Redis, WP-DB), `db:seed`, `import:wordpress lea --only=alles`, `push:keys lea`, `bridge:secret lea`, Woo-Webhooks, Bruecke in WordPress, KI-Schluessel (25.09., siehe 05)
+- [x] Testbetrieb: Benachrichtigungen nur an freigegebene Adressen, bis umgeschaltet wird
 - [ ] Parallelbetrieb mit dem Testkurs, Rückmeldungen einarbeiten
+- [x] Passkeys, App-Icons (Kommando), Willkommens-Einführung (8 Schritte, `/willkommen`), Dashboard der Coachin (Kennzahlen, Neues von den Personen, nächste Termine)
+- [x] Coach-Bereich: Einstellungen (Aussehen, Absender, Feeds, Telegram-Name), Rundnachricht an alle oder ein Programm, Einladungen mit Anmeldelink
+- [x] Startseite mit Tagesüberblick (Neu seit dem letzten Besuch, aktuelle Woche, nächster Termin, Aufgaben, Impuls), Kalender-Abo je Person (webcal) und Termin-Datei
+
+## Etappe 6 - Abgleich mit dem alten Bereich (25.09., siehe 08-ABGLEICH)
+
+- [x] Design wie der alte Mitgliederbereich, Fehler aus dem Abgleich, Kursraum mit Wochenseite, Workbook-Bausteinen und Fragen
+- [x] Zeiten in Ortszeit anzeigen und eingeben, UTC speichern
+- [x] Coach-Werkzeuge: Ampel, Kommentare, private Notizen, Kontingent, Terminvorschlag, KI-Vorbereitung, Rundnachricht an Einzelne, Wochencheck
+- [x] Aufzeichnungs-Wache mit Vimeo, Freigabe mit Mail und Push, neue Termine melden, Zoom-Anwesenheit
+- [x] Buchung mit Google-Kalender (eingerichtet, noch ausgeschaltet: `settings.booking.enabled`), Meine Buchungen im Profil
+- [ ] Rechnungen aus bexio (über WordPress), Buchung verschieben, Buchung für Gäste
+
+## Etappe 7 - Design, Code und Laravel-Bausteine (26.09.)
+
+- [x] Lesetexte in Serifen, Kursliste einheitlich, keine Karte in der Karte, Kapitelliste mit laufender Markierung, leere Zustaende, Coach-Bereich im Stil der App
+- [x] Zeit-Helfer, `Branding::coachName`, Komponenten Termin-Karte und Kommentare, Policies, FormRequests, `EinheitController`, Inline-Styles in Klassen
+- [x] Mitteilungen mit Glocke, Suche ueber alles (Scout), Funktionen je Mandant (Pennant), JSON-API v1 (Sanctum), Queue-Worker und Reverb als Systemd-Dienste, Chat in Echtzeit
+- [ ] Livewire fuer Workbook-Bausteine (spaeter, wenn es hakt)
+
+## Etappe 8 - Zweiter Rundgang: Nachschlagen, Werkzeuge, Assistent, Coachees (26.09.)
+
+- [x] Nachschlagen mit KI-Suche, Themen nach Gruppen, Vorschau, Merken, Teilen, Sammlungen, Meine Suchen, Mein Archiv
+- [x] Werkzeuge fuer die Coach-Ausbildung (Kennzeichen an der Mitgliedschaft, Tuer fuer alle anderen)
+- [x] Digitaler Assistent im Coach-Bereich (Fragen mit App-Wissen und Fakten zu Menschen, Themen pruefen, Werkzeuge, Geteiltes)
+- [x] Coachees als Seite in der App-Huelle (Ampel, Freigegebenes, Personenkarten, Auskunft)
+- [x] Coach-Bereich: Hilfsklassen fuer eigene Ansichten, Neues gebuendelt, Platzhalter in Beitraegen, Marken fuer Entwuerfe
 
 ## Umschalten (nach Leas Freigabe)
 
@@ -58,4 +92,4 @@ Jede Etappe endet mit einem Stand, den Lea anschauen kann.
 
 ## Später
 
-Community, Auswertung, Zoom-Anwesenheit, Stripe als zweite Zugangsquelle, Mandanten-Onboarding, Abrechnung der Plattform, Reverb für Echtzeit, native Apps.
+Community, Auswertung, Stripe als zweite Zugangsquelle, Mandanten-Onboarding, Abrechnung der Plattform, Reverb für Echtzeit, native Apps.

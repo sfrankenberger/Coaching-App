@@ -56,6 +56,9 @@ plattform-domain (später)                - Plattform-Verwaltung (Sebastian)
 
 ## Anmeldung und Übergang von WordPress
 
+- **Magic Link (umgesetzt):** `POST /anmelden/link` legt in `login_tokens` einen Hash ab (15 Minuten, einmalig, `tenant_id`), die Mail geht mit Absender aus `settings.mail` raus. `GET /anmelden/{token}` meldet an und setzt "angemeldet bleiben". Ein Link gilt nur auf der Domain, auf der er angefordert wurde. Unbekannte Adressen und Personen ohne Mitgliedschaft im Mandanten bekommen keine Mail, die Antwortseite ist trotzdem dieselbe. Angemeldete ohne aktive Mitgliedschaft werden von `EnsureMembership` abgemeldet.
+- **Passwort (optional):** `users.password` ist nullable, wer will, setzt im Profil eines. Google/Apple über Socialite mit Zugangsdaten aus `settings.oauth.{google,apple}`; ohne Zugangsdaten erscheint kein Knopf.
+
 - **Passkeys:** Auf leawernli.ch registrierte Passkeys sind an die Relying Party `leawernli.ch` gebunden. Setzt die App die RP-ID ebenfalls auf `leawernli.ch` (erlaubt, weil `app.` eine Subdomain ist), lassen sich die gespeicherten öffentlichen Schlüssel aus `secure_passkeys_webauthns` übernehmen. **Muss geprüft werden** (Format der gespeicherten Credentials). Sonst: einmal neu anlegen, per Magic Link ist das ein Klick.
 - **Brücke während des Parallelbetriebs:** WordPress erzeugt für eingeloggte Personen einen signierten, 60 Sekunden gültigen Link (`/sso?token=...`, HMAC mit gemeinsamem Geheimnis `WP_BRIDGE_SECRET`). Die App prüft Signatur, Ablauf und Einmaligkeit und meldet die Person an. So kommt man aus dem alten Mitgliederbereich ohne erneutes Anmelden in die App.
 - **Zugänge aus WooCommerce:** Woo-Webhook `order.updated` (Status completed/processing) und Subscription-Statuswechsel an `POST /hooks/woocommerce/{tenant}` mit Woo-Signatur. Die App ordnet Produkt-IDs Angeboten zu (Tabelle `offer_products`) und legt `entitlements` an bzw. beendet sie.
