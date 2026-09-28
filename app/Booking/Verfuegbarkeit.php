@@ -34,7 +34,11 @@ class Verfuegbarkeit
         if ($frisch) {
             Cache::forget($schluessel);
         }
-        $eintraege = Cache::remember($schluessel, 300, fn () => $this->google->eintraege(now()->startOfDay(), $bis));
+        // Im Cache nur Text (keine Carbon-Objekte, die lassen sich unter PHP-FPM nicht sicher zurueckladen)
+        $eintraege = collect(Cache::remember($schluessel, 300, fn () => collect($this->google->eintraege(now()->startOfDay(), $bis))
+            ->map(fn ($e) => ['summary' => (string) $e['summary'], 'frei' => (bool) ($e['frei'] ?? false), 'start' => $e['start']->toIso8601String(), 'ende' => $e['ende']->toIso8601String()])->all()))
+            ->map(fn ($e) => $e + ['start' => Carbon::parse($e['start']), 'ende' => Carbon::parse($e['ende'])])
+            ->map(fn ($e) => array_merge($e, ['start' => Carbon::parse($e['start']), 'ende' => Carbon::parse($e['ende'])]))->all();
 
         // Stichwort ohne Leerzeichen vergleichen: "Coachingblock" und "Coaching Block" sind dasselbe
         $wort = preg_replace('~\s+~u', '', mb_strtolower((string) $this->opt('block_keyword', 'Coaching')));
