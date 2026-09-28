@@ -3,6 +3,7 @@
 namespace App\Providers\Filament;
 
 use App\Filament\Middleware\ApplyTenantBranding;
+use App\Http\Middleware\AlsAndere;
 use App\Tenancy\Branding;
 use App\Tenancy\Middleware\IdentifyTenant;
 use Filament\Http\Middleware\Authenticate;
@@ -68,6 +69,7 @@ class CoachPanelProvider extends PanelProvider
                 AddQueuedCookiesToResponse::class,
                 StartSession::class,
                 AuthenticateSession::class,
+                AlsAndere::class,
                 ShareErrorsFromSession::class,
                 PreventRequestForgery::class,
                 SubstituteBindings::class,

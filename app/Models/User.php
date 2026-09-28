@@ -81,16 +81,20 @@ class User extends Authenticatable implements FilamentUser, WebAuthnAuthenticata
         return $this->is_platform_admin || $this->roleIn($tenant) !== null;
     }
 
+    /**
+     * Verwalten heisst Rolle owner oder team im Mandanten. Der Plattform-Admin ist in der App eine
+     * normale Person (er sieht Lea ueber "Ansehen als"), nur das Filament-Panel bleibt ihm offen.
+     */
     public function canManageCurrentTenant(): bool
     {
-        return $this->is_platform_admin || (bool) $this->roleIn()?->canManage();
+        return (bool) $this->roleIn()?->canManage();
     }
 
     /** Filament: coach nur fuer owner/team, plattform nur fuer Plattform-Admins. */
     public function canAccessPanel(Panel $panel): bool
     {
         return match ($panel->getId()) {
-            'coach' => $this->canManageCurrentTenant(),
+            'coach' => $this->is_platform_admin || $this->canManageCurrentTenant(),
             'plattform' => (bool) $this->is_platform_admin,
             default => false,
         };

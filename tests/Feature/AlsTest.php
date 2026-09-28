@@ -29,6 +29,12 @@ class AlsTest extends TestCase
         $this->actingAs($seb)->get('http://a.test/als')->assertOk()->assertSee('Lea Coach')->assertSee('Mia Muster')->assertSee('Team')->assertSee('Teilnehmerinnen');
         $this->actingAs($seb)->get('http://a.test/')->assertOk()->assertSee('Ansehen als ...');
 
+        // Als Kunde (Rolle client) ist der Plattform-Admin in der App eine normale Person, das Panel bleibt ihm offen
+        $this->a->users()->updateExistingPivot($seb->id, ['role' => Role::Client->value]);
+        $this->actingAs($seb)->get('http://a.test/')->assertOk()->assertSee('Hallo Sebastian')->assertSee('Ansehen als ...')->assertDontSee('Guten Tag')->assertDontSee('Coachees');
+        $this->actingAs($seb)->get('http://a.test/coachees')->assertForbidden();
+        $this->actingAs($seb)->get('http://a.test/coach')->assertOk();
+
         // Als Mia: Teilnehmer-Sicht, Balken oben, ihr "zuletzt hier" bleibt unberuehrt
         $this->actingAs($seb)->post("http://a.test/als/{$mia->id}")->assertRedirect('http://a.test');
         $r = $this->actingAs($seb)->withSession(['als_user_id' => $mia->id])->get('http://a.test/')->assertOk();
