@@ -1,6 +1,25 @@
 <x-layouts.app title="Start" :schmal="true">
-    <h1 style="margin:6px 0 2px">Hallo {{ $person->vorname() }}</h1>
-    <p class="unterzeile m-0 mb-1.5">{{ now()->translatedFormat('l, j. F') }}</p>
+    <h1 style="margin:6px 0 12px">Hallo {{ $person->vorname() }}</h1>
+
+    {{-- Diese Woche / weiter im Kurs, in der Kursfarbe --}}
+    @foreach ($weiter as $w)
+        @php $p = $w['program']; $stand = $w['stand']; $step = $w['step']; @endphp
+        <h2 class="abschnitt"><i class="fa-solid fa-graduation-cap"></i>{{ $step ? 'Diese Woche' : 'Mein Kurs' }}</h2>
+        <a href="{{ $step ? route('kurse.schritt', [$p, $step]) : ($stand['next'] ? route('kurse.einheit', [$p, $stand['next']]) : route('kurse.show', $p)) }}" class="woche" style="--kc: {{ $p->color ?: '#7C8C9A' }}">
+            <span class="bild">
+                @if ($p->cover_url)<img src="{{ $p->cover_url }}" alt="">@else<i class="fa-solid fa-{{ $p->icon ?: 'seedling' }}"></i>@endif
+            </span>
+            <span class="lab">{{ $p->title }}</span>
+            <span class="t">{{ $step ? $step->title : ($stand['next']?->title ?? $p->title) }}</span>
+            @if ($step && $w['woche'])<span class="k">Woche {{ $w['woche'] }} von {{ $w['wochen'] }}</span>@endif
+            <span class="reihe">
+                <span class="balken"><span style="width: {{ $stand['percent'] }}%"></span></span>
+                <span class="z">{{ $stand['done'] }} von {{ $stand['total'] }} erledigt</span>
+            </span>
+            @if ($step && $stand['next'])<span class="als">Als Nächstes: {{ $stand['next']->title }}</span>@endif
+            <span class="cta">{{ $step ? 'Zur Woche' : ($stand['done'] ? 'Weitermachen' : 'Los geht es') }} &rarr;</span>
+        </a>
+    @endforeach
 
     {{-- Was ist neu: drei Zeilen, der Rest aufklappbar --}}
     @if ($neues->isNotEmpty())
@@ -60,26 +79,6 @@
         </div>
     @endif
 
-    {{-- Diese Woche / weiter im Kurs, in der Kursfarbe --}}
-    @foreach ($weiter as $w)
-        @php $p = $w['program']; $stand = $w['stand']; $step = $w['step']; @endphp
-        <h2 class="abschnitt"><i class="fa-solid fa-graduation-cap"></i>{{ $step ? 'Diese Woche' : 'Mein Kurs' }}</h2>
-        <a href="{{ $step ? route('kurse.schritt', [$p, $step]) : ($stand['next'] ? route('kurse.einheit', [$p, $stand['next']]) : route('kurse.show', $p)) }}" class="woche" style="--kc: {{ $p->color ?: '#7C8C9A' }}">
-            <span class="bild">
-                @if ($p->cover_url)<img src="{{ $p->cover_url }}" alt="">@else<i class="fa-solid fa-{{ $p->icon ?: 'seedling' }}"></i>@endif
-            </span>
-            <span class="lab">{{ $p->title }}</span>
-            <span class="t">{{ $step ? $step->title : ($stand['next']?->title ?? $p->title) }}</span>
-            @if ($step && $w['woche'])<span class="k">Woche {{ $w['woche'] }} von {{ $w['wochen'] }}</span>@endif
-            <span class="reihe">
-                <span class="balken"><span style="width: {{ $stand['percent'] }}%"></span></span>
-                <span class="z">{{ $stand['done'] }} von {{ $stand['total'] }} erledigt</span>
-            </span>
-            @if ($step && $stand['next'])<span class="als">Als Nächstes: {{ $stand['next']->title }}</span>@endif
-            <span class="cta">{{ $step ? 'Zur Woche' : ($stand['done'] ? 'Weitermachen' : 'Los geht es') }} &rarr;</span>
-        </a>
-    @endforeach
-
     {{-- Offene Aufgaben --}}
     @if ($aufgaben->isNotEmpty())
         <h2 class="abschnitt"><i class="fa-solid fa-list-check"></i>Offene Aufgaben<em>{{ $offen }}</em>
@@ -99,36 +98,9 @@
         @endforeach
     @endif
 
-    {{-- Neuester Impuls --}}
-    @if ($impuls && $neues->where('herkunft', $impuls->typeLabel())->isEmpty())
-        <h2 class="abschnitt"><i class="fa-solid fa-lightbulb"></i>Impuls</h2>
-        <a href="{{ route('impulse.show', $impuls) }}" class="zeile">
-            <span class="ic" style="border-radius:12px;flex-basis:56px;width:56px;height:56px">
-                @if ($impuls->image_url)<img src="{{ $impuls->image_url }}" alt="" loading="lazy">@else<i class="fa-solid fa-lightbulb"></i>@endif
-            </span>
-            <span class="tx"><b>{{ $impuls->title }}</b><span>{{ $impuls->excerptText(90) }}</span></span>
-            <i class="fa-solid fa-chevron-right pf"></i>
-        </a>
-    @endif
-
     @if ($neues->isEmpty() && ! $termin && $weiter->isEmpty() && $aufgaben->isEmpty())
-        <x-leer icon="solid:leaf" knopf="Reflexion schreiben" :href="route('reflexion.index')">Gerade ist nichts offen. Schön, dass du da bist. Magst du kurz festhalten, wie es dir geht?</x-leer>
+        <p class="hinweis">Gerade ist nichts offen. Schau in deine Sachen, wenn du zurückblicken magst.</p>
     @endif
-
-    {{-- Kacheln --}}
-    <h2 class="abschnitt"><i class="fa-solid fa-compass"></i>Dein Bereich</h2>
-    <div class="kacheln kacheln-2">
-        @foreach ([
-            ['kurse.index', 'graduation-cap', 'Kurse', 'Wochen, Übungen, Fortschritt'],
-            ['termine.index', 'calendar', 'Termine', 'Calls und Aufzeichnungen'],
-            ['material.index', 'folder-open', 'Material', 'PDFs, Audios, Links'],
-            ['journal.index', 'book-open', 'Mein Journal', 'Aufgaben, Notizen, Reflexion'],
-            ['impulse.index', 'lightbulb', 'Impulse', 'Beiträge und Podcast'],
-            ['nachschlagen.index', 'magnifying-glass', 'Nachschlagen', 'Finde, was dich beschäftigt'],
-        ] as [$r, $ic, $t, $x])
-            <a href="{{ route($r) }}" class="kachel"><i class="fa-solid fa-{{ $ic }}"></i><span class="tx"><b>{{ $t }}</b><small>{{ $x }}</small></span></a>
-        @endforeach
-    </div>
 
     @if ($person->canManageCurrentTenant())
         <h2 class="abschnitt"><i class="fa-solid fa-user-group"></i>Für dich als Coach</h2>

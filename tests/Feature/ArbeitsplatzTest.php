@@ -74,14 +74,17 @@ class ArbeitsplatzTest extends TestCase
 
         // Umschalten: wie eine Teilnehmerin, dann zurueck
         $this->actingAs($this->lea)->post('http://a.test/ansicht', ['ansicht' => 'teilnehmer'])->assertRedirect('http://a.test');
-        $this->actingAs($this->lea)->get('http://a.test/')->assertOk()->assertSee('Hallo Lea')->assertSee('Für dich als Coach')->assertSee('Zurück zum Arbeitsplatz')->assertSee('Mein Journal');
+        $this->actingAs($this->lea)->get('http://a.test/')->assertOk()->assertSee('Hallo Lea')->assertSee('Für dich als Coach')->assertSee('Zurück zum Arbeitsplatz')->assertSee('Meine Sachen');
         $this->actingAs($this->lea)->post('http://a.test/ansicht', ['ansicht' => 'arbeitsplatz'])->assertRedirect();
         $this->actingAs($this->lea)->get('http://a.test/')->assertOk()->assertSee('Guten Tag, Lea');
 
         // Teilnehmerin: einfaches Menue, kein Umschalter, keine Untermenues unter Nachschlagen
         $this->actingAs($this->anna)->post('http://a.test/ansicht', ['ansicht' => 'arbeitsplatz'])->assertForbidden();
-        $this->actingAs($this->anna)->get('http://a.test/')->assertOk()->assertSee('Hallo Anna')->assertSee('Meine Kurse')->assertSee('Kurs K')
-            ->assertDontSee('Arbeitsplatz')->assertDontSee('Volltext suchen')->assertDontSee('Gemerkt')->assertDontSee('Coachees');
+        $this->actingAs($this->anna)->get('http://a.test/')->assertOk()->assertSee('Hallo Anna')->assertSee('Übersicht')->assertSee('1:1 Coaching mit')
+            ->assertSee('Meine Sachen')->assertSee('Meine Aufgaben')->assertSee('Meine Kurse')->assertSee('Kurs K')->assertSee('Ressourcen')->assertSee('Community')->assertSee('Mein Profil')
+            ->assertDontSee('Arbeitsplatz')->assertDontSee('Volltext suchen')->assertDontSee('Gemerkt')->assertDontSee('Coachees')->assertDontSee('Dein Bereich')->assertDontSee('class="leiste"', false);
+        // Community: alle Fragen aus meinen Kursen
+        $this->actingAs($this->anna)->get('http://a.test/community')->assertOk()->assertSee('Wie geht Woche 2?')->assertSee('Frage stellen');
     }
 
     public function test_nachschlagen_hat_reiter_statt_untermenue(): void

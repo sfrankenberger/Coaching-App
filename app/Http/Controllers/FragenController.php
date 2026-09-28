@@ -11,6 +11,7 @@ use App\Models\Reaction;
 use App\Models\User;
 use App\Notifications\Nachricht;
 use App\Notifications\Notifier;
+use App\Programs\ProgramAccess;
 use App\Tenancy\Branding;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -40,6 +41,22 @@ class FragenController extends Controller
             ->with('user:id,name')->latest()->get();
 
         return view('kurse.fragen', ['program' => $program, 'fragen' => $fragen, 'filter' => $filter, 'coach' => $this->coachName()]);
+    }
+
+    /** Community (wie im alten Bereich): alle Fragen aus meinen Kursen an einem Ort. */
+    public function community(Request $request): View
+    {
+        $user = $request->user();
+        $programme = app(ProgramAccess::class)->programsFor($user)->filter(fn (Program $p) => $p->is_published || $user->canManageCurrentTenant());
+        $filter = in_array($request->query('f'), ['offen', 'call', 'erledigt'], true) ? $request->query('f') : '';
+        $fragen = Question::whereIn('program_id', $programme->pluck('id'))->sichtbarFuer($user)
+            ->when($filter === 'offen', fn ($q) => $q->whereIn('status', ['offen', 'call']))
+            ->when($filter === 'call', fn ($q) => $q->where('status', 'call'))
+            ->when($filter === 'erledigt', fn ($q) => $q->whereIn('status', ['beantwortet', 'besprochen', 'zu']))
+            ->withCount(['answers', 'reactions as call_wuensche' => fn ($r) => $r->where('emoji', Question::CALLWUNSCH)])
+            ->with(['user:id,name', 'program:id,title,slug,color'])->latest()->limit(100)->get();
+
+        return view('community', ['programme' => $programme, 'fragen' => $fragen, 'filter' => $filter, 'coach' => $this->coachName()]);
     }
 
     public function store(FrageRequest $request, Program $program): RedirectResponse

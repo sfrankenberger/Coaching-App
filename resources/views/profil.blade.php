@@ -9,6 +9,7 @@
     </div>
 
     @if ($zugaenge->isNotEmpty() || $kontingent)
+        <div id="buchungen"></div>
         <x-karte titel="Meine Buchungen" icon="ticket">
             @if ($kontingent)
                 <div style="margin-bottom:14px">
@@ -67,6 +68,7 @@
         </form>
     </x-karte>
 
+    <div id="benachrichtigungen"></div>
     <x-karte titel="Damit du nichts verpasst" icon="bell">
         <p class="hinweis mb-3">Push-Nachrichten kommen direkt aufs Handy, wenn du diesen Bereich auf den Startbildschirm gelegt hast. Ein paar pro Woche, nicht mehr. Ohne Push bekommst du abends eine Sammelmail, wenn etwas Neues da ist.</p>
         <div class="flex flex-wrap items-center gap-2" data-push data-schluessel="{{ route('push.schluessel') }}" data-abo="{{ route('push.abo') }}">

@@ -196,7 +196,8 @@ Route::middleware(['auth', 'membership'])->group(function () {
     Route::get('/nachricht/{nachricht}/{art}', [GespraechController::class, 'datei'])->name('nachricht.datei')->where('art', 'audio|datei');
     Route::get('/kurse/{program:slug}/austausch', [GespraechController::class, 'gruppe'])->name('kurse.austausch');
 
-    // Fragen an die Coachin im Kursraum
+    // Fragen an die Coachin im Kursraum, Community = alle Fragen aus meinen Kursen
+    Route::get('/community', [FragenController::class, 'community'])->name('community');
     Route::get('/kurse/{program:slug}/fragen', [FragenController::class, 'index'])->name('kurse.fragen');
     Route::post('/kurse/{program:slug}/fragen', [FragenController::class, 'store'])->middleware('throttle:20,10')->name('kurse.fragen.store');
     Route::get('/fragen/{frage}', [FragenController::class, 'show'])->name('fragen.show');

@@ -1,8 +1,8 @@
 @php
     $icons = ['pdf' => 'file-pdf', 'audio' => 'headphones', 'video' => 'circle-play', 'aufzeichnung' => 'circle-play', 'podcast' => 'microphone', 'link' => 'link', 'text' => 'file-lines', 'image' => 'image'];
 @endphp
-<x-layouts.app title="Material">
-    <h1>Material</h1>
+<x-layouts.app title="Ressourcen">
+    <h1>Ressourcen</h1>
 
     <div class="filterstreifen">
         <div class="pillen">

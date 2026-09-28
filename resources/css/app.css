@@ -1019,3 +1019,9 @@ details.karte > summary::-webkit-details-marker { display: none; }
 details.karte > summary::after { content: '+'; float: right; color: var(--c-muted); }
 details.karte[open] > summary::after { content: '\2013'; }
 .dossier-chat .blase { max-width: 88%; }
+
+/* Teilnehmer-Menue wie im alten Bereich: Gruppen als Ueberschrift, keine Leiste unten */
+.drawer li.gruppe span { display: flex; align-items: center; gap: 16px; padding: 15px 22px; font-size: 17px; color: var(--c-text); border-bottom: 1px solid var(--c-line-soft); }
+.drawer li.gruppe + li.unter a { border-top: 0; }
+.ohne-leiste .leiste { display: none; }
+.ohne-leiste .inhalt { padding-bottom: calc(96px + env(safe-area-inset-bottom)); }
