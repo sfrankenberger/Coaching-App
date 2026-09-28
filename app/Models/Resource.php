@@ -71,9 +71,12 @@ class Resource extends Model
         return $this->morphedByMany(User::class, 'resourceable')->withPivot('shared_by');
     }
 
-    /** Ziel zum Oeffnen: Datei (signierte Route) oder externe Adresse. */
+    /** Ziel zum Oeffnen: Seite in der App (settings.ziel), Datei (signierte Route) oder externe Adresse. */
     public function target(): ?string
     {
+        if ($ziel = $this->zielInApp()) {
+            return url($ziel);
+        }
         if ($this->file_path) {
             return route('material.datei', $this);
         }
@@ -81,10 +84,33 @@ class Resource extends Model
         return $this->url;
     }
 
-    /** Video oder Audio, das in der App selbst laeuft (mit eigener Seite). */
+    /** Pfad in der App, auf den dieses Material zeigt (z. B. ein Arbeitsbuch, das als Kurs in der App liegt). */
+    public function zielInApp(): ?string
+    {
+        $ziel = trim((string) ($this->settings['ziel'] ?? ''));
+
+        return $ziel !== '' && str_starts_with($ziel, '/') ? $ziel : null;
+    }
+
+    /** Von Hand in der App gepflegt: der WordPress-Import laesst Titel, Art, Adresse und Text in Ruhe. */
+    public function istEigen(): bool
+    {
+        return (bool) ($this->settings['eigen'] ?? false);
+    }
+
+    /** Laeuft in der App selbst: Video oder Audio mit eigener Seite, Text mit Inhalt. */
     public function hatSeite(): bool
     {
-        return filled($this->summary) || ($this->type === 'video' && Video::embed($this->url)) || (in_array($this->type, ['audio', 'podcast'], true) && $this->target());
+        return filled($this->summary)
+            || ($this->type === 'video' && Video::embed($this->url))
+            || (in_array($this->type, ['audio', 'podcast'], true) && $this->target())
+            || ($this->type === 'text' && filled(trim(strip_tags((string) $this->body))));
+    }
+
+    /** Oeffnet in der App (eigene Seite oder Ziel in der App), sonst in einem neuen Fenster. */
+    public function inApp(): bool
+    {
+        return $this->hatSeite() || $this->zielInApp() !== null;
     }
 
     public function typeLabel(): string

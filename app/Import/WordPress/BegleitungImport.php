@@ -274,16 +274,18 @@ class BegleitungImport
 
             $resource = Resource::firstOrNew(['legacy_id' => (string) $id]);
             $filePath = $resource->file_path ?: $this->copyUpload($url, 'material');
-            $resource->fill([
+            $eigen = $resource->exists && $resource->istEigen();   // in der App von Hand gepflegt: Kern bleibt
+            $resource->fill(($eigen ? [] : [
                 'title' => html_entity_decode($post->post_title, ENT_QUOTES, 'UTF-8'),
                 'type' => $type,
                 'url' => $url ?: null,
+                'description' => trim((string) $m('ressource_beschreibung')) ?: null,
+                'body' => WordPressSource::autop($m('ressource_text') ?: $post->post_content),
+            ]) + [
                 'file_path' => $filePath,
                 'file_name' => $m('ressource_dateiname') ?: ($filePath ? basename($filePath) : null),
-                'description' => trim((string) $m('ressource_beschreibung')) ?: null,
                 'duration' => $m('ressource_dauer') ?: null,
                 'image_url' => $m('ressource_bild') ?: null,
-                'body' => WordPressSource::autop($m('ressource_text') ?: $post->post_content),
                 'vimeo_id' => $m('ressource_vimeo_id') ? (string) $m('ressource_vimeo_id') : $resource->vimeo_id,
                 'transcript' => $m('recording_abschrift') ?: $resource->transcript,
                 'summary' => is_string($m('ki_zusammenfassung')) && $m('ki_zusammenfassung') !== '' ? $m('ki_zusammenfassung') : $resource->summary,

@@ -276,6 +276,18 @@ class ImportBegleitungTest extends TestCase
             $this->assertSame('pdf', $artikel->type, 'Link auf .pdf wird PDF');
             $this->assertSame('step:'.$this->boden->id, $artikel->links->map(fn ($r) => $r->resourceable_type.':'.$r->resourceable_id)->first());
             $this->assertTrue(Resource::where('legacy_id', '402')->first()->is_archived);
+
+            // In der App von Hand umgebaut (Text statt Link): der naechste Import laesst den Kern in Ruhe
+            $artikel->forceFill(['type' => 'text', 'url' => null, 'body' => '<p>Eigener Text</p>', 'settings' => ['eigen' => true, 'ziel' => '/kurse/kurs']])->save();
+        });
+        $this->import();
+        app(CurrentTenant::class)->run($this->lea, function () {
+            $artikel = Resource::where('legacy_id', '401')->first();
+            $this->assertSame('text', $artikel->type);
+            $this->assertNull($artikel->url);
+            $this->assertSame('<p>Eigener Text</p>', $artikel->body);
+            $this->assertSame('/kurse/kurs', $artikel->zielInApp());
+            $this->assertSame('pdf', Resource::where('legacy_id', '400')->first()->type, 'andere werden weiter importiert');
         });
     }
 

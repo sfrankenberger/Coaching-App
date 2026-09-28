@@ -19,6 +19,7 @@ use Filament\Forms\Components\TextInput;
 use Filament\Forms\Components\Toggle;
 use Filament\Resources\Resource;
 use Filament\Schemas\Components\Section;
+use Filament\Schemas\Components\Utilities\Get;
 use Filament\Schemas\Schema;
 use Filament\Support\Icons\Heroicon;
 use Filament\Tables\Columns\TextColumn;
@@ -51,7 +52,7 @@ class MaterialResource extends Resource
         return $schema->components([
             Section::make('Material')->schema([
                 TextInput::make('title')->label('Titel')->required()->maxLength(160)->columnSpanFull(),
-                Select::make('type')->label('Art')->options(Material::TYPES)->default('pdf')->required()->native(false),
+                Select::make('type')->label('Art')->options(Material::TYPES)->default('pdf')->required()->native(false)->live(),
                 TextInput::make('duration')->label('Dauer / Umfang')->placeholder('z. B. 12 Seiten, 23 Min.')->maxLength(60),
                 FileUpload::make('file_path')->label('Datei')->disk('local')
                     ->directory(fn () => 'tenants/'.app(CurrentTenant::class)->id().'/material')
@@ -60,6 +61,13 @@ class MaterialResource extends Resource
                 TextInput::make('url')->label('Adresse (Link)')->url()->maxLength(1000)->columnSpanFull(),
                 TextInput::make('image_url')->label('Vorschaubild (URL)')->url()->maxLength(500)->columnSpanFull(),
                 Textarea::make('description')->label('Beschreibung')->rows(3)->columnSpanFull(),
+                Textarea::make('body')->label('Text')->rows(10)->columnSpanFull()
+                    ->helperText('Für die Art "Text": erscheint als eigene Seite in der App. HTML ist erlaubt, auch Videos in <div class="video"><iframe ...></iframe></div>.')
+                    ->visible(fn (Get $get, ?Material $record) => $get('type') === 'text' || filled($record?->body)),
+                TextInput::make('settings.ziel')->label('Öffnet in der App unter')->placeholder('/kurse/workbook')->maxLength(200)->columnSpanFull()
+                    ->helperText('Ein Pfad in der App, zum Beispiel ein Arbeitsbuch, das hier als Kurs liegt. Geht vor Datei und Adresse.'),
+                Toggle::make('settings.eigen')->label('Von Hand gepflegt')->columnSpanFull()
+                    ->helperText('Der Import aus WordPress lässt Titel, Art, Adresse, Beschreibung und Text dann in Ruhe.'),
                 Placeholder::make('stand')->label('Video')
                     ->content(fn (?Material $record) => Material::PREPARE_STATUS[$record?->prepare_status ?? ''] ?? 'Mit Vimeo-Link holt die App Dauer, Bild, Abschrift und Zusammenfassung von selbst.')
                     ->visible(fn (?Material $record) => $record && MaterialVideo::vimeoId($record)),

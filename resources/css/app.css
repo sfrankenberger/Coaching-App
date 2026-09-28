@@ -756,6 +756,9 @@
     .prose-app strong, .prose-app b { color: var(--c-text); }
     .prose-app blockquote { border-left: 2px solid var(--c-card-border); padding-left: 14px; font-family: var(--font-heading); font-style: italic; margin: 12px 0; }
     .prose-app img, .prose-app iframe { max-width: 100%; height: auto; border-radius: 12px; }
+    .prose-app .video { margin: 14px 0; }
+    .prose-app .video iframe { height: 100%; border-radius: 0; }
+    .prose-app .nummer { display: inline-flex; align-items: center; justify-content: center; width: 30px; height: 30px; border-radius: 50%; background: var(--kc, var(--c-primary)); color: #fff; font-family: var(--font-body); font-size: 14px; margin-right: 8px; vertical-align: middle; }
     .prose-app table { display: block; overflow-x: auto; max-width: 100%; }
     .prose-app a { overflow-wrap: anywhere; }
     .sprung { display: inline-flex; align-items: center; gap: 5px; font-size: var(--fs-sm); font-weight: 600; color: var(--c-primary); background: var(--c-primary-tint); border: 0; border-radius: 999px; padding: 2px 9px; cursor: pointer; font-family: inherit; }

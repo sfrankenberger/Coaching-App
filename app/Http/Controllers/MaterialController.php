@@ -36,7 +36,7 @@ class MaterialController extends Controller
         $zeilen = collect();
         foreach ($resources as $r) {
             $pid = $r->links->firstWhere('resourceable_type', 'program')?->resourceable_id;
-            $zeilen->push(['art' => 'resource', 'id' => $r->id, 'titel' => $r->title, 'text' => $r->description, 'typ' => $r->type, 'url' => $r->hatSeite() ? route('material.show', $r) : $r->target(), 'seite' => $r->hatSeite(), 'kurs' => $pid, 'ts' => $r->created_at, 'geteilt' => $r->links->contains(fn ($l) => $l->resourceable_type === 'user'), 'dauer' => $r->duration, 'model' => $r]);
+            $zeilen->push(['art' => 'resource', 'id' => $r->id, 'titel' => $r->title, 'text' => $r->description, 'typ' => $r->type, 'url' => $r->hatSeite() ? route('material.show', $r) : $r->target(), 'seite' => $r->inApp(), 'kurs' => $pid, 'ts' => $r->created_at, 'geteilt' => $r->links->contains(fn ($l) => $l->resourceable_type === 'user'), 'dauer' => $r->duration, 'model' => $r]);
         }
         foreach ($recordings as $e) {
             $zeilen->push(['art' => 'event', 'id' => $e->id, 'titel' => $e->title, 'text' => $e->recording_duration, 'typ' => 'aufzeichnung', 'url' => route('termine.show', $e), 'kurs' => $e->program_id, 'ts' => $e->starts_at, 'geteilt' => false, 'dauer' => $e->recording_duration, 'model' => $e]);
@@ -82,7 +82,7 @@ class MaterialController extends Controller
     {
         Gate::authorize('view', $material);
         if (! $material->file_path) {
-            return redirect()->away($material->url);
+            return redirect()->away($material->target() ?: route('material.index'));
         }
         abort_unless(Storage::exists($material->file_path), 404);
 
