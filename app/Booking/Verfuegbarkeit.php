@@ -37,7 +37,6 @@ class Verfuegbarkeit
         // Im Cache nur Text (keine Carbon-Objekte, die lassen sich unter PHP-FPM nicht sicher zurueckladen)
         $eintraege = collect(Cache::remember($schluessel, 300, fn () => collect($this->google->eintraege(now()->startOfDay(), $bis))
             ->map(fn ($e) => ['summary' => (string) $e['summary'], 'frei' => (bool) ($e['frei'] ?? false), 'start' => $e['start']->toIso8601String(), 'ende' => $e['ende']->toIso8601String()])->all()))
-            ->map(fn ($e) => $e + ['start' => Carbon::parse($e['start']), 'ende' => Carbon::parse($e['ende'])])
             ->map(fn ($e) => array_merge($e, ['start' => Carbon::parse($e['start']), 'ende' => Carbon::parse($e['ende'])]))->all();
 
         // Stichwort ohne Leerzeichen vergleichen: "Coachingblock" und "Coaching Block" sind dasselbe
