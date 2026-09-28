@@ -173,9 +173,9 @@
             @if ($neuerSchluessel)
                 <p class="meldung meldung-gut mb-3" style="word-break:break-all"><b>Dein neuer Schlüssel, nur jetzt sichtbar:</b><br><code>{{ $neuerSchluessel }}</code></p>
             @endif
-            @if ($schluessel->isNotEmpty())
+            @if ($verbindungen->isNotEmpty())
                 <ul class="m-0 mb-3 p-0" style="list-style:none">
-                    @foreach ($schluessel as $t)
+                    @foreach ($verbindungen as $t)
                         <li class="flex items-center gap-2 py-1 text-md"><i class="fa-solid fa-key" style="color:var(--c-ghost)"></i><span class="flex-1">{{ $t->name }} <span class="hinweis">· {{ \App\Support\Zeit::datum($t->created_at) }}{{ $t->last_used_at ? ' · zuletzt '.\App\Support\Zeit::relativ($t->last_used_at) : '' }}</span></span>
                             <form method="post" action="{{ route('profil.schluessel.loeschen', $t->id) }}" onsubmit="return confirm('Schlüssel {{ $t->name }} löschen? Die Verbindung geht damit kaputt.')">@csrf @method('DELETE')<button type="submit" class="knopf knopf-text knopf-klein">Löschen</button></form>
                         </li>

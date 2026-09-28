@@ -151,4 +151,17 @@ class McpTest extends TestCase
         $r = $this->withToken($tb)->postJson('http://b.test/api/mcp', ['jsonrpc' => '2.0', 'id' => 9, 'method' => 'tools/call', 'params' => ['name' => 'wissen_suchen', 'arguments' => []]])->assertOk();
         $this->assertSame([], json_decode($r->json('result.content.0.text'), true));
     }
+
+    public function test_schluessel_im_profil_erzeugen_und_loeschen(): void
+    {
+        $this->actingAs($this->lea)->get('http://a.test/profil')->assertOk()->assertSee('Schlüssel für Verbindungen')->assertSee('claude');
+        $this->actingAs($this->lea)->post('http://a.test/profil/schluessel', ['name' => 'ChatGPT'])->assertRedirect('http://a.test/profil#api');
+        $this->assertSame(2, $this->lea->tokens()->count());
+        $this->assertTrue($this->lea->tokens()->where('name', 'ChatGPT')->first()->can('mcp'));
+        $id = $this->lea->tokens()->where('name', 'ChatGPT')->first()->id;
+        $this->actingAs($this->lea)->delete("http://a.test/profil/schluessel/{$id}")->assertRedirect();
+        $this->assertSame(1, $this->lea->tokens()->count());
+        $this->actingAs($this->anna)->get('http://a.test/profil')->assertOk()->assertDontSee('Schlüssel für Verbindungen');
+        $this->actingAs($this->anna)->post('http://a.test/profil/schluessel', ['name' => 'x'])->assertForbidden();
+    }
 }

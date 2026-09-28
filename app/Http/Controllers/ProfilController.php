@@ -32,7 +32,7 @@ class ProfilController extends Controller
             'kontingent' => app(Lage::class)->kontingent($request->user()),
             'buchen' => app(GoogleCalendar::class)->aktiv(),
             'aboUrl' => $tenant?->setting('shop.account_url'),
-            'schluessel' => $request->user()->canManageCurrentTenant() ? $request->user()->tokens()->orderBy('created_at')->get() : collect(),
+            'verbindungen' => $request->user()->canManageCurrentTenant() ? $request->user()->tokens()->orderBy('created_at')->get() : collect(),
             'neuerSchluessel' => session('neuer_schluessel'),
             'mcpUrl' => url('/api/mcp'),
         ]);
