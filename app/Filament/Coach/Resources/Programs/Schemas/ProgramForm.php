@@ -45,6 +45,8 @@ class ProgramForm
                 Toggle::make('is_published')->label('Veröffentlicht')->default(true),
                 Toggle::make('is_internal')->label('Nur intern')->helperText('Fertig gebaut, aber nur für Team und direkt eingetragene Personen sichtbar.'),
                 Toggle::make('settings.gratis')->label('Offen für alle')->helperText('Gratiskurs: alle Personen mit Zugang zum Bereich sehen ihn, ohne Kauf.'),
+                Select::make('settings.teilen')->label('Teilen mit der Coachin')->options(['1' => 'Ja, Antworten können geteilt werden', '0' => 'Nein, nichts wird geteilt'])->placeholder('Vorgabe nach Art')->native(false)
+                    ->helperText('Vorgabe: Hybrid-Coaching, 1:1 und Arbeitsbuch ja, Selbstlernkurs und Club nein.'),
                 Select::make('topics')->label('Themen')->relationship('topics', 'name')->multiple()->preload()->searchable()->columnSpanFull()->createOptionForm([TextInput::make('name')->label('Thema')->required()->maxLength(120)]),
             ])->columns(3)->collapsed(),
         ]);

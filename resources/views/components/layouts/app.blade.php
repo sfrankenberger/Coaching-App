@@ -22,7 +22,7 @@
     if ($person && ! $kannVerwalten) {
         $meineKurse = App\Models\Program::query()
             ->whereIn('id', app(App\Programs\ProgramAccess::class)->programIdsFor($person))
-            ->where('is_published', true)->orderBy('position')->orderBy('title')
+            ->where('is_published', true)->where('type', '!=', 'one_on_one')->orderBy('position')->orderBy('title')
             ->get(['id', 'slug', 'title', 'icon', 'color']);
     }
     $ist = fn ($muster) => request()->routeIs($muster);

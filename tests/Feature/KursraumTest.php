@@ -37,7 +37,7 @@ class KursraumTest extends TestCase
         $this->a->users()->attach($this->fremd, ['role' => Role::Member->value, 'status' => 'active']);
 
         $this->program = app(CurrentTenant::class)->run($this->a, function () {
-            $p = Program::create(['slug' => 'testkurs', 'title' => 'Testkurs', 'pacing' => 'weekly']);
+            $p = Program::create(['slug' => 'testkurs', 'title' => 'Testkurs', 'type' => 'hybrid', 'pacing' => 'weekly']);
             $w1 = $p->steps()->create(['title' => 'Woche 1', 'position' => 1, 'week_number' => 1, 'unlocks_at' => now()->subDay()]);
             $w2 = $p->steps()->create(['title' => 'Woche 2', 'position' => 2, 'week_number' => 2, 'unlocks_at' => now()->addWeek()]);
             $u1 = $p->units()->create(['title' => 'Willkommen', 'step_id' => $w1->id, 'position' => 1, 'videos' => [['url' => 'https://vimeo.com/123456', 'title' => 'Intro']]]);
@@ -118,5 +118,33 @@ class KursraumTest extends TestCase
         $frage = $this->in(fn () => $this->program->units()->where('title', 'Deine Intention')->first()->exercises()->first());
         $this->actingAs($this->anna)->postJson('http://a.test/kurse/antwort', ['exercise_id' => $frage->id, 'value' => 'geteilt'])->assertOk();
         $this->assertTrue(app(CurrentTenant::class)->run($this->a, fn () => Answer::where('user_id', $this->anna->id)->first()->shared_with_coach));
+    }
+
+    public function test_selbstlernkurs_teilt_nichts_und_1_zu_1_ist_kein_kurs(): void
+    {
+        [$selbst, $u, $einzel] = $this->in(function () {
+            $selbst = Program::create(['slug' => 'selbst', 'title' => 'Selbstlernkurs Ruhe', 'type' => 'selfpaced']);
+            $u = $selbst->units()->create(['title' => 'Übung', 'position' => 1, 'type' => 'exercise_set']);
+            $u->exercises()->create(['type' => 'text', 'prompt' => 'Was nimmst du mit?', 'position' => 1]);
+            ProgramMember::create(['program_id' => $selbst->id, 'user_id' => $this->anna->id]);
+            $einzel = Program::create(['slug' => 'einzel', 'title' => 'Einzelbegleitung Lea', 'type' => 'one_on_one', 'settings' => ['sitzungen_gesamt' => 5]]);
+            ProgramMember::create(['program_id' => $einzel->id, 'user_id' => $this->anna->id]);
+
+            return [$selbst, $u, $einzel];
+        });
+
+        // 1:1 gehoert nicht unter Kurse, weder auf der Seite noch im Menue
+        $this->actingAs($this->anna)->get('http://a.test/kurse')->assertOk()->assertSee('Testkurs')->assertSee('Selbstlernkurs Ruhe')->assertDontSee('Einzelbegleitung Lea')->assertDontSee('Begleitungen');
+        // Selbstlernkurs: kein Teilen-Knopf, Teilen abgelehnt, Testkurs (Hybrid) teilt weiter
+        $this->actingAs($this->anna)->get("http://a.test/kurse/selbst/einheit/{$u->id}")->assertOk()->assertSee('Was nimmst du mit?')->assertDontSee('Mit deiner Coachin teilen');
+        $this->actingAs($this->anna)->postJson("http://a.test/kurse/selbst/einheit/{$u->id}/teilen")->assertForbidden();
+        $this->actingAs($this->anna)->post('http://a.test/kurse/selbst/freigabe', ['modus' => 'alles'])->assertForbidden();
+        $this->assertTrue($this->program->teilbar());
+        $this->assertFalse($selbst->teilbar());
+        $this->assertTrue($einzel->teilbar());
+        // Lea kann es je Kurs einschalten
+        $this->in(fn () => $selbst->forceFill(['settings' => ['teilen' => '1']])->save());
+        $this->assertTrue($selbst->fresh()->teilbar());
+        $this->actingAs($this->anna)->get("http://a.test/kurse/selbst/einheit/{$u->id}")->assertOk()->assertSee('Mit deiner Coachin teilen');
     }
 }

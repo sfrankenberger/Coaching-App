@@ -251,7 +251,7 @@
                 @endswitch
             @endforeach
 
-            @if ($teile->isNotEmpty() && ! auth()->user()->canManageCurrentTenant())
+            @if ($teile->isNotEmpty() && $program->teilbar() && ! auth()->user()->canManageCurrentTenant())
                 <div class="mt-4 border-t border-line pt-3 flex flex-wrap items-center gap-3">
                     <form method="post" action="{{ route('kurse.teilen', [$program, $unit]) }}" data-teilen>
                         @csrf

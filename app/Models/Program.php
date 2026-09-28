@@ -71,6 +71,20 @@ class Program extends Model
         return self::TYPES[$this->type] ?? $this->type;
     }
 
+    /**
+     * Teilen mit der Coachin gibt es nur in begleiteten Programmen (Hybrid-Coaching, 1:1, Arbeitsbuch),
+     * nie in Selbstlernkursen oder im Club. settings.teilen (true/false) uebersteuert die Vorgabe nach Art.
+     */
+    public function teilbar(): bool
+    {
+        $eigen = $this->settings['teilen'] ?? null;
+        if ($eigen !== null && $eigen !== '') {
+            return (bool) $eigen;
+        }
+
+        return in_array($this->type, ['hybrid', 'one_on_one', 'workbook'], true);
+    }
+
     public function isWorkbook(): bool
     {
         return $this->type === 'workbook';

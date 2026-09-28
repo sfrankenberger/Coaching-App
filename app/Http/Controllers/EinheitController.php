@@ -64,7 +64,7 @@ class EinheitController extends Controller
         $user = $request->user();
         $member = ProgramMember::where('program_id', $exercise->unit->program_id)->where('user_id', $user->id)->first();
         $answer = Answer::firstOrNew(['user_id' => $user->id, 'exercise_id' => $exercise->id]);
-        if (! $answer->exists && $member?->share_mode === 'alles') {
+        if (! $answer->exists && $member?->share_mode === 'alles' && $exercise->unit->program?->teilbar()) {
             $answer->shared_with_coach = true;
             $answer->shared_at = now();
         }
@@ -79,6 +79,7 @@ class EinheitController extends Controller
     {
         Gate::authorize('view', $program);
         abort_unless($einheit->program_id === $program->id, 404);
+        abort_unless($program->teilbar(), 403, 'In diesem Kurs wird nichts geteilt.');
         $user = $request->user();
 
         $answers = $this->progress->answersFor($user, $einheit->load('exercises'));

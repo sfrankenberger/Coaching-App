@@ -32,7 +32,7 @@ class UebungController extends Controller
 
         $answer = Answer::firstOrNew(['user_id' => $user->id, 'exercise_id' => $ex->id]);
         $alt = $answer->value['v'] ?? null;
-        if (! $answer->exists && ProgramMember::where('program_id', $ex->unit->program_id)->where('user_id', $user->id)->value('share_mode') === 'alles') {
+        if (! $answer->exists && $ex->unit->program?->teilbar() && ProgramMember::where('program_id', $ex->unit->program_id)->where('user_id', $user->id)->value('share_mode') === 'alles') {
             $answer->forceFill(['shared_with_coach' => true, 'shared_at' => now()]);
         }
         $answer->value = ['v' => $pfad];

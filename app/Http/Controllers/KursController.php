@@ -35,7 +35,8 @@ class KursController extends Controller
     public function index(Request $request): View
     {
         $user = $request->user();
-        $programs = $this->access->programsFor($user)->map(function (Program $p) use ($user) {
+        // 1:1-Begleitungen sind keine Kurse (Sitzungen stehen im Profil und bei den Terminen)
+        $programs = $this->access->programsFor($user)->reject(fn (Program $p) => $p->type === 'one_on_one')->map(function (Program $p) use ($user) {
             $p->setAttribute('stand', $this->progress->summary($user, $p));
 
             return $p;
@@ -70,7 +71,7 @@ class KursController extends Controller
             'done' => $done,
             'aktuellerSchritt' => $this->currentStep($program),
             'member' => $member,
-            'freigabeOffen' => $program->isWorkbook() && ! $user->canManageCurrentTenant() && ($member?->share_mode === null),
+            'freigabeOffen' => $program->isWorkbook() && $program->teilbar() && ! $user->canManageCurrentTenant() && ($member?->share_mode === null),
         ]);
     }
 
@@ -78,6 +79,7 @@ class KursController extends Controller
     public function freigabe(Request $request, Program $program): RedirectResponse
     {
         Gate::authorize('view', $program);
+        abort_unless($program->teilbar(), 403, 'In diesem Kurs wird nichts geteilt.');
         $data = $request->validate(['modus' => ['required', 'in:alles,einzeln']]);
         $member = $this->access->join($request->user(), $program);
         $member->forceFill(['share_mode' => $data['modus']])->save();
