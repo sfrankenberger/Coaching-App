@@ -27,7 +27,7 @@ class EnsureMembership
         }
 
         // Zuletzt gesehen (hoechstens alle zehn Minuten), der alte Wert bleibt fuer "Neu seit" im Request
-        if ($user && ($m = $user->membershipIn())) {
+        if ($user && ! AlsAndere::echt($request) && ($m = $user->membershipIn())) {
             $request->attributes->set('zuletzt', $m->last_seen_at);
             if (! $m->last_seen_at || $m->last_seen_at->lt(now()->subMinutes(10))) {
                 $m->forceFill(['last_seen_at' => now()])->saveQuietly();

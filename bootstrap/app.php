@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Middleware\AlsAndere;
 use App\Http\Middleware\EnsureMembership;
 use App\Http\Middleware\TenantWebAuthn;
 use App\Tenancy\Middleware\IdentifyTenant;
@@ -19,7 +20,7 @@ return Application::configure(basePath: dirname(__DIR__))
     ->withMiddleware(function (Middleware $middleware): void {
         // Mandant zuerst, damit Session, Auth und alles Weitere ihn kennen.
         $middleware->web(prepend: [IdentifyTenant::class]);
-        $middleware->web(append: [TenantWebAuthn::class]);
+        $middleware->web(append: [TenantWebAuthn::class, AlsAndere::class]);
         $middleware->alias(['membership' => EnsureMembership::class]);
         $middleware->redirectGuestsTo(fn (Request $request) => route('anmelden', ['weiter' => $request->getRequestUri()]));
         $middleware->redirectUsersTo(fn () => route('home'));

@@ -14,6 +14,9 @@
 
     // Drei Sichten: Teilnehmerin (einfach), Arbeitsplatz (Team im Alltag), Verwaltung (Filament unter /coach)
     $arbeitsplatz = App\Coach\Ansicht::arbeitsplatz($person);
+    // Ansehen als: der echte Admin hinter der Verkleidung
+    $alsEcht = App\Http\Middleware\AlsAndere::echt();
+    $kannAls = $alsEcht?->is_platform_admin || $person?->is_platform_admin;
     // Kurse als Unterpunkte im Menue (nur fuer Teilnehmerinnen, fuer das Team wird es zu lang)
     $meineKurse = collect();
     if ($person && ! $kannVerwalten) {
@@ -57,7 +60,14 @@
     <link rel="stylesheet" href="{{ asset('css/app.css') }}?v={{ filemtime(public_path('css/app.css')) }}">
     @stack('head')
 </head>
-<body @class([$body, 'ohne-leiste' => $person && ! $arbeitsplatz])>
+<body @class([$body, 'ohne-leiste' => $person && ! $arbeitsplatz, 'mit-als' => (bool) $alsEcht])>
+    @if ($alsEcht)
+        <div class="als-balken">
+            <span><i class="fa-solid fa-eye"></i> Du siehst die App als <b>{{ $person->name }}</b> ({{ $person->roleIn()?->label() }})</span>
+            <a href="{{ route('als') }}">Wechseln</a>
+            <form method="post" action="{{ route('als.ende') }}">@csrf @method('DELETE')<button type="submit">Zurück zu {{ $alsEcht->vorname() }}</button></form>
+        </div>
+    @endif
     <header class="kopf">
         <div class="kopf-innen">
             @auth
@@ -102,6 +112,9 @@
             <nav>
                 @if ($arbeitsplatz)
                     <ul>
+                        @if ($kannAls)
+                            <li><a href="{{ route('als') }}" @class(['aktiv' => $ist('als')])><i class="fa-solid fa-eye"></i>Ansehen als ...</a></li>
+                        @endif
                         <li><a href="{{ route('home') }}" @class(['aktiv' => $ist('home')])><i class="fa-solid fa-sun"></i>Heute</a></li>
                         <li><a href="{{ route('coachees.index') }}" @class(['aktiv' => $ist('coachees.*')])><i class="fa-solid fa-people-group"></i>Coachees</a></li>
                         <li><a href="{{ route('gespraech.index') }}" @class(['aktiv' => $ist('gespraech.*')])><i class="fa-solid fa-comments"></i>Gespräche @if ($ungelesen)<span class="zahl">{{ $ungelesen }}</span>@endif</a></li>
@@ -130,6 +143,9 @@
                     </ul>
                 @else
                     <ul>
+                        @if ($kannAls)
+                            <li><a href="{{ route('als') }}" @class(['aktiv' => $ist('als')])><i class="fa-solid fa-eye"></i>Ansehen als ...</a></li>
+                        @endif
                         @if ($kannVerwalten)
                             <li>
                                 <form method="post" action="{{ route('ansicht') }}">

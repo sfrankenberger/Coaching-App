@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\AlsController;
 use App\Http\Controllers\AnsichtController;
 use App\Http\Controllers\AssistentController;
 use App\Http\Controllers\AufgabenController;
@@ -144,6 +145,9 @@ Route::middleware(['auth', 'membership'])->group(function () {
 
     // Arbeitsplatz (Team) in der App-Huelle: Ansicht umschalten, Coachees, Dossier, Assistent
     Route::post('/ansicht', AnsichtController::class)->name('ansicht');
+    Route::get('/als', [AlsController::class, 'index'])->name('als');
+    Route::post('/als/{user}', [AlsController::class, 'start'])->name('als.start');
+    Route::delete('/als', [AlsController::class, 'ende'])->name('als.ende');
     Route::get('/assistent', [AssistentController::class, 'index'])->name('assistent');
     Route::post('/assistent/merken', [AssistentController::class, 'merken'])->name('assistent.merken');
     Route::delete('/assistent/wissen/{wissen}', [AssistentController::class, 'vergessen'])->name('assistent.vergessen');
