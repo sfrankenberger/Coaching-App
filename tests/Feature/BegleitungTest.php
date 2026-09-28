@@ -107,6 +107,12 @@ class BegleitungTest extends TestCase
         $this->actingAs($this->anna)->postJson("http://a.test/aufgaben/{$t->id}/haken")->assertOk()->assertJsonPath('an', true);
         $this->assertNotNull($t->fresh()->done_at);
 
+        // Aendern: Titel und Sichtbarkeit
+        $this->actingAs($this->anna)->post("http://a.test/aufgaben/{$t->id}", ['title' => 'Intention neu', 'visibility' => 'coach'])->assertRedirect('http://a.test/aufgaben');
+        $this->assertSame('Intention neu', $t->fresh()->title);
+        $this->assertSame('coach', $t->fresh()->visibility);
+        $this->actingAs($this->fremd)->post("http://a.test/aufgaben/{$t->id}", ['title' => 'Fremd'])->assertForbidden();
+
         $this->actingAs($this->fremd)->postJson("http://a.test/aufgaben/{$t->id}/haken")->assertForbidden();
         $this->actingAs($this->fremd)->delete("http://a.test/aufgaben/{$t->id}")->assertForbidden();
         $this->actingAs($this->anna)->delete("http://a.test/aufgaben/{$t->id}")->assertRedirect();

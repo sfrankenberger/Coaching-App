@@ -51,7 +51,7 @@ class AufgabenController extends Controller
     public function update(AufgabeRequest $request, Task $aufgabe): RedirectResponse
     {
         Gate::authorize('update', $aufgabe);
-        $aufgabe->update($this->validated($request));
+        $aufgabe->update($request->daten());
 
         return redirect()->route('aufgaben.index')->with('meldung', 'Gespeichert.');
     }
