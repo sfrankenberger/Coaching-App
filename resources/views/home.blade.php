@@ -2,9 +2,10 @@
     <h1 style="margin:6px 0 12px">Hallo {{ $person->vorname() }}</h1>
 
     {{-- Diese Woche / weiter im Kurs, in der Kursfarbe --}}
-    @foreach ($weiter as $w)
+    {{-- Wie im alten Bereich: nur Kurse mit laufender Woche, nicht jeder Kurs --}}
+    @foreach ($weiter->filter(fn ($w) => $w['step']) as $w)
         @php $p = $w['program']; $stand = $w['stand']; $step = $w['step']; @endphp
-        <h2 class="abschnitt"><i class="fa-solid fa-graduation-cap"></i>{{ $step ? 'Diese Woche' : 'Mein Kurs' }}</h2>
+        <h2 class="abschnitt"><i class="fa-solid fa-graduation-cap"></i>Diese Woche im Kurs</h2>
         <a href="{{ $step ? route('kurse.schritt', [$p, $step]) : ($stand['next'] ? route('kurse.einheit', [$p, $stand['next']]) : route('kurse.show', $p)) }}" class="woche" style="--kc: {{ $p->color ?: '#7C8C9A' }}">
             <span class="bild">
                 @if ($p->cover_url)<img src="{{ $p->cover_url }}" alt="">@else<i class="fa-solid fa-{{ $p->icon ?: 'seedling' }}"></i>@endif
@@ -98,7 +99,7 @@
         @endforeach
     @endif
 
-    @if ($neues->isEmpty() && ! $termin && $weiter->isEmpty() && $aufgaben->isEmpty())
+    @if ($neues->isEmpty() && ! $termin && $weiter->filter(fn ($w) => $w['step'])->isEmpty() && $aufgaben->isEmpty())
         <p class="hinweis">Gerade ist nichts offen. Schau in deine Sachen, wenn du zurückblicken magst.</p>
     @endif
 
