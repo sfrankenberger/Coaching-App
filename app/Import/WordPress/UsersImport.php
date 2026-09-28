@@ -6,7 +6,9 @@ use App\Enums\Role;
 use App\Models\Membership;
 use App\Models\Tenant;
 use App\Models\User;
+use App\Support\Bild;
 use Illuminate\Support\Carbon;
+use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Str;
 
 /**
@@ -85,12 +87,36 @@ class UsersImport
 
             $user = $this->upsertUser($wpUser, $meta, $email);
             $membership = $this->upsertMembership($user, $wpUser, $meta, $role);
+            $this->avatarHolen($user, $meta, $report);
 
             $this->stats[$membership->wasRecentlyCreated ? 'angelegt' : 'aktualisiert']++;
             $report && $report("#{$wpUser->ID} {$email} -> {$role->value}".($membership->wasRecentlyCreated ? ' (neu)' : ''));
         }
 
         return $this->stats;
+    }
+
+    /** Profilbild aus dem alten Bereich (usermeta lea_avatar = Anhang-ID), einmalig, nur wenn noch keines da ist. */
+    protected function avatarHolen(User $user, array $meta, ?callable $report): void
+    {
+        $id = (int) ($meta['lea_avatar'] ?? 0);
+        if (! $id || $user->avatar_path) {
+            return;
+        }
+        try {
+            $anhang = $this->source->post($id);
+            $url = $anhang?->guid ?: null;
+            if (! $url) {
+                return;
+            }
+            $antwort = Http::timeout(15)->get($url);
+            if ($antwort->ok() && strlen($antwort->body()) > 100) {
+                $user->avatarSpeichern(Bild::quadrat($antwort->body()));
+                $report && $report("  Profilbild uebernommen fuer {$user->email}");
+            }
+        } catch (\Throwable $e) {
+            report($e);
+        }
     }
 
     public function roleFor(int $wpId, array $meta): Role

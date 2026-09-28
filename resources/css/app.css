@@ -1031,3 +1031,10 @@ details.karte[open] > summary::after { content: '\2013'; }
 .als-balken { position: sticky; top: 0; z-index: 9300; display: flex; align-items: center; gap: 12px; flex-wrap: wrap; padding: 8px 14px; background: #2E2D29; color: #fff; font-size: var(--fs-sm); }
 .als-balken span { flex: 1; min-width: 0; }
 .als-balken a, .als-balken button { color: #fff; background: rgba(255,255,255,.14); border: 0; border-radius: 999px; padding: 5px 12px; font: inherit; font-size: var(--fs-sm); cursor: pointer; text-decoration: none; }
+
+/* Profilbild */
+.avatar { flex: none; border-radius: 50%; object-fit: cover; display: inline-block; vertical-align: middle; }
+.avatar-buchstabe { display: inline-flex; align-items: center; justify-content: center; background: var(--c-primary-tint); color: var(--c-primary); font-family: var(--font-heading); }
+.zeile .avatar.ic { width: 44px; height: 44px; }
+.blase-avatar { margin-bottom: 6px; }
+.blase-avatar.avatar-buchstabe { font-size: 13px; }

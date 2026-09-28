@@ -11,6 +11,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\MorphMany;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 use Laragear\WebAuthn\Contracts\WebAuthnAuthenticatable;
 use Laragear\WebAuthn\WebAuthnAuthentication;
@@ -98,6 +99,27 @@ class User extends Authenticatable implements FilamentUser, WebAuthnAuthenticata
             'plattform' => (bool) $this->is_platform_admin,
             default => false,
         };
+    }
+
+    /** Profilbild, liegt unter tenants/{tenant}/avatars, nur im eigenen Mandanten abrufbar. */
+    public function avatarUrl(): ?string
+    {
+        return $this->avatar_path ? route('avatar', ['user' => $this->id, 'v' => $this->updated_at?->getTimestamp()]) : null;
+    }
+
+    public function avatarSpeichern(string $jpeg): void
+    {
+        $pfad = 'tenants/'.app(CurrentTenant::class)->getOrFail()->id.'/avatars/'.$this->id.'.jpg';
+        Storage::put($pfad, $jpeg);
+        $this->forceFill(['avatar_path' => $pfad])->save();
+    }
+
+    public function avatarLoeschen(): void
+    {
+        if ($this->avatar_path) {
+            Storage::delete($this->avatar_path);
+            $this->forceFill(['avatar_path' => null])->save();
+        }
     }
 
     public function vorname(): string

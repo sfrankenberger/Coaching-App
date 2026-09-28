@@ -20,7 +20,7 @@
             @foreach ($liste as $m)
                 <form method="post" action="{{ route('als.start', $m->user) }}" class="zeile" style="cursor:pointer" onclick="this.submit()">
                     @csrf
-                    <span class="ic" style="font-family:var(--font-heading);font-size:17px">{{ mb_strtoupper(mb_substr($m->user->name, 0, 1)) }}</span>
+                    <x-avatar :user="$m->user" :size="44" class="ic" />
                     <span class="tx"><b>{{ $m->user->name }}@if ($m->user_id === $echt->id) <span class="badge badge-rec">du</span>@endif</b><span>{{ $m->user->email }} · {{ $m->role->label() }}{{ $m->last_seen_at ? ' · zuletzt '.\App\Support\Zeit::relativ($m->last_seen_at) : '' }}</span></span>
                     <button type="submit" class="knopf knopf-leise knopf-klein" style="flex:none">Ansehen</button>
                 </form>

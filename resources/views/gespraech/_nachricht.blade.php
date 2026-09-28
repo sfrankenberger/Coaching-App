@@ -3,7 +3,10 @@
     $meine = $m->user_id === $ich->id;
     $gelesen = $meine && isset($gelesenBis) && $gelesenBis && $gelesenBis->gte($m->created_at);
 @endphp
-<div id="nachricht-{{ $m->id }}" class="flex {{ $meine ? 'justify-end' : 'justify-start' }}" data-nachricht="{{ $m->id }}" data-tag="{{ $m->created_at->toDateString() }}">
+<div id="nachricht-{{ $m->id }}" class="flex items-end gap-2 {{ $meine ? 'justify-end' : 'justify-start' }}" data-nachricht="{{ $m->id }}" data-tag="{{ $m->created_at->toDateString() }}">
+    @if (! $meine)
+        <x-avatar :user="$m->user" :size="30" class="blase-avatar" />
+    @endif
     <div @class(['blase', 'blase-meine' => $meine])>
         @if (! $meine && ! $conv->isDirect())
             <span class="block text-xs font-semibold opacity-80 mb-0.5">{{ $m->user?->vorname() ?? 'Jemand' }}</span>

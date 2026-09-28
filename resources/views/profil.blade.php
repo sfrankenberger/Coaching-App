@@ -1,7 +1,7 @@
 <x-layouts.app title="Profil">
     @php $person = auth()->user(); $einstellungen = $mitgliedschaft?->settings ?? []; @endphp
     <div class="flex items-center gap-4" style="margin:6px 0 8px">
-        <span style="flex:none;width:64px;height:64px;border-radius:50%;background:var(--c-primary-tint);color:var(--c-primary);display:grid;place-items:center;font-family:var(--font-heading);font-size:26px">{{ mb_strtoupper(mb_substr($person->vorname(), 0, 1)) }}</span>
+        <x-avatar :user="$person" :size="64" />
         <span class="min-w-0">
             <span class="block" style="font-family:var(--font-heading);font-size:22px;line-height:1.25">{{ $person->name }}</span>
             <span class="block hinweis" style="font-size:14px">{{ $person->email }}</span>
@@ -48,6 +48,25 @@
             @endforeach
         </x-karte>
     @endif
+
+    <div id="foto"></div>
+    <x-karte titel="Dein Foto" icon="camera">
+        <div class="flex items-center gap-4">
+            <x-avatar :user="$person" :size="72" />
+            <div class="min-w-0 flex-1">
+                <form method="post" action="{{ route('profil.foto') }}" enctype="multipart/form-data" class="flex flex-wrap items-center gap-2" data-foto>
+                    @csrf
+                    <label class="knopf knopf-ruhig knopf-klein" style="cursor:pointer"><i class="fa-solid fa-camera"></i>{{ $person->avatar_path ? 'Neues Foto' : 'Foto wählen' }}<input type="file" name="foto" accept="image/*" style="display:none" onchange="this.form.submit()"></label>
+                    @if ($person->avatar_path)
+                        <button type="submit" form="foto-weg" class="knopf knopf-text knopf-klein">Entfernen</button>
+                    @endif
+                </form>
+                <form id="foto-weg" method="post" action="{{ route('profil.foto.loeschen') }}" onsubmit="return confirm('Foto entfernen?')">@csrf @method('DELETE')</form>
+                @error('foto')<p class="fehler mt-1">{{ $message }}</p>@enderror
+                <p class="hinweis mt-2 mb-0">Sehen deine Coachin und, wenn du es einschaltest, die anderen in der Community. Wird quadratisch zugeschnitten.</p>
+            </div>
+        </div>
+    </x-karte>
 
     <x-karte titel="Über dich" icon="user">
         <form method="post" action="{{ route('profil.speichern') }}" class="eingabe">

@@ -8,6 +8,7 @@ use App\Http\Controllers\Auth\BridgeController;
 use App\Http\Controllers\Auth\LoginController;
 use App\Http\Controllers\Auth\PasskeyController;
 use App\Http\Controllers\Auth\SocialController;
+use App\Http\Controllers\AvatarController;
 use App\Http\Controllers\BuchenController;
 use App\Http\Controllers\CoacheesController;
 use App\Http\Controllers\DossierController;
@@ -89,6 +90,9 @@ Route::middleware(['auth', 'membership'])->group(function () {
     Route::post('/profil/passwort', [ProfilController::class, 'password'])->name('profil.passwort');
     Route::post('/profil/hilfe', [ProfilController::class, 'hilfe'])->middleware('throttle:5,10')->name('profil.hilfe');
     Route::post('/profil/schluessel', [ProfilController::class, 'schluessel'])->name('profil.schluessel');
+    Route::post('/profil/foto', [AvatarController::class, 'speichern'])->name('profil.foto');
+    Route::delete('/profil/foto', [AvatarController::class, 'loeschen'])->name('profil.foto.loeschen');
+    Route::get('/avatar/{user}', [AvatarController::class, 'show'])->name('avatar');
     Route::delete('/profil/schluessel/{id}', [ProfilController::class, 'schluesselLoeschen'])->name('profil.schluessel.loeschen');
     Route::post('/passkeys/anlegen/optionen', [PasskeyController::class, 'registerOptions'])->name('passkeys.anlegen.optionen');
     Route::post('/passkeys/anlegen', [PasskeyController::class, 'register'])->name('passkeys.anlegen');

@@ -5,7 +5,7 @@
     {{-- Kopf: wer, wie erreichbar, Lage --}}
     <section class="karte dossier-kopf">
         <div class="flex items-start gap-3">
-            <span class="dossier-avatar">{{ mb_strtoupper(mb_substr($person->name, 0, 1)) }}</span>
+            <x-avatar :user="$person" :size="52" />
             <div class="min-w-0 flex-1">
                 <h1 class="m-0" style="font-size:var(--fs-xl)">{{ $person->name }}</h1>
                 <p class="hinweis m-0">{{ $person->email }}{{ $person->phone ? ' · '.$person->phone : '' }} · {{ $m->role->label() }}</p>

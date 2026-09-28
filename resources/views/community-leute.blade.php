@@ -13,7 +13,7 @@
 
     @foreach ($leute as $l)
         <div class="karte flex items-start gap-3">
-            <span class="dossier-avatar" style="width:52px;height:52px">{{ mb_strtoupper(mb_substr($l['user']->name, 0, 1)) }}</span>
+            <x-avatar :user="$l['user']" :size="52" />
             <span class="min-w-0 flex-1">
                 <b class="t">{{ $l['coach'] ? $l['user']->vorname() : $l['user']->name }}@if ($l['coach']) <span class="badge badge-rec">Coach</span>@endif @if ($l['ich']) <span class="badge badge-rec">du</span>@endif</b>
                 @if ($l['ueber'])<span class="lesetext block text-md mt-1 whitespace-pre-line">{{ $l['ueber'] }}</span>@endif

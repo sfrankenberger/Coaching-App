@@ -1,6 +1,6 @@
 @php $u = $z['user']; $m = $z['membership']; @endphp
 <a href="{{ $z['dossier'] }}" class="zeile coachee-karte">
-    <span class="ic" style="font-family:var(--font-heading);font-size:17px">{{ mb_strtoupper(mb_substr($u->name, 0, 1)) }}</span>
+    <x-avatar :user="$u" :size="44" class="ic" />
     <span class="tx">
         <b style="white-space:normal">{{ $u->name }}
             @if ($z['wartet'])<span class="badge badge-wartet">wartet</span>@endif
