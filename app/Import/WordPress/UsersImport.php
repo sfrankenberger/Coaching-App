@@ -239,7 +239,8 @@ class UsersImport
             'last_seen_at' => $lastSeen,
             'user_id' => $user->id,
             'legacy_id' => (string) $wpUser->ID,
-            'role' => $role,
+            // In der App fest vergebene Rolle (settings.rolle_fest) bleibt, sonst entscheidet WordPress
+            'role' => $membership->exists && ($membership->settings['rolle_fest'] ?? false) ? $membership->role : $role,
             'status' => $membership->exists ? $membership->status : 'active',
             'joined_at' => $membership->joined_at ?? ($wpUser->user_registered ?: now()),
             'settings' => array_replace_recursive($membership->settings ?? [], $settings),

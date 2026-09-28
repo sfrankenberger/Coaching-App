@@ -137,6 +137,10 @@ class ImportUsersTest extends TestCase
         $anna = User::where('email', 'anna@example.com')->first();
         $anna->update(['name' => 'Anna Muster', 'phone' => '079 999 99 99']);
         $anna->membershipIn($this->lea)->update(['status' => 'paused']);
+        // Rolle in der App fest vergeben: der Import setzt sie nicht auf die WordPress-Rolle zurueck
+        $sebastian = User::where('email', 'sebastian@example.com')->first();
+        $mS = $sebastian->membershipIn($this->lea);
+        $mS->update(['role' => Role::Client, 'settings' => ($mS->settings ?? []) + ['rolle_fest' => true]]);
 
         $stats = $this->import();
 
@@ -149,6 +153,7 @@ class ImportUsersTest extends TestCase
         $this->assertSame('Anna Muster', $anna->name);
         $this->assertSame('079 999 99 99', $anna->phone);
         $this->assertSame('paused', $anna->membershipIn($this->lea)->status);
+        $this->assertSame(Role::Client, $sebastian->membershipIn($this->lea)->fresh()->role);
     }
 
     public function test_import_in_mandant_b_beruehrt_a_nicht(): void
