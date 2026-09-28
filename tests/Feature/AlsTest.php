@@ -30,7 +30,7 @@ class AlsTest extends TestCase
         $this->actingAs($seb)->get('http://a.test/')->assertOk()->assertSee('Ansehen als ...');
 
         // Als Kunde (Rolle client) ist der Plattform-Admin in der App eine normale Person, das Panel bleibt ihm offen
-        $this->a->users()->updateExistingPivot($seb->id, ['role' => Role::Client->value]);
+        $a->users()->updateExistingPivot($seb->id, ['role' => Role::Client->value, 'settings' => ['onboarding_seen_at' => now()->toIso8601String()]]);
         $this->actingAs($seb)->get('http://a.test/')->assertOk()->assertSee('Hallo Sebastian')->assertSee('Ansehen als ...')->assertDontSee('Guten Tag')->assertDontSee('Coachees');
         $this->actingAs($seb)->get('http://a.test/coachees')->assertForbidden();
         $this->actingAs($seb)->get('http://a.test/coach')->assertOk();
