@@ -5,7 +5,9 @@ namespace App\Http\Controllers;
 use App\Chat\Chat;
 use App\Http\Requests\FrageRequest;
 use App\Models\Comment;
+use App\Models\Membership;
 use App\Models\Program;
+use App\Models\ProgramMember;
 use App\Models\Question;
 use App\Models\Reaction;
 use App\Models\User;
@@ -47,16 +49,47 @@ class FragenController extends Controller
     public function community(Request $request): View
     {
         $user = $request->user();
-        $programme = app(ProgramAccess::class)->programsFor($user)->filter(fn (Program $p) => $p->is_published || $user->canManageCurrentTenant());
+        $programme = $this->communityProgramme($user);
         $filter = in_array($request->query('f'), ['offen', 'call', 'erledigt'], true) ? $request->query('f') : '';
-        $fragen = Question::whereIn('program_id', $programme->pluck('id'))->sichtbarFuer($user)
+        $kurs = $programme->firstWhere('id', (int) $request->query('k', 0));
+        $fragen = Question::whereIn('program_id', $kurs ? [$kurs->id] : $programme->pluck('id'))->sichtbarFuer($user)
             ->when($filter === 'offen', fn ($q) => $q->whereIn('status', ['offen', 'call']))
             ->when($filter === 'call', fn ($q) => $q->where('status', 'call'))
             ->when($filter === 'erledigt', fn ($q) => $q->whereIn('status', ['beantwortet', 'besprochen', 'zu']))
             ->withCount(['answers', 'reactions as call_wuensche' => fn ($r) => $r->where('emoji', Question::CALLWUNSCH)])
             ->with(['user:id,name', 'program:id,title,slug,color'])->latest()->limit(100)->get();
 
-        return view('community', ['programme' => $programme, 'fragen' => $fragen, 'filter' => $filter, 'coach' => $this->coachName()]);
+        return view('community', ['programme' => $programme, 'kurs' => $kurs, 'fragen' => $fragen, 'filter' => $filter, 'coach' => $this->coachName()]);
+    }
+
+    /** Wer ist dabei: das Team und alle aus meinen Gruppenkursen, die sich sichtbar geschaltet haben. */
+    public function leute(Request $request): View
+    {
+        $user = $request->user();
+        $programme = $this->communityProgramme($user);
+        $kurs = $programme->firstWhere('id', (int) $request->query('k', 0));
+        $kursIds = $kurs ? collect([$kurs->id]) : $programme->pluck('id');
+        $mitglieder = ProgramMember::whereIn('program_id', $kursIds)->get()->groupBy('user_id');
+        $leute = Membership::query()->where('status', 'active')->with('user')->get()
+            ->filter(fn ($m) => $m->user && ($m->role->canManage() || ($mitglieder->has($m->user_id) && $m->setting('community_sichtbar'))))
+            ->sortBy([fn ($a, $b) => ($b->role->canManage() <=> $a->role->canManage()) ?: strcasecmp($a->user->name, $b->user->name)])->values()
+            ->map(fn ($m) => [
+                'membership' => $m,
+                'user' => $m->user,
+                'coach' => $m->role->canManage(),
+                'kurse' => $m->role->canManage() ? collect() : $programme->whereIn('id', $mitglieder->get($m->user_id, collect())->pluck('program_id'))->pluck('title'),
+                'ueber' => (string) $m->setting('ueber_mich', ''),
+                'ich' => $m->user_id === $user->id,
+            ]);
+
+        return view('community-leute', ['programme' => $programme, 'kurs' => $kurs, 'leute' => $leute, 'sichtbar' => (bool) $user->membershipIn()?->setting('community_sichtbar'), 'coach' => $this->coachName()]);
+    }
+
+    /** Community gibt es fuer Gruppenkurse (Hybrid, Selbstlernkurs, Club), nicht fuer 1:1 und Arbeitsbuecher. */
+    protected function communityProgramme(User $user)
+    {
+        return app(ProgramAccess::class)->programsFor($user)
+            ->filter(fn (Program $p) => ($p->is_published || $user->canManageCurrentTenant()) && ! in_array($p->type, ['one_on_one', 'workbook'], true))->values();
     }
 
     public function store(FrageRequest $request, Program $program): RedirectResponse

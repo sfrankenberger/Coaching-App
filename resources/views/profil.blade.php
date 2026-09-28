@@ -62,6 +62,15 @@
                 <input id="phone" name="phone" type="tel" class="feld" value="{{ old('phone', $person->phone) }}" placeholder="079 123 45 67" autocomplete="tel">
                 <p class="hinweis mt-1">Nur für kurzfristige Absprachen. Du kannst sie jederzeit löschen.</p>
             </div>
+            <div id="community"></div>
+            <label class="flex items-start gap-2 text-md" style="margin:4px 0">
+                <input type="checkbox" name="community_sichtbar" value="1" class="mt-1 size-5 accent-primary" @checked(old('community_sichtbar', $mitgliedschaft?->setting('community_sichtbar')))>
+                <span>In der Community sichtbar: die anderen aus deinen Kursen sehen deinen Namen und deine paar Worte unter "Wer ist dabei".</span>
+            </label>
+            <div>
+                <label for="ueber_mich" class="feld-label">Ein paar Worte zu dir, freiwillig</label>
+                <textarea id="ueber_mich" name="ueber_mich" class="feld" rows="2" maxlength="300" data-ohne-diktat placeholder="Was du machst, was dich hergeführt hat">{{ old('ueber_mich', $mitgliedschaft?->setting('ueber_mich')) }}</textarea>
+            </div>
             <div class="eingabe-knoepfe">
                 <button type="submit" class="knopf">Speichern</button>
             </div>
@@ -191,32 +200,6 @@
             </form>
         </x-karte>
     @endif
-
-    <div id="hilfe"></div>
-    <x-karte titel="Hilfe" icon="life-ring">
-        <p class="x m-0 mb-3">Klemmt etwas? Schreib kurz, wo und was passiert. Seite, Gerät und Browser schicken wir automatisch mit, dann geht es schneller.</p>
-        <form method="post" action="{{ route('profil.hilfe') }}" class="eingabe" data-hilfe>
-            @csrf
-            <input type="hidden" name="seite" value="{{ url()->previous() }}">
-            <input type="hidden" name="geraet" value="">
-            <div>
-                <label for="hilfe-wo" class="feld-label">Wo klemmt es?</label>
-                <input id="hilfe-wo" name="wo" class="feld" maxlength="200" placeholder="z. B. beim Abspielen des Videos in Woche 2">
-            </div>
-            <div>
-                <label for="hilfe-was" class="feld-label">Was passiert?</label>
-                <textarea id="hilfe-was" name="was" class="feld" rows="3" required maxlength="3000" placeholder="Was hast du gemacht, und was ist dann passiert?"></textarea>
-            </div>
-            <div class="eingabe-knoepfe" style="justify-content:space-between">
-                <a href="{{ route('willkommen') }}" class="knopf knopf-anstoss"><i class="fa-solid fa-circle-info"></i>Einführung ansehen</a>
-                <button type="submit" class="knopf knopf-dunkel"><i class="fa-solid fa-paper-plane"></i>Technik melden</button>
-            </div>
-        </form>
-        @php $wa = data_get(app(\App\Tenancy\CurrentTenant::class)->get()?->settings, 'support.whatsapp'); $waName = data_get(app(\App\Tenancy\CurrentTenant::class)->get()?->settings, 'support.name'); @endphp
-        @if ($wa)
-            <p class="m-0 mt-3"><a href="https://wa.me/{{ preg_replace('~\D+~', '', $wa) }}?text={{ rawurlencode('Hallo'.($waName ? ' '.$waName : '').', ich habe ein technisches Problem in der App: ') }}" target="_blank" rel="noopener" class="knopf knopf-ruhig"><i class="fa-brands fa-whatsapp"></i>Live-Chat{{ $waName ? ' mit '.$waName : '' }} auf WhatsApp</a></p>
-        @endif
-    </x-karte>
 
     <form method="post" action="{{ route('abmelden') }}" style="text-align:center;margin:26px 0 0">
         @csrf

@@ -178,9 +178,8 @@
                         <li class="gruppe"><span><i class="fa-solid fa-user"></i>Mein Profil</span></li>
                         <li class="unter"><a href="{{ route('profil') }}"><i class="fa-solid fa-user"></i>Meine Daten</a></li>
                         <li class="unter"><a href="{{ route('profil') }}#buchungen"><i class="fa-solid fa-bookmark"></i>Meine Buchungen</a></li>
-                        <li class="unter"><a href="{{ route('profil') }}#benachrichtigungen"><i class="fa-solid fa-bell"></i>Nachrichten</a></li>
-                        <li class="unter"><a href="{{ route('mitteilungen') }}"><i class="fa-solid fa-inbox"></i>Mitteilungen @if ($mitteilungen)<span class="zahl">{{ $mitteilungen }}</span>@endif</a></li>
-                        <li><a href="{{ route('profil') }}#hilfe"><i class="fa-solid fa-life-ring"></i>Hilfe</a></li>
+                        <li class="unter"><a href="{{ route('profil') }}#benachrichtigungen"><i class="fa-solid fa-bell"></i>Benachrichtigungen</a></li>
+                        <li><a href="{{ route('hilfe') }}" @class(['aktiv' => $ist('hilfe')])><i class="fa-solid fa-life-ring"></i>Hilfe</a></li>
                         <li>
                             <form method="post" action="{{ route('abmelden') }}">
                                 @csrf

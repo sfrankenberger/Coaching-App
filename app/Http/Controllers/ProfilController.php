@@ -56,6 +56,12 @@ class ProfilController extends Controller
         return redirect()->to(route('profil').'#api')->with('meldung', 'Schlüssel gelöscht.');
     }
 
+    /** Hilfe als eigene Seite (wie im alten Bereich), das Formular meldet an die Technik. */
+    public function hilfeSeite(): View
+    {
+        return view('hilfe');
+    }
+
     /** Meine Buchungen (wie lea-mitgliedschaft-neu): Zugaenge mit Programmen, Laufzeit und Kurswoche. */
     protected function zugaenge($user)
     {
@@ -79,12 +85,20 @@ class ProfilController extends Controller
         $data = $request->validate([
             'name' => ['required', 'string', 'max:120'],
             'phone' => ['nullable', 'string', 'max:40'],
+            'community_sichtbar' => ['nullable', 'boolean'],
+            'ueber_mich' => ['nullable', 'string', 'max:300'],
         ]);
 
         $request->user()->forceFill([
             'name' => trim($data['name']),
             'phone' => filled($data['phone'] ?? null) ? trim($data['phone']) : null,
         ])->save();
+        if ($m = $request->user()->membershipIn()) {
+            $m->forceFill(['settings' => array_merge(is_array($m->settings) ? $m->settings : [], [
+                'community_sichtbar' => (bool) ($data['community_sichtbar'] ?? false),
+                'ueber_mich' => filled($data['ueber_mich'] ?? null) ? trim($data['ueber_mich']) : null,
+            ])])->save();
+        }
 
         return back()->with('meldung', 'Gespeichert.');
     }

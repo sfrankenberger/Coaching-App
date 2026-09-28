@@ -55,6 +55,15 @@ Mein Profil mit Meine Daten, Meine Buchungen, Nachrichten, Mitteilungen, Hilfe, 
 nur der runde Chat-Knopf. Startseite: Hallo, Diese Woche im Kurs (nur bei laufender Woche), Was ist neu,
 Dein naechster Termin, Offene Aufgaben. `/community` sammelt die Fragen aus allen Kursen der Person.
 
+### Community und Profil
+
+`/community` sammelt die Fragen aus den Gruppenkursen der Person (Hybrid, Selbstlernkurs, Club; nie 1:1 oder
+Arbeitsbuch), mit Filter je Kurs (`?k=`). `/community/wer-ist-dabei` zeigt das Team und alle aus denselben Kursen,
+die sich im Profil sichtbar geschaltet haben (`memberships.settings.community_sichtbar`, dazu `ueber_mich`).
+Mein Profil im Menue: Meine Daten, Meine Buchungen, Benachrichtigungen. Hilfe ist eine eigene Seite (`/hilfe`),
+Mitteilungen erreicht man ueber die Glocke. Die 1:1-Seite (Gespraech) zeigt Sitzungen im Paket, naechsten Termin
+und den Weg zur Buchung.
+
 ### Ansehen als (Plattform-Admin)
 
 `App\Http\Middleware\AlsAndere`: steht in der Sitzung `als_user_id` und die angemeldete Person ist

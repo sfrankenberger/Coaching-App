@@ -36,13 +36,14 @@ class Verfuegbarkeit
         }
         $eintraege = Cache::remember($schluessel, 300, fn () => $this->google->eintraege(now()->startOfDay(), $bis));
 
-        $wort = mb_strtolower((string) $this->opt('block_keyword', 'Coaching'));
+        // Stichwort ohne Leerzeichen vergleichen: "Coachingblock" und "Coaching Block" sind dasselbe
+        $wort = preg_replace('~\s+~u', '', mb_strtolower((string) $this->opt('block_keyword', 'Coaching')));
         $tags = BookingType::whereNotNull('block_tag')->pluck('block_tag')->map(fn ($t) => mb_strtolower($t))->filter()->values();
         $bloecke = [];
         $belegt = [];
         foreach ($eintraege as $e) {
             $s = mb_strtolower($e['summary']);
-            if ($wort !== '' && str_contains($s, $wort)) {
+            if ($wort !== '' && str_contains(preg_replace('~\s+~u', '', $s), $wort)) {
                 $eigene = $tags->filter(fn ($t) => str_contains($s, $t));
                 if ($eigene->isEmpty() || ($art->block_tag && $eigene->contains(mb_strtolower($art->block_tag)))) {
                     $bloecke[] = $e;

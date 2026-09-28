@@ -84,7 +84,11 @@ class ArbeitsplatzTest extends TestCase
             ->assertSee('Meine Sachen')->assertSee('Meine Aufgaben')->assertSee('Meine Kurse')->assertSee('Kurs K')->assertSee('Ressourcen')->assertSee('Community')->assertSee('Mein Profil')
             ->assertDontSee('Arbeitsplatz')->assertDontSee('Volltext suchen')->assertDontSee('Gemerkt')->assertDontSee('Coachees')->assertDontSee('Dein Bereich')->assertDontSee('class="leiste"', false);
         // Community: alle Fragen aus meinen Kursen
-        $this->actingAs($this->anna)->get('http://a.test/community')->assertOk()->assertSee('Wie geht Woche 2?')->assertSee('Frage stellen');
+        $this->actingAs($this->anna)->get('http://a.test/community')->assertOk()->assertSee('Wie geht Woche 2?')->assertSee('Was beschäftigt dich?');
+        // Profil aufgeraeumt: Benachrichtigungen statt Nachrichten, Hilfe eigene Seite, Mitteilungen nur ueber die Glocke
+        $this->actingAs($this->anna)->get('http://a.test/')->assertOk()->assertSee('Benachrichtigungen')->assertDontSee('>Nachrichten<', false)->assertDontSee('>Mitteilungen', false);
+        $this->actingAs($this->anna)->get('http://a.test/hilfe')->assertOk()->assertSee('Technik melden');
+        $this->actingAs($this->anna)->get('http://a.test/profil')->assertOk()->assertDontSee('Technik melden')->assertSee('In der Community sichtbar');
     }
 
     public function test_nachschlagen_hat_reiter_statt_untermenue(): void

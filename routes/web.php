@@ -13,6 +13,7 @@ use App\Http\Controllers\CoacheesController;
 use App\Http\Controllers\DossierController;
 use App\Http\Controllers\EinheitController;
 use App\Http\Controllers\FragenController;
+use App\Http\Controllers\GastBuchenController;
 use App\Http\Controllers\GespraechController;
 use App\Http\Controllers\HomeController;
 use App\Http\Controllers\Hooks\WooCommerceController;
@@ -55,6 +56,11 @@ Route::get('/sso', BridgeController::class)->name('sso');
 
 // Kalender-Abo (ohne Anmeldung, Schluessel je Person)
 Route::get('/kalender/{token}.ics', [KalenderController::class, 'abo'])->name('kalender.abo')->where('token', '[A-Za-z0-9]{32,64}');
+
+// Klarheitsgespraech fuer Gaeste, ohne Anmeldung (Website verweist hierher)
+Route::get('/buchen/gast/{art}', [GastBuchenController::class, 'zeiten'])->name('buchen.gast');
+Route::post('/buchen/gast/{art}', [GastBuchenController::class, 'store'])->middleware('throttle:5,10')->name('buchen.gast.store');
+Route::get('/buchen/gast/{art}/danke', [GastBuchenController::class, 'danke'])->name('buchen.gast.danke');
 
 // Anmelden
 Route::middleware('guest')->group(function () {
@@ -204,6 +210,8 @@ Route::middleware(['auth', 'membership'])->group(function () {
 
     // Fragen an die Coachin im Kursraum, Community = alle Fragen aus meinen Kursen
     Route::get('/community', [FragenController::class, 'community'])->name('community');
+    Route::get('/community/wer-ist-dabei', [FragenController::class, 'leute'])->name('community.leute');
+    Route::get('/hilfe', [ProfilController::class, 'hilfeSeite'])->name('hilfe');
     Route::get('/kurse/{program:slug}/fragen', [FragenController::class, 'index'])->name('kurse.fragen');
     Route::post('/kurse/{program:slug}/fragen', [FragenController::class, 'store'])->middleware('throttle:20,10')->name('kurse.fragen.store');
     Route::get('/fragen/{frage}', [FragenController::class, 'show'])->name('fragen.show');

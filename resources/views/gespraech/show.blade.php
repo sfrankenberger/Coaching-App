@@ -12,6 +12,25 @@
         </span>
     </div>
 
+    @if ($conv->isDirect() && ! $ich->canManageCurrentTenant() && ($kontingent || $buchen || $naechster))
+        <div class="karte" style="margin-bottom:12px">
+            @if ($kontingent)
+                <span class="eyebrow"><i class="fa-solid fa-ticket"></i> Deine Sitzungen</span>
+                <div class="flex items-baseline gap-2 mt-1">
+                    <b style="font-family:var(--font-heading);font-size:26px;font-weight:400">{{ $kontingent['offen'] }}</b>
+                    <span class="x">von {{ $kontingent['gesamt'] }} noch offen{{ $kontingent['geplant'] ? ', '.$kontingent['geplant'].' geplant' : '' }}</span>
+                </div>
+            @else
+                <span class="eyebrow"><i class="fa-solid fa-user-group"></i> 1:1 mit {{ $gegenueber }}</span>
+                <p class="x m-0 mt-1">Eine Stunde nur für dich und dein Thema. Einzeln oder als Paket.</p>
+            @endif
+            <div class="flex flex-wrap gap-2 mt-3">
+                @if ($naechster)<a href="{{ route('termine.show', $naechster) }}" class="knopf knopf-ruhig knopf-klein"><i class="fa-regular fa-calendar"></i>{{ \App\Support\Zeit::wannKurz($naechster->starts_at) }}</a>@endif
+                @if ($buchen)<a href="{{ route('buchen.index') }}" class="knopf knopf-klein"><i class="fa-solid fa-calendar-plus"></i>{{ $kontingent ? 'Sitzung buchen' : 'Gespräch buchen' }}</a>@endif
+            </div>
+        </div>
+    @endif
+
     <div id="verlauf" class="flex flex-col gap-2" data-verlauf="{{ route('gespraech.neu', $conv) }}" data-kanal="gespraech.{{ $conv->id }}" data-letzte="{{ $messages->last()?->id ?? 0 }}" data-ich="{{ $ich->id }}">
         @if ($versteckt)
             <a href="{{ route('gespraech.show', [$conv, 'alle' => 1]) }}" class="knopf knopf-leise self-center knopf-klein">{{ $versteckt }} ältere Nachrichten zeigen</a>

@@ -46,11 +46,11 @@ class Buchung
         return ! $k ? 'Dafür brauchst du eine Begleitung mit Sitzungen.' : ($k['offen'] < 1 ? 'Deine Sitzungen sind aufgebraucht oder schon verplant.' : null);
     }
 
-    public function buchen(User $user, BookingType $art, Carbon $start, array $antworten = []): Booking
+    public function buchen(User $user, BookingType $art, Carbon $start, array $antworten = [], bool $melden = true): Booking
     {
         abort_if($grund = $this->hindernis($user, $art), 403, $grund);
 
-        return Cache::lock('buchung-'.$this->current->id(), 20)->block(10, function () use ($user, $art, $start, $antworten) {
+        return Cache::lock('buchung-'.$this->current->id(), 20)->block(10, function () use ($user, $art, $start, $antworten, $melden) {
             // Direkt vor dem Speichern noch einmal frisch pruefen
             $frei = $this->verfuegbarkeit->zeiten($art, true)->contains(fn (Carbon $z) => $z->getTimestamp() === $start->getTimestamp());
             abort_unless($frei, 409, 'Diese Zeit ist leider gerade weggegangen. Such dir eine andere aus.');
@@ -86,7 +86,7 @@ class Buchung
             }
 
             $wann = Zeit::wann($start);
-            $this->notifier->send([$user->id], new Nachricht(
+            $melden && $this->notifier->send([$user->id], new Nachricht(
                 titel: 'Gebucht: '.$event->title,
                 text: $wann.'. Den Zoom-Link und den Kalendereintrag findest du beim Termin.',
                 url: route('termine.show', $event),

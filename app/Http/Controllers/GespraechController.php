@@ -2,10 +2,13 @@
 
 namespace App\Http\Controllers;
 
+use App\Booking\GoogleCalendar;
 use App\Chat\Chat;
 use App\Chat\Terminvorschlag;
+use App\Coach\Lage;
 use App\Http\Requests\NachrichtRequest;
 use App\Models\Conversation;
+use App\Models\Event;
 use App\Models\Message;
 use App\Models\Program;
 use App\Models\Reaction;
@@ -61,6 +64,10 @@ class GespraechController extends Controller
             'gelesenBis' => $this->chat->readUntilByOthers($gespraech, $user),
             'gegenueber' => $this->gegenueber($gespraech, $user),
             'darfSprache' => true,
+            // 1:1-Seite wie im alten Bereich: Sitzungen im Paket und der Weg zum Termin
+            'kontingent' => $gespraech->isDirect() && ! $user->canManageCurrentTenant() ? app(Lage::class)->kontingent($user) : null,
+            'buchen' => $gespraech->isDirect() && ! $user->canManageCurrentTenant() && app(GoogleCalendar::class)->aktiv(),
+            'naechster' => $gespraech->isDirect() && ! $user->canManageCurrentTenant() ? Event::where('user_id', $user->id)->where('is_published', true)->where('starts_at', '>=', now()->subHour())->orderBy('starts_at')->first() : null,
         ]);
     }
 

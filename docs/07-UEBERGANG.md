@@ -94,3 +94,13 @@ dann einmal neu eingeschaltet werden (Profil). Darum die Uebernahme genau einmal
 ueber die Bruecke gehen (`lea_neueapp_token()` aus `lea-neueapp-bruecke.php`, signierter Einmal-Link), dann
 sind sie in der App sofort angemeldet. Nicht angemeldete landen auf `/anmelden`.
 
+## 6. Klarheitsgespraech fuer Gaeste in der App
+
+`https://app.leawernli.ch/buchen/gast/erst` (Buchungsart `erst`, nur offene Arten) ist das Formular ohne Anmeldung:
+Name, Mail, Handynummer, Zeit aus den Kalenderbloecken, Vorbereitungsfragen, Honigtopf gegen Bots. Die Person bekommt
+ein Konto als Gast (Rolle `guest`, sieht Gratis-Inhalte, Impulse, Podcast und ihren Termin), die Buchung landet wie
+jede andere im Google-Kalender und beim Team, und sie bekommt eine Mail (`GastBuchungMail`) mit Bestaetigung, Zoom-Link
+und Anmeldelink in die App (sieben Tage). Die Website verlinkt den Knopf auf `/klarheitsgespraech/` dorthin, dann
+kann das Website-Modul `novamira-coaching` abgeschaltet werden. Beide lesen bis dahin dieselben Bloecke
+("Coachingblock" und "Coaching Block" gelten beide) und schreiben in denselben Kalender, Doppelbuchungen gibt es nicht.
+

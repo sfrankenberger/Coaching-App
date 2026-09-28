@@ -4,6 +4,7 @@ namespace Tests\Feature;
 
 use App\Booking\Verfuegbarkeit;
 use App\Enums\Role;
+use App\Mail\GastBuchungMail;
 use App\Models\Booking;
 use App\Models\BookingType;
 use App\Models\Membership;
@@ -17,6 +18,7 @@ use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Notification;
 use Tests\TestCase;
 
@@ -179,5 +181,45 @@ class BuchenTest extends TestCase
         $this->actingAs($this->lea)->post("http://a.test/buchungen/{$b->id}/verschieben", ['start' => Carbon::parse('2026-09-30 12:00:00', 'UTC')->getTimestamp()])->assertRedirect();
         $this->assertSame('2026-09-30 12:00:00', DB::table('events')->value('starts_at'));
         Notification::assertSentTo($this->anna, AppNotification::class, fn ($n) => $n->nachricht->titel === 'Termin verschoben');
+    }
+
+    public function test_gast_bucht_klarheitsgespraech_und_bekommt_zugang(): void
+    {
+        Mail::fake();
+        $this->arten();
+        // Gaeste sehen das Formular, nur offene Arten
+        $this->get('http://a.test/buchen/gast/erst')->assertOk()->assertSee('Klarheitsgespräch')->assertSee('Dein Name')->assertSee('Montag, 28. September');
+        $this->get('http://a.test/buchen/gast/coaching')->assertNotFound();
+
+        $start = Carbon::parse('2026-09-28 07:00:00', 'UTC')->getTimestamp();
+        $r = $this->post('http://a.test/buchen/gast/erst', ['name' => 'Nora Neu', 'email' => 'Nora@Test.ch', 'phone' => '079 1', 'start' => $start, 'website' => '']);
+        $r->assertRedirect('http://a.test/buchen/gast/erst/danke');
+        $this->followRedirects($r)->assertOk()->assertSee('Gebucht, ich freue mich auf dich')->assertSee('nora@test.ch');
+
+        $nora = User::where('email', 'nora@test.ch')->first();
+        $this->assertSame('Nora Neu', $nora->name);
+        $this->assertSame(Role::Guest, $this->in(fn () => Membership::where('user_id', $nora->id)->first()->role));
+        $b = $this->in(fn () => Booking::where('user_id', $nora->id)->first());
+        $this->assertSame('gebucht', $b->status);
+        $this->assertSame('2026-09-28 07:00:00', DB::table('events')->where('user_id', $nora->id)->value('starts_at'));
+        Mail::assertSent(GastBuchungMail::class, fn ($m) => $m->hasTo('nora@test.ch') && $m->neu && str_contains($m->url, '/anmelden/'));
+        Notification::assertSentTo($this->lea, AppNotification::class, fn ($n) => str_starts_with($n->nachricht->titel, 'Neue Buchung'));
+        Notification::assertNotSentTo($nora, AppNotification::class);
+
+        // Mit dem Link aus der Mail ist sie drin und sieht ihren Termin
+        $mail = Mail::sent(GastBuchungMail::class)->first();
+        $this->get($mail->url)->assertRedirect();
+        $this->get("http://a.test/termine/{$b->event_id}")->assertOk()->assertSee('Klarheitsgespräch')->assertSee('Absagen');
+
+        // Honigtopf, und Angemeldete werden auf die normale Buchung geleitet
+        $this->post('http://a.test/buchen/gast/erst', ['name' => 'Bot', 'email' => 'bot@test.ch', 'start' => $start, 'website' => 'x'])->assertSessionHasErrors('website');
+        $this->actingAs($this->anna)->get('http://a.test/buchen/gast/erst')->assertRedirect('http://a.test/buchen/erst');
+    }
+
+    public function test_1_zu_1_seite_zeigt_sitzungen_und_buchen(): void
+    {
+        $this->arten();
+        $r = $this->actingAs($this->anna)->get('http://a.test/gespraech');
+        $this->followRedirects($r)->assertOk()->assertSee('Deine Sitzungen')->assertSee('von 3 noch offen')->assertSee('Sitzung buchen');
     }
 }

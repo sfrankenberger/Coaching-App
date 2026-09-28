@@ -8,6 +8,7 @@ use App\Models\Note;
 use App\Models\Program;
 use App\Models\ProgramMember;
 use App\Models\Progress;
+use App\Models\Question;
 use App\Models\Tenant;
 use App\Models\User;
 use App\Tenancy\CurrentTenant;
@@ -146,5 +147,30 @@ class KursraumTest extends TestCase
         $this->in(fn () => $selbst->forceFill(['settings' => ['teilen' => '1']])->save());
         $this->assertTrue($selbst->fresh()->teilbar());
         $this->actingAs($this->anna)->get("http://a.test/kurse/selbst/einheit/{$u->id}")->assertOk()->assertSee('Mit deiner Coachin teilen');
+    }
+
+    public function test_community_nur_gruppenkurse_und_wer_ist_dabei(): void
+    {
+        $this->anna->forceFill(['name' => 'Anna Muster'])->save();
+        $this->fremd->forceFill(['name' => 'Fremd Person'])->save();
+        $lea = User::factory()->create(['name' => 'Lea Coach']);
+        $this->a->users()->attach($lea, ['role' => Role::Owner->value, 'status' => 'active']);
+        $this->in(function () {
+            $einzel = Program::create(['slug' => 'einzel', 'title' => 'Einzelbegleitung Anna', 'type' => 'one_on_one']);
+            ProgramMember::create(['program_id' => $einzel->id, 'user_id' => $this->anna->id]);
+            $selbst = Program::create(['slug' => 'selbst', 'title' => 'Selbstlernkurs Ruhe', 'type' => 'selfpaced']);
+            ProgramMember::create(['program_id' => $selbst->id, 'user_id' => $this->anna->id]);
+            ProgramMember::create(['program_id' => $selbst->id, 'user_id' => $this->fremd->id]);
+            Question::create(['program_id' => $this->program->id, 'user_id' => $this->anna->id, 'title' => 'Frage im Testkurs']);
+            Question::create(['program_id' => $selbst->id, 'user_id' => $this->fremd->id, 'title' => 'Frage im Selbstlernkurs']);
+        });
+        $this->actingAs($this->anna)->get('http://a.test/community')->assertOk()
+            ->assertSee('Frage im Testkurs')->assertSee('Frage im Selbstlernkurs')->assertSee('Wer ist dabei')->assertDontSee('Einzelbegleitung');
+        $this->actingAs($this->anna)->get('http://a.test/community?k='.$this->program->id)->assertOk()->assertSee('Frage im Testkurs')->assertDontSee('Frage im Selbstlernkurs');
+        // Wer ist dabei: Team immer, andere nur mit Freigabe
+        $this->actingAs($this->anna)->get('http://a.test/community/wer-ist-dabei')->assertOk()->assertSee('Lea')->assertSee('Coach')->assertDontSee('Fremd Person')->assertSee('noch nicht sichtbar');
+        $this->actingAs($this->fremd)->post('http://a.test/profil', ['name' => 'Fremd Person', 'community_sichtbar' => 1, 'ueber_mich' => 'Ich coache Mütter.'])->assertRedirect();
+        $this->actingAs($this->anna)->get('http://a.test/community/wer-ist-dabei')->assertOk()->assertSee('Fremd Person')->assertSee('Ich coache Mütter.')->assertSee('Selbstlernkurs Ruhe');
+        $this->actingAs($this->anna)->get('http://a.test/community/wer-ist-dabei?k='.$this->program->id)->assertOk()->assertDontSee('Fremd Person');
     }
 }
