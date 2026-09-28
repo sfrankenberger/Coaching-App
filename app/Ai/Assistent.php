@@ -27,6 +27,7 @@ use App\Models\Resource;
 use App\Models\Tool;
 use App\Models\Unit;
 use App\Models\User;
+use App\Models\Wissen;
 use App\Support\Zeit;
 use App\Tenancy\Branding;
 use App\Tenancy\CurrentTenant;
@@ -81,6 +82,10 @@ class Assistent
         $inhalte = $menschen ? [] : $this->inhalte($frage);
         if ($inhalte) {
             $fakten['inhalte'] = array_map(fn ($i) => ['titel' => $i['titel'], 'art' => $i['art'], 'kurz' => $i['kurz']], $inhalte);
+        }
+        // Second Brain: was sich die Coachin gemerkt hat (Regeln, Preise, Ablaeufe)
+        if ($gemerkt = Wissen::fakten($frage)) {
+            $fakten['gemerktes_wissen'] = $gemerkt;
         }
 
         $text = '';
@@ -177,7 +182,7 @@ class Assistent
         }
         $f['buchungen'] = Booking::where('user_id', $user->id)->with('type:id,title')->orderByDesc('starts_at')->limit(5)->get()
             ->map(fn (Booking $b) => ($b->type?->title ?? 'Buchung').' am '.Zeit::wann($b->starts_at).($b->status === 'abgesagt' ? ' (abgesagt)' : ''))->values()->all();
-        $f['dossier'] = MembershipResource::getUrl('dossier', ['record' => $m]);
+        $f['dossier'] = route('coachees.show', $m);
         $f['gespraech_url'] = $conv ? route('gespraech.show', $conv) : null;
 
         return $f;
@@ -189,7 +194,10 @@ class Assistent
     public function orte(): array
     {
         $o = [
-            ['t' => 'Personen und Dossiers', 'u' => MembershipResource::getUrl(), 'w' => 'menschen personen person coachee coachees klientin kundin dossier notizen wartet ampel zuletzt'],
+            ['t' => 'Heute: wer wartet, was geteilt wurde, was ansteht', 'u' => route('home'), 'w' => 'heute wartet warten antwort arbeitsliste startseite ansteht'],
+            ['t' => 'Coachees: Ampel, neue Person anlegen, Dossiers', 'u' => route('coachees.index'), 'w' => 'menschen personen person coachee coachees klientin kundin dossier notizen wartet ampel zuletzt anlegen neue verkaufen zugang geben'],
+            ['t' => 'Assistent: fragen, Wissen merken, Claude oder ChatGPT verbinden', 'u' => route('assistent'), 'w' => 'assistent wissen merken gemerkt second brain mcp claude chatgpt verbinden schlüssel'],
+            ['t' => 'Personen verwalten (Rolle, Status, Kennzeichen)', 'u' => MembershipResource::getUrl(), 'w' => 'rolle status kennzeichen ausbildung mitgliedschaft bearbeiten'],
             ['t' => 'Termine und Aufzeichnungen', 'u' => EventResource::getUrl(), 'w' => 'termin termine call calls zoom aufzeichnung aufzeichnungen freigeben abschrift zusammenfassung teilnahme dabei'],
             ['t' => 'Programme und Kurse', 'u' => ProgramResource::getUrl(), 'w' => 'programm programme kurs kurse woche wochen lektion lektionen einheit workbook arbeitsbuch übung uebung'],
             ['t' => 'Material', 'u' => MaterialResource::getUrl(), 'w' => 'material ressource ressourcen pdf audio video download datei'],

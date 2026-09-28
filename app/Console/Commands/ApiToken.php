@@ -8,7 +8,7 @@ use Illuminate\Console\Command;
 /** API-Token fuer eine Person: php84 artisan api:token mail@example.com --name=Handy */
 class ApiToken extends Command
 {
-    protected $signature = 'api:token {email} {--name=api : Bezeichnung des Tokens}';
+    protected $signature = 'api:token {email} {--name=api : Bezeichnung des Tokens} {--mcp : Auch fuer den MCP-Server (Claude, ChatGPT)}';
 
     protected $description = 'Sanctum-Token fuer die JSON-API anlegen';
 
@@ -20,7 +20,7 @@ class ApiToken extends Command
 
             return self::FAILURE;
         }
-        $this->line($user->createToken((string) $this->option('name'), ['lesen'])->plainTextToken);
+        $this->line($user->createToken((string) $this->option('name'), $this->option('mcp') ? ['lesen', 'mcp'] : ['lesen'])->plainTextToken);
 
         return self::SUCCESS;
     }

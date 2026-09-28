@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\Api\McpController;
 use App\Http\Controllers\Api\V1Controller;
 use App\Tenancy\Middleware\IdentifyTenant;
 use Illuminate\Support\Facades\Route;
@@ -16,3 +17,10 @@ Route::prefix('v1')->middleware([IdentifyTenant::class, 'auth:sanctum', 'throttl
     Route::get('/mitteilungen', [V1Controller::class, 'mitteilungen']);
     Route::get('/aufgaben', [V1Controller::class, 'aufgaben']);
 });
+
+/*
+| MCP-Server (Model Context Protocol, Streamable HTTP): Claude, ChatGPT oder ein anderer Assistent
+| verbindet sich mit der App und nutzt die Werkzeuge aus App\Ai\Werkzeuge. Token mit Faehigkeit "mcp"
+| (Profil, Schluessel fuer Verbindungen), nur fuer das Team.
+*/
+Route::match(['get', 'post', 'delete'], '/mcp', McpController::class)->middleware([IdentifyTenant::class, 'auth:sanctum', 'throttle:240,1'])->name('mcp');

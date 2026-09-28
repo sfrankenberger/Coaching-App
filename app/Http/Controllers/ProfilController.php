@@ -32,7 +32,28 @@ class ProfilController extends Controller
             'kontingent' => app(Lage::class)->kontingent($request->user()),
             'buchen' => app(GoogleCalendar::class)->aktiv(),
             'aboUrl' => $tenant?->setting('shop.account_url'),
+            'schluessel' => $request->user()->canManageCurrentTenant() ? $request->user()->tokens()->orderBy('created_at')->get() : collect(),
+            'neuerSchluessel' => session('neuer_schluessel'),
+            'mcpUrl' => url('/api/mcp'),
         ]);
+    }
+
+    /** Schluessel fuer Verbindungen (Claude, ChatGPT, eigene Werkzeuge): einmal sichtbar, dann nur noch der Name. */
+    public function schluessel(Request $request): RedirectResponse
+    {
+        abort_unless($request->user()->canManageCurrentTenant(), 403);
+        $data = $request->validate(['name' => ['required', 'string', 'max:60']]);
+        $token = $request->user()->createToken(trim($data['name']), ['lesen', 'mcp']);
+
+        return redirect()->to(route('profil').'#api')->with('neuer_schluessel', $token->plainTextToken)->with('meldung', 'Schlüssel erzeugt. Kopier ihn jetzt, er wird nur einmal gezeigt.');
+    }
+
+    public function schluesselLoeschen(Request $request, int $id): RedirectResponse
+    {
+        abort_unless($request->user()->canManageCurrentTenant(), 403);
+        $request->user()->tokens()->where('id', $id)->delete();
+
+        return redirect()->to(route('profil').'#api')->with('meldung', 'Schlüssel gelöscht.');
     }
 
     /** Meine Buchungen (wie lea-mitgliedschaft-neu): Zugaenge mit Programmen, Laufzeit und Kurswoche. */
