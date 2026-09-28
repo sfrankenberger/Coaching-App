@@ -55,7 +55,7 @@ class StartseiteTest extends TestCase
 
         $this->actingAs($this->anna)->get('http://a.test/')->assertOk()->assertSee('Hallo Anna');
         $this->actingAs($this->anna)->get('http://a.test/willkommen')->assertOk()->assertSee('data-willkommen-zu', false);
-        $this->actingAs($this->lea)->get('http://a.test/')->assertOk()->assertSee('Für dich als Coach');
+        $this->actingAs($this->lea)->get('http://a.test/')->assertOk()->assertSee('Guten Tag, Lea')->assertSee('Wie eine Teilnehmerin');
     }
 
     public function test_startseite_zeigt_woche_termin_aufgaben_und_impuls(): void

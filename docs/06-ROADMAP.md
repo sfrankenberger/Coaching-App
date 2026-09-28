@@ -83,6 +83,16 @@ Stand nach Etappe 1: Lea kann sich per Link anmelden, sieht Start und Profil, im
 - [x] Coachees als Seite in der App-Huelle (Ampel, Freigegebenes, Personenkarten, Auskunft)
 - [x] Coach-Bereich: Hilfsklassen fuer eigene Ansichten, Neues gebuendelt, Platzhalter in Beitraegen, Marken fuer Entwuerfe
 
+## Etappe 9 - Drei Sichten, Arbeitsplatz, Second Brain, MCP (28.09., siehe 09-SICHTEN-UND-MCP)
+
+- [x] Teilnehmer-Menue verschlankt (Nachschlagen mit Reitern Finden, Themen, Meine Suchen, Mein Archiv, Werkzeuge; Journal ohne Unterpunkte; Mitteilungen nur ueber die Glocke)
+- [x] Arbeitsplatz fuer Lea und das Team in der App-Huelle: Heute (Arbeitsliste wie im alten Bereich), Coachees mit "Neue Person anlegen", Dossier mit Reitern (Gespraech, Termine, Kurs, Aufgaben, Freigegeben, Meine Notizen, Vorbereitung), "Etwas verkaufen", Umschalter "Wie eine Teilnehmerin"
+- [x] Assistent in der App-Huelle mit Wissensspeicher (Second Brain, Tabelle `wissen`), der Assistent nimmt Gemerktes in seine Antworten
+- [x] MCP-Server `/api/mcp` (Streamable HTTP, Sanctum-Token mit Faehigkeit `mcp`), 16 Werkzeuge in `app/Ai/Werkzeuge`, Schluessel im Profil
+- [ ] OAuth fuer ChatGPT-Connectors ohne Token-Eingabe (ChatGPT verlangt bei Custom-Connectors OAuth oder "keine Auth", Claude nimmt Bearer-Token)
+- [ ] Leas Assistent selbst mit den Werkzeugen (Anthropic Tool Use), damit "Leg Anna an" auch in der App klappt
+- [ ] Bruecke zur Website (leawernli.ch): Kampagnen, Funnels, Seiten anlegen ueber die WordPress-API des Novamira-Plugins
+
 ## Umschalten (nach Leas Freigabe)
 
 1. Schreibstopp im alten Mitgliederbereich (Hinweis an Teilnehmerinnen)
@@ -92,4 +102,4 @@ Stand nach Etappe 1: Lea kann sich per Link anmelden, sieht Start und Profil, im
 
 ## Später
 
-Community, Auswertung, Stripe als zweite Zugangsquelle, Mandanten-Onboarding, Abrechnung der Plattform, Reverb für Echtzeit, native Apps.
+Community, Auswertung, Stripe als zweite Zugangsquelle, Mandanten-Onboarding, Abrechnung der Plattform, native Apps (iOS/Android ueber die API und NativePHP, siehe 09).

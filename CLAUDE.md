@@ -39,7 +39,7 @@ php84 artisan benachrichtigungen:runde termine         # Laeufe (termine, nachfa
 php84 artisan inhalte:feeds lea                        # Impulse und Podcast per RSS, sonst stuendlich
 php84 artisan aufzeichnungen:wache lea                 # Vimeo-Aufzeichnungen zuordnen, Abschrift, Zusammenfassung (alle 15 Min)
 php84 artisan zoom:anwesenheit lea --trocken           # wer war im Zoom-Call (stuendlich, ohne --trocken setzt es "live dabei")
-php84 artisan api:token <email>                        # Token fuer die JSON-API /api/v1 (Sanctum)
+php84 artisan api:token <email> --mcp                  # Token fuer die JSON-API /api/v1 und den MCP-Server /api/mcp (Sanctum)
 php artisan test --parallel                            # lokal, mit paratest etwa dreimal so schnell
 php84 artisan themen:profil lea --limit=20             # Themenfinder per KI
 php84 artisan branding:icons lea <ordner>              # App-Icons uebernehmen
@@ -47,7 +47,7 @@ php84 artisan filament:assets                          # nach Filament-Updates, 
 bin/build-css                                          # Tailwind bauen (bin/build-css --watch beim Entwickeln)
 ```
 
-Nachschlagen: `App\Content\Fundus` (Wort sucht, Satz fragt die KI, Tuer fuer Gesperrtes), Sammlungen `App\Models\Sammlung`, Suchverlauf `SearchHistory`, Werkzeuge `App\Models\Tool` (nur `memberships.settings.ausbildung` und Team). Coach-Werkzeuge in der App-Huelle: `/coachees` (`CoacheesController`, `App\Coach\Lage`, `App\Coach\Neues`), Assistent `App\Ai\Assistent` (Filament-Seite `coach/assistent`, Wissen fest im Code plus `settings.ai.wissen`). Eigene Blade-Ansichten im Filament-Panel brauchen ihre Hilfsklassen aus `public/css/coach.css`, Filament 5 liefert keine Tailwind-Utilities mit.
+Nachschlagen: `App\Content\Fundus` (Wort sucht, Satz fragt die KI, Tuer fuer Gesperrtes), Sammlungen `App\Models\Sammlung`, Suchverlauf `SearchHistory`, Werkzeuge `App\Models\Tool` (nur `memberships.settings.ausbildung` und Team). Drei Sichten (`App\Coach\Ansicht`, `memberships.settings.ansicht`): Teilnehmerin, Arbeitsplatz fuer das Team in derselben Huelle (`/` = `App\Coach\Arbeitsliste`, `/coachees` mit `CoacheesController`, Dossier `/coachees/{membership}` mit `DossierController`, `/assistent`), Verwaltung in Filament unter `/coach`. Assistent `App\Ai\Assistent` (Wissen fest im Code plus `settings.ai.wissen` plus Wissensspeicher `App\Models\Wissen`). Werkzeuge fuer Assistenten in `app/Ai/Werkzeuge` (`Werkzeugkasten`), MCP-Server `POST /api/mcp` (`Api\McpController`, Sanctum-Token mit Faehigkeit `mcp`, Schluessel im Profil). Details in `docs/09-SICHTEN-UND-MCP.md`. Eigene Blade-Ansichten im Filament-Panel brauchen ihre Hilfsklassen aus `public/css/coach.css`, Filament 5 liefert keine Tailwind-Utilities mit.
 
 Weitere Ordner: `app/Programs` (Zugriff, Fortschritt, Begleitung), `app/Chat`, `app/Notifications` (Notifier, Kanaele, Runden), `app/Shop` (Zugaenge, WooCommerce), `app/Content` (Feeds, Inhalte, Themen), `app/Ai` (Anthropic, Summarizer), `app/Import/WordPress`, `app/Coach` (Lage/Ampel, Kommentare, Wochencheck), `app/Recordings` (Vimeo, Wache, Freigabe), `app/Zoom` (Anwesenheit), `app/Booking` (Google-Kalender, Verfuegbarkeit, Buchung). Einstellungen je Mandant in `tenants.settings`: `mail`, `oauth`, `push.vapid`, `telegram`, `shop.webhook_secret`, `bridge.secret`, `feeds`, `ai`, `import.wordpress`, `vimeo.token`, `recordings`, `zoom`, `google.service_account`, `booking` (`enabled` schaltet die Buchung frei), `wochencheck.haken`.
 

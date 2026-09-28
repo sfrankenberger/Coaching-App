@@ -65,7 +65,7 @@ class AssistentTest extends TestCase
         $this->assertSame('nicole@test.ch', $a['menschen'][0]['mail']);
         $this->assertSame('5 gesamt, 1 gehabt, 0 geplant, 4 offen', $a['menschen'][0]['sitzungen']);
         $this->assertStringContainsString('Sitzung 1', $a['menschen'][0]['letzter_1zu1_termin']);
-        $this->assertStringContainsString('/coach/memberships/', $a['menschen'][0]['dossier']);
+        $this->assertStringContainsString('/coachees/', $a['menschen'][0]['dossier']);
         Http::assertSent(fn ($req) => str_contains($req->body(), 'Andrea macht die Rechnungen') && str_contains($req->body(), 'nicole@test.ch') && str_contains($req->body(), 'SO IST DIE APP AUFGEBAUT'));
 
         // Nur der Vorname: zwei Nicoles, also mehrdeutig
@@ -94,7 +94,7 @@ class AssistentTest extends TestCase
             Livewire::test(AssistentSeite::class)
                 ->assertSee('Frag mich')
                 ->set('frage', 'Wo sehe ich, wer wartet?')->call('fragen')
-                ->assertSee('Im Coach-Bereich unter Personen')->assertSee('Personen und Dossiers')
+                ->assertSee('Im Coach-Bereich unter Personen')->assertSee('Heute: wer wartet')
                 ->call('reiterWaehlen', 'themen')->assertSee('Die Schneekugel')->assertSee('Hilft, wenn es stürmt')
                 ->call('passt', FinderProfile::first()->id)->assertSee('Hier ist alles geprüft');
         });
