@@ -5,6 +5,7 @@ namespace App\Console\Commands;
 use App\Import\WordPress\BegleitungImport;
 use App\Import\WordPress\InhalteImport;
 use App\Import\WordPress\ProgramsImport;
+use App\Import\WordPress\PushImport;
 use App\Import\WordPress\UsersImport;
 use App\Import\WordPress\WordPressSource;
 use App\Models\Tenant;
@@ -20,7 +21,8 @@ use Illuminate\Console\Command;
 class ImportWordPress extends Command
 {
     protected $signature = 'import:wordpress {tenant : Kuerzel des Mandanten}
-        {--only=users : Was importiert wird, kommagetrennt (users, programs, begleitung, inhalte) oder alles}
+        {--only=users : Was importiert wird, kommagetrennt (users, programs, begleitung, inhalte, push) oder alles}
+                            {--schluessel : Beim Teil push auch die VAPID-Schluessel aus WordPress uebernehmen}
         {--with-guests : Auch Konten ohne Kurszugang als Gast anlegen}
         {--dry-run : Nur zeigen, nichts schreiben}';
 
@@ -47,7 +49,8 @@ class ImportWordPress extends Command
                     'programs', 'kurse' => $this->programs($tenant),
                     'begleitung', 'termine' => $this->begleitung($tenant),
                     'inhalte', 'impulse' => $this->inhalte($tenant),
-                    default => $this->warn("Unbekannter Teil: {$part} (moeglich: users, programs, begleitung, inhalte, alles)"),
+                    'push' => $this->push($tenant),
+                    default => $this->warn("Unbekannter Teil: {$part} (moeglich: users, programs, begleitung, inhalte, push, alles)"),
                 };
             }
 
@@ -68,6 +71,18 @@ class ImportWordPress extends Command
         foreach ($stats['rollen'] as $role => $n) {
             $this->line("  {$role}: {$n}");
         }
+    }
+
+    protected function push(Tenant $tenant): void
+    {
+        $this->info('Push-Abos'.($this->option('schluessel') ? ' und VAPID-Schluessel' : '').($this->option('dry-run') ? ' (Probelauf)' : ''));
+
+        $import = new PushImport($tenant, new WordPressSource, (bool) $this->option('schluessel'), (bool) $this->option('dry-run'));
+        $stats = $import->run(fn (string $line) => $this->line('  '.$line, verbosity: 'v'));
+
+        $this->table(['personen', 'abos', 'neu', 'ohne_konto', 'schluessel'], [[
+            $stats['personen'], $stats['abos'], $stats['neu'], $stats['ohne_konto'], $stats['schluessel'] ? 'ja' : 'nein',
+        ]]);
     }
 
     protected function programs(Tenant $tenant): void

@@ -149,4 +149,35 @@ class BuchenTest extends TestCase
         $this->in(fn () => Booking::create(['user_id' => $this->anna->id, 'starts_at' => now()->addDay()]));
         $this->assertSame(0, app(CurrentTenant::class)->run($b, fn () => Booking::count()));
     }
+
+    public function test_verschieben_legt_den_termin_um_statt_einen_zweiten_anzulegen(): void
+    {
+        [, $erst] = $this->arten();
+        $start = Carbon::parse('2026-09-28 07:00:00', 'UTC')->getTimestamp();
+        $this->actingAs($this->anna)->post('http://a.test/buchen/erst', ['start' => $start])->assertRedirect();
+        $b = $this->in(fn () => Booking::first());
+
+        // Dieselben Knoepfe am Termin wie im alten Bereich
+        $this->actingAs($this->anna)->get("http://a.test/termine/{$b->event_id}")->assertOk()->assertSee('In meinen Kalender')->assertSee('Verschieben')->assertSee('Absagen');
+        $this->actingAs($this->anna)->get('http://a.test/termine')->assertOk()->assertSee('Verschieben');
+        $this->actingAs($this->anna)->get("http://a.test/buchungen/{$b->id}/verschieben")->assertOk()->assertSee('Neue Zeit wählen')->assertSee('Dienstag, 29. September')->assertSee('Auf diese Zeit verschieben');
+
+        $neu = Carbon::parse('2026-09-29 07:30:00', 'UTC')->getTimestamp();
+        $this->actingAs($this->anna)->post("http://a.test/buchungen/{$b->id}/verschieben", ['start' => $neu])->assertRedirect("http://a.test/termine/{$b->event_id}");
+        $this->assertSame(1, $this->in(fn () => Booking::count()));
+        $this->assertSame(1, DB::table('events')->count());
+        $this->assertSame('2026-09-29 07:30:00', DB::table('events')->value('starts_at'));
+        $this->assertSame('2026-09-29 08:00:00', DB::table('events')->value('ends_at'));
+        $this->assertSame('2026-09-29 07:30:00', DB::table('bookings')->value('starts_at'));
+        $this->assertSame('gebucht', $b->fresh()->status);
+        Http::assertSent(fn ($req) => $req->method() === 'DELETE' && str_contains($req->url(), '/events/neu-123'));
+        Notification::assertSentTo($this->lea, AppNotification::class, fn ($n) => str_starts_with($n->nachricht->titel, 'Verschoben'));
+
+        // Zu kurzfristig: zwei Stunden vorher geht nicht mehr, das Team darf trotzdem
+        $this->travelTo(Carbon::parse('2026-09-29 06:30:00', 'UTC'));
+        $this->actingAs($this->anna)->post("http://a.test/buchungen/{$b->id}/verschieben", ['start' => Carbon::parse('2026-09-29 08:00:00', 'UTC')->getTimestamp()])->assertStatus(422);
+        $this->actingAs($this->lea)->post("http://a.test/buchungen/{$b->id}/verschieben", ['start' => Carbon::parse('2026-09-30 12:00:00', 'UTC')->getTimestamp()])->assertRedirect();
+        $this->assertSame('2026-09-30 12:00:00', DB::table('events')->value('starts_at'));
+        Notification::assertSentTo($this->anna, AppNotification::class, fn ($n) => $n->nachricht->titel === 'Termin verschoben');
+    }
 }

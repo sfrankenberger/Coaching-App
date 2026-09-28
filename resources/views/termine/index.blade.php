@@ -61,12 +61,15 @@
                 @endif
             </div>
             <div class="flex shrink-0 gap-1">
-                @if (! $event->isPast() && $event->zoom_url)
+                @if (! $event->isPast() && $event->zoom_url && ! $event->isOneOnOne())
                     <a href="{{ $event->zoom_url }}" target="_blank" rel="noopener" class="knopf knopf-klein"><i class="fa-solid fa-video"></i>{{ $live ? 'Beitreten' : 'Zoom' }}</a>
                 @elseif ($event->hasRecording())
                     <a href="{{ route('termine.show', $event) }}" class="knopf knopf-ruhig knopf-klein">Ansehen</a>
                 @endif
             </div>
+            @if ($event->isOneOnOne() && ! $event->isPast())
+                <x-termin-aktionen :event="$event" :klein="true" class="basis-full mt-2" />
+            @endif
         </article>
     @empty
         <x-leer icon="calendar" :knopf="$zeit === 'kommend' ? 'Vergangene Termine' : null" :href="route('termine.index', ['zeit' => 'vorbei'])">{{ $zeit === 'kommend' ? 'Gerade steht nichts an. Sobald ein Termin eingetragen ist, bekommst du Bescheid.' : 'Hier steht gerade nichts.' }}</x-leer>

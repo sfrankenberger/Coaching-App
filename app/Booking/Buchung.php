@@ -4,7 +4,6 @@ namespace App\Booking;
 
 use App\Chat\Chat;
 use App\Coach\Lage;
-use App\Filament\Coach\Resources\Memberships\MembershipResource;
 use App\Models\Booking;
 use App\Models\BookingType;
 use App\Models\Event;
@@ -126,12 +125,58 @@ class Buchung
         }
     }
 
+    /**
+     * Verschieben legt den bestehenden Termin um (kein zweiter Termin, wie der Fehler im alten Bereich).
+     * Die Person braucht eine freie Zeit aus dem Raster und dieselbe Frist wie beim Absagen; das Team
+     * darf jede Zeit setzen (Bauregel 5: vereinbart ist vereinbart).
+     */
+    public function verschieben(Booking $booking, Carbon $neu, User $von): Booking
+    {
+        abort_unless($booking->istAktiv(), 409, 'Dieser Termin ist schon abgesagt.');
+        $team = $von->canManageCurrentTenant();
+        abort_unless($team || $booking->user_id === $von->id, 403);
+        $frist = (int) ($this->current->get()?->setting('booking.cancel_hours', 2) ?? 2);
+        abort_if(! $team && $booking->starts_at->lt(now()->addHours($frist)), 422, "Verschieben geht bis {$frist} Stunden vorher. Schreib mir bitte direkt.");
+        abort_unless($neu->isFuture(), 422, 'Die neue Zeit liegt in der Vergangenheit.');
+        $art = $booking->type;
+        $dauer = $art?->duration ?: (int) max(15, $booking->event ? $booking->event->starts_at->diffInMinutes($booking->event->ends_at ?? $booking->event->starts_at) : 60);
+
+        return Cache::lock('buchung-'.$this->current->id(), 20)->block(10, function () use ($booking, $neu, $team, $art, $dauer) {
+            if (! $team && $art) {
+                $frei = $this->verfuegbarkeit->zeiten($art, true)->contains(fn (Carbon $z) => $z->getTimestamp() === $neu->getTimestamp());
+                abort_unless($frei, 409, 'Diese Zeit ist leider gerade weggegangen. Such dir eine andere aus.');
+            }
+            $alt = $booking->starts_at->copy();
+            DB::transaction(function () use ($booking, $neu, $art, $dauer) {
+                $booking->event?->forceFill(['starts_at' => $neu, 'ends_at' => $neu->copy()->addMinutes($dauer)])->save();
+                $booking->forceFill(['starts_at' => $neu, 'block_ends_at' => $neu->copy()->addMinutes($art ? $art->blockMinuten() : $dauer)])->save();
+            });
+            try {
+                if ($booking->google_event_id) {
+                    $this->google->loeschen($booking->google_event_id);
+                }
+                $titel = ($art?->title ?: ($booking->event?->title ?: 'Sitzung')).' · '.$booking->user->name;
+                $booking->forceFill(['google_event_id' => $this->google->anlegen($titel, $neu, $neu->copy()->addMinutes($art ? $art->blockMinuten() : $dauer), $booking->user->email)])->save();
+            } catch (Throwable $e) {
+                report($e);
+            }
+            $wann = Zeit::wann($neu);
+            if ($team) {
+                $this->notifier->send([$booking->user_id], new Nachricht(titel: 'Termin verschoben', text: 'Dein Termin ist jetzt am '.$wann.' (vorher '.Zeit::wann($alt).').', url: $booking->event ? route('termine.show', $booking->event) : route('termine.index'), anlass: 'buchung', tag: 'buchung-'.$booking->id, knopf: 'Zum Termin'));
+            } else {
+                $this->teamMelden($booking->user, 'Verschoben: '.$booking->user->name, ($art?->title ?? 'Sitzung').', neu '.$wann.' (vorher '.Zeit::wann($alt).')');
+            }
+
+            return $booking->fresh(['event', 'type']);
+        });
+    }
+
     protected function teamMelden(User $person, string $titel, string $text): void
     {
         $m = Membership::where('user_id', $person->id)->first();
         $this->notifier->send($this->chat->teamIds(), new Nachricht(
             titel: $titel, text: $text,
-            url: $m ? MembershipResource::getUrl('dossier', ['record' => $m], panel: 'coach') : null,
+            url: $m ? route('coachees.show', $m) : null,
             anlass: 'system', tag: 'buchung-team-'.$person->id,
         ));
     }

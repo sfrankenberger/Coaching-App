@@ -59,3 +59,38 @@ Der Import ist wiederholbar (legacy_id) und überschreibt Inhaltsfelder aus Word
 3. `/mitgliederbereich/*` auf leawernli.ch per 301 auf `https://app.leawernli.ch` umleiten
 4. Sandbox-Module im WordPress abschalten (nicht löschen), nach 30 Tagen aufräumen
 5. Woo-Webhook bleibt, Feeds bleiben, Brücke bleibt (für den Weg von der Website in die App)
+
+## 5. Installierte App (Home-Bildschirm) und Push beim Umzug
+
+Die alte App ist eine PWA auf `leawernli.ch` (Manifest-Scope `/`, Start `/mitgliederbereich/`, Service Worker
+`/lea-sw.js`). Die neue laeuft auf `app.leawernli.ch`. Zwei Dinge haengen an der Domain:
+
+**Das Icon auf dem Home-Bildschirm.** Es oeffnet weiter `leawernli.ch/mitgliederbereich/`. Mit der Weiterleitung
+(Punkt 4.3) landet die Person zwar in der neuen App, auf dem iPhone aber in einem Browserfenster innerhalb der alten
+App (fremde Domain, ausserhalb des Scopes), mit Leiste oben und ohne eigenes Icon. Darum: einmal neu auf den
+Home-Bildschirm legen. Die neue App zeigt dafuer beim ersten Besuch das Installations-Fenster (`app-sheet`). Der
+alte Eintrag darf danach geloescht werden. Es gibt keinen Weg, ein installiertes Icon auf eine andere Domain
+umzuhaengen, ausser die neue App wuerde unter derselben Domain laufen (Reverse Proxy auf `leawernli.ch/app/`),
+was fuer die Laravel-App viel Umbau waere und hier nicht geplant ist.
+
+**Push-Abos.** Sie sind an die VAPID-Schluessel und den Service Worker der alten Domain gebunden, nicht an die
+URL, die beim Antippen aufgeht. Darum uebernimmt die App beide:
+
+```bash
+php84 artisan import:wordpress lea --only=push --dry-run -v     # zeigt, wer Abos hat
+php84 artisan import:wordpress lea --only=push --schluessel      # Abos und VAPID-Schluessel uebernehmen
+```
+
+Danach schickt die App ihre Push-Nachrichten an die alten Abos, der alte Service Worker zeigt sie an
+(gleiches Nachrichtenformat: `title`, `body`, `url`, `tag`, `icon`) und oeffnet beim Antippen die URL aus der
+Nachricht, also die App. Niemand muss Push neu einschalten, solange `leawernli.ch` erreichbar bleibt und der
+alte Service Worker nicht abgemeldet wird (Sandbox-Modul `lea-app.php` also nicht abschalten, nur die Seiten
+weiterleiten). Wer die neue App auf den Home-Bildschirm legt, bekommt dort beim naechsten Besuch die Push-Frage
+und ist dann doppelt eingetragen; das ist harmlos, der Browser bindet je Abo einen Service Worker.
+Achtung: `--schluessel` ersetzt die in der App erzeugten Schluessel, Abos aus dem Testbetrieb der App muessen
+dann einmal neu eingeschaltet werden (Profil). Darum die Uebernahme genau einmal machen, beim Umschalten.
+
+**Anmeldung ohne Magic Link.** Die Weiterleitung von `/mitgliederbereich/*` sollte fuer angemeldete Personen
+ueber die Bruecke gehen (`lea_neueapp_token()` aus `lea-neueapp-bruecke.php`, signierter Einmal-Link), dann
+sind sie in der App sofort angemeldet. Nicht angemeldete landen auf `/anmelden`.
+

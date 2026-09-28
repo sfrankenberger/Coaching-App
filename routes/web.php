@@ -116,6 +116,8 @@ Route::middleware(['auth', 'membership'])->group(function () {
     Route::get('/buchen/{art}', [BuchenController::class, 'zeiten'])->name('buchen.zeiten');
     Route::post('/buchen/{art}', [BuchenController::class, 'store'])->middleware('throttle:10,1')->name('buchen.store');
     Route::post('/buchungen/{booking}/absagen', [BuchenController::class, 'absagen'])->name('buchen.absagen');
+    Route::get('/buchungen/{booking}/verschieben', [BuchenController::class, 'verschiebenZeiten'])->name('buchen.verschieben');
+    Route::post('/buchungen/{booking}/verschieben', [BuchenController::class, 'verschieben'])->middleware('throttle:10,1')->name('buchen.verschieben.store');
     Route::get('/termine/{termin}', [TermineController::class, 'show'])->name('termine.show');
     Route::post('/termine/{termin}/dabei', [TermineController::class, 'dabei'])->name('termine.dabei');
     Route::post('/termine/{termin}/gesehen', [TermineController::class, 'gesehen'])->name('termine.gesehen');

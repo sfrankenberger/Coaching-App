@@ -1,12 +1,19 @@
-<x-layouts.app :title="$art->title">
-    <p class="m-0 mb-2"><a href="{{ route('buchen.index') }}" class="hinweis no-underline"><i class="fa-solid fa-chevron-left text-[11px]"></i> Termin buchen</a></p>
-    <h1 class="m-0 mb-1">{{ $art->title }}</h1>
-    <p class="unterzeile m-0 mb-4">{{ $art->duration }} Minuten{{ $art->text ? ' · '.$art->text : '' }}</p>
+@php $booking ??= null; @endphp
+<x-layouts.app :title="$booking ? 'Neue Zeit wählen' : $art->title">
+    @if ($booking)
+        <p class="m-0 mb-2"><a href="{{ route('termine.show', $booking->event_id) }}" class="hinweis no-underline"><i class="fa-solid fa-chevron-left text-[11px]"></i> Zum Termin</a></p>
+        <h1 class="m-0 mb-1">Neue Zeit wählen</h1>
+        <p class="unterzeile m-0 mb-4">{{ $art->title }}, bisher {{ \App\Support\Zeit::wann($booking->starts_at) }}. Der Termin wird umgelegt, es entsteht kein zweiter.</p>
+    @else
+        <p class="m-0 mb-2"><a href="{{ route('buchen.index') }}" class="hinweis no-underline"><i class="fa-solid fa-chevron-left text-[11px]"></i> Termin buchen</a></p>
+        <h1 class="m-0 mb-1">{{ $art->title }}</h1>
+        <p class="unterzeile m-0 mb-4">{{ $art->duration }} Minuten{{ $art->text ? ' · '.$art->text : '' }}</p>
+    @endif
 
     @if ($tage->isEmpty())
         <x-leer icon="calendar-xmark" knopf="Ins Gespräch" :href="route('gespraech.index')">Gerade ist keine Zeit frei. Schau bald wieder rein oder schreib mir im Gespräch.</x-leer>
     @else
-        <form method="post" action="{{ route('buchen.store', $art) }}" class="buchen">
+        <form method="post" action="{{ $booking ? route('buchen.verschieben.store', $booking) : route('buchen.store', $art) }}" class="buchen">
             @csrf
             <h2 class="abschnitt"><i class="fa-regular fa-clock"></i>Wann passt es dir?</h2>
             @foreach ($tage as $tag => $zeiten)
@@ -23,7 +30,7 @@
                 </details>
             @endforeach
 
-            @if (! empty($art->questions))
+            @if (! $booking && ! empty($art->questions))
                 <h2 class="abschnitt"><i class="fa-solid fa-feather"></i>Magst du mir vorher etwas mitgeben?</h2>
                 <div class="karte">
                     @foreach ($art->questions as $i => $frage)
@@ -36,7 +43,7 @@
                 </div>
             @endif
 
-            <button type="submit" class="knopf knopf-gross" style="width:100%;margin-top:14px"><i class="fa-solid fa-calendar-check"></i>Verbindlich buchen</button>
+            <button type="submit" class="knopf knopf-gross" style="width:100%;margin-top:14px"><i class="fa-solid fa-calendar-check"></i>{{ $booking ? 'Auf diese Zeit verschieben' : 'Verbindlich buchen' }}</button>
         </form>
     @endif
 </x-layouts.app>
