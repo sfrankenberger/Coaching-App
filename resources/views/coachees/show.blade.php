@@ -18,7 +18,7 @@
             @if ($whatsapp)<a href="{{ $whatsapp }}" target="_blank" rel="noopener" class="knopf knopf-leise knopf-klein"><i class="fa-brands fa-whatsapp"></i>WhatsApp</a>@endif
             @if ($person->phone)<a href="tel:{{ $person->phone }}" class="knopf knopf-leise knopf-klein"><i class="fa-solid fa-phone"></i>Anrufen</a>@endif
             <form method="post" action="{{ route('coachees.einladung', $m) }}" onsubmit="return confirm('Willkommensmail mit Anmeldelink an {{ $person->email }} schicken?')">@csrf<button type="submit" class="knopf knopf-leise knopf-klein"><i class="fa-solid fa-paper-plane"></i>Einladung</button></form>
-            <a href="/coach/memberships/{{ $m->id }}/edit" class="knopf knopf-text knopf-klein">Bearbeiten</a>
+            <a href="{{ \App\Filament\Coach\Resources\Memberships\MembershipResource::getUrl('edit', ['record' => $m]) }}" class="knopf knopf-text knopf-klein">Bearbeiten</a>
         </div>
     </section>
 
@@ -58,7 +58,7 @@
             <label class="feld-label">Notiz (nur für dich)<textarea name="notiz" rows="2" class="feld" data-ohne-diktat placeholder="Zahlung, Absprachen, Wünsche"></textarea></label>
             <label class="flex items-center gap-2 mb-3 text-md"><input type="checkbox" name="mail" value="1"> Willkommensmail mit Anmeldelink schicken</label>
             <button type="submit" class="knopf">Freischalten</button>
-            @if ($angebote->isEmpty())<p class="hinweis mt-2 mb-0">Noch keine Angebote. <a href="/coach/offers/create">Angebot anlegen</a></p>@endif
+            @if ($angebote->isEmpty())<p class="hinweis mt-2 mb-0">Noch keine Angebote. <a href="{{ \App\Filament\Coach\Resources\Offers\OfferResource::getUrl('create') }}">Angebot anlegen</a></p>@endif
         </form>
     </details>
 

@@ -54,7 +54,7 @@
     @if ($freigaben->isNotEmpty())
         <h2 class="abschnitt"><i class="fa-solid fa-film"></i>Wartet auf Freigabe<em>{{ $freigaben->count() }}</em></h2>
         @foreach ($freigaben as $e)
-            <a href="/coach/events/{{ $e->id }}/edit" class="zeile">
+            <a href="{{ \App\Filament\Coach\Resources\Events\EventResource::getUrl('edit', ['record' => $e]) }}" class="zeile">
                 <span class="ic"><i class="fa-solid fa-film"></i></span>
                 <span class="tx"><b>{{ $e->title }}</b><span>{{ \App\Support\Zeit::wannKurz($e->starts_at) }} · Aufzeichnung und Zusammenfassung sind da, noch nicht verschickt</span></span>
                 <i class="fa-solid fa-chevron-right pf"></i>
@@ -85,7 +85,7 @@
             </a>
         @endforeach
     @else
-        <p class="hinweis">In den nächsten acht Tagen steht nichts an. <a href="/coach/events/create">Termin planen</a></p>
+        <p class="hinweis">In den nächsten acht Tagen steht nichts an. <a href="{{ \App\Filament\Coach\Resources\Events\EventResource::getUrl('create') }}">Termin planen</a></p>
     @endif
 
     {{-- Schnell hin --}}

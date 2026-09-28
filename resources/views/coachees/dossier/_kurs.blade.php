@@ -12,7 +12,7 @@
         </div>
         <div class="flex gap-2 mt-2 flex-wrap">
             <a href="{{ route('kurse.show', $p) }}" class="knopf knopf-leise knopf-klein">Kursraum</a>
-            <a href="/coach/programs/{{ $p->id }}/edit" class="knopf knopf-text knopf-klein">Einrichten</a>
+            <a href="{{ \App\Filament\Coach\Resources\Programs\ProgramResource::getUrl('edit', ['record' => $p]) }}" class="knopf knopf-text knopf-klein">Einrichten</a>
         </div>
     </div>
 @empty
