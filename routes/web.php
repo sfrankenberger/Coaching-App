@@ -1,5 +1,7 @@
 <?php
 
+use App\Http\Controllers\AnsichtController;
+use App\Http\Controllers\AssistentController;
 use App\Http\Controllers\AufgabenController;
 use App\Http\Controllers\Auth\BridgeController;
 use App\Http\Controllers\Auth\LoginController;
@@ -7,6 +9,7 @@ use App\Http\Controllers\Auth\PasskeyController;
 use App\Http\Controllers\Auth\SocialController;
 use App\Http\Controllers\BuchenController;
 use App\Http\Controllers\CoacheesController;
+use App\Http\Controllers\DossierController;
 use App\Http\Controllers\EinheitController;
 use App\Http\Controllers\FragenController;
 use App\Http\Controllers\GespraechController;
@@ -78,6 +81,8 @@ Route::middleware(['auth', 'membership'])->group(function () {
     Route::post('/profil/benachrichtigungen', [ProfilController::class, 'notifications'])->name('profil.benachrichtigungen');
     Route::post('/profil/passwort', [ProfilController::class, 'password'])->name('profil.passwort');
     Route::post('/profil/hilfe', [ProfilController::class, 'hilfe'])->middleware('throttle:5,10')->name('profil.hilfe');
+    Route::post('/profil/schluessel', [ProfilController::class, 'schluessel'])->name('profil.schluessel');
+    Route::delete('/profil/schluessel/{id}', [ProfilController::class, 'schluesselLoeschen'])->name('profil.schluessel.loeschen');
     Route::post('/passkeys/anlegen/optionen', [PasskeyController::class, 'registerOptions'])->name('passkeys.anlegen.optionen');
     Route::post('/passkeys/anlegen', [PasskeyController::class, 'register'])->name('passkeys.anlegen');
     Route::delete('/passkeys/{id}', [PasskeyController::class, 'destroy'])->name('passkeys.loeschen');
@@ -137,9 +142,26 @@ Route::middleware(['auth', 'membership'])->group(function () {
     Route::delete('/nachschlagen/verlauf', [NachschlagenController::class, 'verlaufLeeren'])->name('nachschlagen.verlauf.leeren');
     Route::get('/sammlung/{sammlung}/{key}', [NachschlagenController::class, 'sammlung'])->name('nachschlagen.sammlung');
 
-    // Coachees in der App-Huelle (Team): Ampel, Freigegebenes, Personen, Auskunft
+    // Arbeitsplatz (Team) in der App-Huelle: Ansicht umschalten, Coachees, Dossier, Assistent
+    Route::post('/ansicht', AnsichtController::class)->name('ansicht');
+    Route::get('/assistent', [AssistentController::class, 'index'])->name('assistent');
+    Route::post('/assistent/merken', [AssistentController::class, 'merken'])->name('assistent.merken');
+    Route::delete('/assistent/wissen/{wissen}', [AssistentController::class, 'vergessen'])->name('assistent.vergessen');
     Route::get('/coachees', [CoacheesController::class, 'index'])->name('coachees.index');
     Route::post('/coachees/frage', [CoacheesController::class, 'frage'])->name('coachees.frage');
+    Route::post('/coachees/anlegen', [CoacheesController::class, 'anlegen'])->name('coachees.anlegen');
+    Route::get('/coachees/{membership}', [DossierController::class, 'show'])->name('coachees.show');
+    Route::post('/coachees/{membership}/gelesen', [DossierController::class, 'gelesen'])->name('coachees.gelesen');
+    Route::post('/coachees/{membership}/nachricht', [DossierController::class, 'nachricht'])->name('coachees.nachricht');
+    Route::post('/coachees/{membership}/notiz', [DossierController::class, 'notiz'])->name('coachees.notiz');
+    Route::delete('/coachees/{membership}/notiz/{notiz}', [DossierController::class, 'notizLoeschen'])->name('coachees.notiz.loeschen');
+    Route::post('/coachees/{membership}/aufgabe', [DossierController::class, 'aufgabe'])->name('coachees.aufgabe');
+    Route::post('/coachees/{membership}/termin', [DossierController::class, 'termin'])->name('coachees.termin');
+    Route::post('/coachees/{membership}/vorschlag', [DossierController::class, 'vorschlag'])->name('coachees.vorschlag');
+    Route::post('/coachees/{membership}/zugang', [DossierController::class, 'zugang'])->name('coachees.zugang');
+    Route::post('/coachees/{membership}/einladung', [DossierController::class, 'einladung'])->name('coachees.einladung');
+    Route::post('/coachees/{membership}/vorbereitung', [DossierController::class, 'vorbereitung'])->name('coachees.vorbereitung');
+    Route::post('/coachees/{membership}/kommentar', [DossierController::class, 'kommentar'])->name('coachees.kommentar');
 
     // Werkzeuge fuer die Coach-Ausbildung
     Route::get('/werkzeuge', [WerkzeugeController::class, 'index'])->name('werkzeuge.index');

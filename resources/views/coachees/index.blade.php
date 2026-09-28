@@ -16,11 +16,34 @@
         <div class="mt-3" data-auskunft-antwort aria-live="polite"></div>
     </section>
 
-    <div class="flex flex-wrap gap-2 mb-4">
+    <div class="flex flex-wrap gap-2 mb-3">
         <a href="{{ $rundnachricht }}" class="knopf knopf-dunkel knopf-klein"><i class="fa-solid fa-bullhorn"></i>Nachricht an mehrere</a>
-        <a href="{{ $neuePerson }}" class="knopf knopf-leise knopf-klein"><i class="fa-solid fa-user-plus"></i>Neue Person anlegen</a>
-        <a href="/coach" class="knopf knopf-leise knopf-klein"><i class="fa-solid fa-table-columns"></i>Coach-Bereich</a>
+        <a href="#neu" class="knopf knopf-leise knopf-klein" data-aufklappen="neu"><i class="fa-solid fa-user-plus"></i>Neue Person anlegen</a>
     </div>
+
+    <details id="neu" class="karte" @if ($errors->any()) open @endif>
+        <summary class="cursor-pointer" style="font-weight:600"><i class="fa-solid fa-user-plus"></i> Neue Person anlegen</summary>
+        <form method="post" action="{{ route('coachees.anlegen') }}" class="mt-3">
+            @csrf
+            <div class="grid gap-2" style="grid-template-columns:1fr 1fr">
+                <label class="feld-label">Vorname<input type="text" name="vorname" class="feld" value="{{ old('vorname') }}" required maxlength="80"></label>
+                <label class="feld-label">Nachname<input type="text" name="nachname" class="feld" value="{{ old('nachname') }}" maxlength="80"></label>
+            </div>
+            <label class="feld-label">E-Mail<input type="email" name="email" class="feld" value="{{ old('email') }}" required></label>
+            @error('email')<p class="fehler">{{ $message }}</p>@enderror
+            <label class="feld-label">Telefon (für WhatsApp)<input type="tel" name="phone" class="feld" value="{{ old('phone') }}" placeholder="+41 79 ..."></label>
+            <label class="feld-label">Was ist sie
+                <select name="rolle" class="feld">
+                    <option value="member">Teilnehmerin (Kurs)</option>
+                    <option value="client" @selected(old('rolle') === 'client')>1:1-Kundin</option>
+                </select>
+            </label>
+            <label class="feld-label">Notiz (nur für dich)<textarea name="notiz" rows="2" class="feld" data-ohne-diktat placeholder="Woher sie kommt, was sie sucht">{{ old('notiz') }}</textarea></label>
+            <label class="flex items-center gap-2 mb-3 text-md"><input type="checkbox" name="mail" value="1" checked> Willkommensmail mit Anmeldelink schicken</label>
+            <button type="submit" class="knopf">Anlegen</button>
+            <p class="hinweis mt-2 mb-0">Pakete und Kurse gibst du danach im Dossier unter "Etwas verkaufen".</p>
+        </form>
+    </details>
 
     {{-- Ampel --}}
     <h2 class="abschnitt"><i class="fa-solid fa-traffic-light"></i>Wie stehen sie gerade da<em>{{ $ampel->count() }}</em></h2>

@@ -2,7 +2,6 @@
 
 namespace App\Coach;
 
-use App\Filament\Coach\Resources\Memberships\MembershipResource;
 use App\Models\Answer;
 use App\Models\Event;
 use App\Models\EventAttendee;
@@ -21,7 +20,7 @@ class Neues
     {
         $seit = now()->subDays($tage);
         $teamIds = Membership::whereIn('role', ['owner', 'team'])->pluck('user_id');
-        $dossier = fn ($userId) => ($m = Membership::where('user_id', $userId)->first()) ? MembershipResource::getUrl('dossier', ['record' => $m]) : null;
+        $dossier = fn ($userId) => ($m = Membership::where('user_id', $userId)->first()) ? route('coachees.show', $m) : null;
         $zeilen = collect();
 
         // Antworten je Person und Einheit buendeln, sonst steht dieselbe Uebung sechsmal da

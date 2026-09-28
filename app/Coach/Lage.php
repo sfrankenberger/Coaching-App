@@ -87,9 +87,11 @@ class Lage
     {
         $team ??= $this->chat->teamIds();
         $out = collect();
+        // "Als gelesen" im Dossier: bis zu dieser Nachricht wartet die Person nicht mehr
+        $gelesen = Membership::query()->whereNotNull('settings')->get(['user_id', 'settings'])->mapWithKeys(fn ($m) => [$m->user_id => (int) ($m->settings['gelesen_bis'] ?? 0)]);
         foreach (Conversation::where('type', 'direct')->whereNotNull('last_message_at')->where('last_message_at', '>', now()->subDays(60))->get() as $c) {
             $letzte = Message::where('conversation_id', $c->id)->latest('id')->first();
-            if (! $letzte || $letzte->user_id !== $c->user_id || $team->contains($letzte->user_id)) {
+            if (! $letzte || $letzte->user_id !== $c->user_id || $team->contains($letzte->user_id) || $letzte->id <= ($gelesen[$c->user_id] ?? 0)) {
                 continue;
             }
             // Aelteste Nachricht seit der letzten Antwort aus dem Team

@@ -6,11 +6,13 @@ use App\Ai\Assistent;
 use App\Chat\Chat;
 use App\Coach\Lage;
 use App\Coach\Neues;
-use App\Filament\Coach\Resources\Memberships\MembershipResource;
+use App\Models\CoachNote;
 use App\Models\Membership;
 use App\Models\ProgramMember;
 use App\Notifications\Notifier;
+use App\Shop\Zugang;
 use App\Tenancy\CurrentTenant;
+use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
 use Illuminate\View\View;
@@ -37,7 +39,7 @@ class CoacheesController extends Controller
             $m = $z['membership'];
             $z['begleitet'] = $m->role->value === 'client' || $imProgramm->has($m->user_id) || (bool) $z['wartet'];
             $z['test'] = $testAdressen->contains(mb_strtolower($m->user->email));
-            $z['dossier'] = MembershipResource::getUrl('dossier', ['record' => $m]);
+            $z['dossier'] = route('coachees.show', $m);
             $z['gespraech'] = route('gespraech.show', ['gespraech' => $this->chat->directFor($m->user)]);
             $z['nachfragen'] = route('gespraech.show', ['gespraech' => $this->chat->directFor($m->user), 'entwurf' => Lage::entwurf($z['entwurf'], $m->user->vorname())]);
 
@@ -57,16 +59,47 @@ class CoacheesController extends Controller
             'sort' => $sort,
             'ampel' => $alle->where('stufe', '>', 1)->take(12)->map(fn ($z) => $z + [
                 'nachfragen' => route('gespraech.show', ['gespraech' => $this->chat->directFor($z['user']), 'entwurf' => Lage::entwurf($z['entwurf'], $z['user']->vorname())]),
-                'dossier' => MembershipResource::getUrl('dossier', ['record' => $z['membership']]),
+                'dossier' => route('coachees.show', $z['membership']),
             ]),
             'neues' => $this->neues->zeilen(7, 8),
             'begleitet' => $karten->where('begleitet', true)->values(),
             'kontakte' => $karten->where('begleitet', false)->values(),
             'wartend' => $alle->whereNotNull('wartet')->count(),
             'beispiele' => ['Was hat '.($alle->first()['user']->vorname() ?? 'Anna').' gebucht?', 'Wer war beim letzten Call dabei?', 'Wo trage ich meine Buchungszeiten ein?'],
-            'neuePerson' => MembershipResource::getUrl('create'),
             'rundnachricht' => route('filament.coach.pages.rundnachricht'),
+            'waehrung' => app(CurrentTenant::class)->get()?->currency ?: 'CHF',
         ]);
+    }
+
+    /** Neue Person anlegen (wie im alten Bereich): Name, Mail, Telefon, auf Wunsch gleich die Willkommensmail. */
+    public function anlegen(Request $request, Zugang $zugang): RedirectResponse
+    {
+        abort_unless($request->user()->canManageCurrentTenant(), 403);
+        $data = $request->validate([
+            'vorname' => ['required', 'string', 'max:80'],
+            'nachname' => ['nullable', 'string', 'max:80'],
+            'email' => ['required', 'email', 'max:190'],
+            'phone' => ['nullable', 'string', 'max:40'],
+            'rolle' => ['nullable', 'in:member,client'],
+            'notiz' => ['nullable', 'string', 'max:2000'],
+            'mail' => ['nullable', 'boolean'],
+        ]);
+        [$user, $neu] = $zugang->ensureUser($data['email'], trim($data['vorname'].' '.($data['nachname'] ?? '')));
+        if (filled($data['phone'] ?? null)) {
+            $user->forceFill(['phone' => trim($data['phone'])])->save();
+        }
+        $m = $user->membershipIn();
+        if (($data['rolle'] ?? 'member') === 'client' && $m && ! $m->role->canManage()) {
+            $m->forceFill(['role' => 'client'])->save();
+        }
+        if (filled($data['notiz'] ?? null)) {
+            CoachNote::create(['user_id' => $user->id, 'author_id' => $request->user()->id, 'body' => trim($data['notiz'])]);
+        }
+        if ($data['mail'] ?? false) {
+            $zugang->welcome($user);
+        }
+
+        return redirect()->route('coachees.show', $m)->with('meldung', $neu ? $user->vorname().' ist angelegt.' : $user->vorname().' war schon da, ich habe die Angaben übernommen.');
     }
 
     /** Auskunft: die Frage geht an den Assistenten, zurueck kommt ein HTML-Stueck. */

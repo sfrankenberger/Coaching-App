@@ -896,3 +896,22 @@ document.addEventListener('medien:zeit', function (e) {
     form.addEventListener('submit', function (e) { e.preventDefault(); fragen(); });
     box.querySelectorAll('[data-auskunft-beispiel]').forEach(function (b) { b.addEventListener('click', function () { feld.value = b.textContent; fragen(); }); });
 })();
+
+// Ein Link mit data-aufklappen="id" oeffnet das <details> mit dieser id und springt hin
+(function () {
+    document.querySelectorAll('[data-aufklappen]').forEach(function (a) {
+        a.addEventListener('click', function (e) {
+            var d = document.getElementById(a.getAttribute('data-aufklappen'));
+            if (!d) return;
+            e.preventDefault();
+            d.open = true;
+            d.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            var f = d.querySelector('input, select, textarea');
+            if (f) setTimeout(function () { f.focus(); }, 300);
+        });
+    });
+    if (location.hash) {
+        var d = document.querySelector(location.hash);
+        if (d && d.tagName === 'DETAILS') d.open = true;
+    }
+})();

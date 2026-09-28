@@ -3,6 +3,8 @@
 namespace App\Http\Controllers;
 
 use App\Chat\Chat;
+use App\Coach\Ansicht;
+use App\Coach\Arbeitsliste;
 use App\Content\Inhalte;
 use App\Models\Membership;
 use App\Models\Program;
@@ -33,6 +35,11 @@ class HomeController extends Controller
     {
         $user = $request->user();
         $membership = $user->membershipIn();
+
+        // Arbeitsplatz (Team): die Arbeitsliste statt der Teilnehmer-Startseite
+        if (Ansicht::arbeitsplatz($user)) {
+            return view('arbeitsplatz.heute', ['person' => $user] + app(Arbeitsliste::class)->fuer());
+        }
 
         // Erste Anmeldung: kurz durch die Einfuehrung
         if ($membership && ! $membership->setting('onboarding_seen_at') && ! $user->canManageCurrentTenant() && ! $request->query('ohne')) {
