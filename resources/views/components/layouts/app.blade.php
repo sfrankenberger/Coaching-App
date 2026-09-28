@@ -12,7 +12,9 @@
     $links = (array) data_get($tenant?->settings, 'links', []);
     $kontakt = data_get($tenant?->settings, 'links.kontakt') ?? data_get($tenant?->settings, 'mail.from_address');
 
-    // Kurse als Unterpunkte im Menue (fuer Verwaltende nur der Sammelpunkt, sonst wird es zu lang)
+    // Drei Sichten: Teilnehmerin (einfach), Arbeitsplatz (Team im Alltag), Verwaltung (Filament unter /coach)
+    $arbeitsplatz = App\Coach\Ansicht::arbeitsplatz($person);
+    // Kurse als Unterpunkte im Menue (nur fuer Teilnehmerinnen, fuer das Team wird es zu lang)
     $meineKurse = collect();
     if ($person && ! $kannVerwalten) {
         $meineKurse = App\Models\Program::query()
@@ -20,8 +22,6 @@
             ->where('is_published', true)->orderBy('position')->orderBy('title')
             ->get(['id', 'slug', 'title', 'icon', 'color']);
     }
-    // Werkzeuge nur fuer die Coach-Ausbildung und das Team, und nur wenn es welche gibt
-    $werkzeuge = $person && App\Models\Tool::darf($person) && ($kannVerwalten || App\Models\Tool::where('is_published', true)->exists());
     $ist = fn ($muster) => request()->routeIs($muster);
 @endphp
 <!doctype html>
@@ -92,42 +92,65 @@
                 <button type="button" class="drawer-zu" aria-label="Menü schliessen" data-menue-zu>&times;</button>
             </div>
             <nav>
-                <ul>
-                    <li><a href="{{ route('home') }}" @class(['aktiv' => $ist('home')])><i class="fa-solid fa-house"></i>Start</a></li>
-                    <li><a href="{{ route('kurse.index') }}" @class(['aktiv' => $ist('kurse.index')])><i class="fa-solid fa-graduation-cap"></i>{{ $kannVerwalten ? 'Alle Kurse' : 'Meine Kurse' }}</a></li>
-                    @foreach ($meineKurse as $k)
-                        <li class="unter"><a href="{{ route('kurse.show', $k) }}"><i class="fa-solid fa-{{ $k->icon ?: 'circle-play' }}"></i>{{ $k->title }}</a></li>
-                    @endforeach
-                    <li><a href="{{ route('termine.index') }}" @class(['aktiv' => $ist('termine.*')])><i class="fa-solid fa-calendar"></i>Termine</a></li>
-                    <li><a href="{{ route('material.index') }}" @class(['aktiv' => $ist('material.*')])><i class="fa-solid fa-folder-open"></i>Material</a></li>
-                    <li><a href="{{ route('impulse.index') }}" @class(['aktiv' => $ist('impulse.*')])><i class="fa-solid fa-lightbulb"></i>Impulse</a></li>
-                    <li><a href="{{ route('nachschlagen.index') }}" @class(['aktiv' => $ist(['nachschlagen.*', 'themen.*', 'merkliste'])])><i class="fa-solid fa-magnifying-glass"></i>Nachschlagen</a></li>
-                    <li class="unter"><a href="{{ route('themen.index') }}"><i class="fa-solid fa-tags"></i>Themen</a></li>
-                    <li class="unter"><a href="{{ route('suche') }}"><i class="fa-solid fa-file-magnifying-glass"></i>Volltext suchen</a></li>
-                    <li class="unter"><a href="{{ route('merkliste') }}"><i class="fa-solid fa-bookmark"></i>Gemerkt</a></li>
-                    @if ($werkzeuge)
-                        <li class="unter"><a href="{{ route('werkzeuge.index') }}"><i class="fa-solid fa-hammer"></i>Werkzeuge</a></li>
-                    @endif
-                    <li><a href="{{ route('journal.index') }}" @class(['aktiv' => $ist('journal.*')])><i class="fa-solid fa-book-open"></i>Mein Journal</a></li>
-                    <li class="unter"><a href="{{ route('aufgaben.index') }}"><i class="fa-solid fa-list-check"></i>Aufgaben</a></li>
-                    <li class="unter"><a href="{{ route('notizen.index') }}"><i class="fa-solid fa-note-sticky"></i>Notizen</a></li>
-                    <li class="unter"><a href="{{ route('reflexion.index') }}"><i class="fa-solid fa-pen-to-square"></i>Reflexion</a></li>
-                    <li><a href="{{ route('gespraech.index') }}" @class(['aktiv' => $ist('gespraech.*')])><i class="fa-solid fa-comments"></i>Gespräch @if ($ungelesen)<span class="zahl">{{ $ungelesen }}</span>@endif</a></li>
-                    <li><a href="{{ route('mitteilungen') }}" @class(['aktiv' => $ist('mitteilungen*')])><i class="fa-solid fa-bell"></i>Mitteilungen @if ($mitteilungen)<span class="zahl">{{ $mitteilungen }}</span>@endif</a></li>
-                    <li><a href="{{ route('profil') }}" @class(['aktiv' => $ist('profil*')])><i class="fa-solid fa-user"></i>Profil</a></li>
-                    @if ($kannVerwalten)
+                @if ($arbeitsplatz)
+                    <ul>
+                        <li><a href="{{ route('home') }}" @class(['aktiv' => $ist('home')])><i class="fa-solid fa-sun"></i>Heute</a></li>
                         <li><a href="{{ route('coachees.index') }}" @class(['aktiv' => $ist('coachees.*')])><i class="fa-solid fa-people-group"></i>Coachees</a></li>
-                        <li class="unter"><a href="/coach"><i class="fa-solid fa-table-columns"></i>Coach-Bereich</a></li>
-                        <li class="unter"><a href="/coach/assistent"><i class="fa-solid fa-wand-magic-sparkles"></i>Assistent</a></li>
-                    @endif
-                    <li><a href="{{ route('profil') }}#hilfe"><i class="fa-solid fa-life-ring"></i>Hilfe</a></li>
-                    <li>
-                        <form method="post" action="{{ route('abmelden') }}">
-                            @csrf
-                            <button type="submit"><i class="fa-solid fa-arrow-right-from-bracket"></i>Abmelden</button>
-                        </form>
-                    </li>
-                </ul>
+                        <li><a href="{{ route('gespraech.index') }}" @class(['aktiv' => $ist('gespraech.*')])><i class="fa-solid fa-comments"></i>Gespräche @if ($ungelesen)<span class="zahl">{{ $ungelesen }}</span>@endif</a></li>
+                        <li><a href="{{ route('termine.index') }}" @class(['aktiv' => $ist('termine.*')])><i class="fa-solid fa-calendar"></i>Termine</a></li>
+                        <li><a href="{{ route('nachschlagen.index') }}" @class(['aktiv' => $ist(['nachschlagen.*', 'themen.*', 'merkliste', 'werkzeuge.*', 'suche'])])><i class="fa-solid fa-magnifying-glass"></i>Nachschlagen</a></li>
+                        <li><a href="{{ route('assistent') }}" @class(['aktiv' => $ist('assistent')])><i class="fa-solid fa-wand-magic-sparkles"></i>Assistent</a></li>
+                        <li><a href="{{ route('kurse.index') }}" @class(['aktiv' => $ist('kurse.*')])><i class="fa-solid fa-graduation-cap"></i>Kurse</a></li>
+                        <li><a href="/coach"><i class="fa-solid fa-sliders"></i>Verwaltung</a></li>
+                        <li class="unter"><a href="/coach/programs"><i class="fa-solid fa-layer-group"></i>Kurse einrichten</a></li>
+                        <li class="unter"><a href="/coach/events"><i class="fa-solid fa-calendar-plus"></i>Termine planen</a></li>
+                        <li class="unter"><a href="/coach/offers"><i class="fa-solid fa-tags"></i>Angebote</a></li>
+                        <li class="unter"><a href="/coach/einstellungen"><i class="fa-solid fa-gear"></i>Einstellungen</a></li>
+                        <li><a href="{{ route('profil') }}" @class(['aktiv' => $ist('profil*')])><i class="fa-solid fa-user"></i>Profil</a></li>
+                        <li>
+                            <form method="post" action="{{ route('ansicht') }}">
+                                @csrf<input type="hidden" name="ansicht" value="teilnehmer">
+                                <button type="submit"><i class="fa-solid fa-eye"></i>Wie eine Teilnehmerin</button>
+                            </form>
+                        </li>
+                        <li>
+                            <form method="post" action="{{ route('abmelden') }}">
+                                @csrf
+                                <button type="submit"><i class="fa-solid fa-arrow-right-from-bracket"></i>Abmelden</button>
+                            </form>
+                        </li>
+                    </ul>
+                @else
+                    <ul>
+                        @if ($kannVerwalten)
+                            <li>
+                                <form method="post" action="{{ route('ansicht') }}">
+                                    @csrf<input type="hidden" name="ansicht" value="arbeitsplatz">
+                                    <button type="submit"><i class="fa-solid fa-briefcase"></i>Zurück zum Arbeitsplatz</button>
+                                </form>
+                            </li>
+                        @endif
+                        <li><a href="{{ route('home') }}" @class(['aktiv' => $ist('home')])><i class="fa-solid fa-house"></i>Start</a></li>
+                        <li><a href="{{ route('kurse.index') }}" @class(['aktiv' => $ist('kurse.index')])><i class="fa-solid fa-graduation-cap"></i>Meine Kurse</a></li>
+                        @foreach ($meineKurse as $k)
+                            <li class="unter"><a href="{{ route('kurse.show', $k) }}"><i class="fa-solid fa-{{ $k->icon ?: 'circle-play' }}"></i>{{ $k->title }}</a></li>
+                        @endforeach
+                        <li><a href="{{ route('termine.index') }}" @class(['aktiv' => $ist('termine.*')])><i class="fa-solid fa-calendar"></i>Termine</a></li>
+                        <li><a href="{{ route('gespraech.index') }}" @class(['aktiv' => $ist('gespraech.*')])><i class="fa-solid fa-comments"></i>Gespräch @if ($ungelesen)<span class="zahl">{{ $ungelesen }}</span>@endif</a></li>
+                        <li><a href="{{ route('journal.index') }}" @class(['aktiv' => $ist(['journal.*', 'aufgaben.*', 'notizen.*', 'reflexion.*'])])><i class="fa-solid fa-book-open"></i>Mein Journal</a></li>
+                        <li><a href="{{ route('material.index') }}" @class(['aktiv' => $ist('material.*')])><i class="fa-solid fa-folder-open"></i>Material</a></li>
+                        <li><a href="{{ route('impulse.index') }}" @class(['aktiv' => $ist('impulse.*')])><i class="fa-solid fa-lightbulb"></i>Impulse</a></li>
+                        <li><a href="{{ route('nachschlagen.index') }}" @class(['aktiv' => $ist(['nachschlagen.*', 'themen.*', 'merkliste', 'werkzeuge.*', 'suche'])])><i class="fa-solid fa-magnifying-glass"></i>Nachschlagen</a></li>
+                        <li><a href="{{ route('profil') }}" @class(['aktiv' => $ist('profil*')])><i class="fa-solid fa-user"></i>Profil</a></li>
+                        <li><a href="{{ route('profil') }}#hilfe"><i class="fa-solid fa-life-ring"></i>Hilfe</a></li>
+                        <li>
+                            <form method="post" action="{{ route('abmelden') }}">
+                                @csrf
+                                <button type="submit"><i class="fa-solid fa-arrow-right-from-bracket"></i>Abmelden</button>
+                            </form>
+                        </li>
+                    </ul>
+                @endif
             </nav>
             @if ($links || $kontakt)
                 <p class="drawer-fuss">
@@ -160,11 +183,19 @@
             </a>
         @endunless
         <nav class="leiste" aria-label="Navigation unten">
-            <a href="{{ route('home') }}" @class(['aktiv' => $ist('home')])><i class="fa-solid fa-house"></i>Start</a>
-            <a href="{{ route('kurse.index') }}" @class(['aktiv' => $ist('kurse.*')])><i class="fa-solid fa-graduation-cap"></i>Kurse</a>
-            <a href="{{ route('termine.index') }}" @class(['aktiv' => $ist('termine.*')])><i class="fa-solid fa-calendar"></i>Termine</a>
-            <a href="{{ route('journal.index') }}" @class(['aktiv' => $ist(['journal.*', 'aufgaben.*', 'notizen.*', 'reflexion.*'])])><i class="fa-solid fa-book-open"></i>Journal</a>
-            <a href="{{ route('impulse.index') }}" @class(['aktiv' => $ist(['impulse.*', 'themen.*', 'merkliste'])])><i class="fa-solid fa-lightbulb"></i>Impulse</a>
+            @if ($arbeitsplatz)
+                <a href="{{ route('home') }}" @class(['aktiv' => $ist('home')])><i class="fa-solid fa-sun"></i>Heute</a>
+                <a href="{{ route('coachees.index') }}" @class(['aktiv' => $ist('coachees.*')])><i class="fa-solid fa-people-group"></i>Coachees</a>
+                <a href="{{ route('gespraech.index') }}" @class(['aktiv' => $ist('gespraech.*')])><i class="fa-solid fa-comments"></i>Gespräche</a>
+                <a href="{{ route('termine.index') }}" @class(['aktiv' => $ist('termine.*')])><i class="fa-solid fa-calendar"></i>Termine</a>
+                <a href="{{ route('assistent') }}" @class(['aktiv' => $ist(['assistent', 'nachschlagen.*'])])><i class="fa-solid fa-wand-magic-sparkles"></i>Assistent</a>
+            @else
+                <a href="{{ route('home') }}" @class(['aktiv' => $ist('home')])><i class="fa-solid fa-house"></i>Start</a>
+                <a href="{{ route('kurse.index') }}" @class(['aktiv' => $ist('kurse.*')])><i class="fa-solid fa-graduation-cap"></i>Kurse</a>
+                <a href="{{ route('termine.index') }}" @class(['aktiv' => $ist('termine.*')])><i class="fa-solid fa-calendar"></i>Termine</a>
+                <a href="{{ route('journal.index') }}" @class(['aktiv' => $ist(['journal.*', 'aufgaben.*', 'notizen.*', 'reflexion.*'])])><i class="fa-solid fa-book-open"></i>Journal</a>
+                <a href="{{ route('impulse.index') }}" @class(['aktiv' => $ist(['impulse.*', 'themen.*', 'merkliste'])])><i class="fa-solid fa-lightbulb"></i>Impulse</a>
+            @endif
         </nav>
 
         {{-- Hinweis-Fenster: Installieren und Push, einmal pro Tag hoechstens --}}

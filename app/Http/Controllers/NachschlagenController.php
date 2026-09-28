@@ -8,7 +8,9 @@ use App\Content\Inhalte;
 use App\Models\Membership;
 use App\Models\Sammlung;
 use App\Models\SearchHistory;
+use App\Models\Tool;
 use App\Models\User;
+use App\Tenancy\CurrentTenant;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -26,7 +28,7 @@ class NachschlagenController extends Controller
     public function index(Request $request): View|Response
     {
         $user = $request->user();
-        $reiter = in_array($request->query('r'), ['verlauf', 'archiv'], true) ? $request->query('r') : 'finden';
+        $reiter = in_array($request->query('r'), ['themen', 'verlauf', 'archiv', 'werkzeuge'], true) ? $request->query('r') : 'finden';
         $q = trim((string) $request->query('q', ''));
         $thema = (int) $request->query('thema', 0);
         $ergebnis = null;
@@ -60,8 +62,18 @@ class NachschlagenController extends Controller
             $models = $this->inhalte->bookmarksFor($user)->map(fn ($z) => $z['model']);
             $daten['karten'] = $this->fundus->karten($models, $user);
         }
+        if ($reiter === 'themen') {
+            $daten['themenListe'] = $this->inhalte->topicsFor($user);
+        }
+        if ($reiter === 'werkzeuge') {
+            $daten['werkzeugeDarf'] = Tool::darf($user);
+            $daten['werkzeuge'] = $daten['werkzeugeDarf'] ? Tool::query()->with('topics')->when(! $user->canManageCurrentTenant(), fn ($q) => $q->where('is_published', true))->orderBy('position')->orderBy('title')->get() : collect();
+            $daten['tuerUrl'] = app(CurrentTenant::class)->get()?->setting('ausbildung_url') ?: app(CurrentTenant::class)->get()?->setting('website');
+        }
         $daten['themen'] = $this->fundus->themenNachGruppen();
         $daten['anzahlGemerkt'] = $daten['gemerkt']->count();
+        // Werkzeuge nur zeigen, wenn die Person sie sehen darf und es welche gibt
+        $daten['werkzeugeReiter'] = Tool::darf($user) && ($user->canManageCurrentTenant() || Tool::where('is_published', true)->exists());
 
         return view('nachschlagen.index', $daten);
     }
