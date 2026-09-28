@@ -45,6 +45,24 @@ Zeiten aus Formularen (datetime-local) werden in der Zeitzone des Mandanten gele
 
 Vorher: Nachschlagen mit vier Unterpunkten (Themen, Volltext, Gemerkt, Werkzeuge), Journal mit drei, Mitteilungen als Punkt, Coachees und Coach-Bereich dazwischen. Jetzt: Nachschlagen ist ein Punkt mit Reitern **Finden, Themen, Meine Suchen, Mein Archiv** (und Werkzeuge nur fuer die Ausbildung), Journal ein Punkt (die Reiter sind auf der Seite), Mitteilungen ueber die Glocke. Die alten Routen (`/themen`, `/suche`, `/merkliste`, `/werkzeuge`) bleiben erreichbar, nur nicht mehr im Menue.
 
+### Teilnehmer-Sicht 1:1 wie der alte Bereich
+
+Damit die Teilnehmerinnen die Umstellung nicht merken, ist die Teilnehmer-Sicht dem alten Mitgliederbereich
+nachgebaut: Kopf nur mit Burger, Bild und "Mitgliederbereich" (die Glocke erscheint nur bei ungelesenen
+Mitteilungen), Menue in derselben Reihenfolge (Uebersicht, 1:1 Coaching mit {Coach}, Termine, Nachschlagen,
+Meine Sachen mit Aufgaben, Notizen, Reflexionen, Meine Kurse mit den Kursen, Ressourcen, Community, Impulse,
+Mein Profil mit Meine Daten, Meine Buchungen, Nachrichten, Mitteilungen, Hilfe, Abmelden), keine Leiste unten,
+nur der runde Chat-Knopf. Startseite: Hallo, Diese Woche im Kurs (nur bei laufender Woche), Was ist neu,
+Dein naechster Termin, Offene Aufgaben. `/community` sammelt die Fragen aus allen Kursen der Person.
+
+### Ansehen als (Plattform-Admin)
+
+`App\Http\Middleware\AlsAndere`: steht in der Sitzung `als_user_id` und die angemeldete Person ist
+Plattform-Admin, laeuft der Request als die andere Person (Lea, Team, jede Teilnehmerin), mit ihren Kursen,
+Nachrichten und ihrer Ansicht-Einstellung. Oben steht ein dunkler Balken mit "Wechseln" und "Zurueck zu ...".
+Seite `/als` (Menuepunkt "Ansehen als ..."), `POST /als/{user}` startet, `DELETE /als` beendet. Waehrend der
+Verkleidung wird "zuletzt hier" der Person nicht veraendert. Gilt fuer die App-Huelle, nicht fuer Filament.
+
 ## Second Brain: Wissensspeicher
 
 Tabelle `wissen` (`tenant_id`, `user_id`, `title`, `body`, `tags` json, `source` app|mcp|assistent), Modell `App\Models\Wissen`
