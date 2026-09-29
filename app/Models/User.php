@@ -8,6 +8,7 @@ use Filament\Models\Contracts\FilamentUser;
 use Filament\Panel;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\MorphMany;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
@@ -52,6 +53,11 @@ class User extends Authenticatable implements FilamentUser, WebAuthnAuthenticata
     }
 
     /** Mitgliedschaft im aktuellen (oder angegebenen) Mandanten, egal welcher Status. */
+    public function entitlements(): HasMany
+    {
+        return $this->hasMany(Entitlement::class);
+    }
+
     public function membershipIn(?Tenant $tenant = null): ?Membership
     {
         $tenant ??= app(CurrentTenant::class)->get();

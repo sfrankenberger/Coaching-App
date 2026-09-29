@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\AlsController;
+use App\Http\Controllers\AngeboteController;
 use App\Http\Controllers\AnsichtController;
 use App\Http\Controllers\AssistentController;
 use App\Http\Controllers\AufgabenController;
@@ -22,6 +23,7 @@ use App\Http\Controllers\Hooks\WooCommerceController;
 use App\Http\Controllers\ImpulseController;
 use App\Http\Controllers\JournalController;
 use App\Http\Controllers\KalenderController;
+use App\Http\Controllers\KaufenController;
 use App\Http\Controllers\KommentarController;
 use App\Http\Controllers\KursController;
 use App\Http\Controllers\MaterialController;
@@ -64,6 +66,11 @@ Route::get('/buchen/gast/{art}', [GastBuchenController::class, 'zeiten'])->name(
 Route::post('/buchen/gast/{art}', [GastBuchenController::class, 'store'])->middleware('throttle:5,10')->name('buchen.gast.store');
 Route::get('/buchen/gast/{art}/danke', [GastBuchenController::class, 'danke'])->name('buchen.gast.danke');
 
+// Kasse: Kauflink fuer Angebote, offen fuer alle (angemeldet mit einem Klick, sonst mit Name und Mail)
+Route::get('/kaufen/{angebot}', [KaufenController::class, 'show'])->name('kaufen');
+Route::post('/kaufen/{angebot}', [KaufenController::class, 'store'])->middleware('throttle:6,10')->name('kaufen.store');
+Route::get('/kaufen/{angebot}/danke', [KaufenController::class, 'danke'])->name('kaufen.danke');
+
 // Anmelden
 Route::middleware('guest')->group(function () {
     Route::get('/anmelden', [LoginController::class, 'form'])->name('anmelden');
@@ -94,6 +101,7 @@ Route::middleware(['auth', 'membership'])->group(function () {
     Route::post('/profil/foto', [AvatarController::class, 'speichern'])->name('profil.foto');
     Route::delete('/profil/foto', [AvatarController::class, 'loeschen'])->name('profil.foto.loeschen');
     Route::get('/avatar/{user}', [AvatarController::class, 'show'])->name('avatar');
+    Route::get('/angebote', [AngeboteController::class, 'index'])->name('angebote');
     Route::get('/rechnungen/{rechnung}/pdf', [BuchhaltungController::class, 'pdf'])->name('rechnung.pdf');
     Route::get('/buchhaltung/bexio/start', [BuchhaltungController::class, 'bexioStart'])->name('buchhaltung.bexio.start');
     Route::get('/buchhaltung/bexio/rueckkehr', [BuchhaltungController::class, 'bexioRueckkehr'])->name('buchhaltung.bexio.rueckkehr');

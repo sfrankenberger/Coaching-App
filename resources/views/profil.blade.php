@@ -49,6 +49,10 @@
         </x-karte>
     @endif
 
+    @if ($angeboteOffen ?? false)
+        <p class="hinweis mt-2 mb-3"><a href="{{ route('angebote') }}" class="no-underline"><i class="fa-solid fa-tag"></i> Alle Angebote ansehen</a></p>
+    @endif
+
     @if ($rechnungen->isNotEmpty())
         <div id="rechnungen"></div>
         <x-karte titel="Deine Rechnungen" icon="file-invoice" :zahl="$rechnungen->count()">

@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Booking\GoogleCalendar;
 use App\Coach\Lage;
 use App\Models\Entitlement;
+use App\Models\Offer;
 use App\Models\PushSubscription;
 use App\Models\TelegramLink;
 use App\Models\Tenant;
@@ -56,6 +57,7 @@ class ProfilController extends Controller
             'neuerSchluessel' => session('neuer_schluessel'),
             'mcpUrl' => url('/api/mcp'),
             'rechnungen' => $this->rechnungen($request->user(), $tenant),
+            'angeboteOffen' => Offer::where('is_active', true)->get()->contains(fn ($o) => $o->sichtbar() && $o->kaufbar()),
         ]);
     }
 

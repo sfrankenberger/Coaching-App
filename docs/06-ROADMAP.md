@@ -102,7 +102,7 @@ Stand: kein einziger Kauf in WooCommerce, ein laufendes Abo, Lea hat Stripe. Die
 - [x] Buchhaltung je Mandant (`App\Shop\Buchhaltung`, bexio), Seite `/coach/buchhaltung`, Rechnungen im Profil und im Dossier-Reiter
 - [x] Verkaufen im Dossier: Preis, Waehrung, auf Rechnung oder bezahlt, Kontakt, Rechnung und Zahlungseingang in bexio, Mail mit PDF und Anmeldelink, Tabelle `verkaeufe`
 - [x] Zugang bei Kauf auf Rechnung: sofort oder erst nach Zahlungseingang (`buchhaltung.zugang_bei_rechnung`), Abgleich stuendlich (`buchhaltung:zahlungen`)
-- [ ] Angebote oeffentlich: Preise am Angebot (CHF, EUR, Aktion), Kauflink `/kaufen/{angebot}`, Schnittstelle `/api/angebote`, WordPress-Plugin mit Shortcodes `[app_kaufen]`, `[app_angebot]`, `[app_angebote]` (mit Herkunft fuer Funnels)
+- [x] Angebote oeffentlich: Preise am Angebot (CHF, EUR, Aktion bis Datum), Kauflink `/kaufen/{angebot}` (Kauf auf Rechnung, Gastfluss mit Konto, Herkunft `ref`), Schnittstelle `/api/angebote`, Seite `/angebote` in der App, WordPress-Plugin `resources/wordpress/app-angebote.php` mit `[app_kaufen]`, `[app_angebot]`, `[app_angebote]`
 - [ ] Kasse mit Stripe je Mandant (Schluessel in den Einstellungen): Checkout, Gastfluss mit Konto, Webhook, Zugang, bexio-Rechnung mit Zahlungseingang, Quittung per Mail
 - [ ] Abos mit Stripe und Kundenportal, das eine bestehende Abo umziehen
 - [ ] Website: Kaufknoepfe auf die App, WooCommerce, German Market, Kasse, Preise, bexio-Modul und Woo-Webhook abschalten

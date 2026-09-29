@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\Api\AngeboteController;
 use App\Http\Controllers\Api\McpController;
 use App\Http\Controllers\Api\V1Controller;
 use App\Tenancy\Middleware\IdentifyTenant;
@@ -24,3 +25,11 @@ Route::prefix('v1')->middleware([IdentifyTenant::class, 'auth:sanctum', 'throttl
 | (Profil, Schluessel fuer Verbindungen), nur fuer das Team.
 */
 Route::match(['get', 'post', 'delete'], '/mcp', McpController::class)->middleware([IdentifyTenant::class, 'auth:sanctum', 'throttle:240,1'])->name('mcp');
+
+/*
+| Oeffentliche Angebote fuer die Website (Shortcodes, Kaufknoepfe): ohne Anmeldung, gecacht.
+*/
+Route::middleware([IdentifyTenant::class, 'throttle:120,1'])->group(function () {
+    Route::get('/angebote', [AngeboteController::class, 'index'])->name('api.angebote');
+    Route::get('/angebote/{slug}', [AngeboteController::class, 'show'])->name('api.angebot');
+});
