@@ -7,16 +7,36 @@ use App\Coach\Lage;
 use App\Models\Entitlement;
 use App\Models\PushSubscription;
 use App\Models\TelegramLink;
+use App\Models\Tenant;
+use App\Models\User;
 use App\Programs\ProgramAccess;
+use App\Shop\Buchhaltung;
 use App\Support\Ics;
 use App\Tenancy\CurrentTenant;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\View\View;
 
 class ProfilController extends Controller
 {
+    /** Rechnungen aus der Buchhaltung des Mandanten; ohne Buchhaltung oder bei Stoerung eine leere Liste. */
+    protected function rechnungen(User $user, ?Tenant $tenant): Collection
+    {
+        $b = Buchhaltung::fuer($tenant);
+        if (! $b || ! $b->verbunden()) {
+            return collect();
+        }
+        try {
+            return $b->rechnungen($user);
+        } catch (\RuntimeException $e) {
+            report($e);
+
+            return collect();
+        }
+    }
+
     public function show(Request $request): View
     {
         $tenant = app(CurrentTenant::class)->get();
@@ -35,6 +55,7 @@ class ProfilController extends Controller
             'verbindungen' => $request->user()->canManageCurrentTenant() ? $request->user()->tokens()->orderBy('created_at')->get() : collect(),
             'neuerSchluessel' => session('neuer_schluessel'),
             'mcpUrl' => url('/api/mcp'),
+            'rechnungen' => $this->rechnungen($request->user(), $tenant),
         ]);
     }
 

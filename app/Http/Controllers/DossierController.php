@@ -22,8 +22,10 @@ use App\Models\Offer;
 use App\Models\ProgramMember;
 use App\Models\Reflection;
 use App\Models\Task;
+use App\Models\User;
 use App\Programs\ProgramAccess;
 use App\Programs\ProgressTracker;
+use App\Shop\Buchhaltung;
 use App\Shop\Zugang;
 use App\Support\Telefon;
 use App\Tenancy\CurrentTenant;
@@ -39,7 +41,7 @@ use Illuminate\View\View;
  */
 class DossierController extends Controller
 {
-    public const REITER = ['gespraech', 'termine', 'kurs', 'aufgaben', 'geteilt', 'notizen', 'vorbereitung'];
+    public const REITER = ['gespraech', 'termine', 'kurs', 'aufgaben', 'geteilt', 'notizen', 'vorbereitung', 'rechnungen'];
 
     public function __construct(protected Chat $chat, protected Lage $lage, protected CurrentTenant $current) {}
 
@@ -76,6 +78,7 @@ class DossierController extends Controller
             'geteilt' => $this->geteilt($user->id),
             'notizen' => ['coachNotizen' => CoachNote::where('user_id', $user->id)->with('author')->orderByDesc('is_pinned')->latest()->get()],
             'vorbereitung' => ['vorbereitung' => $this->vorbereitungVon($membership)],
+            'rechnungen' => $this->rechnungen($user, (bool) $request->query('frisch')),
             default => $this->gespraech($user, $request->user()),
         };
 
@@ -241,6 +244,22 @@ class DossierController extends Controller
         $k->schreiben($request->user(), $item, trim($data['text']));
 
         return redirect()->route('coachees.show', [$membership, 'r' => $data['typ'] === 'task' ? 'aufgaben' : 'geteilt'])->with('meldung', $membership->user->vorname().' bekommt Bescheid.');
+    }
+
+    /** Rechnungen der Person aus der Buchhaltung des Mandanten (bexio), mit Fehlertext statt Absturz. */
+    protected function rechnungen(User $user, bool $frisch = false): array
+    {
+        $b = Buchhaltung::fuer($this->current->get());
+        if (! $b || ! $b->verbunden()) {
+            return ['rechnungen' => collect(), 'buchhaltung' => $b, 'rechnungenFehler' => null];
+        }
+        try {
+            return ['rechnungen' => $b->rechnungen($user, $frisch), 'buchhaltung' => $b, 'rechnungenFehler' => null];
+        } catch (\RuntimeException $e) {
+            report($e);
+
+            return ['rechnungen' => collect(), 'buchhaltung' => $b, 'rechnungenFehler' => $e->getMessage()];
+        }
     }
 
     protected function pruefen(Request $request, Membership $membership): void

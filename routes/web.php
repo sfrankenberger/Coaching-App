@@ -10,6 +10,7 @@ use App\Http\Controllers\Auth\PasskeyController;
 use App\Http\Controllers\Auth\SocialController;
 use App\Http\Controllers\AvatarController;
 use App\Http\Controllers\BuchenController;
+use App\Http\Controllers\BuchhaltungController;
 use App\Http\Controllers\CoacheesController;
 use App\Http\Controllers\DossierController;
 use App\Http\Controllers\EinheitController;
@@ -93,6 +94,9 @@ Route::middleware(['auth', 'membership'])->group(function () {
     Route::post('/profil/foto', [AvatarController::class, 'speichern'])->name('profil.foto');
     Route::delete('/profil/foto', [AvatarController::class, 'loeschen'])->name('profil.foto.loeschen');
     Route::get('/avatar/{user}', [AvatarController::class, 'show'])->name('avatar');
+    Route::get('/rechnungen/{rechnung}/pdf', [BuchhaltungController::class, 'pdf'])->name('rechnung.pdf');
+    Route::get('/buchhaltung/bexio/start', [BuchhaltungController::class, 'bexioStart'])->name('buchhaltung.bexio.start');
+    Route::get('/buchhaltung/bexio/rueckkehr', [BuchhaltungController::class, 'bexioRueckkehr'])->name('buchhaltung.bexio.rueckkehr');
     Route::delete('/profil/schluessel/{id}', [ProfilController::class, 'schluesselLoeschen'])->name('profil.schluessel.loeschen');
     Route::post('/passkeys/anlegen/optionen', [PasskeyController::class, 'registerOptions'])->name('passkeys.anlegen.optionen');
     Route::post('/passkeys/anlegen', [PasskeyController::class, 'register'])->name('passkeys.anlegen');
@@ -178,6 +182,7 @@ Route::middleware(['auth', 'membership'])->group(function () {
     Route::post('/coachees/{membership}/einladung', [DossierController::class, 'einladung'])->name('coachees.einladung');
     Route::post('/coachees/{membership}/vorbereitung', [DossierController::class, 'vorbereitung'])->name('coachees.vorbereitung');
     Route::post('/coachees/{membership}/kommentar', [DossierController::class, 'kommentar'])->name('coachees.kommentar');
+    Route::get('/coachees/{membership}/rechnung/{rechnung}', [BuchhaltungController::class, 'pdfDossier'])->name('coachees.rechnung');
 
     // Werkzeuge fuer die Coach-Ausbildung
     Route::get('/werkzeuge', [WerkzeugeController::class, 'index'])->name('werkzeuge.index');

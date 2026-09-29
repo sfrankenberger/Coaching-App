@@ -72,7 +72,7 @@
 
     {{-- Reiter --}}
     <div class="segment reiter mt-4 mb-3" role="tablist">
-        @foreach (['gespraech' => 'Gespräch', 'termine' => 'Termine', 'kurs' => 'Kurs', 'aufgaben' => 'Aufgaben', 'geteilt' => 'Von ihr freigegeben', 'notizen' => 'Meine Notizen', 'vorbereitung' => 'Vorbereitung'] as $k => $n)
+        @foreach (['gespraech' => 'Gespräch', 'termine' => 'Termine', 'kurs' => 'Kurs', 'aufgaben' => 'Aufgaben', 'geteilt' => 'Von ihr freigegeben', 'notizen' => 'Meine Notizen', 'vorbereitung' => 'Vorbereitung', 'rechnungen' => 'Rechnungen'] as $k => $n)
             <a href="{{ route('coachees.show', [$m, 'r' => $k]) }}" @class(['an' => $reiter === $k])>{{ $n }}</a>
         @endforeach
     </div>

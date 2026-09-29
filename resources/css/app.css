@@ -366,6 +366,7 @@
     .chip-kurs { background: color-mix(in srgb, var(--kc, var(--c-success)) 15%, transparent); color: color-mix(in srgb, var(--kc, var(--c-success)) 85%, var(--c-text)); }
     .chip-gut { background: var(--c-success-soft); color: var(--c-success); }
     .chip-warn { background: color-mix(in srgb, var(--c-danger) 12%, #fff); color: var(--c-danger); }
+    .chip-ok { background: color-mix(in srgb, var(--c-success) 14%, #fff); color: var(--c-success-ink, var(--c-success)); }
     .badge {
         display: inline-flex;
         align-items: center;

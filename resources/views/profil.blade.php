@@ -49,6 +49,13 @@
         </x-karte>
     @endif
 
+    @if ($rechnungen->isNotEmpty())
+        <div id="rechnungen"></div>
+        <x-karte titel="Deine Rechnungen" icon="file-invoice" :zahl="$rechnungen->count()">
+            <x-rechnungen :rechnungen="$rechnungen" pdf-route="rechnung.pdf" />
+        </x-karte>
+    @endif
+
     <div id="foto"></div>
     <x-karte titel="Dein Foto" icon="camera">
         <div class="flex items-center gap-4">

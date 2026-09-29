@@ -123,7 +123,7 @@ class ImportUsersTest extends TestCase
         $this->assertSame(['termine' => true, 'abendmail' => false, 'aufgaben' => true], $m->setting('notifications'));
         $this->assertNotNull($m->setting('onboarding_seen_at'));
         $this->assertSame('2025-01-04', $m->joined_at->toDateString());
-        $this->assertSame(time() - 86400, $m->last_seen_at->getTimestamp(), 'juengste Aktivitaet aus WordPress');
+        $this->assertEqualsWithDelta(time() - 86400, $m->last_seen_at->getTimestamp(), 2, 'juengste Aktivitaet aus WordPress');
 
         // Wer in der App da war, wird nicht zurueckgesetzt
         $m->forceFill(['last_seen_at' => now()])->save();

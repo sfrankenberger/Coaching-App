@@ -66,7 +66,8 @@ Stand nach Etappe 1: Lea kann sich per Link anmelden, sieht Start und Profil, im
 - [x] Coach-Werkzeuge: Ampel, Kommentare, private Notizen, Kontingent, Terminvorschlag, KI-Vorbereitung, Rundnachricht an Einzelne, Wochencheck
 - [x] Aufzeichnungs-Wache mit Vimeo, Freigabe mit Mail und Push, neue Termine melden, Zoom-Anwesenheit
 - [x] Buchung mit Google-Kalender (eingerichtet, noch ausgeschaltet: `settings.booking.enabled`), Meine Buchungen im Profil
-- [ ] Rechnungen aus bexio (über WordPress), Buchung verschieben, Buchung für Gäste
+- [x] Rechnungen aus bexio (eigene Verbindung je Mandant, lesend), Buchung verschieben, Buchung für Gäste
+- [ ] Verkaufen im Dossier schreibt Kontakt, Rechnung und Zahlung direkt nach bexio (Shop-Bestellungen bleiben bei WooCommerce)
 
 ## Etappe 7 - Design, Code und Laravel-Bausteine (26.09.)
 
