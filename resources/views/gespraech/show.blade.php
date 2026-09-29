@@ -53,12 +53,22 @@
                 <button type="button" class="knopf knopf-ruhig ml-auto knopf-klein" data-aufnahme-stopp>Fertig</button>
                 <button type="button" class="knopf knopf-text knopf-klein" data-aufnahme-abbruch>Verwerfen</button>
             </div>
+            <div class="flex flex-wrap items-center gap-2" data-probe hidden>
+                <span class="hinweis w-full m-0">Hör kurz rein, dann schick sie ab.</span>
+                <audio controls preload="metadata" class="min-w-0 flex-1" style="height:40px;max-width:280px" data-probe-audio></audio>
+                <span class="hinweis" data-probe-dauer></span>
+                <button type="button" class="knopf knopf-klein" data-probe-senden><i class="fa-solid fa-paper-plane"></i>Senden</button>
+                <button type="button" class="knopf knopf-text knopf-klein" data-probe-weg><i class="fa-solid fa-trash"></i>Verwerfen</button>
+            </div>
+            <div data-chat-anhang hidden>
+                <x-anhang-wahl :mehrfach="false">
+                    <label class="knopf knopf-leise knopf-klein" style="cursor:pointer"><i class="fa-solid fa-camera"></i>Foto oder Datei<input type="file" name="file" class="hidden" accept="image/*,application/pdf,audio/*"></label>
+                </x-anhang-wahl>
+            </div>
             <div class="chat-knoepfe">
-                <label class="chat-rund" title="Foto oder Datei anhängen" aria-label="Datei anhängen">
-                    <input type="file" name="file" class="hidden" accept="image/*,application/pdf,audio/*">
-                    <i class="fa-solid fa-plus"></i>
-                </label>
-                <button type="button" class="chat-rund" data-sprache title="Sprachnachricht aufnehmen" aria-label="Sprachnachricht aufnehmen"><i class="fa-solid fa-microphone"></i></button>
+                <button type="button" class="chat-rund" data-anhang-plus title="Foto, Datei oder etwas aus der App anhängen" aria-label="Anhängen"><i class="fa-solid fa-plus"></i></button>
+                <button type="button" class="chat-rund" data-diktat title="Diktieren: Gesprochenes wird zu Text" aria-label="Diktieren"><i class="fa-solid fa-microphone"></i></button>
+                <button type="button" class="chat-rund" data-sprache title="Sprachnachricht aufnehmen" aria-label="Sprachnachricht aufnehmen"><span class="punkt"></span></button>
                 <span class="flex-1"></span>
                 <button type="submit" class="chat-senden" title="Senden" aria-label="Senden"><i class="fa-solid fa-paper-plane"></i></button>
             </div>

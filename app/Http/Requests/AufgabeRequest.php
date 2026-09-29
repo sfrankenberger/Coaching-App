@@ -24,6 +24,8 @@ class AufgabeRequest extends FormRequest
             'unit_id' => ['nullable', 'integer'],
             'visibility' => ['nullable', 'in:private,coach,program'],
             'is_pinned' => ['nullable', 'boolean'],
+            'refs' => ['nullable', 'array', 'max:12'],
+            'refs.*' => ['string', 'max:40'],
         ];
     }
 
@@ -31,12 +33,14 @@ class AufgabeRequest extends FormRequest
     public function daten(): array
     {
         $data = $this->validated();
+        unset($data['refs']);
         $data['is_daily'] = (bool) ($data['is_daily'] ?? false);
         $data['is_pinned'] = (bool) ($data['is_pinned'] ?? false);
         $data['visibility'] ??= 'private';
         if (! empty($data['program_id'])) {
             $program = Program::find($data['program_id']);
             $data['program_id'] = $program && app(ProgramAccess::class)->canView($this->user(), $program) ? $program->id : null;
+            $gemeinschaft = $program?->gemeinschaft() ?? false;
         }
         if (! empty($data['step_id'])) {
             $data['step_id'] = ProgramStep::where('id', $data['step_id'])->where('program_id', $data['program_id'] ?? 0)->value('id');
@@ -44,7 +48,7 @@ class AufgabeRequest extends FormRequest
         if (! empty($data['unit_id'])) {
             $data['unit_id'] = Unit::where('id', $data['unit_id'])->where('program_id', $data['program_id'] ?? 0)->value('id');
         }
-        if ($data['visibility'] === 'program' && empty($data['program_id'])) {
+        if ($data['visibility'] === 'program' && (empty($data['program_id']) || ! $gemeinschaft)) {
             $data['visibility'] = 'coach';
         }
 

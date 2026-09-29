@@ -194,11 +194,21 @@
     var textarea = form.querySelector('textarea[name="body"]');
     var dateiInput = form.querySelector('input[name="file"]');
     var dateiName = form.querySelector('[data-datei-name]');
+    var anhangBox = form.querySelector('[data-chat-anhang]');
+    var wahl = form.querySelector('[data-anhang-wahl]');
     textarea.addEventListener('input', function () { textarea.style.height = 'auto'; textarea.style.height = Math.min(160, textarea.scrollHeight) + 'px'; });
     textarea.addEventListener('keydown', function (e) { if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) { e.preventDefault(); form.requestSubmit(); } });
     dateiInput.addEventListener('change', function () {
         if (dateiInput.files.length) { dateiName.hidden = false; dateiName.textContent = '📎 ' + dateiInput.files[0].name; } else { dateiName.hidden = true; }
     });
+    var plus = form.querySelector('[data-anhang-plus]');
+    if (plus && anhangBox) plus.addEventListener('click', function () { anhangBox.hidden = !anhangBox.hidden; });
+    function hatAnhang() { return dateiInput.files.length || form.querySelector('input[name="refs[]"]'); }
+    function aufraeumen() {
+        textarea.value = ''; textarea.style.height = 'auto'; dateiInput.value = ''; dateiName.hidden = true;
+        if (wahl && wahl.leeren) wahl.leeren();
+        if (anhangBox) anhangBox.hidden = true;
+    }
     function senden(fd) {
         return fetch(form.action, { method: 'POST', credentials: 'same-origin', headers: { 'Accept': 'application/json', 'X-CSRF-TOKEN': csrf }, body: fd })
             .then(function (r) { return r.json().then(function (j) { if (!r.ok) throw new Error(j.fehler || 'Senden fehlgeschlagen'); return j; }); })
@@ -207,34 +217,55 @@
     form.addEventListener('submit', function (e) {
         e.preventDefault();
         var fd = new FormData(form);
-        if (!textarea.value.trim() && !dateiInput.files.length) return;
-        senden(fd).then(function () {
-            textarea.value = ''; textarea.style.height = 'auto'; dateiInput.value = ''; dateiName.hidden = true;
-        }).catch(function (err) { alert(err.message); });
+        if (!textarea.value.trim() && !hatAnhang()) return;
+        senden(fd).then(aufraeumen).catch(function (err) { alert(err.message); });
     });
 
-    /* Reaktionen ohne Neuladen */
-    verlauf.addEventListener('submit', function (e) {
-        var f = e.target.closest('form[data-reaktion]');
-        if (!f) return;
-        e.preventDefault();
-        fetch(f.action, { method: 'POST', credentials: 'same-origin', headers: { 'Accept': 'application/json', 'X-CSRF-TOKEN': csrf }, body: new FormData(f) })
-            .then(function (r) { return r.json(); })
-            .then(function (j) { var box = f.closest('[data-reaktionen]'); if (box && j.html) { var t = document.createElement('div'); t.innerHTML = j.html; box.replaceWith(t.firstElementChild); } });
-    });
+    /* Diktieren: Gesprochenes wird zu Text im Feld */
+    var diktat = form.querySelector('[data-diktat]');
+    var SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+    if (diktat) {
+        if (!SR) { diktat.hidden = true; }
+        else {
+            var erk = null;
+            diktat.addEventListener('click', function () {
+                if (erk) { erk.stop(); return; }
+                erk = new SR(); erk.lang = document.documentElement.lang || 'de-CH'; erk.interimResults = false; erk.continuous = true;
+                erk.onresult = function (e) {
+                    var neu = '';
+                    for (var i = e.resultIndex; i < e.results.length; i++) if (e.results[i].isFinal) neu += e.results[i][0].transcript;
+                    if (!neu) return;
+                    var vor = textarea.value && !/\s$/.test(textarea.value) ? ' ' : '';
+                    textarea.value += vor + neu.trim();
+                    textarea.dispatchEvent(new Event('input', { bubbles: true }));
+                };
+                erk.onend = function () { erk = null; diktat.classList.remove('text-danger'); };
+                erk.onerror = function () { erk = null; diktat.classList.remove('text-danger'); };
+                erk.start(); diktat.classList.add('text-danger');
+            });
+        }
+    }
 
-    /* Sprachnachricht */
+    /* Sprachnachricht: aufnehmen, kurz reinhoeren, dann senden oder verwerfen */
     var knopf = form.querySelector('[data-sprache]');
     var leiste = form.querySelector('[data-aufnahme]');
     var zeit = form.querySelector('[data-aufnahme-zeit]');
-    var rec = null, teile = [], start = 0, uhr = null, verwerfen = false;
+    var probe = form.querySelector('[data-probe]'), probeAudio = form.querySelector('[data-probe-audio]'), probeDauer = form.querySelector('[data-probe-dauer]');
+    var rec = null, teile = [], start = 0, uhr = null, verwerfen = false, probeBlob = null, probeSek = 0, probeUrl = null;
     if (!navigator.mediaDevices || !window.MediaRecorder) { knopf.hidden = true; }
     function stopp(weg) {
         verwerfen = !!weg;
         if (rec && rec.state !== 'inactive') rec.stop();
     }
+    function probeWeg() {
+        probe.hidden = true; probeBlob = null;
+        if (probeUrl) { URL.revokeObjectURL(probeUrl); probeUrl = null; }
+        probeAudio.removeAttribute('src'); probeAudio.load();
+    }
+    function mmss(s) { return Math.floor(s / 60) + ':' + ('0' + (s % 60)).slice(-2); }
     knopf.addEventListener('click', function () {
         if (rec && rec.state === 'recording') { stopp(false); return; }
+        probeWeg();
         navigator.mediaDevices.getUserMedia({ audio: true }).then(function (stream) {
             var typ = ['audio/webm;codecs=opus', 'audio/webm', 'audio/mp4', 'audio/ogg'].find(function (t) { return MediaRecorder.isTypeSupported(t); }) || '';
             rec = new MediaRecorder(stream, typ ? { mimeType: typ } : {});
@@ -244,20 +275,29 @@
                 stream.getTracks().forEach(function (t) { t.stop(); });
                 clearInterval(uhr); leiste.hidden = true; knopf.classList.remove('text-danger');
                 if (verwerfen || !teile.length) return;
-                var blob = new Blob(teile, { type: rec.mimeType || 'audio/webm' });
-                var fd = new FormData();
-                fd.append('_token', csrf);
-                fd.append('audio', blob, 'sprachnachricht.' + ((rec.mimeType || '').indexOf('mp4') >= 0 ? 'm4a' : 'webm'));
-                fd.append('sek', Math.round((Date.now() - start) / 1000));
-                senden(fd).catch(function (err) { alert(err.message); });
+                probeBlob = new Blob(teile, { type: rec.mimeType || 'audio/webm' });
+                probeSek = Math.round((Date.now() - start) / 1000);
+                probeUrl = URL.createObjectURL(probeBlob);
+                probeAudio.src = probeUrl; probeDauer.textContent = mmss(probeSek);
+                probe.hidden = false;
             };
             rec.start();
             leiste.hidden = false; knopf.classList.add('text-danger');
-            uhr = setInterval(function () { var s = Math.round((Date.now() - start) / 1000); zeit.textContent = Math.floor(s / 60) + ':' + ('0' + (s % 60)).slice(-2); }, 500);
+            uhr = setInterval(function () { zeit.textContent = mmss(Math.round((Date.now() - start) / 1000)); }, 500);
         }).catch(function () { alert('Kein Zugriff auf das Mikrofon. Erlaube es in den Einstellungen des Browsers.'); });
     });
     form.querySelector('[data-aufnahme-stopp]').addEventListener('click', function () { stopp(false); });
     form.querySelector('[data-aufnahme-abbruch]').addEventListener('click', function () { stopp(true); });
+    form.querySelector('[data-probe-weg]').addEventListener('click', probeWeg);
+    form.querySelector('[data-probe-senden]').addEventListener('click', function () {
+        if (!probeBlob) return;
+        var fd = new FormData();
+        fd.append('_token', csrf);
+        fd.append('audio', probeBlob, 'sprachnachricht.' + ((probeBlob.type || '').indexOf('mp4') >= 0 ? 'm4a' : 'webm'));
+        fd.append('sek', probeSek);
+        var b = this; b.disabled = true;
+        senden(fd).then(probeWeg).catch(function (err) { alert(err.message); }).finally(function () { b.disabled = false; });
+    });
 })();
 
 /* ---------- Push-Nachrichten einschalten ---------- */
@@ -596,6 +636,65 @@ document.addEventListener('medien:zeit', function (e) {
             rec.onerror = function () { rec = null; b.classList.remove('an'); };
             rec.start(); b.classList.add('an');
         });
+    });
+})();
+
+/* ---------- Etwas anhaengen: Auswahl, Suche, Chips ---------- */
+(function () {
+    document.querySelectorAll('[data-anhang-wahl]').forEach(function (box) {
+        var name = box.dataset.name || 'refs', mehrfach = box.dataset.mehrfach === '1';
+        var auf = box.querySelector('[data-anhang-auf]'), zu = box.querySelector('[data-anhang-zu]');
+        var panel = box.querySelector('[data-anhang-panel]'), karten = box.querySelector('[data-anhang-karten]');
+        var suche = box.querySelector('[data-anhang-suche]'), gewaehlt = box.querySelector('[data-anhang-gewaehlt]');
+        var auswahl = [];
+        try { auswahl = JSON.parse(box.dataset.auswahl || '[]'); } catch (e) {}
+        var timer = null;
+        function refs() { return Array.prototype.map.call(gewaehlt.querySelectorAll('.anhang-chip'), function (c) { return c.dataset.ref; }); }
+        function zeichnen(liste) {
+            var da = refs();
+            karten.innerHTML = '';
+            if (!liste.length) { var l = document.createElement('p'); l.className = 'leer m-0'; l.textContent = 'Nichts gefunden.'; karten.appendChild(l); return; }
+            liste.forEach(function (k) {
+                var b = document.createElement('button'); b.type = 'button'; b.dataset.ref = k.ref;
+                if (da.indexOf(k.ref) >= 0) b.classList.add('an');
+                b.innerHTML = '<i class="fa-solid fa-' + k.icon + '"></i><span><b></b><em></em></span>';
+                b.querySelector('b').textContent = k.label + (k.zusatz ? ' · ' + k.zusatz : '');
+                var em = b.querySelector('em'); em.style.fontStyle = 'normal'; em.textContent = k.titel;
+                b.addEventListener('click', function () { waehlen(k); });
+                karten.appendChild(b);
+            });
+        }
+        function waehlen(k) {
+            if (refs().indexOf(k.ref) >= 0) { entfernen(k.ref); return; }
+            if (!mehrfach) gewaehlt.innerHTML = '';
+            var c = document.createElement('span'); c.className = 'anhang-chip'; c.dataset.ref = k.ref;
+            c.innerHTML = '<i class="fa-solid fa-' + k.icon + '"></i><span></span><button type="button" data-weg aria-label="Entfernen">&times;</button><input type="hidden">';
+            c.querySelector('span').textContent = k.label + ' · ' + (k.titel.length > 40 ? k.titel.slice(0, 39) + '…' : k.titel);
+            var inp = c.querySelector('input'); inp.name = name + '[]'; inp.value = k.ref;
+            gewaehlt.appendChild(c); gewaehlt.hidden = false;
+            karten.querySelectorAll('button').forEach(function (b) { if (b.dataset.ref === k.ref) b.classList.add('an'); });
+            if (!mehrfach) { panel.hidden = true; }
+            box.dispatchEvent(new CustomEvent('anhang', { bubbles: true }));
+        }
+        function entfernen(ref) {
+            gewaehlt.querySelectorAll('.anhang-chip').forEach(function (c) { if (c.dataset.ref === ref) c.remove(); });
+            if (!gewaehlt.querySelector('.anhang-chip')) gewaehlt.hidden = true;
+            karten.querySelectorAll('button').forEach(function (b) { if (b.dataset.ref === ref) b.classList.remove('an'); });
+            box.dispatchEvent(new CustomEvent('anhang', { bubbles: true }));
+        }
+        gewaehlt.addEventListener('click', function (e) { var w = e.target.closest('[data-weg]'); if (w) entfernen(w.closest('.anhang-chip').dataset.ref); });
+        auf.addEventListener('click', function () { panel.hidden = !panel.hidden; if (!panel.hidden) { zeichnen(auswahl); suche.focus(); } });
+        zu.addEventListener('click', function () { panel.hidden = true; });
+        suche.addEventListener('input', function () {
+            clearTimeout(timer);
+            var q = suche.value.trim();
+            if (q.length < 2) { zeichnen(auswahl); return; }
+            timer = setTimeout(function () {
+                fetch(box.dataset.suche + '?q=' + encodeURIComponent(q), { credentials: 'same-origin', headers: { 'Accept': 'application/json' } })
+                    .then(function (r) { return r.json(); }).then(function (j) { if (suche.value.trim() === q) zeichnen(j.karten || []); }).catch(function () {});
+            }, 250);
+        });
+        box.leeren = function () { gewaehlt.innerHTML = ''; gewaehlt.hidden = true; panel.hidden = true; suche.value = ''; };
     });
 })();
 

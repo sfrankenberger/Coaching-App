@@ -15,6 +15,7 @@
                     <textarea id="refl-{{ $k }}" name="{{ $k }}" rows="4" class="feld" placeholder="Schreib oder diktiere ...">{{ old($k, $entwurf?->$k) }}</textarea>
                 </div>
             @endforeach
+            <x-anhang-wahl :refs="old('refs', $entwurf?->anhangRefs() ?? [])" />
             <div class="flex flex-wrap gap-2">
                 @if ($kurse->count())
                     <label class="block"><span class="feld-label">Kurs</span><select name="program_id" class="feld"><option value="">Allgemein</option>@foreach ($kurse as $id => $t)<option value="{{ $id }}" @selected((int) old('program_id', $entwurf?->program_id) === $id)>{{ $t }}</option>@endforeach</select></label>
@@ -22,7 +23,7 @@
                 <label class="block"><span class="feld-label">Wer sieht das?</span><select name="visibility" class="feld">
                     <option value="private">Nur ich</option>
                     <option value="coach">Meine Coachin</option>
-                    @if ($kurse->count())<option value="program">Mein Kurs</option>@endif
+                    @if ($gemeinschaft->count())<option value="program">Mein Kurs</option>@endif
                 </select></label>
             </div>
             @if ($entwurf)
@@ -43,6 +44,7 @@
                             @if ($r->$k)<p class="mt-2"><b class="block text-md">{{ $ico }} {{ $frage }}</b><span class="lesetext whitespace-pre-line">{{ $r->$k }}</span></p>@endif
                         @endforeach
                         @if ($r->addendum)<p class="mt-2"><b class="block text-md">Nachtrag</b><span class="lesetext whitespace-pre-line">{{ $r->addendum }}</span></p>@endif
+                        <x-anhaenge :item="$r" />
                         <div class="mt-3 flex flex-wrap gap-2">
                             @if ($r->isShared())
                                 <details class="w-full">

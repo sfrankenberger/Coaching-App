@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\AlsController;
 use App\Http\Controllers\AngeboteController;
+use App\Http\Controllers\AnhaengeController;
 use App\Http\Controllers\AnsichtController;
 use App\Http\Controllers\AssistentController;
 use App\Http\Controllers\AufgabenController;
@@ -204,6 +205,7 @@ Route::middleware(['auth', 'membership'])->group(function () {
     Route::post('/aufgaben/{aufgabe}/haken', [AufgabenController::class, 'haken'])->name('aufgaben.haken');
     Route::post('/aufgaben/{aufgabe}/tag', [AufgabenController::class, 'tag'])->name('aufgaben.tag');
     Route::delete('/aufgaben/{aufgabe}', [AufgabenController::class, 'destroy'])->name('aufgaben.destroy');
+    Route::get('/anhaenge/suche', [AnhaengeController::class, 'suche'])->name('anhaenge.suche');
     Route::get('/notizen', [NotizenController::class, 'index'])->name('notizen.index');
     Route::post('/notizen', [NotizenController::class, 'store'])->name('notizen.store');
     Route::post('/notizen/{notiz}', [NotizenController::class, 'update'])->name('notizen.update');

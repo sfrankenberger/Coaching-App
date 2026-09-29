@@ -85,6 +85,21 @@ class Program extends Model
         return in_array($this->type, ['hybrid', 'one_on_one', 'workbook'], true);
     }
 
+    /**
+     * Gemeinsamer Raum: nur begleitete Gruppenprogramme (Hybrid-Coaching, Club) haben eine eigene Community,
+     * in der Notizen, Aufgaben und Fragen fuer die Gruppe freigegeben werden. Selbstlernkurse werden nur vermerkt,
+     * ihre Fragen laufen in der allgemeinen Community. settings.gemeinschaft (true/false) uebersteuert die Vorgabe.
+     */
+    public function gemeinschaft(): bool
+    {
+        $eigen = $this->settings['gemeinschaft'] ?? null;
+        if ($eigen !== null && $eigen !== '') {
+            return (bool) $eigen;
+        }
+
+        return in_array($this->type, ['hybrid', 'club'], true);
+    }
+
     public function isWorkbook(): bool
     {
         return $this->type === 'workbook';

@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Models\Concerns\HatAnhaenge;
 use App\Tenancy\Concerns\BelongsToTenant;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
@@ -12,6 +13,7 @@ use Illuminate\Database\Eloquent\Relations\MorphMany;
 class Question extends Model
 {
     use BelongsToTenant;
+    use HatAnhaenge;
 
     public const STATUS = [
         'offen' => 'Offen',

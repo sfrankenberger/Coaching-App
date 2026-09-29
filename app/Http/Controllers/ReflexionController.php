@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\Program;
 use App\Models\Reflection;
 use App\Programs\ProgramAccess;
+use App\Support\Anhaenge;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Gate;
@@ -34,8 +35,9 @@ class ReflexionController extends Controller
         return view('reflexion.index', [
             'fragen' => self::FRAGEN,
             'entwurf' => $entwurf,
-            'meine' => Reflection::where('user_id', $user->id)->with('program:id,title')->latest()->limit(30)->get(),
+            'meine' => Reflection::where('user_id', $user->id)->with(['program:id,title', 'anhaenge.ziel'])->latest()->limit(30)->get(),
             'kurse' => $this->access->programsFor($user)->pluck('title', 'id'),
+            'gemeinschaft' => $this->access->gemeinschaftFor($user)->pluck('id'),
             'woche' => 'Woche '.now()->format('W').' ('.now()->translatedFormat('j. F Y').')',
         ]);
     }
@@ -50,6 +52,8 @@ class ReflexionController extends Controller
             'focus' => ['nullable', 'string', 'max:10000'],
             'program_id' => ['nullable', 'integer'],
             'visibility' => ['nullable', 'in:private,coach,program'],
+            'refs' => ['nullable', 'array', 'max:12'],
+            'refs.*' => ['string', 'max:40'],
         ]);
 
         $reflection = ! empty($data['refl_id'])
@@ -66,7 +70,7 @@ class ReflexionController extends Controller
             $programId = $p->id;
         }
         $visibility = $data['visibility'] ?? 'private';
-        if ($visibility === 'program' && ! $programId) {
+        if ($visibility === 'program' && (! $programId || ! $p->gemeinschaft())) {
             $visibility = 'coach';
         }
 
@@ -78,6 +82,7 @@ class ReflexionController extends Controller
             'visibility' => $visibility,
             'shared_at' => $visibility !== 'private' ? ($reflection->shared_at ?? now()) : null,
         ])->save();
+        app(Anhaenge::class)->speichern($reflection, $data['refs'] ?? null, $user);
 
         return redirect()->route('reflexion.index')->with('meldung', $visibility === 'private' ? 'Reflexion gespeichert, nur für dich.' : 'Reflexion gespeichert und geteilt.');
     }

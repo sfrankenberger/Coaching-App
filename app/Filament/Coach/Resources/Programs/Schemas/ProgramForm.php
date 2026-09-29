@@ -47,6 +47,8 @@ class ProgramForm
                 Toggle::make('settings.gratis')->label('Offen für alle')->helperText('Gratiskurs: alle Personen mit Zugang zum Bereich sehen ihn, ohne Kauf.'),
                 Select::make('settings.teilen')->label('Teilen mit der Coachin')->options(['1' => 'Ja, Antworten können geteilt werden', '0' => 'Nein, nichts wird geteilt'])->placeholder('Vorgabe nach Art')->native(false)
                     ->helperText('Vorgabe: Hybrid-Coaching, 1:1 und Arbeitsbuch ja, Selbstlernkurs und Club nein.'),
+                Select::make('settings.gemeinschaft')->label('Eigener Raum in der Community')->options(['1' => 'Ja, die Gruppe teilt untereinander', '0' => 'Nein, Fragen laufen in der allgemeinen Community'])->placeholder('Vorgabe nach Art')->native(false)
+                    ->helperText('Vorgabe: Hybrid-Coaching und Club ja, Selbstlernkurs nein. Selbstlernkurse werden bei Fragen nur vermerkt.'),
                 Select::make('topics')->label('Themen')->relationship('topics', 'name')->multiple()->preload()->searchable()->columnSpanFull()->createOptionForm([TextInput::make('name')->label('Thema')->required()->maxLength(120)]),
             ])->columns(3)->collapsed(),
         ]);

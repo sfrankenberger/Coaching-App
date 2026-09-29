@@ -14,6 +14,7 @@ use App\Models\User;
 use App\Notifications\Nachricht;
 use App\Notifications\Notifier;
 use App\Programs\ProgramAccess;
+use App\Support\Anhaenge;
 use App\Tenancy\Branding;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -49,17 +50,18 @@ class FragenController extends Controller
     public function community(Request $request): View
     {
         $user = $request->user();
-        $programme = $this->communityProgramme($user);
+        $alle = $this->communityProgramme($user);
+        $programme = $alle->filter(fn (Program $p) => $p->gemeinschaft())->values();
         $filter = in_array($request->query('f'), ['offen', 'call', 'erledigt'], true) ? $request->query('f') : '';
         $kurs = $programme->firstWhere('id', (int) $request->query('k', 0));
-        $fragen = Question::whereIn('program_id', $kurs ? [$kurs->id] : $programme->pluck('id'))->sichtbarFuer($user)
+        $fragen = Question::whereIn('program_id', $kurs ? [$kurs->id] : $alle->pluck('id'))->sichtbarFuer($user)
             ->when($filter === 'offen', fn ($q) => $q->whereIn('status', ['offen', 'call']))
             ->when($filter === 'call', fn ($q) => $q->where('status', 'call'))
             ->when($filter === 'erledigt', fn ($q) => $q->whereIn('status', ['beantwortet', 'besprochen', 'zu']))
             ->withCount(['answers', 'reactions as call_wuensche' => fn ($r) => $r->where('emoji', Question::CALLWUNSCH)])
             ->with(['user:id,name', 'program:id,title,slug,color'])->latest()->limit(100)->get();
 
-        return view('community', ['programme' => $programme, 'kurs' => $kurs, 'fragen' => $fragen, 'filter' => $filter, 'coach' => $this->coachName()]);
+        return view('community', ['programme' => $programme, 'alle' => $alle, 'kurs' => $kurs, 'fragen' => $fragen, 'filter' => $filter, 'coach' => $this->coachName()]);
     }
 
     /** Wer ist dabei: das Team und alle aus meinen Gruppenkursen, die sich sichtbar geschaltet haben. */
@@ -85,7 +87,7 @@ class FragenController extends Controller
         return view('community-leute', ['programme' => $programme, 'kurs' => $kurs, 'leute' => $leute, 'sichtbar' => (bool) $user->membershipIn()?->setting('community_sichtbar'), 'coach' => $this->coachName()]);
     }
 
-    /** Community gibt es fuer Gruppenkurse (Hybrid, Selbstlernkurs, Club), nicht fuer 1:1 und Arbeitsbuecher. */
+    /** Fragen gibt es in Gruppenkursen (Hybrid, Selbstlernkurs, Club), nicht im 1:1 und in Arbeitsbuechern. Eigene Raeume haben nur Programme mit gemeinschaft(). */
     protected function communityProgramme(User $user)
     {
         return app(ProgramAccess::class)->programsFor($user)
@@ -96,7 +98,10 @@ class FragenController extends Controller
     {
         Gate::authorize('view', $program);
         $data = $request->validated();
+        $refs = $data['refs'] ?? null;
+        unset($data['refs']);
         $frage = Question::create($data + ['program_id' => $program->id, 'user_id' => $request->user()->id, 'visibility' => $data['visibility'] ?? 'program']);
+        app(Anhaenge::class)->speichern($frage, $refs, $request->user());
 
         $this->melden($this->team()->reject(fn ($id) => $id === $request->user()->id), $frage,
             $request->user()->vorname().' hat eine Frage gestellt', $frage->title);

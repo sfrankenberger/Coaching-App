@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Models\Concerns\HatAnhaenge;
 use App\Tenancy\Concerns\BelongsToTenant;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -13,6 +14,7 @@ use Illuminate\Database\Eloquent\Relations\MorphMany;
 class Reflection extends Model
 {
     use BelongsToTenant;
+    use HatAnhaenge;
 
     protected $guarded = [];
 

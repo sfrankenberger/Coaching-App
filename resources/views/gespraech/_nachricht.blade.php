@@ -45,11 +45,7 @@
             </div>
         @endif
         @if ($m->ref)
-            @php $ref = $m->ref; $refLabel = ['task' => 'Aufgabe', 'note' => 'Notiz', 'reflection' => 'Reflexion', 'event' => 'Termin', 'resource' => 'Material', 'unit' => 'Einheit'][$m->ref_type] ?? 'Anhang'; @endphp
-            <div class="mt-1 rounded-xl border border-line bg-card px-3 py-2 text-md">
-                <span class="eyebrow block">{{ $refLabel }}</span>
-                {{ $ref->title ?? ($ref->week_label ?? \Illuminate\Support\Str::limit($ref->body ?? '', 80)) }}
-            </div>
+            <div class="anhaenge"><x-anhang-karte :ziel="$m->ref" /></div>
         @endif
         <div class="blase-zeit">
             <span>{{ $m->created_at->format('H:i') }}</span>

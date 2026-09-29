@@ -15,6 +15,7 @@
                 {{ \App\Models\Note::VISIBILITIES[$t->visibility] ?? '' }}
             </span>
             @if ($t->body)<p class="lesetext mt-1 whitespace-pre-line text-md">{{ $t->body }}</p>@endif
+            <x-anhaenge :item="$t" />
             @if ($t->is_daily && ! $t->isDone())
                 <div class="mt-2 flex flex-wrap items-center gap-1" data-tage="{{ route('aufgaben.tag', $t) }}">
                     <span class="hinweis w-full">Diese Woche <b>{{ count($done) }} von 7</b></span>

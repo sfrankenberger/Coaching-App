@@ -50,6 +50,12 @@ class ProgramAccess
         return $this->programIdsFor($user)->contains($program->id);
     }
 
+    /** Gruppenprogramme mit eigenem Raum in der Community (Program::gemeinschaft). */
+    public function gemeinschaftFor(User $user): Collection
+    {
+        return $this->programsFor($user)->filter(fn (Program $p) => $p->gemeinschaft())->values();
+    }
+
     /** Programme der Person, sortiert, mit Schritten und Einheiten geladen. */
     public function programsFor(User $user): Collection
     {

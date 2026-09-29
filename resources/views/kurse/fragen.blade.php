@@ -17,9 +17,10 @@
                     <label for="frage-text" class="feld-label">Mehr dazu, freiwillig</label>
                     <textarea id="frage-text" name="body" class="feld" rows="4" placeholder="Was ist passiert, was hast du schon versucht?">{{ old('body') }}</textarea>
                 </div>
+                <x-anhang-wahl :refs="old('refs', [])" />
                 <div>
                     <span class="feld-label">Wer sieht die Frage?</span>
-                    <label class="flex items-center gap-2 text-md" style="margin:4px 0"><input type="radio" name="visibility" value="program" checked class="accent-primary"> Alle im Kurs</label>
+                    <label class="flex items-center gap-2 text-md" style="margin:4px 0"><input type="radio" name="visibility" value="program" checked class="accent-primary"> {{ $program->gemeinschaft() ? 'Alle im Kurs' : 'In der Community' }}</label>
                     <label class="flex items-center gap-2 text-md"><input type="radio" name="visibility" value="coach" class="accent-primary"> Nur {{ $coach }}</label>
                 </div>
                 <div class="eingabe-knoepfe"><button type="submit" class="knopf"><i class="fa-solid fa-paper-plane"></i>Frage stellen</button></div>

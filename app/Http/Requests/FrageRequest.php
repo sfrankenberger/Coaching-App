@@ -13,6 +13,8 @@ class FrageRequest extends FormRequest
             'title' => ['required', 'string', 'max:200'],
             'body' => ['nullable', 'string', 'max:10000'],
             'visibility' => ['nullable', 'in:program,coach'],
+            'refs' => ['nullable', 'array', 'max:12'],
+            'refs.*' => ['string', 'max:40'],
         ];
     }
 }

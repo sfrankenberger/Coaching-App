@@ -17,11 +17,13 @@ class NachrichtRequest extends FormRequest
             'transkript' => ['nullable', 'string', 'max:10000'],
             'ref_type' => ['nullable', 'in:task,note,reflection,event,resource,unit'],
             'ref_id' => ['nullable', 'integer'],
+            'refs' => ['nullable', 'array', 'max:1'],
+            'refs.*' => ['string', 'max:40'],
         ];
     }
 
     public function leer(): bool
     {
-        return blank($this->input('body')) && ! $this->hasFile('file') && ! $this->hasFile('audio') && empty($this->input('ref_id'));
+        return blank($this->input('body')) && ! $this->hasFile('file') && ! $this->hasFile('audio') && empty($this->input('ref_id')) && empty(array_filter((array) $this->input('refs', [])));
     }
 }

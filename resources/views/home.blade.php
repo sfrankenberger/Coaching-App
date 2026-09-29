@@ -88,16 +88,7 @@
             @if ($offen > $aufgaben->count())<span class="rechts"><a href="{{ route('aufgaben.index') }}">Alle {{ $offen }} ansehen</a></span>@endif
         </h2>
         @foreach ($aufgaben as $t)
-            <div @class(['karte flex items-center gap-3', 'offen' => $t->isOverdue()])>
-                <form method="post" action="{{ route('aufgaben.haken', $t) }}" data-haken>
-                    @csrf
-                    <button type="submit" class="haken" aria-label="Erledigt"><i class="fa-solid fa-check"></i></button>
-                </form>
-                <a href="{{ route('aufgaben.index') }}" class="min-w-0 flex-1 no-underline">
-                    <span class="t">{{ $t->title }}</span>
-                    @if ($t->due_at)<span @class(['m', 'text-danger font-semibold' => $t->isOverdue()])>bis {{ $t->due_at->translatedFormat('j. F') }}</span>@endif
-                </a>
-            </div>
+            @include('aufgaben._karte', ['t' => $t, 'ohneKommentare' => true])
         @endforeach
     @endif
 

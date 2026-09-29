@@ -80,3 +80,4 @@ Laravel 13, PHP 8.4, Livewire 4, Filament 5 (Coach-Bereich und Plattform-Verwalt
 - Migrationen nie nachträglich ändern, wenn sie auf dem Server gelaufen sind. Neue Migration.
 - Commits klein, deutsche Commit-Messages im Imperativ ("Kursraum: Fortschritt speichern").
 - Keine Secrets in Git. `.env` bleibt auf dem Server.
+- **Produktion laeuft auf `main`.** `deploy.sh` auf dem Server zieht `main`. Direkt auf `main` arbeiten oder Feature-Branches nach `main` mergen, dann deployen. Der fruehere Branch `claude/etappe-1-seitenhulle-magic-link-p0y0lb` ist abgeschlossen (Stand 808a18b = main) und wird nicht mehr benutzt.

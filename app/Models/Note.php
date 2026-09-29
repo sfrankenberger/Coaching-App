@@ -2,9 +2,11 @@
 
 namespace App\Models;
 
+use App\Models\Concerns\HatAnhaenge;
 use App\Tenancy\Concerns\BelongsToTenant;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\MorphMany;
 use Illuminate\Database\Eloquent\Relations\MorphTo;
 
 /**
@@ -14,6 +16,7 @@ use Illuminate\Database\Eloquent\Relations\MorphTo;
 class Note extends Model
 {
     use BelongsToTenant;
+    use HatAnhaenge;
 
     public const VISIBILITIES = [
         'private' => 'Nur ich',
@@ -44,7 +47,7 @@ class Note extends Model
         return $this->belongsTo(Program::class);
     }
 
-    public function comments(): \Illuminate\Database\Eloquent\Relations\MorphMany
+    public function comments(): MorphMany
     {
         return $this->morphMany(Comment::class, 'commentable')->oldest();
     }

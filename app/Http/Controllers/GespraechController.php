@@ -12,6 +12,8 @@ use App\Models\Event;
 use App\Models\Message;
 use App\Models\Program;
 use App\Models\Reaction;
+use App\Models\User;
+use App\Support\Anhaenge;
 use App\Tenancy\Branding;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
@@ -77,7 +79,8 @@ class GespraechController extends Controller
         Gate::authorize('view', $gespraech);
         $data = $request->validated();
 
-        if ($request->leer()) {
+        $ref = $this->ref($data, $user);
+        if ($request->leer() || (blank($data['body'] ?? null) && ! $request->hasFile('file') && ! $request->hasFile('audio') && ! $ref)) {
             return $request->expectsJson() ? response()->json(['fehler' => 'Schreib etwas.'], 422) : back()->with('fehler', 'Schreib etwas.');
         }
 
@@ -87,7 +90,7 @@ class GespraechController extends Controller
             'audio' => $request->file('audio'),
             'sek' => $data['sek'] ?? null,
             'transkript' => $data['transkript'] ?? null,
-            'ref' => ! empty($data['ref_id']) ? ['type' => $data['ref_type'], 'id' => $data['ref_id']] : null,
+            'ref' => $ref,
         ]);
 
         if ($request->expectsJson()) {
@@ -95,6 +98,16 @@ class GespraechController extends Controller
         }
 
         return redirect()->route('gespraech.show', $gespraech)->withFragment('nachricht-'.$msg->id);
+    }
+
+    /** Angehaengtes Element: refs[] ("art:nummer") aus der Auswahl, oder ref_type/ref_id von der Schnittstelle; nur, was die Person anhaengen darf. */
+    protected function ref(array $data, User $user): ?array
+    {
+        $anhaenge = app(Anhaenge::class);
+        $ref = ! empty($data['refs'][0]) ? (string) $data['refs'][0] : (! empty($data['ref_id']) ? $data['ref_type'].':'.$data['ref_id'] : null);
+        $ziel = $ref ? $anhaenge->finden($ref, $user) : null;
+
+        return $ziel ? ['type' => $ziel->getMorphClass(), 'id' => $ziel->getKey()] : null;
     }
 
     /** Polling: neue Nachrichten seit id, plus Lesestand. */

@@ -40,7 +40,7 @@ class BegleitungTest extends TestCase
         $this->a->users()->attach($this->anna, ['role' => Role::Member->value, 'status' => 'active']);
         $this->a->users()->attach($this->fremd, ['role' => Role::Member->value, 'status' => 'active']);
         $this->program = $this->in(function () {
-            $p = Program::create(['slug' => 'kurs', 'title' => 'Kurs A']);
+            $p = Program::create(['slug' => 'kurs', 'title' => 'Kurs A', 'type' => 'hybrid']);
             ProgramMember::create(['program_id' => $p->id, 'user_id' => $this->anna->id]);
 
             return $p;

@@ -11,6 +11,7 @@
             <h1 style="margin:0 0 6px;font-size:var(--fs-2xl)">{{ $frage->title }}</h1>
             <p class="m m-0 mb-2.5">{{ $frage->user?->name }} · {{ $frage->created_at->translatedFormat('j. F Y, H:i') }}</p>
             @if ($frage->body)<p class="x whitespace-pre-line m-0 text-base">{{ $frage->body }}</p>@endif
+            <x-anhaenge :item="$frage" />
 
             <div class="flex flex-wrap items-center gap-2 mt-3.5">
                 <form method="post" action="{{ route('fragen.call', $frage) }}">

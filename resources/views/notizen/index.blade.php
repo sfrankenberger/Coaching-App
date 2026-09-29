@@ -8,13 +8,14 @@
             @csrf
             <input name="title" class="feld" placeholder="Überschrift (optional)" maxlength="160" value="{{ old('title', $bearbeiten?->title) }}">
             <textarea name="body" class="feld" rows="4" placeholder="Was dir gerade durch den Kopf geht ..." required>{{ old('body', $bearbeiten?->body) }}</textarea>
+            <x-anhang-wahl :refs="old('refs', $bearbeiten?->anhangRefs() ?? [])" />
             <div class="flex flex-wrap gap-2">
                 @if ($kurse->count())
                     <label class="block"><span class="feld-label">Kurs</span><select name="program_id" class="feld"><option value="">Allgemein</option>@foreach ($kurse as $id => $t)<option value="{{ $id }}" @selected((int) old('program_id', $bearbeiten?->program_id) === $id)>{{ $t }}</option>@endforeach</select></label>
                 @endif
                 <label class="block"><span class="feld-label">Wer sieht das?</span><select name="visibility" class="feld">
                     @foreach (\App\Models\Note::VISIBILITIES as $k => $l)
-                        @if ($k !== 'program' || $kurse->count())<option value="{{ $k }}" @selected(old('visibility', $bearbeiten?->visibility ?? 'private') === $k)>{{ $l }}</option>@endif
+                        @if ($k !== 'program' || $gemeinschaft->count())<option value="{{ $k }}" @selected(old('visibility', $bearbeiten?->visibility ?? 'private') === $k)>{{ $l }}</option>@endif
                     @endforeach
                 </select></label>
                 <label class="hinweis self-end flex items-center gap-2 pb-2"><input type="checkbox" name="is_pinned" value="1" class="size-5 accent-primary" @checked(old('is_pinned', $bearbeiten?->is_pinned))> Anpinnen</label>
@@ -34,6 +35,7 @@
                 <div class="min-w-0 flex-1">
                     @if ($n->title)<span class="t">@if ($n->is_pinned)<i class="fa-solid fa-thumbtack" style="color:var(--c-primary);font-size:12px;margin-right:6px"></i>@endif{{ $n->title }}</span>@endif
                     <p class="lesetext whitespace-pre-line m-0 mt-1">{{ $n->body }}</p>
+                    <x-anhaenge :item="$n" />
                     <span class="m mt-2">
                         {{ $n->updated_at->translatedFormat('j. M Y, H:i') }}
                         @if ($n->notable) · zu «{{ $n->notable->title ?? '' }}» @endif

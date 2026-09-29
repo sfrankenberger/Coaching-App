@@ -499,6 +499,28 @@
     .eingabe { display: flex; flex-direction: column; gap: 10px; }
     .eingabe-knoepfe { display: flex; gap: 8px; flex-wrap: wrap; justify-content: flex-end; align-items: center; }
 
+    /* Etwas anhaengen: Auswahl, gewaehlte Chips, angehaengte Karten */
+    .anhang-wahl { display: flex; flex-direction: column; gap: 8px; }
+    .anhang-zeile { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+    .anhang-gewaehlt { display: flex; flex-wrap: wrap; gap: 6px; }
+    .anhang-chip { display: inline-flex; align-items: center; gap: 7px; max-width: 100%; padding: 5px 8px 5px 11px; border-radius: 999px; background: var(--c-primary-soft); color: var(--c-text); font-size: var(--fs-sm); font-weight: 600; }
+    .anhang-chip i { color: var(--c-primary); font-size: 12px; }
+    .anhang-chip span { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .anhang-chip button { border: 0; background: transparent; color: var(--c-muted); font-size: 16px; line-height: 1; cursor: pointer; padding: 0 2px; }
+    .anhang-panel { display: flex; flex-direction: column; gap: 10px; padding: 12px; border: 1px solid var(--c-line-soft); border-radius: 14px; background: var(--c-surface); }
+    .anhang-karten { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 8px; max-height: 300px; overflow: auto; }
+    .anhang-karten button, .anhang-karte { display: flex; align-items: flex-start; gap: 10px; text-align: left; padding: 9px 11px; border: 1px solid var(--c-card-border); border-radius: 12px; background: #fff; color: var(--c-text); cursor: pointer; text-decoration: none; font-size: var(--fs-sm); line-height: 1.4; min-width: 0; }
+    .anhang-karten button:hover, .anhang-karte:hover { border-color: var(--c-primary); }
+    .anhang-karten button.an { border-color: var(--c-primary); background: var(--c-primary-soft); }
+    .anhang-karten button i, .anhang-karte i { color: var(--c-primary); margin-top: 3px; width: 14px; text-align: center; flex: none; }
+    .anhang-karten button span, .anhang-karte span { display: block; min-width: 0; overflow: hidden; }
+    .anhang-karten button b, .anhang-karte b { display: block; font-size: 11px; letter-spacing: .04em; text-transform: uppercase; color: var(--c-muted); font-weight: 600; margin-bottom: 1px; }
+    .anhang-karten .leer { grid-column: 1 / -1; color: var(--c-muted); font-size: var(--fs-sm); }
+    .anhaenge { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; }
+    .anhaenge .anhang-karte { padding: 6px 10px; border-radius: 10px; max-width: 100%; }
+    .blase .anhaenge { margin-top: 6px; }
+    .blase .anhang-karte { background: #fff; }
+
     /* ---------- Kopfleiste ---------- */
     .oben { position: sticky; top: 0; z-index: 40; }
     .kopf {
@@ -830,6 +852,8 @@
     .chat-rund { width: 44px; height: 44px; border-radius: 50%; display: grid; place-items: center; background: var(--c-neutral); color: var(--c-text-soft); border: 0; cursor: pointer; font-size: 16px; }
     .chat-rund:hover { color: var(--c-primary); }
     .chat-rund.text-danger { color: var(--c-danger); background: color-mix(in srgb, var(--c-danger) 12%, #fff); }
+    .chat-rund .punkt { width: 12px; height: 12px; border-radius: 50%; background: var(--c-danger); display: block; }
+    .chat-rund.text-danger .punkt { animation: pulse 1s infinite; }
     .chat-senden { width: 48px; height: 48px; border-radius: 50%; display: grid; place-items: center; background: var(--c-primary); color: #fff; border: 0; cursor: pointer; font-size: 17px; }
     .chat-senden:hover { background: var(--c-primary-hover); }
     .chat-senden:disabled { opacity: .5; }
