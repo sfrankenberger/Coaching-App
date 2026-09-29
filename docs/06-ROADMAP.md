@@ -95,6 +95,32 @@ Stand nach Etappe 1: Lea kann sich per Link anmelden, sieht Start und Profil, im
 - [ ] Leas Assistent selbst mit den Werkzeugen (Anthropic Tool Use), damit "Leg Anna an" auch in der App klappt
 - [ ] Bruecke zur Website (leawernli.ch): Kampagnen, Funnels, Seiten anlegen ueber die WordPress-API des Novamira-Plugins
 
+## Etappe 10 - Verkauf und Buchhaltung (29.09., Beschluss: WooCommerce wird abgeloest)
+
+Stand: kein einziger Kauf in WooCommerce, ein laufendes Abo, Lea hat Stripe. Die App verkauft selbst, bexio bleibt die einzige Rechnungsquelle, jeder Mandant hat sein eigenes Buchhaltungssystem.
+
+- [x] Buchhaltung je Mandant (`App\Shop\Buchhaltung`, bexio), Seite `/coach/buchhaltung`, Rechnungen im Profil und im Dossier-Reiter
+- [x] Verkaufen im Dossier: Preis, Waehrung, auf Rechnung oder bezahlt, Kontakt, Rechnung und Zahlungseingang in bexio, Mail mit PDF und Anmeldelink, Tabelle `verkaeufe`
+- [x] Zugang bei Kauf auf Rechnung: sofort oder erst nach Zahlungseingang (`buchhaltung.zugang_bei_rechnung`), Abgleich stuendlich (`buchhaltung:zahlungen`)
+- [ ] Angebote oeffentlich: Preise am Angebot (CHF, EUR, Aktion), Kauflink `/kaufen/{angebot}`, Schnittstelle `/api/angebote`, WordPress-Plugin mit Shortcodes `[app_kaufen]`, `[app_angebot]`, `[app_angebote]` (mit Herkunft fuer Funnels)
+- [ ] Kasse mit Stripe je Mandant (Schluessel in den Einstellungen): Checkout, Gastfluss mit Konto, Webhook, Zugang, bexio-Rechnung mit Zahlungseingang, Quittung per Mail
+- [ ] Abos mit Stripe und Kundenportal, das eine bestehende Abo umziehen
+- [ ] Website: Kaufknoepfe auf die App, WooCommerce, German Market, Kasse, Preise, bexio-Modul und Woo-Webhook abschalten
+
+## Etappe 11 - Kontakte und Newsletter (Mailster abloesen)
+
+Stand: rund 300 Abonnentinnen, 13 Listen (drei mit Gewicht), 18 Kampagnen, 9 Autoresponder, keine Mailster-Formulare.
+
+- [ ] Stufe "Kontakt" unter Gast: Mail, Name, Einwilligung mit Datum und Herkunft, Tags statt Listen, kein Login; Import aus Mailster
+- [ ] Newsletter aus der App: Vorlage, Empfaenger nach Tag, Versand ueber Mailgun in Wellen, Abmeldung mit einem Klick, Oeffnungen und Klicks, Double-Opt-in
+- [ ] Anmeldeformular fuer die Website (`[app_anmelden tag="..."]`) mit Freebie-Versand
+- [ ] Serien (Autoresponder): Tag loest aus, Mails mit Abstand in Tagen
+- [ ] Mailster abschalten
+
+## Etappe 12 - Website mit Statamic (Versuch)
+
+Nach dem Umzug der App: eine einfache Website mit Statamic nachbauen (gleicher Stack, Inhalte im Git), um zu sehen, ob daraus ein Modul fuer den Verkauf der App wird. Angebote, Kaufknopf, Buchung und Anmeldeformular kommen aus der App.
+
 ## Umschalten (nach Leas Freigabe)
 
 1. Schreibstopp im alten Mitgliederbereich (Hinweis an Teilnehmerinnen)

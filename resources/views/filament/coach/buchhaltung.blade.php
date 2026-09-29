@@ -9,6 +9,7 @@
             @if ($stand['fehler'])<p class="text-gray-500" style="margin:6px 0 0">Letzter Fehler: {{ $stand['fehler'] }}</p>@endif
             <div style="margin-top:10px;display:flex;gap:8px;flex-wrap:wrap">
                 <x-filament::button tag="a" :href="$stand['start']" color="gray" size="sm">Neu verbinden</x-filament::button>
+                <x-filament::button wire:click="stammdatenLaden" color="gray" size="sm">Stammdaten neu laden</x-filament::button>
                 <x-filament::button wire:click="trennen" wire:confirm="Verbindung zu bexio trennen?" color="danger" size="sm">Trennen</x-filament::button>
             </div>
         @else

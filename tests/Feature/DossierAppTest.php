@@ -4,6 +4,7 @@ namespace Tests\Feature;
 
 use App\Chat\Chat;
 use App\Enums\Role;
+use App\Mail\RechnungMail;
 use App\Mail\WillkommenMail;
 use App\Models\CoachNote;
 use App\Models\Entitlement;
@@ -16,6 +17,7 @@ use App\Models\ProgramMember;
 use App\Models\Task;
 use App\Models\Tenant;
 use App\Models\User;
+use App\Models\Verkauf;
 use App\Tenancy\CurrentTenant;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Mail;
@@ -120,7 +122,7 @@ class DossierAppTest extends TestCase
             return [$offer, $p];
         });
         $this->actingAs($this->lea)->get($this->url())->assertOk()->assertSee('Paket Klarheit');
-        $this->actingAs($this->lea)->post($this->url('/zugang'), ['offer_id' => $offer->id, 'preis' => '1200 CHF', 'sitzungen' => 2, 'notiz' => 'Zahlt in zwei Raten', 'mail' => 1])
+        $this->actingAs($this->lea)->post($this->url('/zugang'), ['offer_id' => $offer->id, 'betrag' => 1200, 'waehrung' => 'CHF', 'zahlungsart' => 'rechnung', 'sitzungen' => 2, 'notiz' => 'Zahlt in zwei Raten', 'mail' => 1])
             ->assertRedirect($this->url('?r=kurs'));
         $this->in(function () use ($offer, $p) {
             $e = Entitlement::where('user_id', $this->anna->id)->first();
@@ -132,10 +134,14 @@ class DossierAppTest extends TestCase
             $this->assertSame(2, $pm->settings['sitzungen_extra']);
             $n = CoachNote::where('user_id', $this->anna->id)->first();
             $this->assertStringContainsString('Verkauft: Paket Klarheit', $n->body);
-            $this->assertStringContainsString('1200 CHF', $n->body);
+            $this->assertStringContainsString("1'200.00 CHF", $n->body);
             $this->assertStringContainsString('Zahlt in zwei Raten', $n->body);
+            $v = Verkauf::where('user_id', $this->anna->id)->first();
+            $this->assertSame('offen', $v->status);
+            $this->assertSame('rechnung', $v->zahlungsart);
+            $this->assertNull($v->rechnung_id, 'ohne Buchhaltung keine Rechnung');
         });
-        Mail::assertSent(WillkommenMail::class, fn ($m) => $m->hasTo('anna@example.com') || true);
+        Mail::assertSent(RechnungMail::class, fn ($m) => $m->hasTo($this->anna->email));
         $this->actingAs($this->lea)->get($this->url())->assertOk()->assertSee('Paket Klarheit')->assertSee('7 Sitzungen offen');
         $this->actingAs($this->lea)->get($this->url('?r=kurs'))->assertOk()->assertSee('Einzelbegleitung');
     }

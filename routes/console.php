@@ -27,3 +27,6 @@ Schedule::command('aufzeichnungen:wache')->everyFifteenMinutes()->withoutOverlap
 
 // Zoom: wer war im Call, danach "live dabei"
 Schedule::command('zoom:anwesenheit')->hourlyAt(25)->withoutOverlapping(30)->runInBackground();
+
+// Buchhaltung: offene Rechnungen mit bexio abgleichen, wartende Zugaenge freischalten
+Schedule::command('buchhaltung:zahlungen')->hourlyAt(40)->withoutOverlapping(30)->runInBackground();

@@ -47,6 +47,21 @@ abstract class Buchhaltung
     /** Das PDF einer Rechnung als Bytes, null wenn nicht ladbar. */
     abstract public function pdf(int $id): ?string;
 
+    /** Rechnungen schreiben ist eingerichtet (Stammdaten und Vorgaben vorhanden). */
+    abstract public function kannSchreiben(): bool;
+
+    /**
+     * Rechnung fuer eine Person anlegen und ausstellen. Positionen: [['text' => ..., 'betrag' => 120.0, 'anzahl' => 1], ...],
+     * Betraege brutto. Bei $bezahlt wird der Zahlungseingang gleich gebucht. Liefert id, nr, link, faellig.
+     */
+    abstract public function rechnungAnlegen(User $user, string $titel, array $positionen, string $waehrung, bool $bezahlt, string $referenz): array;
+
+    /** Zahlungseingang zu einer Rechnung buchen. */
+    abstract public function zahlungBuchen(int $rechnungId, float $betrag, string $waehrung): void;
+
+    /** Aktueller Status einer Rechnung (self::STATUS) oder null, wenn unbekannt. */
+    abstract public function rechnungStatus(int $rechnungId): ?string;
+
     public static function statusText(string $status): string
     {
         return ['entwurf' => 'Entwurf', 'offen' => 'offen', 'bezahlt' => 'bezahlt', 'teilweise' => 'teilweise bezahlt', 'storniert' => 'storniert', 'gemahnt' => 'gemahnt'][$status] ?? $status;

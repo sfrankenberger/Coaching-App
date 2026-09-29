@@ -115,9 +115,16 @@ class BuchhaltungTest extends TestCase
                 ->push(['access_token' => 'acc-1', 'refresh_token' => 'ref-1', 'expires_in' => 3600])
                 ->push(['access_token' => 'acc-2', 'refresh_token' => 'ref-2', 'expires_in' => 3600]),
             'api.bexio.com/2.0/company_profile' => Http::response([['name' => 'Lea Wernli Coaching']]),
+            'api.bexio.com/3.0/users/me' => Http::response(['id' => 3, 'firstname' => 'Lea', 'lastname' => 'Wernli']),
+            'api.bexio.com/3.0/banking/accounts' => Http::response([['id' => 5, 'name' => 'Konto', 'iban_nr' => 'CH00']]),
+            'api.bexio.com/2.0/accounts*' => Http::response([['id' => 90, 'account_no' => '3400', 'name' => 'Dienstleistungen', 'is_active' => true], ['id' => 91, 'account_no' => '3000', 'name' => 'Waren', 'is_active' => true]]),
+            'api.bexio.com/3.0/taxes*' => Http::response([]),
+            'api.bexio.com/3.0/currencies' => Http::response([['id' => 1, 'name' => 'CHF'], ['id' => 2, 'name' => 'EUR']]),
+            'api.bexio.com/2.0/language' => Http::response([['id' => 1, 'name' => 'Deutsch']]),
             'api.bexio.com/2.0/contact/search*' => Http::sequence()->push(['message' => 'abgelaufen'], 401)->push([['id' => 77]]),
             'api.bexio.com/2.0/kb_invoice/search*' => Http::response([]),
         ]);
+        Http::preventStrayRequests();
 
         // Start: nur die Inhaberin, mit State zu bexio
         $this->actingAs($this->anna)->get('http://a.test/buchhaltung/bexio/start')->assertForbidden();
@@ -135,12 +142,17 @@ class BuchhaltungTest extends TestCase
         $this->assertSame('ref-1', $e['refresh_token']);
         $this->assertSame('acc-1', $e['access_token']);
         $this->assertSame('Lea Wernli Coaching', $e['firma']);
+        // Stammdaten geladen, Vorgaben gesetzt: Benutzer, Ertragskonto 3400, Bankkonto, Waehrungen
+        $this->assertSame(3, $e['schreiben']['user_id']);
+        $this->assertSame(90, $e['schreiben']['account_id']);
+        $this->assertSame(5, $e['schreiben']['bank_account_id']);
+        $this->assertSame(['CHF', 'EUR'], array_values($e['stammdaten']['waehrungen']));
+        $this->assertTrue((new Bexio($this->a->fresh()))->kannSchreiben());
 
         // Ein 401 fuehrt zu einmaligem Erneuern (rotiertes Refresh-Token wird gemerkt) und Wiederholung
         $bexio = new Bexio($this->a->fresh());
         $this->assertSame(77, app(CurrentTenant::class)->run($this->a, fn () => $bexio->kontaktId($this->anna)));
         $this->assertSame('ref-2', $this->a->fresh()->setting('buchhaltung.bexio.refresh_token'));
-        Http::assertSentCount(5);
     }
 
     public function test_buchhaltungsseite_nur_fuer_inhaberin(): void

@@ -23,9 +23,11 @@ use App\Models\ProgramMember;
 use App\Models\Reflection;
 use App\Models\Task;
 use App\Models\User;
+use App\Models\Verkauf;
 use App\Programs\ProgramAccess;
 use App\Programs\ProgressTracker;
 use App\Shop\Buchhaltung;
+use App\Shop\Verkaufen;
 use App\Shop\Zugang;
 use App\Support\Telefon;
 use App\Tenancy\CurrentTenant;
@@ -65,6 +67,9 @@ class DossierController extends Controller
             'calls' => $this->calls($user->id),
             'schreibt' => Message::where('user_id', $user->id)->where('created_at', '>', now()->subDays(30))->count(),
             'ki' => Anthropic::configured($tenant),
+            'verkaeufe' => Verkauf::where('user_id', $user->id)->whereNotNull('entitlement_id')->get()->keyBy('entitlement_id'),
+            'buchhaltung' => ($bh = Buchhaltung::fuer($tenant)) && $bh->verbunden() ? $bh : null,
+            'waehrung' => strtoupper((string) ($tenant?->currency ?: 'CHF')),
         ];
 
         $daten += match ($reiter) {
@@ -177,43 +182,28 @@ class DossierController extends Controller
     }
 
     /** Etwas verkaufen oder Zugang geben: Angebot freischalten, Programme betreten, Notiz, Mail. */
-    public function zugang(Request $request, Membership $membership, Zugang $zugang, ProgramAccess $access): RedirectResponse
+    public function zugang(Request $request, Membership $membership, Verkaufen $verkaufen): RedirectResponse
     {
         $this->pruefen($request, $membership);
         $data = $request->validate([
             'offer_id' => ['required', 'integer'],
+            'betrag' => ['nullable', 'numeric', 'min:0', 'max:100000'],
+            'waehrung' => ['nullable', 'in:CHF,EUR'],
+            'zahlungsart' => ['nullable', 'in:rechnung,bezahlt,kostenlos'],
+            'rechnung' => ['nullable', 'boolean'],
             'tage' => ['nullable', 'integer', 'min:1', 'max:3650'],
             'sitzungen' => ['nullable', 'integer', 'min:0', 'max:200'],
-            'preis' => ['nullable', 'string', 'max:60'],
             'notiz' => ['nullable', 'string', 'max:2000'],
             'mail' => ['nullable', 'boolean'],
         ]);
         $offer = Offer::where('is_active', true)->findOrFail($data['offer_id']);
-        $user = $membership->user;
-        $ende = filled($data['tage'] ?? null) ? now()->addDays((int) $data['tage']) : ($offer->access_days ? now()->addDays((int) $offer->access_days) : null);
-        $zugang->grant($user, $offer, 'manual', 'coach-'.$request->user()->id.'-'.now()->format('YmdHis'), now(), $ende, ! ($data['mail'] ?? false));
-        foreach ($offer->programs as $p) {
-            $pm = $access->join($user, $p);
-            if ($p->type === 'one_on_one' && ! empty($data['sitzungen'])) {
-                $pm->forceFill(['settings' => array_merge($pm->settings ?? [], ['sitzungen_extra' => (int) ($pm->settings['sitzungen_extra'] ?? 0) + (int) $data['sitzungen']])])->save();
-            }
-        }
-        if ($membership->role->value === 'guest') {
-            $membership->forceFill(['role' => 'member'])->save();
-        }
-        $zeilen = array_filter([
-            'Verkauft: '.$offer->title,
-            filled($data['preis'] ?? null) ? 'Preis: '.trim($data['preis']) : null,
-            ! empty($data['sitzungen']) ? 'inkl. '.$data['sitzungen'].' 1:1-Sitzungen' : null,
-            $ende ? 'bis '.$ende->translatedFormat('j. F Y') : null,
-            filled($data['notiz'] ?? null) ? trim($data['notiz']) : null,
-        ]);
-        CoachNote::create(['user_id' => $user->id, 'author_id' => $request->user()->id, 'body' => implode("\n", $zeilen)]);
-        if ($data['mail'] ?? false) {
-            $zugang->welcome($user, $offer);
+        $v = $verkaufen->verkaufen($request->user(), $membership->user, $offer, $data);
+        $text = $offer->title.' ist für '.$membership->user->vorname().' '.(($v->settings['warten_auf_zahlung'] ?? false) ? 'vorgemerkt, Zugang ab Zahlungseingang' : 'freigeschaltet').'.';
+        if ($fehler = $v->settings['rechnung_fehler'] ?? null) {
+            return redirect()->route('coachees.show', [$membership, 'r' => 'rechnungen'])->with('fehler', $text.' Die Rechnung konnte nicht angelegt werden: '.$fehler);
         }
 
-        return redirect()->route('coachees.show', [$membership, 'r' => 'kurs'])->with('meldung', $offer->title.' ist für '.$user->vorname().' freigeschaltet.');
+        return redirect()->route('coachees.show', [$membership, 'r' => $v->rechnung_id ? 'rechnungen' : 'kurs'])->with('meldung', $text.($v->rechnung_nr ? ' Rechnung '.$v->rechnung_nr.' ist in bexio.' : ''));
     }
 
     public function einladung(Request $request, Membership $membership, Zugang $zugang): RedirectResponse

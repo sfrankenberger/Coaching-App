@@ -31,6 +31,9 @@
             <span class="ic"><i class="fa-solid fa-{{ $e->isCurrent() ? 'circle-check' : 'circle-pause' }}"></i></span>
             <span class="tx"><b>{{ $e->offer?->title ?? 'Zugang' }}</b>
                 <span>seit {{ \App\Support\Zeit::datum($e->starts_at) }}{{ $e->ends_at ? ' bis '.\App\Support\Zeit::datum($e->ends_at) : '' }} · {{ ['manual' => 'von Hand', 'woocommerce' => 'Shop', 'import' => 'Import'][$e->source] ?? $e->source }}{{ $e->offer?->programs->isNotEmpty() ? ' · '.$e->offer->programs->pluck('title')->join(', ') : '' }}</span>
+                @if ($vk = $verkaeufe->get($e->id))
+                    <span>{{ $vk->betrag > 0 ? $vk->betragText().' · '.(\App\Models\Verkauf::ZAHLUNGSARTEN[$vk->zahlungsart] ?? $vk->zahlungsart) : 'kostenlos' }}{{ $vk->rechnung_nr ? ' · Rechnung '.$vk->rechnung_nr : '' }} · <span @class(['chip', 'chip-ok' => $vk->status === 'bezahlt', 'chip-warn' => $vk->status === 'storniert'])>{{ \App\Models\Verkauf::STATUS[$vk->status] ?? $vk->status }}</span>{{ $e->status === 'pending' ? ' · Zugang ab Zahlungseingang' : '' }}</span>
+                @endif
             </span>
         </div>
     @empty
@@ -50,14 +53,30 @@
                     @foreach ($angebote as $o)<option value="{{ $o->id }}">{{ $o->title }}{{ $o->access_days ? ' ('.$o->access_days.' Tage)' : '' }}</option>@endforeach
                 </select>
             </label>
-            <div class="grid gap-2" style="grid-template-columns:1fr 1fr">
-                <label class="feld-label">Preis (nur Notiz)<input type="text" name="preis" class="feld" placeholder="z. B. 1200 CHF"></label>
-                <label class="feld-label">Laufzeit in Tagen<input type="number" name="tage" class="feld" min="1" placeholder="wie im Angebot"></label>
+            <div class="grid gap-2" style="grid-template-columns:2fr 1fr 2fr">
+                <label class="feld-label">Preis<input type="number" name="betrag" class="feld" min="0" step="0.05" placeholder="0 = kostenlos" value="{{ old('betrag') }}"></label>
+                <label class="feld-label">Währung
+                    <select name="waehrung" class="feld">@foreach (['CHF', 'EUR'] as $w)<option value="{{ $w }}" @selected(old('waehrung', $waehrung) === $w)>{{ $w }}</option>@endforeach</select>
+                </label>
+                <label class="feld-label">Zahlung
+                    <select name="zahlungsart" class="feld">
+                        <option value="rechnung" @selected(old('zahlungsart') === 'rechnung')>auf Rechnung</option>
+                        <option value="bezahlt" @selected(old('zahlungsart') === 'bezahlt')>bereits bezahlt</option>
+                    </select>
+                </label>
             </div>
-            <label class="feld-label">Inkl. 1:1-Sitzungen (zusätzlich)<input type="number" name="sitzungen" class="feld" min="0" placeholder="0"></label>
-            <label class="feld-label">Notiz (nur für dich)<textarea name="notiz" rows="2" class="feld" data-ohne-diktat placeholder="Zahlung, Absprachen, Wünsche"></textarea></label>
-            <label class="flex items-center gap-2 mb-3 text-md"><input type="checkbox" name="mail" value="1"> Willkommensmail mit Anmeldelink schicken</label>
-            <button type="submit" class="knopf">Freischalten</button>
+            <div class="grid gap-2" style="grid-template-columns:1fr 1fr">
+                <label class="feld-label">Laufzeit in Tagen<input type="number" name="tage" class="feld" min="1" placeholder="wie im Angebot"></label>
+                <label class="feld-label">Inkl. 1:1-Sitzungen (zusätzlich)<input type="number" name="sitzungen" class="feld" min="0" placeholder="0"></label>
+            </div>
+            <label class="feld-label">Notiz (nur für dich)<textarea name="notiz" rows="2" class="feld" data-ohne-diktat placeholder="Absprachen, Wünsche"></textarea></label>
+            @if ($buchhaltung?->kannSchreiben())
+                <label class="flex items-center gap-2 mb-2 text-md"><input type="checkbox" name="rechnung" value="1" checked> Rechnung in {{ $buchhaltung->name() }} anlegen (bei "bereits bezahlt" als Quittung mit Zahlungseingang)</label>
+            @elseif ($buchhaltung)
+                <p class="hinweis mb-2"><i class="fa-solid fa-circle-info"></i> {{ $buchhaltung->name() }} ist verbunden, aber die Vorgaben zum Rechnungschreiben fehlen noch. <a href="/coach/buchhaltung">Einrichten</a></p>
+            @endif
+            <label class="flex items-center gap-2 mb-3 text-md"><input type="checkbox" name="mail" value="1"> Mail an {{ $person->vorname() }} mit Rechnung und Anmeldelink</label>
+            <button type="submit" class="knopf">Verkaufen und freischalten</button>
             @if ($angebote->isEmpty())<p class="hinweis mt-2 mb-0">Noch keine Angebote. <a href="{{ \App\Filament\Coach\Resources\Offers\OfferResource::getUrl('create') }}">Angebot anlegen</a></p>@endif
         </form>
     </details>
