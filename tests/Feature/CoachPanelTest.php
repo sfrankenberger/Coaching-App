@@ -3,6 +3,7 @@
 namespace Tests\Feature;
 
 use App\Enums\Role;
+use App\Filament\Coach\Resources\Offers\Pages\EditOffer;
 use App\Models\Answer;
 use App\Models\Event;
 use App\Models\Membership;
@@ -17,7 +18,9 @@ use App\Models\Tenant;
 use App\Models\Topic;
 use App\Models\User;
 use App\Tenancy\CurrentTenant;
+use Filament\Facades\Filament;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Livewire\Livewire;
 use Tests\TestCase;
 
 class CoachPanelTest extends TestCase
@@ -103,6 +106,16 @@ class CoachPanelTest extends TestCase
         $this->actingAs($owner)->get("http://a.test/coach/programs/{$program->id}/bearbeiten")->assertOk()->assertSee('Testkurs A');
         $this->actingAs($owner)->get('http://a.test/coach/offers')->assertOk()->assertSee('Paket A');
         $this->actingAs($owner)->get("http://a.test/coach/offers/{$offer->id}/bearbeiten")->assertOk();
+
+        $cur->run($this->a, function () use ($owner, $offer) {
+            Filament::setCurrentPanel(Filament::getPanel('coach'));
+            $this->actingAs($owner);
+            Livewire::test(EditOffer::class, ['record' => $offer->id])
+                ->fillForm(['title' => 'Paket A neu', 'slug' => 'Paket A'])->call('save')->assertHasFormErrors(['slug']);
+            Livewire::test(EditOffer::class, ['record' => $offer->id])
+                ->fillForm(['title' => 'Paket A neu', 'slug' => ''])->call('save')->assertHasNoFormErrors();
+        });
+        $this->assertSame('paket-a-neu', $offer->fresh()->slug);
 
         $cur->run($this->a, function () use ($program) {
             Event::create(['program_id' => $program->id, 'title' => 'Call Woche 1', 'starts_at' => now()->addDay()]);

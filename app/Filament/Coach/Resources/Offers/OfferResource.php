@@ -59,7 +59,7 @@ class OfferResource extends Resource
             ])->columns(3),
 
             Section::make('Verkauf')->description('Preis und Auftritt. Der Kauflink führt in die App, die Website zeigt das Angebot über den Shortcode. Ohne Preis ist das Angebot nur von Hand vergebbar.')->schema([
-                TextInput::make('slug')->label('Kurzname im Link')->maxLength(120)->placeholder('entsteht aus dem Titel')->helperText('Nur Kleinbuchstaben, Ziffern und Bindestrich.')->rule('nullable|regex:/^[a-z0-9-]+$/'),
+                TextInput::make('slug')->label('Kurzname im Link')->maxLength(120)->placeholder('entsteht aus dem Titel')->helperText('Nur Kleinbuchstaben, Ziffern und Bindestrich.')->rules(['nullable', 'regex:/^[a-z0-9-]+$/']),
                 Toggle::make('settings.sichtbar')->label('Öffentlich sichtbar (Liste auf Website und in der App)')->inline(false),
                 TextInput::make('settings.preis_chf')->label('Preis CHF')->numeric()->step(0.05)->minValue(0),
                 TextInput::make('settings.preis_eur')->label('Preis EUR')->numeric()->step(0.05)->minValue(0),
