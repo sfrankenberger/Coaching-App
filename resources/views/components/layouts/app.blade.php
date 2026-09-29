@@ -61,6 +61,7 @@
     @stack('head')
 </head>
 <body @class([$body, 'ohne-leiste' => $person && ! $arbeitsplatz, 'mit-als' => (bool) $alsEcht])>
+    <div class="oben">
     @if ($alsEcht)
         <div class="als-balken">
             <span><i class="fa-solid fa-eye"></i> Du siehst die App als <b>{{ $person->name }}</b> ({{ $person->roleIn()?->label() }})</span>
@@ -100,6 +101,7 @@
             @endauth
         </div>
     </header>
+    </div>
 
     @auth
         <div class="pull" aria-hidden="true"><i class="fa-solid fa-rotate-right"></i></div>
@@ -153,6 +155,9 @@
                                     <button type="submit"><i class="fa-solid fa-briefcase"></i>Zurück zum Arbeitsplatz</button>
                                 </form>
                             </li>
+                        @endif
+                        @if ($person?->is_platform_admin && ! $kannVerwalten)
+                            <li><a href="/coach"><i class="fa-solid fa-sliders"></i>Verwaltung</a></li>
                         @endif
                         <li><a href="{{ route('home') }}" @class(['aktiv' => $ist('home')])><i class="fa-solid fa-house"></i>Übersicht</a></li>
                         <li><a href="{{ route('gespraech.index') }}" @class(['aktiv' => $ist('gespraech.*')])><i class="fa-solid fa-user-group"></i>1:1 Coaching mit {{ $branding->coachName() }} @if ($ungelesen)<span class="zahl">{{ $ungelesen }}</span>@endif</a></li>

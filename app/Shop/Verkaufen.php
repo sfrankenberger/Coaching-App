@@ -6,12 +6,14 @@ use App\Auth\MagicLink;
 use App\Mail\RechnungMail;
 use App\Models\CoachNote;
 use App\Models\Offer;
+use App\Models\Program;
 use App\Models\User;
 use App\Models\Verkauf;
 use App\Programs\ProgramAccess;
 use App\Tenancy\CurrentTenant;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Mail;
+use Illuminate\Support\Str;
 use RuntimeException;
 
 /**
@@ -89,9 +91,33 @@ class Verkaufen
         return $v;
     }
 
-    /** In die Programme des Angebots aufnehmen, bei 1:1 mit zusaetzlichen Sitzungen. */
+    /**
+     * In die Programme des Angebots aufnehmen, bei 1:1 mit zusaetzlichen Sitzungen. Ein 1:1-Angebot ohne
+     * Programme steht fuer die Begleitung je Person: die entsteht hier (oder wird weiterverwendet).
+     */
     protected function programmeGeben(User $user, Offer $offer, int $sitzungen): void
     {
+        if ($offer->type === 'one_on_one' && $offer->programs->isEmpty()) {
+            $p = Program::where('type', 'one_on_one')->whereHas('members', fn ($q) => $q->where('user_id', $user->id))->first();
+            if (! $p) {
+                $gesamt = $sitzungen ?: (int) ($offer->settings['sitzungen'] ?? 0);
+                $p = Program::create([
+                    'slug' => Str::slug('1-1 '.$user->name.' '.Str::lower(Str::random(4))),
+                    'title' => '1:1 Begleitung '.$user->name,
+                    'type' => 'one_on_one', 'pacing' => 'none', 'is_published' => true,
+                    'settings' => ['sitzungen_gesamt' => $gesamt ?: null, 'teilen' => true],
+                ]);
+                $this->access->join($user, $p);
+
+                return;
+            }
+            $pm = $this->access->join($user, $p);
+            if ($sitzungen > 0) {
+                $pm->forceFill(['settings' => array_merge($pm->settings ?? [], ['sitzungen_extra' => (int) ($pm->settings['sitzungen_extra'] ?? 0) + $sitzungen])])->save();
+            }
+
+            return;
+        }
         foreach ($offer->programs as $p) {
             $pm = $this->access->join($user, $p);
             if ($p->type === 'one_on_one' && $sitzungen > 0) {

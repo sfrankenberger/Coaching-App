@@ -39,7 +39,7 @@ class OfferResource extends Resource
 
     protected static ?string $pluralModelLabel = 'Angebote';
 
-    protected static ?string $navigationLabel = 'Angebote und Zugänge';
+    protected static ?string $navigationLabel = 'Angebote';
 
     protected static ?int $navigationSort = 20;
 

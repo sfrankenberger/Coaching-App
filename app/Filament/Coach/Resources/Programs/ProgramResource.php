@@ -27,7 +27,7 @@ class ProgramResource extends Resource
 
     protected static ?string $pluralModelLabel = 'Programme';
 
-    protected static ?string $navigationLabel = 'Programme';
+    protected static ?string $navigationLabel = 'Kurse und Programme';
 
     protected static ?int $navigationSort = 10;
 

@@ -179,6 +179,22 @@ class VerkaufTest extends TestCase
         $this->assertTrue($this->in(fn () => Entitlement::where('user_id', $this->anna->id)->first()->isCurrent()));
     }
 
+    public function test_ein_1zu1_angebot_legt_die_begleitung_je_person_an(): void
+    {
+        Mail::fake();
+        $offer = $this->in(fn () => Offer::create(['title' => '1:1 Coaching', 'type' => 'one_on_one', 'is_active' => true, 'settings' => ['sitzungen' => 4]]));
+        $this->actingAs($this->lea)->post("http://a.test/coachees/{$this->m->id}/zugang", ['offer_id' => $offer->id, 'betrag' => 0])->assertRedirect();
+        $p = $this->in(fn () => Program::where('type', 'one_on_one')->first());
+        $this->assertSame('1:1 Begleitung Anna Muster', $p->title);
+        $this->assertSame(4, $p->settings['sitzungen_gesamt']);
+        $this->assertTrue($this->in(fn () => $p->members()->where('user_id', $this->anna->id)->exists()));
+        // Zweiter Kauf: dieselbe Begleitung, Sitzungen kommen dazu
+        $this->actingAs($this->lea)->post("http://a.test/coachees/{$this->m->id}/zugang", ['offer_id' => $offer->id, 'betrag' => 0, 'sitzungen' => 2])->assertRedirect();
+        $this->assertSame(1, $this->in(fn () => Program::where('type', 'one_on_one')->count()));
+        $this->assertSame(2, $this->in(fn () => $p->members()->where('user_id', $this->anna->id)->first()->settings['sitzungen_extra']));
+        $this->actingAs($this->anna)->get('http://a.test/profil')->assertOk()->assertSee('6 von 6 offen');
+    }
+
     public function test_mandant_b_sieht_verkaeufe_von_a_nicht(): void
     {
         Mail::fake();
