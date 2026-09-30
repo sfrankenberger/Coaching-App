@@ -4,7 +4,11 @@ namespace App\Filament\Coach\Pages;
 
 use App\Audio\Transkript;
 use App\Enums\Role;
+use App\Notifications\Nachricht;
+use App\Notifications\Notifier;
+use App\Tenancy\Branding;
 use App\Tenancy\CurrentTenant;
+use App\Tenancy\MandantenMail;
 use BackedEnum;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\Textarea;
@@ -51,6 +55,9 @@ class Verbindungen extends Page
         'stripe_public_key' => ['stripe.public_key', false],
         'stripe_secret_key' => ['stripe.secret_key', true],
         'stripe_webhook_secret' => ['stripe.webhook_secret', true],
+        'mailgun_domain' => ['mail.mailgun_domain', false],
+        'mailgun_secret' => ['mail.mailgun_secret', true],
+        'mailgun_endpoint' => ['mail.mailgun_endpoint', false],
     ];
 
     public static function canAccess(): bool
@@ -115,6 +122,11 @@ class Verbindungen extends Page
             Section::make('Google-Kalender')->description('Dienstkonto für die Buchung (JSON aus der Google Cloud Console).')->schema([
                 Textarea::make('google_service_account')->label('Dienstkonto (JSON)')->rows(4)->placeholder(fn () => $this->stand('google.service_account')),
             ]),
+            Section::make('Mailgun')->description('Mails über das eigene Mailgun-Konto. Domain und API-Schlüssel aus dem Mailgun-Dashboard (Sending, Domain settings). Leer: die Mails gehen über die Plattform. Absenderadresse und -name stehen in den Einstellungen.')->schema([
+                TextInput::make('mailgun_domain')->label('Sende-Domain')->placeholder('mg.deine-domain.ch')->maxLength(200),
+                $this->geheim('mailgun_secret', 'API-Schlüssel', 'mail.mailgun_secret'),
+                Select::make('mailgun_endpoint')->label('Region')->options(['api.eu.mailgun.net' => 'EU (api.eu.mailgun.net)', 'api.mailgun.net' => 'USA (api.mailgun.net)'])->default('api.eu.mailgun.net')->native(false),
+            ])->columns(3),
             Section::make('Stripe')->description('Kasse mit Karte und Twint (Etappe 10). Schlüssel aus dem Stripe-Dashboard unter Entwickler, API-Schlüssel; das Webhook-Secret kommt beim Anlegen des Webhooks. Die Kasse nutzt sie, sobald sie freigeschaltet ist.')->schema([
                 TextInput::make('stripe_public_key')->label('Publishable Key')->placeholder('pk_live_...')->maxLength(200),
                 $this->geheim('stripe_secret_key', 'Secret Key', 'stripe.secret_key'),
@@ -153,5 +165,24 @@ class Verbindungen extends Page
         $tenant->forceFill(['settings' => $s])->save();
 
         Notification::make()->title('Gespeichert')->success()->send();
+    }
+
+    /** Eine Test-Mail an die eigene Adresse, ueber den Weg, der gerade gilt (eigenes Mailgun oder Plattform). */
+    public function testMail(): void
+    {
+        $tenant = app(CurrentTenant::class)->getOrFail()->fresh();
+        app(CurrentTenant::class)->set($tenant);
+        $user = auth()->user();
+        try {
+            app(Notifier::class)->send([$user->id], new Nachricht(
+                titel: 'Test-Mail aus '.app(Branding::class)->appName(),
+                text: 'Wenn diese Mail ankommt, stimmt der Mailversand'.(MandantenMail::eigenes($tenant) ? ' über dein Mailgun-Konto ('.$tenant->setting('mail.mailgun_domain').').' : ' über die Plattform.')."\nAbsender: ".($tenant->setting('mail.from_address') ?: config('mail.from.address')),
+                url: url('/coach/verbindungen'), anlass: 'system', tag: 'testmail', mailImmer: true, inApp: false, knopf: 'Zu den Verbindungen',
+            ));
+            Notification::make()->title('Test-Mail an '.$user->email.' geschickt')->body('Schau ins Postfach, auch im Spam.')->success()->send();
+        } catch (\Throwable $e) {
+            report($e);
+            Notification::make()->title('Test-Mail fehlgeschlagen')->body(mb_substr($e->getMessage(), 0, 300))->danger()->send();
+        }
     }
 }

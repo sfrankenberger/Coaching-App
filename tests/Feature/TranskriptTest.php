@@ -8,12 +8,14 @@ use App\Models\Conversation;
 use App\Models\Message;
 use App\Models\Tenant;
 use App\Models\User;
+use App\Notifications\AppNotification;
 use App\Tenancy\CurrentTenant;
 use Filament\Facades\Filament;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Notification;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Sleep;
 use Livewire\Livewire;
@@ -121,5 +123,25 @@ class TranskriptTest extends TestCase
             $this->actingAs($this->anna);
             $this->assertFalse(Verbindungen::canAccess());
         });
+    }
+
+    public function test_mailgun_je_mandant_und_testmail(): void
+    {
+        $this->a->forceFill(['settings' => ['mail' => ['mailgun_domain' => 'mg.a.test', 'mailgun_secret' => 'key-a', 'from_address' => 'hallo@a.test']]])->save();
+        $vorher = config('services.mailgun.domain');
+        $this->in(function () {
+            $this->assertSame('mg.a.test', config('services.mailgun.domain'));
+            $this->assertSame('key-a', config('services.mailgun.secret'));
+            $this->assertSame('mailgun', config('mail.default'));
+        });
+        $this->assertSame($vorher, config('services.mailgun.domain'), 'nach dem Lauf wieder die Plattform');
+
+        Notification::fake();
+        $this->in(function () {
+            Filament::setCurrentPanel(Filament::getPanel('coach'));
+            $this->actingAs($this->lea);
+            Livewire::test(Verbindungen::class)->call('testMail');
+        });
+        Notification::assertSentTo($this->lea, AppNotification::class, fn ($n, $channels) => str_starts_with($n->nachricht->titel, 'Test-Mail') && in_array('mail', $channels, true) && str_contains($n->nachricht->text, 'mg.a.test'));
     }
 }
