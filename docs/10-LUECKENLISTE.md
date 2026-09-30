@@ -1,6 +1,6 @@
 # 10 Lueckenliste: alter Mitgliederbereich gegen die App, Funktion fuer Funktion
 
-Stand 30.09.2026, App-Stand f337175 auf `main`.
+Stand 30.09.2026, App-Stand f337175 auf `main` (Luecken erhoben); Umsetzung bis a6fcbd6, siehe "Stand der Umsetzung" unten: alle 36 Punkte sind gebaut, offen bleiben Instagram (28, nur auf Wunsch), das Abschalten von WooCommerce (docs/07, 4b) und von Mailster (Roadmap Etappe 11), beides Handarbeit beim Umschalten.
 
 ## Warum diese Liste
 
