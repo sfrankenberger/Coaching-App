@@ -4,7 +4,7 @@ use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
 
-/** Papierkorb: Geloeschtes bleibt 90 Tage wiederherstellbar (SoftDeletes auf 24 Tabellen). */
+/** Papierkorb: Geloeschtes bleibt 90 Tage wiederherstellbar (SoftDeletes auf 25 Tabellen). */
 return new class extends Migration
 {
     public const TABELLEN = [
@@ -32,6 +32,7 @@ return new class extends Migration
         'tools',
         'wissen',
         'sammlungen',
+        'projekte',
     ];
 
     public function up(): void

@@ -64,6 +64,10 @@ class TaskResource extends Resource
                 Toggle::make('fuer_programm')->label('An alle im Programm')->dehydrated(false)->live()
                     ->visible(fn ($livewire) => $livewire instanceof CreateTask)
                     ->helperText('Legt für jede Teilnehmerin eine eigene Aufgabe an. Wer später dazukommt, bekommt sie auch.'),
+                Select::make('kind')->label('Art der Aufgabe')->options(collect(Task::KINDS)->map(fn ($k) => $k[0])->all())->default('haken')->native(false)
+                    ->helperText('Bestimmt den Knopf an der Aufgabe: Notiz oder Reflexion schreiben, Frage stellen, Aufzeichnung ansehen, Termin buchen.'),
+                Select::make('weekday')->label('Wochentag')->options(Task::WEEKDAYS)->native(false)->placeholder('Kein fester Tag')
+                    ->helperText('Mit der Woche des Kurses ergibt das die Fälligkeit, auch für Erinnerungen.'),
                 DatePicker::make('due_at')->label('Bis')->native(false)->displayFormat('d.m.Y'),
                 TextInput::make('due_time')->label('Uhrzeit')->placeholder('19:00')->maxLength(5),
                 Toggle::make('is_daily')->label('Jeden Tag'),

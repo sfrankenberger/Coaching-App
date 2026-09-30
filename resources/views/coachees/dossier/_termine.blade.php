@@ -13,7 +13,16 @@
 
 <details id="zeiten" class="karte" @if ($errors->has('zeiten')) open @endif>
     <summary class="cursor-pointer" style="font-weight:600">Zeiten vorschlagen</summary>
-    <p class="hinweis mt-1">{{ $person->vorname() }} sieht die Zeiten im Gespräch und tippt eine an. Daraus wird der Termin.</p>
+    <p class="hinweis mt-1">{{ $person->vorname() }} sieht die Zeiten im Gespräch und tippt eine an. Daraus wird der Termin, mit Kalendereintrag und Bestätigung.</p>
+    @if (($freieZeiten ?? collect())->isNotEmpty())
+        <form method="post" action="{{ route('coachees.vorschlag', $m) }}" class="mb-3">
+            @csrf
+            @foreach ($freieZeiten as $z)<input type="hidden" name="zeiten[]" value="{{ $z->format('Y-m-d\TH:i') }}">@endforeach
+            <input type="hidden" name="dauer" value="60">
+            <input type="hidden" name="text" value="Hallo {{ $person->vorname() }}, diese Zeiten hätte ich für unser nächstes Gespräch. Tipp einfach die an, die dir passt.">
+            <button type="submit" class="knopf knopf-klein"><i class="fa-solid fa-wand-magic-sparkles"></i>Drei freie Zeiten vorschlagen: {{ $freieZeiten->map(fn ($z) => $z->translatedFormat('D j.n., H:i'))->join(' · ') }}</button>
+        </form>
+    @endif
     <form method="post" action="{{ route('coachees.vorschlag', $m) }}">
         @csrf
         @for ($i = 0; $i < 3; $i++)

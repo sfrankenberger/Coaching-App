@@ -33,14 +33,29 @@ class Reflection extends Model
         return ['shared_at' => 'datetime'];
     }
 
+    public function projekt(): BelongsTo
+    {
+        return $this->belongsTo(Projekt::class, 'project_id');
+    }
+
     public function user(): BelongsTo
     {
         return $this->belongsTo(User::class);
     }
 
+    public function step(): BelongsTo
+    {
+        return $this->belongsTo(ProgramStep::class, 'step_id');
+    }
+
     public function program(): BelongsTo
     {
         return $this->belongsTo(Program::class);
+    }
+
+    public function reactions(): MorphMany
+    {
+        return $this->morphMany(Reaction::class, 'reactable');
     }
 
     public function comments(): MorphMany

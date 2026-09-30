@@ -43,6 +43,9 @@ class ProgressTracker
         $done ??= $row->completed_at === null;
         $row->completed_at = $done ? now() : null;
         $row->save();
+        if ($done) {
+            app(Strecke::class)->pruefen($user, $unit);
+        }
 
         return $done;
     }

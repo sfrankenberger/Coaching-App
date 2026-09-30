@@ -35,8 +35,13 @@
         @if ($versteckt)
             <a href="{{ route('gespraech.show', [$conv, 'alle' => 1]) }}" class="knopf knopf-leise self-center knopf-klein">{{ $versteckt }} ältere Nachrichten zeigen</a>
         @endif
+        @php $trenner = false; @endphp
         @forelse ($messages as $m)
-            @include('gespraech._nachricht', ['m' => $m])
+            @if (! $trenner && $neuAb && $m->created_at->gt($neuAb) && $m->user_id !== $ich->id)
+                @php $trenner = true; @endphp
+                <div class="neu-trenner" data-neu-trenner><span>Neu</span></div>
+            @endif
+            @include('gespraech._nachricht', ['m' => $m, 'neu' => $trenner])
         @empty
             <p class="hinweis text-center py-6" data-leer>{{ $conv->isDirect() ? 'Noch keine Nachricht. Schreib, was dich beschäftigt.' : 'Noch nichts geschrieben. Mach den Anfang.' }}</p>
         @endforelse

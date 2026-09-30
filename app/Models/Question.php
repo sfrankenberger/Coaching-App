@@ -9,7 +9,9 @@ use App\Tenancy\Concerns\BelongsToTenant;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\MorphMany;
+use Illuminate\Support\Collection;
 
 /** Frage an die Coachin im Kursraum. */
 class Question extends Model
@@ -23,8 +25,10 @@ class Question extends Model
     {
         // Antworten sind Kommentare mit Papierkorb: beim endgueltigen Loeschen der Frage gehen sie endgueltig mit
         static::forceDeleting(function (Question $q) {
+            Reaction::where('reactable_type', 'comment')->whereIn('reactable_id', $q->answers()->withTrashed()->pluck('id'))->delete();
             $q->answers()->withTrashed()->get()->each->forceDelete();
             $q->reactions()->delete();
+            $q->states()->delete();
         });
     }
 
@@ -41,9 +45,12 @@ class Question extends Model
 
     protected $guarded = [];
 
+    /** Reaktionen an einer Frage: Sehe ich auch so, Die Frage habe ich auch, Das bewegt mich. */
+    public const REAKTIONEN = ['ja', 'auchich', 'herz'];
+
     protected function casts(): array
     {
-        return ['answered_at' => 'datetime'];
+        return ['answered_at' => 'datetime', 'last_answer_at' => 'datetime'];
     }
 
     public function user(): BelongsTo
@@ -56,9 +63,43 @@ class Question extends Model
         return $this->belongsTo(Program::class);
     }
 
+    /** Alle Antworten, auch die auf Antworten. */
     public function answers(): MorphMany
     {
         return $this->morphMany(Comment::class, 'commentable')->orderBy('created_at');
+    }
+
+    /** Nur die erste Ebene, die Antworten darauf haengen als children dran. */
+    public function antwortenBaum(string $sort = 'alt'): Collection
+    {
+        $alle = $this->relationLoaded('answers') ? $this->answers : $this->answers()->with(['user:id,name', 'reactions'])->get();
+        $eltern = $alle->whereNull('parent_id');
+        $kinder = $alle->whereNotNull('parent_id')->groupBy('parent_id');
+        $eltern->each(fn (Comment $c) => $c->setRelation('children', $kinder->get($c->id, collect())->values()));
+
+        $eltern = match ($sort) {
+            'neu' => $eltern->sortByDesc('created_at'),
+            'herz' => $eltern->sortByDesc(fn (Comment $c) => [$c->reactions->count(), $c->created_at->timestamp]),
+            default => $eltern->sortBy('created_at'),
+        };
+
+        // Die beste Antwort steht immer oben
+        return $eltern->sortByDesc('is_best')->values();
+    }
+
+    public function states(): HasMany
+    {
+        return $this->hasMany(QuestionState::class);
+    }
+
+    public function stateFor(User $user): ?QuestionState
+    {
+        return $this->states->firstWhere('user_id', $user->id);
+    }
+
+    public function istZu(): bool
+    {
+        return $this->status === 'zu';
     }
 
     public function reactions(): MorphMany

@@ -54,6 +54,9 @@ class AppNotification extends Notification implements ShouldQueue
             if ($from) {
                 $mail->from($from, $tenant->setting('mail.from_name', $tenant->name));
             }
+            if ($this->nachricht->anhang) {
+                $mail->attachData($this->nachricht->anhang['inhalt'], $this->nachricht->anhang['name'], ['mime' => $this->nachricht->anhang['typ'] ?? 'application/octet-stream']);
+            }
 
             return $mail;
         });

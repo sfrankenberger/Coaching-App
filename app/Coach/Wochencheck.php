@@ -94,7 +94,7 @@ class Wochencheck
             $leute = ProgramMember::where('program_id', $p->id)->where('role_in_program', '!=', 'coach')->whereNotIn('user_id', $team)->pluck('user_id');
             if ($leute->isNotEmpty() && $s->unlocks_at) {
                 $bis = $s->unlocks_at->copy()->addWeek();
-                $mit = Reflection::whereIn('user_id', $leute)->whereBetween('created_at', [$s->unlocks_at, $bis])->pluck('user_id')->unique();
+                $mit = Reflection::whereIn('user_id', $leute)->where(fn ($q) => $q->where('step_id', $s->id)->orWhere(fn ($w) => $w->whereNull('step_id')->whereBetween('created_at', [$s->unlocks_at, $bis])))->pluck('user_id')->unique();
                 $ohne = User::whereIn('id', $leute->diff($mit))->get()->map->vorname()->sort()->values();
                 $refl = $termine->firstWhere('type', 'reflection_day');
                 $z[] = [$refl && $refl->starts_at->isPast() ? $ohne->isEmpty() : null,

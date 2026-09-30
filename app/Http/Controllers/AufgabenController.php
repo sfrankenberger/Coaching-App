@@ -2,10 +2,13 @@
 
 namespace App\Http\Controllers;
 
+use App\Coach\Geteilt;
 use App\Http\Requests\AufgabeRequest;
+use App\Models\Projekt;
 use App\Models\Task;
 use App\Programs\ProgramAccess;
 use App\Support\Anhaenge;
+use App\Support\Filter;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -19,20 +22,21 @@ class AufgabenController extends Controller
     public function index(Request $request): View
     {
         $user = $request->user();
-        $suche = mb_strtolower(trim((string) $request->query('q', '')));
+        $filter = Filter::aus($request);
 
-        $tasks = Task::where('user_id', $user->id)->with(['assigner:id,name', 'program:id,title', 'anhaenge.ziel'])
+        $tasks = Task::where('user_id', $user->id)->with(['assigner:id,name', 'program:id,title', 'anhaenge.ziel', 'projekt:id,name,farbe,icon', 'comments'])
             ->orderByRaw('CASE WHEN done_at IS NULL THEN 0 ELSE 1 END')->orderByDesc('is_pinned')->orderBy('due_at')->orderByDesc('created_at')
             ->get()
-            ->filter(fn (Task $t) => $suche === '' || str_contains(mb_strtolower($t->title.' '.$t->body), $suche));
+            ->filter(fn (Task $t) => $filter->passt($t));
 
         return view('aufgaben.index', [
             'offen' => $tasks->filter(fn (Task $t) => ! $t->isDone())->values(),
             'fertig' => $tasks->filter(fn (Task $t) => $t->isDone())->values(),
             'kurse' => $this->access->programsFor($user)->pluck('title', 'id'),
-            'gemeinschaft' => $this->access->gemeinschaftFor($user)->pluck('id'),
-            'bearbeiten' => $request->query('bearbeiten') ? $tasks->firstWhere('id', (int) $request->query('bearbeiten')) : null,
-            'suche' => $suche,
+            'projekte' => Projekt::where('user_id', $user->id)->orderBy('name')->get(['id', 'name', 'farbe', 'icon']),
+            'gemeinschaft' => $this->access->gemeinschaftFor($user)->pluck('title', 'id'),
+            'filter' => $filter,
+            'bearbeiten' => $request->query('bearbeiten') ? Task::where('user_id', $user->id)->find((int) $request->query('bearbeiten')) : null,
         ]);
     }
 
@@ -41,6 +45,9 @@ class AufgabenController extends Controller
         $data = $request->daten();
         $task = Task::create($data + ['user_id' => $request->user()->id, 'source' => $data['unit_id'] ?? null ? 'exercise' : 'manual']);
         app(Anhaenge::class)->speichern($task, $request->input('refs'), $request->user());
+        if ($task->visibility !== 'private') {
+            app(Geteilt::class)->melden($request->user(), $task);
+        }
 
         // Aus der Wochen- oder Einheitsseite angelegt: dorthin zurueck
         $zurueck = (string) $request->input('zurueck', '');
@@ -54,8 +61,12 @@ class AufgabenController extends Controller
     public function update(AufgabeRequest $request, Task $aufgabe): RedirectResponse
     {
         Gate::authorize('update', $aufgabe);
+        $vorher = $aufgabe->visibility;
         $aufgabe->update($request->daten());
         app(Anhaenge::class)->speichern($aufgabe, $request->input('refs'), $request->user());
+        if ($vorher === 'private' && $aufgabe->visibility !== 'private') {
+            app(Geteilt::class)->melden($request->user(), $aufgabe);
+        }
 
         return redirect()->route('aufgaben.index')->with('meldung', 'Gespeichert.');
     }

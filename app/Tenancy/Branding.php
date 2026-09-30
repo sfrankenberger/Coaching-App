@@ -3,6 +3,7 @@
 namespace App\Tenancy;
 
 use App\Models\Tenant;
+use App\Models\User;
 
 /**
  * Liest das Branding des aktuellen Mandanten (tenants.branding) und liefert
@@ -95,6 +96,12 @@ class Branding
     }
 
     /** Name der Coachin fuer Texte ("Fragen an Lea"): settings.coach_name, sonst Vorname der Inhaberin, sonst Fallback. */
+    /** Die Coachin selbst (erste Inhaberin), fuer Bild und Name, wenn das Team fuer sie schreibt. */
+    public function coach(): ?User
+    {
+        return $this->current->get()?->owners()->orderBy('memberships.id')->first();
+    }
+
     public function coachName(?string $fallback = null): string
     {
         $tenant = $this->current->get();

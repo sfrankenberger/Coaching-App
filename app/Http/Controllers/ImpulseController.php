@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Content\Inhalte;
 use App\Models\PodcastEpisode;
 use App\Models\Post;
+use App\Support\Besuche;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
 
@@ -15,6 +16,7 @@ class ImpulseController extends Controller
 
     public function index(Request $request): View
     {
+        app(Besuche::class)->merken($request->user(), 'impulse');
         $user = $request->user();
         $filter = (string) $request->query('f', '');
         $suche = mb_strtolower(trim((string) $request->query('q', '')));

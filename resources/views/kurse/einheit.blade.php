@@ -28,7 +28,7 @@
     @endif
 
     @if ($videos)
-        @php $erstes = \App\Support\Video::embed($videos[0]['url']); @endphp
+        @php $erstes = \App\Support\Video::embed($videos[0]['url']); $stand = app(\App\Support\Medienstand::class); $position = $stand->fuer(auth()->user(), 'unit-'.$unit->id)?->seconds; @endphp
         <x-karte class="!p-2">
             @if ($erstes)
                 @if ($position)<p class="hinweis" style="margin:4px 6px 8px"><i class="fa-solid fa-clock-rotate-left"></i> Du warst bei {{ gmdate($position >= 3600 ? 'G:i:s' : 'i:s', $position) }}, es geht dort weiter.</p>@endif
@@ -46,16 +46,42 @@
                 <ol class="mt-2 divide-y divide-line">
                     @foreach ($videos as $i => $v)
                         @php $e = \App\Support\Video::embed($v['url']); @endphp
+                        @php $key = 'unit-'.$unit->id.($i ? '-'.$i : ''); $proz = $stand->prozent(auth()->user(), $key); $info = $unit->videoInfo($v['url']); @endphp
                         <li>
-                            <button type="button" class="video-wahl flex w-full items-center gap-3 px-3 py-2 text-left {{ $i === 0 ? 'text-primary font-semibold' : '' }}" data-src="{{ $e['src'] ?? '' }}" data-kind="{{ $e['kind'] ?? '' }}">
-                                <span class="size-6 shrink-0 rounded-full bg-line grid place-items-center text-xs">{{ $i + 1 }}</span>
-                                <span class="text-md">{{ $v['title'] ?: 'Video '.($i + 1) }}</span>
+                            <button type="button" class="video-wahl flex w-full items-center gap-3 px-3 py-2 text-left {{ $i === 0 ? 'text-primary font-semibold' : '' }}" data-src="{{ $e['src'] ?? '' }}" data-kind="{{ $e['kind'] ?? '' }}" data-index="{{ $i }}" data-medien="{{ $key }}" data-start="{{ (int) $stand->fuer(auth()->user(), $key)?->seconds }}">
+                                <span class="size-6 shrink-0 rounded-full bg-line grid place-items-center text-xs">{{ $proz !== null && $proz >= 80 ? '✓' : $i + 1 }}</span>
+                                <span class="min-w-0 flex-1"><span class="text-md block">{{ $v['title'] ?: 'Video '.($i + 1) }}</span>@if ($info?->duration || ($proz !== null && $proz < 80))<span class="hinweis">{{ $info?->duration }}@if ($proz !== null && $proz < 80 && $proz > 0) · {{ $proz }} % gesehen @endif</span>@endif</span>
+                                @if ($proz !== null && $proz < 80 && $proz > 0)<span class="stand-balken"><span style="width:{{ $proz }}%"></span></span>@endif
                             </button>
                         </li>
                     @endforeach
                 </ol>
             @endif
         </x-karte>
+        {{-- Kapitel und "Zum Nachlesen, worum es ging" je Video (wie lea-lektion-kapitel), nur das laufende ist sichtbar --}}
+        @foreach ($videos as $i => $v)
+            @php $info = $unit->videoInfo($v['url']); @endphp
+            @if ($info && ($info->summary || $info->transcript))
+                <div data-video-info="{{ $i }}" @if ($i !== 0) hidden @endif>
+                    @if ($info->summary)
+                        <x-karte>
+                            <x-kapitel :text="$info->summary" />
+                            <details @if (! \App\Support\Kapitel::liste($info->summary)) open @endif>
+                                <summary class="t cursor-pointer"><i class="fa-solid fa-book-open" style="color:var(--c-primary)"></i> Zum Nachlesen, worum es ging</summary>
+                                <div class="prose-app mt-2">{{ \App\Support\Kapitel::html($info->summary) }}</div>
+                                <p class="hinweis m-0 mt-2">Tipp auf eine Zeitmarke, dann springt das Video an die Stelle. Die Zusammenfassung ist automatisch erstellt.</p>
+                            </details>
+                        </x-karte>
+                    @endif
+                    @if ($info->transcript)
+                        <details class="karte">
+                            <summary class="t cursor-pointer">Abschrift</summary>
+                            <div class="lesetext whitespace-pre-line" style="margin-top:10px;font-size:var(--fs-md)">{{ $info->transcript }}</div>
+                        </details>
+                    @endif
+                </div>
+            @endif
+        @endforeach
     @endif
 
     @if ($unit->body)
@@ -300,7 +326,16 @@
         </form>
     </x-karte>
 
+    @if (($goldnuggets ?? collect())->isNotEmpty() && ! $erledigt)
+        <div class="karte mt-3" style="background:var(--c-success-soft)">
+            <p class="m-0 mb-2"><b>Deine Goldnuggets kommen gleich per Mail.</b> Sobald du diesen Schritt abhakst, bekommst du sie zugeschickt, damit du sie hast, auch wenn du diese Seite nie wieder öffnest.</p>
+            <ul class="m-0 pl-5 lesetext">@foreach ($goldnuggets as $z)<li>{{ $z }}</li>@endforeach</ul>
+        </div>
+    @endif
     <p class="meldung meldung-gut mt-3" data-erledigt-hinweis hidden><i class="fa-solid fa-circle-check"></i> Video fast fertig geschaut, die Einheit ist als erledigt markiert.</p>
+    @unless (in_array($program->type, ['one_on_one', 'workbook'], true))
+        <p class="mt-3 m-0"><a href="{{ route('kurse.fragen', [$program, 'frage' => 1, 'titel' => 'Frage zu «'.$unit->title.'»', 'ref' => ['unit:'.$unit->id]]) }}" class="knopf knopf-leise knopf-klein"><i class="fa-solid fa-circle-question"></i>Frage dazu stellen</a></p>
+    @endunless
     <div class="mt-4 flex flex-wrap items-center justify-between gap-3">
         <form method="post" action="{{ route('kurse.erledigt', [$program, $unit]) }}" data-erledigt>
             @csrf

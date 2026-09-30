@@ -140,6 +140,6 @@ class BegleitungTest extends TestCase
         $this->actingAs($this->anna)->post("http://a.test/reflexion/{$r->id}/nachtrag", ['addendum' => 'Noch was'])->assertRedirect();
         $this->assertSame('Noch was', $r->fresh()->addendum);
 
-        $this->actingAs($this->anna)->get('http://a.test/journal')->assertOk()->assertSee('Meine Aufgaben')->assertSee('Wochenreflexion');
+        $this->actingAs($this->anna)->get('http://a.test/journal')->assertOk()->assertSee('Aufgaben')->assertSee('Reflexion')->assertSee('Projekte')->assertSee('Viel');
     }
 }

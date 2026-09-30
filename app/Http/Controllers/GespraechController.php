@@ -57,11 +57,14 @@ class GespraechController extends Controller
         $total = $gespraech->messages()->count();
         $messages = $alle || $total <= 30 ? $q->get() : $q->skip($total - 30)->take(30)->get();
 
+        // Lesestand vor dem Markieren: davor ist alles Neue seit dem letzten Besuch (Trenner "Neu")
+        $neuAb = $gespraech->participant($user)?->last_read_at;
         $this->chat->markRead($gespraech, $user);
 
         return view('gespraech.show', [
             'conv' => $gespraech,
             'messages' => $messages,
+            'neuAb' => $neuAb,
             'versteckt' => $alle ? 0 : max(0, $total - 30),
             'gelesenBis' => $this->chat->readUntilByOthers($gespraech, $user),
             'gegenueber' => $this->gegenueber($gespraech, $user),

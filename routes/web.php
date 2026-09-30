@@ -16,6 +16,7 @@ use App\Http\Controllers\BuchhaltungController;
 use App\Http\Controllers\CoacheesController;
 use App\Http\Controllers\DossierController;
 use App\Http\Controllers\EinheitController;
+use App\Http\Controllers\ElementController;
 use App\Http\Controllers\FragenController;
 use App\Http\Controllers\GastBuchenController;
 use App\Http\Controllers\GespraechController;
@@ -34,8 +35,12 @@ use App\Http\Controllers\MitteilungenController;
 use App\Http\Controllers\NachschlagenController;
 use App\Http\Controllers\NotizenController;
 use App\Http\Controllers\ProfilController;
+use App\Http\Controllers\ProjekteController;
 use App\Http\Controllers\PushController;
+use App\Http\Controllers\ReaktionController;
 use App\Http\Controllers\ReflexionController;
+use App\Http\Controllers\StreckeController;
+use App\Http\Controllers\StripeController;
 use App\Http\Controllers\SucheController;
 use App\Http\Controllers\TelegramController;
 use App\Http\Controllers\TermineController;
@@ -54,6 +59,7 @@ Route::get('/manifest.webmanifest', fn (Branding $branding) => response()
 
 // Eingehende Webhooks (ohne Anmeldung, je Mandant ueber die Domain)
 Route::post('/hooks/telegram/{secret}', [TelegramController::class, 'webhook'])->name('hooks.telegram');
+Route::post('/hooks/stripe', [StripeController::class, 'webhook'])->name('hooks.stripe');
 Route::post('/hooks/woocommerce', WooCommerceController::class)->name('hooks.woocommerce');
 
 // Bruecke aus dem alten Mitgliederbereich (signierter Link, 60 Sekunden, einmalig)
@@ -61,6 +67,7 @@ Route::get('/sso', BridgeController::class)->name('sso');
 
 // Kalender-Abo (ohne Anmeldung, Schluessel je Person)
 Route::get('/kalender/{token}.ics', [KalenderController::class, 'abo'])->name('kalender.abo')->where('token', '[A-Za-z0-9]{32,64}');
+Route::get('/kalender/{token}/{program:slug}.ics', [KalenderController::class, 'abo'])->name('kalender.kurs')->where('token', '[A-Za-z0-9]{32,64}');
 
 // Klarheitsgespraech fuer Gaeste, ohne Anmeldung (Website verweist hierher)
 Route::get('/buchen/gast/{art}', [GastBuchenController::class, 'zeiten'])->name('buchen.gast');
@@ -71,6 +78,7 @@ Route::get('/buchen/gast/{art}/danke', [GastBuchenController::class, 'danke'])->
 Route::get('/kaufen/{angebot}', [KaufenController::class, 'show'])->name('kaufen');
 Route::post('/kaufen/{angebot}', [KaufenController::class, 'store'])->middleware('throttle:6,10')->name('kaufen.store');
 Route::get('/kaufen/{angebot}/danke', [KaufenController::class, 'danke'])->name('kaufen.danke');
+Route::get('/strecke/{program}/{user}/stopp', [StreckeController::class, 'stopp'])->middleware('signed')->name('strecke.stopp');
 
 // Anmelden
 Route::middleware('guest')->group(function () {
@@ -151,6 +159,7 @@ Route::middleware(['auth', 'membership'])->group(function () {
     Route::get('/material', [MaterialController::class, 'index'])->name('material.index');
     Route::get('/material/{material}', [MaterialController::class, 'show'])->name('material.show');
     Route::get('/material/{material}/datei', [MaterialController::class, 'datei'])->name('material.datei');
+    Route::post('/material/{material}/gesehen', [MaterialController::class, 'gesehen'])->name('material.gesehen');
     Route::post('/merken', [MaterialController::class, 'merken'])->name('merken');
     Route::get('/merkliste', [MerklisteController::class, 'index'])->name('merkliste');
 
@@ -199,6 +208,11 @@ Route::middleware(['auth', 'membership'])->group(function () {
 
     // Mein Journal: Aufgaben, Notizen, Reflexion
     Route::get('/journal', [JournalController::class, 'index'])->name('journal.index');
+    Route::get('/projekte', [ProjekteController::class, 'index'])->name('projekte.index');
+    Route::post('/projekte', [ProjekteController::class, 'store'])->name('projekte.store');
+    Route::post('/projekte/{projekt}', [ProjekteController::class, 'update'])->name('projekte.update');
+    Route::post('/projekte/{projekt}/schritt', [ProjekteController::class, 'schritt'])->name('projekte.schritt');
+    Route::delete('/projekte/{projekt}', [ProjekteController::class, 'destroy'])->name('projekte.destroy');
     Route::get('/aufgaben', [AufgabenController::class, 'index'])->name('aufgaben.index');
     Route::post('/aufgaben', [AufgabenController::class, 'store'])->name('aufgaben.store');
     Route::post('/aufgaben/{aufgabe}', [AufgabenController::class, 'update'])->name('aufgaben.update');
@@ -230,15 +244,23 @@ Route::middleware(['auth', 'membership'])->group(function () {
     // Fragen an die Coachin im Kursraum, Community = alle Fragen aus meinen Kursen
     Route::get('/community', [FragenController::class, 'community'])->name('community');
     Route::get('/community/wer-ist-dabei', [FragenController::class, 'leute'])->name('community.leute');
+    Route::post('/community/fragen', [FragenController::class, 'communityStore'])->middleware('throttle:20,10')->name('community.fragen.store');
     Route::get('/hilfe', [ProfilController::class, 'hilfeSeite'])->name('hilfe');
     Route::get('/kurse/{program:slug}/fragen', [FragenController::class, 'index'])->name('kurse.fragen');
     Route::post('/kurse/{program:slug}/fragen', [FragenController::class, 'store'])->middleware('throttle:20,10')->name('kurse.fragen.store');
     Route::get('/fragen/{frage}', [FragenController::class, 'show'])->name('fragen.show');
     Route::post('/fragen/{frage}/antworten', [FragenController::class, 'antworten'])->middleware('throttle:30,10')->name('fragen.antworten');
+    Route::get('/fragen/{frage}/neu', [FragenController::class, 'neu'])->name('fragen.neu');
+    Route::post('/fragen/{frage}/folgen', [FragenController::class, 'folgen'])->name('fragen.folgen');
     Route::post('/fragen/{frage}/status', [FragenController::class, 'status'])->name('fragen.status');
     Route::post('/fragen/{frage}/call', [FragenController::class, 'call'])->name('fragen.call');
     Route::delete('/fragen/{frage}', [FragenController::class, 'destroy'])->name('fragen.destroy');
     Route::delete('/antworten/{antwort}', [FragenController::class, 'antwortLoeschen'])->name('fragen.antwort.loeschen');
+    Route::patch('/antworten/{antwort}', [FragenController::class, 'antwortAendern'])->name('fragen.antwort.aendern');
+    Route::post('/antworten/{antwort}/beste', [FragenController::class, 'beste'])->name('fragen.antwort.beste');
+    Route::post('/element/{typ}/{id}/schnell', [ElementController::class, 'schnell'])->where('typ', 'note|task|reflection')->name('element.schnell');
+    Route::get('/notizen/{notiz}/foto', [NotizenController::class, 'foto'])->name('notizen.foto');
+    Route::post('/reaktion/{typ}/{id}', [ReaktionController::class, 'toggle'])->where('typ', 'note|task|reflection|projekt|question|comment')->middleware('throttle:60,1')->name('reaktion');
     Route::post('/kommentar', [KommentarController::class, 'store'])->middleware('throttle:30,1')->name('kommentar.store');
     Route::delete('/kommentar/{kommentar}', [KommentarController::class, 'destroy'])->name('kommentar.destroy');
 });

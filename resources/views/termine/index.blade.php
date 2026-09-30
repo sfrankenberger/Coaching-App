@@ -12,10 +12,18 @@
 
     <form method="get" class="pillen">
         @foreach (['kommend' => 'Kommende', 'vorbei' => 'Vergangene', 'alle' => 'Alle'] as $k => $label)
-            <a href="{{ route('termine.index', array_filter(['zeit' => $k, 'kurs' => $kurs])) }}" @class(['pille', 'an' => $zeit === $k])>{{ $label }}</a>
+            <a href="{{ route('termine.index', array_filter(['zeit' => $k, 'kurs' => $kurs, 'was' => $was === 'alles' ? null : $was, 'q' => $suche])) }}" @class(['pille', 'an' => $zeit === $k])>{{ $label }}</a>
         @endforeach
+        <input type="hidden" name="zeit" value="{{ $zeit }}">
+        @unless (auth()->user()->canManageCurrentTenant())
+            <select name="was" class="pille" onchange="this.form.submit()" aria-label="Was">
+                <option value="" @selected($was === 'alles')>Termine und Aufgaben</option>
+                <option value="termine" @selected($was === 'termine')>Nur Termine</option>
+                <option value="aufgaben" @selected($was === 'aufgaben')>Nur Aufgaben</option>
+            </select>
+        @endunless
+        <input type="search" name="q" value="{{ $suche }}" class="pille" placeholder="Suchen" aria-label="Suchen" style="min-width:120px">
         @if ($kurse->count() > 1)
-            <input type="hidden" name="zeit" value="{{ $zeit }}">
             <select name="kurs" class="pille" onchange="this.form.submit()" aria-label="Kurs">
                 <option value="">Alle Kurse</option>
                 @foreach ($kurse as $id => $titel)
@@ -26,17 +34,26 @@
     </form>
 
     @php $monat = ''; @endphp
-    @forelse ($events as $event)
-        @php
-            $m = $event->starts_at->translatedFormat('F Y');
-            $mein = $event->attendees->first();
-            $ab = $mein?->status === 'declined';
-            $live = $event->isLive();
-        @endphp
+    @forelse ($eintraege as $eintrag)
+        @php $m = $eintrag['zeit']->translatedFormat('F Y'); @endphp
         @if ($m !== $monat)
             @php $monat = $m; @endphp
             <h2 class="abschnitt"><i class="fa-solid fa-calendar"></i>{{ $m }}</h2>
         @endif
+        @if (isset($eintrag['task']))
+            @php $t = $eintrag['task']; @endphp
+            <a href="{{ route('aufgaben.index') }}#aufgabe-{{ $t->id }}" @class(['karte flex items-start gap-3 no-underline', 'fertig' => $t->isDone()])>
+                <span class="w-11 shrink-0 text-center" style="padding-top:2px"><span class="block font-heading text-2xl leading-none">{{ $t->due_at->format('j') }}</span><span class="eyebrow">{{ $t->due_at->translatedFormat('D') }}</span></span>
+                <span class="min-w-0 flex-1"><span class="t">{{ $t->title }}</span><span class="m"><i class="fa-solid fa-list-check"></i> Aufgabe{{ $t->due_time ? ' · '.$t->due_time.' Uhr' : '' }}{{ $t->isDone() ? ' · erledigt' : ($t->isOverdue() ? ' · überfällig' : '') }}@if ($t->program) · {{ $t->program->title }}@endif</span></span>
+            </a>
+            @continue
+        @endif
+        @php
+            $event = $eintrag['event'];
+            $mein = $event->attendees->first();
+            $ab = $mein?->status === 'declined';
+            $live = $event->isLive();
+        @endphp
         <article @class(['karte flex items-start gap-3', 'heute' => $live, 'fertig' => $ab]) style="--kc: {{ $event->program?->color ?: 'var(--c-primary)' }}">
             <a href="{{ route('termine.show', $event) }}" class="w-11 shrink-0 text-center no-underline text-ink" style="padding-top:2px">
                 <span class="block font-heading text-2xl leading-none">{{ $event->starts_at->format('j') }}</span>

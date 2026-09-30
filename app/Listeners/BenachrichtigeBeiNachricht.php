@@ -2,6 +2,7 @@
 
 namespace App\Listeners;
 
+use App\Chat\Chat;
 use App\Events\MessageSent;
 use App\Notifications\Nachricht;
 use App\Notifications\Notifier;
@@ -28,7 +29,7 @@ class BenachrichtigeBeiNachricht
             return;
         }
 
-        $von = $msg->user->vorname();
+        $von = app(Chat::class)->absenderName($msg, $conv);
         $titel = $conv->isDirect() ? "{$von} hat dir geschrieben" : "{$von} in {$conv->program?->title}";
 
         $this->notifier->send($andere, new Nachricht(

@@ -132,7 +132,7 @@ class ProfilController extends Controller
         abort_unless($membership, 403);
 
         $settings = $membership->settings ?? [];
-        foreach (['termine', 'abendmail', 'aufgaben'] as $key) {
+        foreach (['termine', 'abendmail', 'aufgaben', 'fragen'] as $key) {
             data_set($settings, "notifications.$key", $request->boolean($key));
         }
         $membership->forceFill(['settings' => $settings])->save();

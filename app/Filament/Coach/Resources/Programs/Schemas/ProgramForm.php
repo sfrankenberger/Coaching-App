@@ -28,9 +28,9 @@ class ProgramForm
                 Select::make('type')->label('Art')->options(Program::TYPES)->required()->native(false)->live(),
                 Select::make('pacing')->label('Taktung')->options(Program::PACINGS)->required()->native(false)
                     ->helperText('Wöchentlich: Schritte schalten sich zum eingetragenen Zeitpunkt frei. Alles offen: Selbstlernen. Keine Schritte: 1:1.'),
-                TextInput::make('settings.sitzungen_gesamt')->label('Sitzungen im Paket')->numeric()->minValue(0)->maxValue(200)
-                    ->helperText('Nur 1:1: so viele Sitzungen sind enthalten. Die Person sieht, wie viele noch offen sind.')
-                    ->visible(fn ($get) => $get('type') === 'one_on_one'),
+                TextInput::make('settings.sitzungen_gesamt')->label('Einzelsitzungen im Paket')->numeric()->minValue(0)->maxValue(200)
+                    ->helperText('So viele Einzelsitzungen sind enthalten, auch in Hybrid-Kursen. Die Person sieht, wie viele noch offen sind.')
+                    ->visible(fn ($get) => $get('type') !== 'workbook'),
                 DatePicker::make('starts_at')->label('Start')->native(false)->displayFormat('d.m.Y'),
                 DatePicker::make('ends_at')->label('Ende')->native(false)->displayFormat('d.m.Y'),
                 RichEditor::make('description')->label('Beschreibung')->columnSpanFull()
@@ -45,6 +45,10 @@ class ProgramForm
                 Toggle::make('is_published')->label('Veröffentlicht')->default(true),
                 Toggle::make('is_internal')->label('Nur intern')->helperText('Fertig gebaut, aber nur für Team und direkt eingetragene Personen sichtbar.'),
                 Toggle::make('settings.gratis')->label('Offen für alle')->helperText('Gratiskurs: alle Personen mit Zugang zum Bereich sehen ihn, ohne Kauf.'),
+                Toggle::make('settings.kommt_bald')->label('Als «Kommt bald» zeigen')->helperText('Noch nicht veröffentlicht, aber alle sehen die Karte in Meine Kurse.'),
+                Toggle::make('settings.strecke')->label('Begleitstrecke')->live()->helperText('Wer hängt, bekommt nach 2 und 7 Tagen eine Mail. Wer durch ist, bekommt die eigenen Goldnuggets, das Team einen Push.'),
+                TextInput::make('settings.strecke_gespraech')->label('Link zum Gespräch in den Mails')->url()->maxLength(500)->placeholder('leer: die Buchungsseite, wenn eingeschaltet')->visible(fn ($get) => (bool) $get('settings.strecke')),
+                TextInput::make('settings.strecke_goldnuggets')->label('Übungsteil für die Goldnuggets')->maxLength(60)->placeholder('Schlüssel oder Nummer, leer: Listen der letzten Einheit')->visible(fn ($get) => (bool) $get('settings.strecke')),
                 Select::make('settings.teilen')->label('Teilen mit der Coachin')->options(['1' => 'Ja, Antworten können geteilt werden', '0' => 'Nein, nichts wird geteilt'])->placeholder('Vorgabe nach Art')->native(false)
                     ->helperText('Vorgabe: Hybrid-Coaching, 1:1 und Arbeitsbuch ja, Selbstlernkurs und Club nein.'),
                 Select::make('settings.gemeinschaft')->label('Eigener Raum in der Community')->options(['1' => 'Ja, die Gruppe teilt untereinander', '0' => 'Nein, Fragen laufen in der allgemeinen Community'])->placeholder('Vorgabe nach Art')->native(false)

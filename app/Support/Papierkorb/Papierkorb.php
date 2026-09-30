@@ -24,6 +24,7 @@ class Papierkorb
         Models\CoachNote::class, Models\Reflection::class, Models\JournalEntry::class, Models\Resource::class,
         Models\Offer::class, Models\Entitlement::class, Models\Booking::class, Models\BookingType::class,
         Models\Post::class, Models\PodcastEpisode::class, Models\Topic::class, Models\Tool::class, Models\Wissen::class, Models\Sammlung::class,
+        Models\Projekt::class,
     ];
 
     public const FRIST_TAGE = 90;

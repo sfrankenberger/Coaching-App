@@ -51,6 +51,8 @@ return [
         Models\Wissen::class => 'Wissen',
         Models\Sammlung::class => 'Sammlung',
         Models\Conversation::class => 'Gespräch',
+        Models\Projekt::class => 'Projekt',
+        Models\UnitVideo::class => 'Lektionsvideo',
     ],
 
     // Lesbare Namen der Ereignisse

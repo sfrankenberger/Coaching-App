@@ -16,11 +16,14 @@ use App\Models\Note;
 use App\Models\PodcastEpisode;
 use App\Models\ProgramMember;
 use App\Models\Reflection;
+use App\Models\Resource;
 use App\Models\Task;
 use App\Models\Topic;
+use App\Models\UnitVideo;
 use App\Models\User;
 use App\Programs\ProgramAccess;
 use App\Programs\ProgressTracker;
+use App\Recordings\Vimeo;
 use App\Tenancy\Branding;
 use App\Tenancy\CurrentTenant;
 use Illuminate\Database\Eloquent\Model;
@@ -99,14 +102,7 @@ class Summarizer
 
             return $summary;
         }
-        $eigen = app(CurrentTenant::class)->get()?->setting('ai.prompts.resource');
-        $auftrag = filled($eigen) ? (string) $eigen
-            : "Du fasst ein Video aus dem Material der Coachin so zusammen, dass man es lesen kann, statt es zu schauen, und trotzdem gezielt hineinspringen kann. Es ist kein Gruppencall, sondern ein Impuls, eine Erklärung oder eine Anleitung.\n"
-            ."Nur HTML: <p>, <h3>, <ul>, <li>, <strong>. Keine Überschrift ganz oben, keine Anrede.\n"
-            ."Aufbau:\n1. Ein Absatz, der mit <strong>Worum es geht:</strong> beginnt, drei bis fünf Sätze mit dem roten Faden.\n"
-            ."2. Die Abschnitte des Videos in der Reihenfolge, jeder als <h3>Sprechender Titel (ab MM:SS)</h3>, genau in dieser Form, die Zeitmarke aus der Abschrift (nächstliegende eckige Klammer). Darunter ein bis drei Absätze, bei Schritten eine <ul>. Drei bis acht Abschnitte je nach Länge.\n"
-            ."3. Zum Schluss <h3>Was du mitnehmen kannst</h3> mit einer kurzen Liste (<strong>Kurzform</strong> und ein Satz), nur wenn im Video wirklich etwas zum Ausprobieren genannt wurde.\n"
-            .'Umfang: so lang wie nötig, bei kurzen Videos kurz. Nichts erfinden, nichts wiederholen.';
+        $auftrag = $this->videoAuftrag();
 
         try {
             $t = $this->ai->text($auftrag."\n\nTitel: {$r->title}\n\nAbschrift:\n".mb_substr($stoff, 0, 120000)."\n\nAntworte nur mit dem HTML, ohne Vorrede und ohne Code-Zaun.", Anthropic::STIL);
@@ -118,6 +114,47 @@ class Summarizer
         }
 
         return $summary;
+    }
+
+    /** Video einer Lektion (wie lea-lektion-kapitel): Kapitel zum Springen und "Zum Nachlesen, worum es ging". */
+    public function unitVideo(UnitVideo $v, ?int $requestedBy = null): AiSummary
+    {
+        $summary = AiSummary::firstOrNew(['summarizable_type' => 'unit_video', 'summarizable_id' => $v->id, 'kind' => 'summary']);
+        $summary->fill(['status' => 'pending', 'error' => null, 'requested_by' => $requestedBy ?? $summary->requested_by])->save();
+        $stoff = trim((string) $v->transcript);
+        if ($stoff === '') {
+            $summary->fill(['status' => 'failed', 'error' => 'Keine Abschrift am Video.'])->save();
+
+            return $summary;
+        }
+        $titel = collect($v->unit?->videoList() ?? [])->first(fn ($x) => Vimeo::nummerAus($x['url'] ?? null) === $v->vimeo_id)['title'] ?? $v->unit?->title ?? 'Video';
+        $auftrag = $this->videoAuftrag('unit');
+
+        try {
+            $t = $this->ai->text($auftrag."\n\nTitel: {$titel}\n\nAbschrift:\n".mb_substr($stoff, 0, 120000)."\n\nAntworte nur mit dem HTML, ohne Vorrede und ohne Code-Zaun.", Anthropic::STIL);
+            $html = trim(preg_replace('/^```(?:html)?\s*|\s*```$/m', '', trim($t['text'])));
+            $summary->fill(['status' => 'done', 'body' => $html, 'model' => $t['model'], 'tokens_in' => $t['tokens_in'], 'tokens_out' => $t['tokens_out']])->save();
+            $v->forceFill(['summary' => $html])->saveQuietly();
+        } catch (Throwable $e) {
+            $summary->fill(['status' => 'failed', 'error' => mb_substr($e->getMessage(), 0, 1000)])->save();
+        }
+
+        return $summary;
+    }
+
+    /** Auftrag fuer Videos (Material und Lektionen), je Mandant ueberschreibbar (ai.prompts.resource bzw. ai.prompts.unit). */
+    protected function videoAuftrag(string $art = 'resource'): string
+    {
+        $tenant = app(CurrentTenant::class)->get();
+        $eigen = $tenant?->setting('ai.prompts.'.$art) ?: $tenant?->setting('ai.prompts.resource');
+
+        return filled($eigen) ? (string) $eigen
+            : "Du fasst ein Video aus dem Material der Coachin so zusammen, dass man es lesen kann, statt es zu schauen, und trotzdem gezielt hineinspringen kann. Es ist kein Gruppencall, sondern ein Impuls, eine Erklärung oder eine Anleitung.\n"
+            ."Nur HTML: <p>, <h3>, <ul>, <li>, <strong>. Keine Überschrift ganz oben, keine Anrede.\n"
+            ."Aufbau:\n1. Ein Absatz, der mit <strong>Worum es geht:</strong> beginnt, drei bis fünf Sätze mit dem roten Faden.\n"
+            ."2. Die Abschnitte des Videos in der Reihenfolge, jeder als <h3>Sprechender Titel (ab MM:SS)</h3>, genau in dieser Form, die Zeitmarke aus der Abschrift (nächstliegende eckige Klammer). Darunter ein bis drei Absätze, bei Schritten eine <ul>. Drei bis acht Abschnitte je nach Länge.\n"
+            ."3. Zum Schluss <h3>Was du mitnehmen kannst</h3> mit einer kurzen Liste (<strong>Kurzform</strong> und ein Satz), nur wenn im Video wirklich etwas zum Ausprobieren genannt wurde.\n"
+            .'Umfang: so lang wie nötig, bei kurzen Videos kurz. Nichts erfinden, nichts wiederholen.';
     }
 
     /* ---------- Vorbereitung auf ein Gespraech ---------- */

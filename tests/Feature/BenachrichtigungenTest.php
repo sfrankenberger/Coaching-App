@@ -110,10 +110,49 @@ class BenachrichtigungenTest extends TestCase
         Notification::assertSentTo($this->anna, AppNotification::class, fn (AppNotification $n) => str_starts_with($n->nachricht->titel, 'Heute'));
         Notification::assertSentTo($this->anna, AppNotification::class, fn (AppNotification $n) => str_starts_with($n->nachricht->titel, 'In einer Stunde'));
         Notification::assertNotSentTo($this->bea, AppNotification::class);
-        $this->assertSame(2, $n);
+        // Das Team (Lea) bekommt die Erinnerung an den eigenen Call mit
+        Notification::assertSentTo($this->lea, AppNotification::class, fn (AppNotification $n) => str_starts_with($n->nachricht->titel, 'In einer Stunde'));
+        $this->assertSame(4, $n);
 
         $this->assertSame(0, $this->in(fn () => app(Runden::class)->terminErinnerungen()), 'kein zweites Mal');
         $this->assertNotNull($event->fresh()->reminded_hour_at);
+    }
+
+    public function test_aufgaben_erinnerung_mail_ohne_push_tageshaken_und_jetzt_dran(): void
+    {
+        Notification::fake();
+        $tz = 'Europe/Zurich';
+        $heute = now($tz)->toDateString();
+        $tag = ['mo', 'di', 'mi', 'do', 'fr', 'sa', 'so'][now($tz)->dayOfWeekIso - 1];
+        $this->in(function () use ($heute, $tag) {
+            Task::create(['user_id' => $this->anna->id, 'title' => 'Heute faellig', 'due_at' => $heute]);
+            Task::create(['user_id' => $this->anna->id, 'title' => 'Ueberfaellig', 'due_at' => now()->subDays(3)->toDateString(), 'assigned_by' => $this->lea->id, 'source' => 'coach']);
+            Task::create(['user_id' => $this->anna->id, 'title' => 'Spaeter', 'due_at' => now()->addDays(3)->toDateString()]);
+            // Bea: nur eine "jeden Tag"-Aufgabe, heute schon abgehakt
+            Task::create(['user_id' => $this->bea->id, 'title' => 'Taeglich', 'is_daily' => true, 'settings' => ['days' => [now()->format('o-W') => [$tag]]]]);
+        });
+        Notification::fake();
+        $n = $this->in(fn () => app(Runden::class)->aufgabenHinweis('morgen'));
+        $this->assertSame(1, $n);
+        // Anna hat kein Push: die Erinnerung kommt als Mail, Ueberfaelliges wird genannt
+        Notification::assertSentTo($this->anna, AppNotification::class, fn (AppNotification $x, array $channels) => $channels === ['mail'] && $x->nachricht->titel === '2 Aufgaben für heute' && str_contains($x->nachricht->text, '1 überfällig'));
+        Notification::assertNotSentTo($this->bea, AppNotification::class);
+        Notification::assertNotSentTo($this->lea, AppNotification::class);
+
+        // Kopie ans Team, wenn eingeschaltet
+        $this->a->forceFill(['settings' => array_merge($this->a->settings, ['notifications' => ['aufgaben_kopie' => true]])])->save();
+        Notification::fake();
+        $this->in(fn () => app(Runden::class)->aufgabenHinweis('morgen'));
+        Notification::assertSentTo($this->lea, AppNotification::class, fn (AppNotification $x) => $x->nachricht->titel === 'Offene Kursaufgaben heute' && str_contains($x->nachricht->text, 'Anna: Ueberfaellig'));
+
+        // Jetzt dran: Push zur Uhrzeit, nur einmal
+        $this->in(fn () => PushSubscription::create(['user_id' => $this->anna->id, 'endpoint' => 'https://push.example/9', 'endpoint_hash' => hash('sha256', 'https://push.example/9'), 'p256dh' => 'x', 'auth' => 'y']));
+        $t = $this->in(fn () => Task::create(['user_id' => $this->anna->id, 'title' => 'Anruf', 'due_at' => $heute, 'due_time' => now($tz)->subMinutes(3)->format('H:i')]));
+        Notification::fake();
+        $this->assertSame(1, $this->in(fn () => app(Runden::class)->punkt()));
+        Notification::assertSentTo($this->anna, AppNotification::class, fn (AppNotification $x) => $x->nachricht->titel === 'Jetzt dran' && $x->nachricht->text === 'Anruf');
+        $this->assertNotNull($this->in(fn () => $t->fresh()->reminded_at));
+        $this->assertSame(0, $this->in(fn () => app(Runden::class)->punkt()), 'kein zweites Mal');
     }
 
     public function test_aufgabe_von_coach_und_material_geteilt(): void

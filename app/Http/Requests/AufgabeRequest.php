@@ -4,6 +4,7 @@ namespace App\Http\Requests;
 
 use App\Models\Program;
 use App\Models\ProgramStep;
+use App\Models\Projekt;
 use App\Models\Unit;
 use App\Programs\ProgramAccess;
 use Illuminate\Foundation\Http\FormRequest;
@@ -20,9 +21,10 @@ class AufgabeRequest extends FormRequest
             'due_time' => ['nullable', 'date_format:H:i'],
             'is_daily' => ['nullable', 'boolean'],
             'program_id' => ['nullable', 'integer'],
+            'project_id' => ['nullable', 'integer'],
             'step_id' => ['nullable', 'integer'],
             'unit_id' => ['nullable', 'integer'],
-            'visibility' => ['nullable', 'in:private,coach,program'],
+            'visibility' => ['nullable', 'in:private,coach,program,all'],
             'is_pinned' => ['nullable', 'boolean'],
             'refs' => ['nullable', 'array', 'max:12'],
             'refs.*' => ['string', 'max:40'],
@@ -37,6 +39,7 @@ class AufgabeRequest extends FormRequest
         $data['is_daily'] = (bool) ($data['is_daily'] ?? false);
         $data['is_pinned'] = (bool) ($data['is_pinned'] ?? false);
         $data['visibility'] ??= 'private';
+        $data['project_id'] = Projekt::where('user_id', $this->user()->id)->whereKey((int) ($data['project_id'] ?? 0))->value('id');
         if (! empty($data['program_id'])) {
             $program = Program::find($data['program_id']);
             $data['program_id'] = $program && app(ProgramAccess::class)->canView($this->user(), $program) ? $program->id : null;

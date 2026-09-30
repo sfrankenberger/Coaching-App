@@ -7,6 +7,7 @@
     $kannVerwalten = $person?->canManageCurrentTenant();
     $ungelesen = $person ? app(App\Chat\Chat::class)->unreadFor($person) : 0;
     $mitteilungen = $person ? $person->notifications()->whereNull('read_at')->count() : 0;
+    $neuZahl = $person && ! $kannVerwalten ? app(App\Support\Besuche::class)->zaehler($person) : [];
     $avatar = $branding->get('avatar_url');
     $zusatz = $branding->get('mark_suffix');
     $links = (array) data_get($tenant?->settings, 'links', []);
@@ -120,7 +121,7 @@
                         <li><a href="{{ route('home') }}" @class(['aktiv' => $ist('home')])><i class="fa-solid fa-sun"></i>Heute</a></li>
                         <li><a href="{{ route('coachees.index') }}" @class(['aktiv' => $ist('coachees.*')])><i class="fa-solid fa-people-group"></i>Coachees</a></li>
                         <li><a href="{{ route('gespraech.index') }}" @class(['aktiv' => $ist('gespraech.*')])><i class="fa-solid fa-comments"></i>Gespräche @if ($ungelesen)<span class="zahl">{{ $ungelesen }}</span>@endif</a></li>
-                        <li><a href="{{ route('termine.index') }}" @class(['aktiv' => $ist('termine.*')])><i class="fa-solid fa-calendar"></i>Termine</a></li>
+                        <li><a href="{{ route('termine.index') }}" @class(['aktiv' => $ist('termine.*')])><i class="fa-solid fa-calendar"></i>Termine @if ($neuZahl['termine'] ?? 0)<span class="zahl">{{ $neuZahl['termine'] }}</span>@endif</a></li>
                         <li><a href="{{ route('nachschlagen.index') }}" @class(['aktiv' => $ist(['nachschlagen.*', 'themen.*', 'merkliste', 'werkzeuge.*', 'suche'])])><i class="fa-solid fa-magnifying-glass"></i>Nachschlagen</a></li>
                         <li><a href="{{ route('assistent') }}" @class(['aktiv' => $ist('assistent')])><i class="fa-solid fa-wand-magic-sparkles"></i>Assistent</a></li>
                         <li><a href="{{ route('kurse.index') }}" @class(['aktiv' => $ist('kurse.*')])><i class="fa-solid fa-graduation-cap"></i>Kurse</a></li>
@@ -161,12 +162,14 @@
                         @endif
                         <li><a href="{{ route('home') }}" @class(['aktiv' => $ist('home')])><i class="fa-solid fa-house"></i>Übersicht</a></li>
                         <li><a href="{{ route('gespraech.index') }}" @class(['aktiv' => $ist('gespraech.*')])><i class="fa-solid fa-user-group"></i>1:1 Coaching mit {{ $branding->coachName() }} @if ($ungelesen)<span class="zahl">{{ $ungelesen }}</span>@endif</a></li>
-                        <li><a href="{{ route('termine.index') }}" @class(['aktiv' => $ist('termine.*')])><i class="fa-solid fa-calendar"></i>Termine</a></li>
+                        <li><a href="{{ route('termine.index') }}" @class(['aktiv' => $ist('termine.*')])><i class="fa-solid fa-calendar"></i>Termine @if ($neuZahl['termine'] ?? 0)<span class="zahl">{{ $neuZahl['termine'] }}</span>@endif</a></li>
                         <li><a href="{{ route('nachschlagen.index') }}" @class(['aktiv' => $ist(['nachschlagen.*', 'themen.*', 'merkliste', 'werkzeuge.*', 'suche'])])><i class="fa-solid fa-magnifying-glass"></i>Nachschlagen</a></li>
                         <li class="gruppe"><span><i class="fa-solid fa-book-open"></i>Meine Sachen</span></li>
                         <li class="unter"><a href="{{ route('aufgaben.index') }}" @class(['aktiv' => $ist('aufgaben.*')])><i class="fa-solid fa-list-check"></i>Meine Aufgaben</a></li>
                         <li class="unter"><a href="{{ route('notizen.index') }}" @class(['aktiv' => $ist('notizen.*')])><i class="fa-solid fa-note-sticky"></i>Meine Notizen</a></li>
                         <li class="unter"><a href="{{ route('reflexion.index') }}" @class(['aktiv' => $ist('reflexion.*')])><i class="fa-solid fa-pen-to-square"></i>Meine Reflexionen</a></li>
+                        <li class="unter"><a href="{{ route('projekte.index') }}" @class(['aktiv' => $ist('projekte.*')])><i class="fa-solid fa-lightbulb"></i>Meine Projekte</a></li>
+                        <li class="unter"><a href="{{ route('journal.index') }}" @class(['aktiv' => $ist('journal.*')])><i class="fa-solid fa-timeline"></i>Meine Zeitleiste</a></li>
                         @if ($meineKurse->isNotEmpty())
                             <li class="gruppe"><span><i class="fa-solid fa-graduation-cap"></i>Meine Kurse</span></li>
                             @foreach ($meineKurse as $k)
@@ -175,11 +178,11 @@
                         @else
                             <li><a href="{{ route('kurse.index') }}" @class(['aktiv' => $ist('kurse.*')])><i class="fa-solid fa-graduation-cap"></i>Meine Kurse</a></li>
                         @endif
-                        <li><a href="{{ route('material.index') }}" @class(['aktiv' => $ist('material.*')])><i class="fa-solid fa-folder-open"></i>Ressourcen</a></li>
+                        <li><a href="{{ route('material.index') }}" @class(['aktiv' => $ist('material.*')])><i class="fa-solid fa-folder-open"></i>Ressourcen @if ($neuZahl['material'] ?? 0)<span class="zahl">{{ $neuZahl['material'] }}</span>@endif</a></li>
                         @if ($meineKurse->isNotEmpty() || $kannVerwalten)
-                            <li><a href="{{ route('community') }}" @class(['aktiv' => $ist(['community', 'kurse.fragen', 'fragen.*'])])><i class="fa-solid fa-comments"></i>Community</a></li>
+                            <li><a href="{{ route('community') }}" @class(['aktiv' => $ist(['community', 'kurse.fragen', 'fragen.*'])])><i class="fa-solid fa-comments"></i>Community @if ($neuZahl['community'] ?? 0)<span class="zahl">{{ $neuZahl['community'] }}</span>@endif</a></li>
                         @endif
-                        <li><a href="{{ route('impulse.index') }}" @class(['aktiv' => $ist('impulse.*')])><i class="fa-solid fa-lightbulb"></i>Impulse</a></li>
+                        <li><a href="{{ route('impulse.index') }}" @class(['aktiv' => $ist('impulse.*')])><i class="fa-solid fa-lightbulb"></i>Impulse @if ($neuZahl['impulse'] ?? 0)<span class="zahl">{{ $neuZahl['impulse'] }}</span>@endif</a></li>
                         <li class="gruppe"><span><i class="fa-solid fa-user"></i>Mein Profil</span></li>
                         <li class="unter"><a href="{{ route('profil') }}"><i class="fa-solid fa-user"></i>Meine Daten</a></li>
                         <li class="unter"><a href="{{ route('profil') }}#buchungen"><i class="fa-solid fa-bookmark"></i>Meine Buchungen</a></li>
