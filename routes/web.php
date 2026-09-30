@@ -40,6 +40,7 @@ use App\Http\Controllers\PushController;
 use App\Http\Controllers\ReaktionController;
 use App\Http\Controllers\ReflexionController;
 use App\Http\Controllers\StreckeController;
+use App\Http\Controllers\StripeController;
 use App\Http\Controllers\SucheController;
 use App\Http\Controllers\TelegramController;
 use App\Http\Controllers\TermineController;
@@ -58,6 +59,7 @@ Route::get('/manifest.webmanifest', fn (Branding $branding) => response()
 
 // Eingehende Webhooks (ohne Anmeldung, je Mandant ueber die Domain)
 Route::post('/hooks/telegram/{secret}', [TelegramController::class, 'webhook'])->name('hooks.telegram');
+Route::post('/hooks/stripe', [StripeController::class, 'webhook'])->name('hooks.stripe');
 Route::post('/hooks/woocommerce', WooCommerceController::class)->name('hooks.woocommerce');
 
 // Bruecke aus dem alten Mitgliederbereich (signierter Link, 60 Sekunden, einmalig)
