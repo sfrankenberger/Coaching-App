@@ -34,7 +34,7 @@ function lea_mg_pre_wp_mail($null, $atts)
     $headers = is_array($headers) ? $headers : explode("\n", str_replace("\r\n", "\n", (string) $headers));
     $from = $c['from'];
     $from_name = $c['from_name'];
-    $ist_html = false;
+    $ist_html = stripos((string) apply_filters('wp_mail_content_type', 'text/plain'), 'text/html') !== false;   // Vorgabe per Filter, Kopfzeile geht vor
     $reply = '';
     $cc = [];
     $bcc = [];

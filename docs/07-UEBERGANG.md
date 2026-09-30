@@ -60,10 +60,22 @@ Der Import ist wiederholbar (legacy_id) und überschreibt Inhaltsfelder aus Word
    Pfad und Query mitgeben (siehe 4a): die App ordnet alte Adressen selbst zu
 4. Sandbox-Module im WordPress abschalten (nicht löschen), nach 30 Tagen aufräumen
 5. Woo-Webhook bleibt, Feeds bleiben, Brücke bleibt (für den Weg von der Website in die App)
-6. Mailster: letzter Kontakte-Import (`import:wordpress lea --only=kontakte`), Autoresponder als Serien nachbauen, dann
-   Mailster deaktivieren. Die Formulare der Website schreiben seit 30.09. bereits in die App
-   (`lea-app-anmeldung.php` neben `lea-mailster-forms.php`), der Schluessel ist unter Einstellungen, Allgemein eingetragen.
-   Abo-Umzug (4b, Punkt 3) entfaellt: es gibt kein laufendes Abo.
+6. Mailster ist seit 1.10. (nachts) deaktiviert, Teilnehmerinnen merken nichts: Systemmails der Website (Anmeldelinks,
+   Abendmail, Erinnerungen, Chat) gehen ueber `lea-wp-mail-mailgun.php` weiter per Mailgun (Zugang in der Option
+   `lea_mailgun`, aus den Mailster-Einstellungen uebernommen, Protokoll `lea_mailgun_log`). Die drei Autoresponder mit
+   Wirkung sind Serien in der App (Willkommen auf `newsletter`, E-Book-Strecke 0/7/14 Tage auf `freebie-weniger-sorgen`,
+   Aufzeichnung auf `live-abend-hybrid-coaching`); die Autoresponder "Beitrag veroeffentlicht" ersetzt die Newsletter-Box
+   im Beitragseditor. Alte Abmelde- und Profil-Links aus Mailster-Mails leiten auf `app.leawernli.ch/n/abmelden`
+   (Adresse eingeben, Link kommt per Mail). Formulare der Website schreiben ueber `lea-app-anmeldung.php` in die App.
+   Am Umzugstag nur noch: Kontakte-Import wiederholen (`--only=kontakte`, holt Anmeldungen vom 30.09. bis 1.10. nach,
+   falls welche nur in Mailster gelandet sind), Mailster-Plugins loeschen (nach 30 Tagen).
+7. WooCommerce bleibt bis zum Umzugstag, weil der alte Mitgliederbereich daran haengt (Anmeldung ueber "Mein Account",
+   27 Sandbox-Module rufen Woo-Funktionen, Verkaufsseiten der Website verlinken `/produkt/...`, 7 Bestellungen fuer
+   bexio). Reihenfolge am Umzugstag: Preise und Sichtbarkeit der Angebote in der App setzen (Woo-Produkte 1518, 1623,
+   1722, 1879, 2430, 2432, 2434), Kaufknoepfe der Website auf `[app_kaufen slug="..."]`, 301 von `/produkt/{slug}` auf
+   `/kaufen/{slug}` und von `/shop/`, `/warenkorb/`, `/kasse/`, `/mein-account/` auf die App, dann Woo-Plugins
+   deaktivieren (woocommerce, -subscriptions, -gateway-stripe, -order-status-control, woo-update-manager,
+   email-customizer-for-woocommerce). Abo-Umzug (4b, Punkt 3) entfaellt: es gibt kein laufendes Abo.
 
 ## 5. Installierte App (Home-Bildschirm) und Push beim Umzug
 
