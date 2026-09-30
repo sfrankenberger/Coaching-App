@@ -58,6 +58,12 @@ class Verbindungen extends Page
         'mailgun_domain' => ['mail.mailgun_domain', false],
         'mailgun_secret' => ['mail.mailgun_secret', true],
         'mailgun_endpoint' => ['mail.mailgun_endpoint', false],
+        'google_client_id' => ['oauth.google.client_id', false],
+        'google_client_secret' => ['oauth.google.client_secret', true],
+        'apple_client_id' => ['oauth.apple.client_id', false],
+        'apple_team_id' => ['oauth.apple.team_id', false],
+        'apple_key_id' => ['oauth.apple.key_id', false],
+        'apple_private_key' => ['oauth.apple.private_key', true],
     ];
 
     public static function canAccess(): bool
@@ -126,6 +132,16 @@ class Verbindungen extends Page
                 TextInput::make('mailgun_domain')->label('Sende-Domain')->placeholder('mg.deine-domain.ch')->maxLength(200),
                 $this->geheim('mailgun_secret', 'API-Schlüssel', 'mail.mailgun_secret'),
                 Select::make('mailgun_endpoint')->label('Region')->options(['api.eu.mailgun.net' => 'EU (api.eu.mailgun.net)', 'api.mailgun.net' => 'USA (api.mailgun.net)'])->default('api.eu.mailgun.net')->native(false),
+            ])->columns(3),
+            Section::make('Anmelden mit Google')->description(fn () => 'OAuth-Client in der Google Cloud Console (Typ Webanwendung). Weiterleitungs-URI dort eintragen: '.route('anmelden.dienst.zurueck', ['dienst' => 'google']).'. Sobald beides hinterlegt ist, erscheint der Knopf auf der Anmeldeseite.')->schema([
+                TextInput::make('google_client_id')->label('Client-ID')->maxLength(200),
+                $this->geheim('google_client_secret', 'Client-Secret', 'oauth.google.client_secret'),
+            ])->columns(2),
+            Section::make('Anmelden mit Apple')->description(fn () => 'Aus dem Apple Developer Account: Services-ID (als Client-ID), Team-ID, Key-ID und der Inhalt der .p8-Datei. Das Client-Secret erzeugt die App daraus selbst und erneuert es, es muss nie von Hand gepflegt werden. Return-URL bei Apple: '.route('anmelden.dienst.zurueck', ['dienst' => 'apple']).'.')->schema([
+                TextInput::make('apple_client_id')->label('Services-ID (Client-ID)')->maxLength(200)->placeholder('ch.deine-domain.app'),
+                TextInput::make('apple_team_id')->label('Team-ID')->maxLength(20),
+                TextInput::make('apple_key_id')->label('Key-ID')->maxLength(20),
+                Textarea::make('apple_private_key')->label('Privater Schlüssel (.p8)')->rows(4)->placeholder(fn () => $this->stand('oauth.apple.private_key'))->columnSpanFull(),
             ])->columns(3),
             Section::make('Stripe')->description('Kasse mit Karte und Twint (Etappe 10). Schlüssel aus dem Stripe-Dashboard unter Entwickler, API-Schlüssel; das Webhook-Secret kommt beim Anlegen des Webhooks. Die Kasse nutzt sie, sobald sie freigeschaltet ist.')->schema([
                 TextInput::make('stripe_public_key')->label('Publishable Key')->placeholder('pk_live_...')->maxLength(200),

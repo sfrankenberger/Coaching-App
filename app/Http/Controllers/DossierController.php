@@ -10,6 +10,7 @@ use App\Chat\Chat;
 use App\Chat\Terminvorschlag;
 use App\Coach\Kommentare;
 use App\Coach\Lage;
+use App\Enums\Role;
 use App\Jobs\VorbereitungErstellen;
 use App\Models\AiSummary;
 use App\Models\Answer;
@@ -32,6 +33,7 @@ use App\Programs\ProgramAccess;
 use App\Programs\ProgressTracker;
 use App\Shop\Buchhaltung;
 use App\Shop\Verkaufen;
+use App\Shop\Zahlen;
 use App\Shop\Zugang;
 use App\Support\Telefon;
 use App\Tenancy\CurrentTenant;
@@ -234,15 +236,16 @@ class DossierController extends Controller
     protected function rechnungen(User $user, bool $frisch = false): array
     {
         $b = Buchhaltung::fuer($this->current->get());
+        $zahlen = ['zahlen' => app(Zahlen::class)->person($user), 'zahlenSichtbar' => auth()->user()->is_platform_admin || auth()->user()->roleIn() === Role::Owner];
         if (! $b || ! $b->verbunden()) {
-            return ['rechnungen' => collect(), 'buchhaltung' => $b, 'rechnungenFehler' => null];
+            return ['rechnungen' => collect(), 'buchhaltung' => $b, 'rechnungenFehler' => null] + $zahlen;
         }
         try {
-            return ['rechnungen' => $b->rechnungen($user, $frisch), 'buchhaltung' => $b, 'rechnungenFehler' => null];
+            return ['rechnungen' => $b->rechnungen($user, $frisch), 'buchhaltung' => $b, 'rechnungenFehler' => null] + $zahlen;
         } catch (\RuntimeException $e) {
             report($e);
 
-            return ['rechnungen' => collect(), 'buchhaltung' => $b, 'rechnungenFehler' => $e->getMessage()];
+            return ['rechnungen' => collect(), 'buchhaltung' => $b, 'rechnungenFehler' => $e->getMessage()] + $zahlen;
         }
     }
 

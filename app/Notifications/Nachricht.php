@@ -18,6 +18,7 @@ class Nachricht
         public bool $mailImmer = false,       // Mail auch an Personen mit Push (z. B. Aufzeichnung mit Zusammenfassung)
         public bool $inApp = true,            // auch als Mitteilung in der App (Glocke)
         public ?array $anhang = null,         // nur Mail: ['name' => 'termin.ics', 'inhalt' => '...', 'typ' => 'text/calendar']
+        public ?array $liste = null,          // nur Mail: Karten mit je einem Link, [['titel','text','herkunft','url','knopf'], ...]
     ) {
         $this->tag ??= $anlass;
     }

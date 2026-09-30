@@ -333,8 +333,14 @@
 (function () {
     var box = document.querySelector('[data-push]');
     if (!box) return;
-    var an = box.querySelector('[data-push-an]'), aus = box.querySelector('[data-push-aus]'), status = box.querySelector('[data-push-status]');
+    var an = box.querySelector('[data-push-an]'), aus = box.querySelector('[data-push-aus]'), status = box.querySelector('[data-push-status]'), test = box.querySelector('[data-push-test]');
     var csrf = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
+    if (test) test.addEventListener('click', function () {
+        status.textContent = 'Schicke Test ...';
+        fetch(test.dataset.pushTest, { method: 'POST', credentials: 'same-origin', headers: { 'Accept': 'application/json', 'X-CSRF-TOKEN': csrf } })
+            .then(function (r) { return r.json(); }).then(function (j) { status.textContent = j.meldung || (j.ok ? 'Test ist raus.' : 'Das hat nicht geklappt.'); })
+            .catch(function () { status.textContent = 'Das hat nicht geklappt.'; });
+    });
     if (!('serviceWorker' in navigator) || !('PushManager' in window) || !('Notification' in window)) {
         an.hidden = true; status.textContent = 'Dieser Browser kann keine Push-Nachrichten. Auf dem iPhone: zuerst den Bereich auf den Startbildschirm legen und von dort öffnen.';
         return;

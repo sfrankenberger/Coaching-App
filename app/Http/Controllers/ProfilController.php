@@ -4,6 +4,8 @@ namespace App\Http\Controllers;
 
 use App\Booking\GoogleCalendar;
 use App\Coach\Lage;
+use App\Http\Controllers\Auth\SocialController;
+use App\Mail\EmailWechselMail;
 use App\Models\Entitlement;
 use App\Models\Offer;
 use App\Models\PushSubscription;
@@ -18,6 +20,8 @@ use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Mail;
+use Illuminate\Support\Facades\URL;
+use Illuminate\Support\Str;
 use Illuminate\View\View;
 
 class ProfilController extends Controller
@@ -58,6 +62,8 @@ class ProfilController extends Controller
             'mcpUrl' => url('/api/mcp'),
             'rechnungen' => $this->rechnungen($request->user(), $tenant),
             'angeboteOffen' => Offer::where('is_active', true)->get()->contains(fn ($o) => $o->sichtbar() && $o->kaufbar()),
+            'dienste' => $tenant ? SocialController::availableProviders($tenant) : [],
+            'verknuepft' => $request->user()->socialAccounts()->get()->keyBy('provider'),
         ]);
     }
 
@@ -149,6 +155,38 @@ class ProfilController extends Controller
         $request->user()->forceFill(['password' => $data['password']])->save();
 
         return back()->with('meldung', 'Passwort gesetzt. Der Link per Mail geht weiterhin.');
+    }
+
+    /** Neue Mailadresse: erst ein Bestaetigungslink an die neue Adresse (eine Stunde), dann der Wechsel. */
+    public function emailWechsel(Request $request): RedirectResponse
+    {
+        $data = $request->validate(['email' => ['required', 'email:rfc', 'max:190']]);
+        $neu = Str::lower(trim($data['email']));
+        $user = $request->user();
+        if ($neu === Str::lower($user->email)) {
+            return back()->with('fehler', 'Das ist schon deine Adresse.');
+        }
+        if (User::where('email', $neu)->where('id', '!=', $user->id)->exists()) {
+            return back()->with('fehler', 'Diese Adresse gehört schon zu einem anderen Konto. Schreib uns, dann führen wir die Konten zusammen.');
+        }
+        $url = URL::temporarySignedRoute('profil.email.bestaetigen', now()->addHour(), ['user' => $user->id, 'email' => $neu]);
+        Mail::to($neu, $user->name)->send(new EmailWechselMail($user, $neu, $url));
+
+        return redirect()->to(route('profil').'#email')->with('meldung', 'Wir haben einen Bestätigungslink an '.$neu.' geschickt. Erst nach dem Klick gilt die neue Adresse.');
+    }
+
+    public function emailBestaetigen(Request $request, User $user, string $email): RedirectResponse
+    {
+        $neu = Str::lower(trim($email));
+        if ($request->user()->id !== $user->id) {
+            return redirect()->route('profil')->with('fehler', 'Der Link gehört zu einem anderen Konto. Melde dich mit dem richtigen Konto an und öffne ihn nochmals.');
+        }
+        if (User::where('email', $neu)->where('id', '!=', $user->id)->exists()) {
+            return redirect()->route('profil')->with('fehler', 'Diese Adresse gehört inzwischen zu einem anderen Konto.');
+        }
+        $user->forceFill(['email' => $neu, 'email_verified_at' => now()])->save();
+
+        return redirect()->route('profil')->with('meldung', 'Deine Adresse ist jetzt '.$neu.'. Anmeldelinks gehen ab sofort dorthin.');
     }
 
     /** Technik-Hilfe: Meldung mit Seite, Geraet und Browser an die Support-Adresse des Mandanten. */

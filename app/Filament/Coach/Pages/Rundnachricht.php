@@ -7,6 +7,7 @@ use App\Models\Program;
 use App\Notifications\Notifier;
 use App\Notifications\Rundsendung;
 use BackedEnum;
+use Filament\Actions\Action;
 use Filament\Forms\Components\CheckboxList;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\Textarea;
@@ -60,6 +61,32 @@ class Rundnachricht extends Page
                     ->required(fn ($get) => ! $get('persoenlich'))->visible(fn ($get) => ! $get('persoenlich')),
             ]),
         ])->statePath('data');
+    }
+
+    /** Rueckfrage vor dem Senden (wie im alten Testversand): an wen, wie viele, nicht rueckgaengig. */
+    public function sendenAction(): Action
+    {
+        return Action::make('senden')->label('Senden')->icon('heroicon-o-paper-airplane')
+            ->requiresConfirmation()
+            ->modalHeading('Rundnachricht senden?')
+            ->modalDescription(fn () => $this->vorschau())
+            ->modalSubmitActionLabel('Ja, jetzt senden')
+            ->action(fn () => $this->senden());
+    }
+
+    /** Text fuer die Rueckfrage: Empfaengerzahl, Kanaele, Titel. Prueft vorher das Formular. */
+    public function vorschau(): string
+    {
+        $data = $this->form->getState();
+        $ids = app(Rundsendung::class)->recipients($data['an'], $data['program_id'] ?? null, auth()->user(), $data['user_ids'] ?? []);
+        $n = $ids->count();
+        $wohin = ($data['persoenlich'] ?? false)
+            ? 'als persönliche Nachricht ins 1:1-Gespräch'
+            : 'per '.collect($data['kanaele'] ?? [])->map(fn ($k) => $k === 'push' ? 'Push/Telegram' : 'Mail')->join(' und ').(($data['chat'] ?? false) ? ', dazu ins Gruppengespräch' : '');
+        $titel = trim((string) ($data['titel'] ?? '')) ?: mb_substr(trim((string) ($data['text'] ?? '')), 0, 60);
+
+        return "Geht an $n Person".($n === 1 ? '' : 'en').", $wohin. «{$titel}». Das lässt sich nicht rückgängig machen."
+            .(app(Notifier::class)->testMode() ? ' Testbetrieb ist an: nur freigegebene Adressen bekommen etwas.' : '');
     }
 
     public function senden(): void

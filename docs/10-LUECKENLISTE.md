@@ -182,6 +182,22 @@ Sortiert nach Nutzen fuer Lea und die Teilnehmerinnen. Mehrfach gefundene Punkte
   und Herkunft, Sortierung, Vorschaubild und Beschreibung, Dateiname, "in n Lektionen", Angeschaut-Marke, Teilen-Knopf
   (Material kommt angehaengt ins Gespraech), "Gehoert zu" auf der Einzelseite. Neuigkeiten: mehrere Kurse als
   Zielgruppe (`posts.program_ids`), Gruppierung nach Monat, Gelesen-Zustand je Beitrag mit Zaehler an der Pille.
+- 30.09.: E34 bis E36 umgesetzt. Anmeldung: Google und Apple lassen sich im Profil verknuepfen und trennen
+  (`social_accounts`, Kennung beim Dienst statt nur Mailabgleich), Apple mit verborgener Adresse klappt nach dem
+  Verknuepfen, sonst kommt die Erklaerung dazu. Apple-Zugang je Mandant unter `/coach/verbindungen` (Services-ID,
+  Team-ID, Key-ID, .p8-Schluessel, das Client-Secret erzeugt der Provider selbst), Google ebenso. Mailadresse aendern
+  mit Bestaetigungslink an die neue Adresse (`profil.email`). Altlinks: `/mitgliederbereich/...` landet auf der
+  richtigen Seite (`App\Support\Altlinks`, Bereichsnamen, Kurs, Lektion, Termin, Beitrag ueber Slug oder
+  `legacy_id`, eigene Zuordnung in `settings.altlinks`), ohne Anmeldung ueber `/anmelden?weiter=`. Mails: ein
+  Rahmen fuer alle (`components/mail/rahmen`: Logo, Fusszeile aus `mail.fusszeile`, Profil-Hinweis),
+  Willkommensmail mit Text je Programm (`settings.willkommen_text`) und Vorgabe je Art (1:1 oder Gruppe) samt
+  Einfuehrungs- und Startbildschirm-Hinweis, "Dein Zugang ist da" mit demselben Text, Abendmail mit bis zu sechs
+  Karten und je einem Link "Ansehen und antworten" (`Nachricht::liste`). Test-Push an sich selbst im Profil
+  (`push.test`). Rundnachricht fragt vor dem Senden nach (Empfaengerzahl, Kanaele, Titel). Zahlen fuer die
+  Inhaberin unter `/coach/zahlen` (`App\Shop\Zahlen`: Umsatz Jahr, Monat, offen, ueberfaellig, zwoelf Monate,
+  Jahre, Angebote, beste Kundinnen) und Kennzahlen im Dossier-Reiter Rechnungen (Umsatz, offen, Rang und Anteil,
+  letzte Rechnung, dabei seit, wofuer bezahlt, Handlungshinweis). Offen bleiben E30 (Abos mit Stripe, Kundenportal,
+  WooCommerce abschalten) und E33 (Newsletter, Etappe 11).
 
 ## Was bewusst nicht kommt
 

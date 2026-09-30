@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\AlsController;
+use App\Http\Controllers\AltlinkController;
 use App\Http\Controllers\AngeboteController;
 use App\Http\Controllers\AnhaengeController;
 use App\Http\Controllers\AnsichtController;
@@ -64,6 +65,8 @@ Route::post('/hooks/woocommerce', WooCommerceController::class)->name('hooks.woo
 
 // Bruecke aus dem alten Mitgliederbereich (signierter Link, 60 Sekunden, einmalig)
 Route::get('/sso', BridgeController::class)->name('sso');
+// Alte Adressen aus dem WordPress-Mitgliederbereich (nach dem Umschalten per 301 hierher geleitet)
+Route::get('/mitgliederbereich/{pfad?}', AltlinkController::class)->where('pfad', '.*')->name('altlink');
 
 // Kalender-Abo (ohne Anmeldung, Schluessel je Person)
 Route::get('/kalender/{token}.ics', [KalenderController::class, 'abo'])->name('kalender.abo')->where('token', '[A-Za-z0-9]{32,64}');
@@ -86,10 +89,11 @@ Route::middleware('guest')->group(function () {
     Route::post('/anmelden/link', [LoginController::class, 'sendLink'])->name('anmelden.link');
     Route::post('/anmelden/passwort', [LoginController::class, 'password'])->name('anmelden.passwort');
     Route::get('/anmelden/dienst/{dienst}', [SocialController::class, 'redirect'])->name('anmelden.dienst');
-    Route::match(['get', 'post'], '/anmelden/dienst/{dienst}/zurueck', [SocialController::class, 'callback'])->name('anmelden.dienst.zurueck');
     Route::post('/passkeys/anmelden/optionen', [PasskeyController::class, 'loginOptions'])->name('passkeys.anmelden.optionen');
     Route::post('/passkeys/anmelden', [PasskeyController::class, 'login'])->name('passkeys.anmelden');
 });
+// Rueckkehr von Google/Apple: auch angemeldet, denn aus dem Profil laesst sich ein Dienst verknuepfen.
+Route::match(['get', 'post'], '/anmelden/dienst/{dienst}/zurueck', [SocialController::class, 'callback'])->name('anmelden.dienst.zurueck');
 // Der Link aus der Mail darf auch klappen, wenn schon jemand angemeldet ist (anderes Konto).
 Route::get('/anmelden/{token}', [LoginController::class, 'token'])->name('anmelden.token')->where('token', '[A-Za-z0-9]{40,64}');
 Route::post('/abmelden', [LoginController::class, 'logout'])->name('abmelden');
@@ -115,6 +119,11 @@ Route::middleware(['auth', 'membership'])->group(function () {
     Route::get('/buchhaltung/bexio/start', [BuchhaltungController::class, 'bexioStart'])->name('buchhaltung.bexio.start');
     Route::get('/buchhaltung/bexio/rueckkehr', [BuchhaltungController::class, 'bexioRueckkehr'])->name('buchhaltung.bexio.rueckkehr');
     Route::delete('/profil/schluessel/{id}', [ProfilController::class, 'schluesselLoeschen'])->name('profil.schluessel.loeschen');
+    Route::get('/profil/dienst/{dienst}/verknuepfen', [SocialController::class, 'verknuepfen'])->name('profil.dienst.verknuepfen');
+    Route::delete('/profil/dienst/{dienst}', [SocialController::class, 'trennen'])->name('profil.dienst.trennen');
+    Route::post('/profil/email', [ProfilController::class, 'emailWechsel'])->middleware('throttle:5,10')->name('profil.email');
+    Route::get('/profil/email/bestaetigen/{user}/{email}', [ProfilController::class, 'emailBestaetigen'])->middleware('signed')->name('profil.email.bestaetigen');
+    Route::post('/push/test', [PushController::class, 'test'])->middleware('throttle:5,10')->name('push.test');
     Route::post('/passkeys/anlegen/optionen', [PasskeyController::class, 'registerOptions'])->name('passkeys.anlegen.optionen');
     Route::post('/passkeys/anlegen', [PasskeyController::class, 'register'])->name('passkeys.anlegen');
     Route::delete('/passkeys/{id}', [PasskeyController::class, 'destroy'])->name('passkeys.loeschen');

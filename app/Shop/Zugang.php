@@ -65,9 +65,10 @@ class Zugang
         $e->fill(['status' => 'active', 'starts_at' => $startsAt, 'ends_at' => $endsAt])->save();
 
         if ($notify && ! $wasCurrent) {
+            $eigener = self::willkommenText($offer);
             $this->notifier->send([$user], new Nachricht(
                 titel: 'Dein Zugang ist da',
-                text: $offer->title.' ist jetzt für dich freigeschaltet.',
+                text: $offer->title.' ist jetzt für dich freigeschaltet.'.($eigener ? "\n\n".$eigener : ''),
                 url: route('kurse.index'),
                 anlass: 'system',
                 tag: 'zugang-'.$e->id,
@@ -101,10 +102,37 @@ class Zugang
         return true;
     }
 
-    /** Willkommensmail mit Anmeldelink (7 Tage gueltig). */
+    /** Willkommensmail mit Anmeldelink (7 Tage gueltig), Text je Programm und Art (1:1 oder Gruppe). */
     public function welcome(User $user, ?Offer $offer = null): void
     {
         $url = $this->magicLink->create($user, route('home', absolute: false), null, 60 * 24 * 7);
-        Mail::to($user->email, $user->name)->send(new WillkommenMail($user, $url, $offer?->title));
+        Mail::to($user->email, $user->name)->send(new WillkommenMail($user, $url, $offer?->title, self::willkommenText($offer), self::willkommenArt($offer)));
+    }
+
+    /** Eigener Willkommenstext des ersten Programms im Angebot, das einen hat. */
+    public static function willkommenText(?Offer $offer): ?string
+    {
+        if (! $offer) {
+            return null;
+        }
+        foreach ($offer->programs as $p) {
+            if (filled($t = data_get($p->settings, 'willkommen_text'))) {
+                return trim((string) $t);
+            }
+        }
+
+        return null;
+    }
+
+    public static function willkommenArt(?Offer $offer): ?string
+    {
+        if (! $offer) {
+            return null;
+        }
+        if ($offer->type === 'one_on_one' || $offer->programs->contains(fn ($p) => $p->type === 'one_on_one')) {
+            return 'one_on_one';
+        }
+
+        return $offer->programs->first()?->type ?: $offer->type;
     }
 }

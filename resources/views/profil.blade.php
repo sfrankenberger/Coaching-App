@@ -113,6 +113,7 @@
         <div class="flex flex-wrap items-center gap-2" data-push data-schluessel="{{ route('push.schluessel') }}" data-abo="{{ route('push.abo') }}">
             <button type="button" class="knopf" data-push-an>Push einschalten</button>
             <button type="button" class="knopf knopf-ruhig" data-push-aus @if (! $pushGeraete) hidden @endif>Auf diesem Gerät ausschalten</button>
+            @if ($pushGeraete || ($telegram && $telegram->active))<button type="button" class="knopf knopf-leise" data-push-test data-push-test="{{ route('push.test') }}">Test schicken</button>@endif
             <span class="hinweis" data-push-status>{{ $pushGeraete ? $pushGeraete.' '.($pushGeraete === 1 ? 'Gerät' : 'Geräte').' angemeldet' : 'Noch kein Gerät angemeldet' }}</span>
         </div>
         @if ($telegram !== false)
@@ -187,6 +188,40 @@
             <button type="button" class="knopf" data-passkey="anlegen" data-optionen="{{ route('passkeys.anlegen.optionen') }}" data-speichern="{{ route('passkeys.anlegen') }}">Passkey anlegen</button>
             <span class="hinweis" data-passkey-status></span>
         </div>
+    </x-karte>
+
+    @if ($dienste)
+        <div id="anmelden"></div>
+        <x-karte titel="Anmelden mit {{ implode(' oder ', $dienste) }}" icon="right-to-bracket">
+            <p class="hinweis mb-3">Verknüpfe dein Konto einmal, danach reicht auf der Anmeldeseite ein Tipp auf den Knopf. Das gilt auch, wenn du bei Apple deine Mailadresse verbirgst.</p>
+            <ul class="divide-y divide-line">
+                @foreach ($dienste as $key => $label)
+                    @php $konto = $verknuepft[$key] ?? null; @endphp
+                    <li class="flex items-center gap-3 py-2">
+                        <span class="min-w-0 flex-1">
+                            <span class="block text-base">{{ $label }}</span>
+                            <span class="hinweis">{{ $konto ? 'verknüpft'.($konto->email && ! \App\Models\SocialAccount::versteckt($konto->email) ? ' als '.$konto->email : '').', seit '.$konto->created_at->translatedFormat('j. F Y') : 'nicht verknüpft' }}</span>
+                        </span>
+                        @if ($konto)
+                            <form method="post" action="{{ route('profil.dienst.trennen', $key) }}" onsubmit="return confirm('{{ $label }} vom Konto trennen?')">@csrf @method('DELETE')<button class="knopf knopf-leise knopf-klein">Trennen</button></form>
+                        @else
+                            <a href="{{ route('profil.dienst.verknuepfen', $key) }}" class="knopf knopf-ruhig knopf-klein">Verknüpfen</a>
+                        @endif
+                    </li>
+                @endforeach
+            </ul>
+        </x-karte>
+    @endif
+
+    <div id="email"></div>
+    <x-karte titel="Mailadresse ändern" icon="envelope">
+        <p class="hinweis mb-3">Deine Anmeldelinks und Mails gehen an <b>{{ $person->email }}</b>. Zum Ändern schicken wir einen Bestätigungslink an die neue Adresse, erst danach gilt sie.</p>
+        <form method="post" action="{{ route('profil.email') }}" class="flex flex-wrap items-center gap-2">
+            @csrf
+            <input type="email" name="email" class="feld" style="max-width:280px" placeholder="neue@adresse.ch" required autocomplete="email" value="{{ old('email') }}">
+            <button type="submit" class="knopf knopf-ruhig">Link schicken</button>
+        </form>
+        @error('email') <p class="fehler mt-1">{{ $message }}</p> @enderror
     </x-karte>
 
     <x-karte titel="Passwort, freiwillig" icon="key">

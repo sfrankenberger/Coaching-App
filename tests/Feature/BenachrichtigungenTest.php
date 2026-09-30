@@ -178,7 +178,7 @@ class BenachrichtigungenTest extends TestCase
 
         $this->in(fn () => Event::create(['program_id' => $this->program->id, 'title' => 'Call', 'starts_at' => now()->subDay(), 'recording_url' => 'https://vimeo.com/1']));
         $this->assertSame(1, $this->in(fn () => app(Runden::class)->abendmail()), 'Anna ja, Bea hat Abendmail aus');
-        Notification::assertSentTo($this->anna, AppNotification::class, fn (AppNotification $n, $channels) => $n->nachricht->anlass === 'abendmail' && $channels === ['mail'] && str_contains($n->nachricht->text, 'Aufzeichnung: Call'));
+        Notification::assertSentTo($this->anna, AppNotification::class, fn (AppNotification $n, $channels) => $n->nachricht->anlass === 'abendmail' && $channels === ['mail'] && $n->nachricht->liste[0]['titel'] === 'Aufzeichnung: Call' && str_contains($n->nachricht->liste[0]['url'], '/termine/'));
         $this->assertSame(0, $this->in(fn () => app(Runden::class)->abendmail()), 'nicht zweimal am Tag');
     }
 

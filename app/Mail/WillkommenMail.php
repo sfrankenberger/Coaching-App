@@ -17,7 +17,8 @@ class WillkommenMail extends Mailable
 {
     use Queueable, SerializesModels;
 
-    public function __construct(public User $user, public string $url, public ?string $angebot = null) {}
+    /** $text: eigener Willkommenstext des Programms (settings.willkommen_text), $art: Programmart fuer den Vorgabetext (one_on_one, hybrid, ...). */
+    public function __construct(public User $user, public string $url, public ?string $angebot = null, public ?string $text = null, public ?string $art = null) {}
 
     public function envelope(): Envelope
     {
@@ -33,6 +34,6 @@ class WillkommenMail extends Mailable
 
     public function content(): Content
     {
-        return new Content(view: 'mail.willkommen', with: ['user' => $this->user, 'url' => $this->url, 'angebot' => $this->angebot]);
+        return new Content(view: 'mail.willkommen', with: ['user' => $this->user, 'url' => $this->url, 'angebot' => $this->angebot, 'text' => $this->text, 'art' => $this->art]);
     }
 }

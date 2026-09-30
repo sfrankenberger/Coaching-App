@@ -3,6 +3,8 @@
 namespace App\Http\Controllers;
 
 use App\Models\PushSubscription;
+use App\Notifications\Nachricht;
+use App\Notifications\Notifier;
 use App\Notifications\WebPushChannel;
 use App\Tenancy\CurrentTenant;
 use Illuminate\Http\JsonResponse;
@@ -50,5 +52,25 @@ class PushController extends Controller
         $q->delete();
 
         return response()->json(['ok' => true, 'anzahl' => PushSubscription::where('user_id', $request->user()->id)->count()]);
+    }
+
+    /** Test-Push an sich selbst (wie lea_push_test): nur Push und Telegram, keine Mail, keine Mitteilung. */
+    public function test(Request $request): JsonResponse
+    {
+        $user = $request->user();
+        if (! app(Notifier::class)->hasPushOrTelegram($user)) {
+            return response()->json(['ok' => false, 'meldung' => 'Auf diesem Konto ist noch kein Gerät für Push angemeldet.']);
+        }
+        $report = app(Notifier::class)->send([$user], new Nachricht(
+            titel: 'Test: Push funktioniert',
+            text: 'Wenn du das liest, kommen Nachrichten bei dir an. '.now()->format('H:i').' Uhr.',
+            url: url('/profil#benachrichtigungen'),
+            anlass: 'system',
+            tag: 'push-test',
+            mailWennKeinPush: false,
+            inApp: false,
+        ));
+
+        return response()->json(['ok' => (bool) ($report[$user->id] ?? false), 'meldung' => ($report[$user->id] ?? false) ? 'Test-Push ist raus. Er sollte gleich auftauchen.' : 'Der Test konnte nicht zugestellt werden. Im Testbetrieb gehen Nachrichten nur an freigegebene Adressen.']);
     }
 }

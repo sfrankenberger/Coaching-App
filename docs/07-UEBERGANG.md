@@ -56,7 +56,8 @@ Der Import ist wiederholbar (legacy_id) und überschreibt Inhaltsfelder aus Word
 
 1. Schreibstopp im alten Mitgliederbereich (Hinweis an alle, Knopf "Zur neuen App" für alle: in `lea_neueapp_darf()` den Kursfilter entfernen)
 2. Letzter Import: `import:wordpress lea --only=alles`
-3. `/mitgliederbereich/*` auf leawernli.ch per 301 auf `https://app.leawernli.ch` umleiten
+3. `/mitgliederbereich/*` auf leawernli.ch per 301 auf `https://app.leawernli.ch/mitgliederbereich/...` umleiten,
+   Pfad und Query mitgeben (siehe 4a): die App ordnet alte Adressen selbst zu
 4. Sandbox-Module im WordPress abschalten (nicht löschen), nach 30 Tagen aufräumen
 5. Woo-Webhook bleibt, Feeds bleiben, Brücke bleibt (für den Weg von der Website in die App)
 
@@ -89,6 +90,29 @@ weiterleiten). Wer die neue App auf den Home-Bildschirm legt, bekommt dort beim 
 und ist dann doppelt eingetragen; das ist harmlos, der Browser bindet je Abo einen Service Worker.
 Achtung: `--schluessel` ersetzt die in der App erzeugten Schluessel, Abos aus dem Testbetrieb der App muessen
 dann einmal neu eingeschaltet werden (Profil). Darum die Uebernahme genau einmal machen, beim Umschalten.
+
+## 4a. Alte Adressen (Altlinks)
+
+Alte Mails, Kalendereintraege und Push-Nachrichten zeigen auf `leawernli.ch/mitgliederbereich/...`. Damit die Personen
+nicht nur auf der Startseite landen, nimmt die App diese Pfade unter `/mitgliederbereich/{pfad}` entgegen
+(`AltlinkController`, `App\Support\Altlinks`) und leitet weiter:
+
+- Bereichsnamen: `termine`, `kalender`, `gespraech`, `chat`, `nachrichten`, `aufgaben`, `notizen`, `journal`,
+  `reflexion`, `wochencheck`, `material`, `ressourcen`, `downloads`, `impulse`, `neuigkeiten`, `podcast`, `profil`,
+  `mitgliedschaft`, `community`, `fragen`, `buchen`, `hilfe`, `nachschlagen`, `merkliste`, `projekte` (volle Liste
+  in `Altlinks::BEREICHE`). Unbekanntes landet auf der Startseite.
+- Kurs: `kurs/{slug oder WordPress-ID}`, dazu `/austausch`, `/fragen`, `/woche/{n}`; Lektion: `lektion/{WordPress-ID}`
+  oder `?kurs=...&lektion=...` (ueber `units.legacy_id`); Termin: `termine/{WordPress-ID}`; Beitrag: `impulse/{slug}`
+  oder `?p={WordPress-ID}`.
+- Eigene Zuordnung je Mandant in `tenants.settings.altlinks` (`{"alter/pfad": "/neuer/pfad"}`), laengster Treffer
+  gewinnt, geht vor der eingebauten Tabelle. So lassen sich beim Umschalten die wirklich verschickten Adressen
+  nachtragen, ohne Code.
+- Nicht angemeldete Personen gehen ueber `/anmelden?weiter=...` und landen nach dem Link am Ziel.
+
+In WordPress darum nicht pauschal auf die Startseite leiten, sondern Pfad und Query mitgeben:
+`RedirectMatch 301 ^/mitgliederbereich/(.*)$ https://app.leawernli.ch/mitgliederbereich/$1` (Query haengt Apache
+von selbst an). Vor dem Umschalten die Liste der tatsaechlich verwendeten Adressen aus den Mailvorlagen und
+`lea-push.php` ziehen und gegen `Altlinks` pruefen (`php84 artisan tinker`, `(new App\Support\Altlinks($tenant))->ziel('...')`).
 
 **Anmeldung ohne Magic Link.** Die Weiterleitung von `/mitgliederbereich/*` sollte fuer angemeldete Personen
 ueber die Bruecke gehen (`lea_neueapp_token()` aus `lea-neueapp-bruecke.php`, signierter Einmal-Link), dann

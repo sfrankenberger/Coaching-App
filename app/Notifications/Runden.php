@@ -30,6 +30,8 @@ use Illuminate\Support\Str;
  */
 class Runden
 {
+    public const ABENDMAIL_KARTEN = 6;
+
     public function __construct(protected CurrentTenant $current, protected Notifier $notifier) {}
 
     /** Fuer jeden aktiven Mandanten im richtigen Kontext ausfuehren. */
@@ -282,14 +284,18 @@ class Runden
                 continue;
             }
 
-            $text = $neues->map(fn ($e) => '• '.$e['titel'].($e['text'] ? ': '.$e['text'] : ''))->join("\n");
+            // Wie lea_am_text: bis zu sechs Karten mit je einem Link "Ansehen und antworten", der Rest als Zeile.
+            $karten = $neues->take(self::ABENDMAIL_KARTEN);
+            $rest = $neues->slice(self::ABENDMAIL_KARTEN);
+            $text = $rest->map(fn ($e) => '• '.$e['titel'].($e['text'] ? ': '.$e['text'] : ''))->join("\n");
             $user->notify(new AppNotification(new Nachricht(
                 titel: $neues->count() === 1 ? 'Etwas Neues in deinem Bereich' : $neues->count().' neue Sachen in deinem Bereich',
-                text: "Seit deinem letzten Besuch ist dazugekommen:\n\n".$text,
+                text: 'Seit deinem letzten Besuch ist dazugekommen:'.($text !== '' ? "\n\nAusserdem:\n".$text : ''),
                 url: url('/'),
                 anlass: 'abendmail',
                 tag: 'abendmail',
-                knopf: 'Ansehen',
+                knopf: 'Alles ansehen',
+                liste: $karten->map(fn ($e) => ['titel' => $e['titel'], 'text' => $e['text'] ?? '', 'herkunft' => $e['herkunft'] ?? '', 'url' => $e['url'] ?? null, 'knopf' => 'Ansehen und antworten'])->values()->all(),
             ), ['mail'], $this->current->id()));
             $m->forceFill(['digest_sent_at' => now()])->save();
             $n++;

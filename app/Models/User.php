@@ -144,4 +144,10 @@ class User extends Authenticatable implements FilamentUser, WebAuthnAuthenticata
     {
         return filled($this->password);
     }
+
+    /** Verknuepfte Anmeldedienste (Google, Apple). */
+    public function socialAccounts(): HasMany
+    {
+        return $this->hasMany(SocialAccount::class);
+    }
 }

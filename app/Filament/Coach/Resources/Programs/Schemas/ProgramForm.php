@@ -8,6 +8,7 @@ use Filament\Forms\Components\ColorPicker;
 use Filament\Forms\Components\DatePicker;
 use Filament\Forms\Components\RichEditor;
 use Filament\Forms\Components\Select;
+use Filament\Forms\Components\Textarea;
 use Filament\Forms\Components\TextInput;
 use Filament\Forms\Components\Toggle;
 use Filament\Schemas\Components\Section;
@@ -46,6 +47,8 @@ class ProgramForm
                 Toggle::make('is_internal')->label('Nur intern')->helperText('Fertig gebaut, aber nur für Team und direkt eingetragene Personen sichtbar.'),
                 Toggle::make('settings.gratis')->label('Offen für alle')->helperText('Gratiskurs: alle Personen mit Zugang zum Bereich sehen ihn, ohne Kauf.'),
                 Toggle::make('settings.kommt_bald')->label('Als «Kommt bald» zeigen')->helperText('Noch nicht veröffentlicht, aber alle sehen die Karte in Meine Kurse.'),
+                Textarea::make('settings.willkommen_text')->label('Willkommenstext in der ersten Mail')->rows(4)->maxLength(2000)->columnSpanFull()
+                    ->helperText('Steht in der Willkommensmail und in der Mitteilung "Dein Zugang ist da", wenn jemand dieses Programm bekommt. Leer: ein kurzer Vorgabetext je nach Art (1:1 oder Gruppe).'),
                 Toggle::make('settings.strecke')->label('Begleitstrecke')->live()->helperText('Wer hängt, bekommt nach 2 und 7 Tagen eine Mail. Wer durch ist, bekommt die eigenen Goldnuggets, das Team einen Push.'),
                 TextInput::make('settings.strecke_gespraech')->label('Link zum Gespräch in den Mails')->url()->maxLength(500)->placeholder('leer: die Buchungsseite, wenn eingeschaltet')->visible(fn ($get) => (bool) $get('settings.strecke')),
                 TextInput::make('settings.strecke_goldnuggets')->label('Übungsteil für die Goldnuggets')->maxLength(60)->placeholder('Schlüssel oder Nummer, leer: Listen der letzten Einheit')->visible(fn ($get) => (bool) $get('settings.strecke')),
