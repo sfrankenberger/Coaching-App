@@ -27,7 +27,6 @@ function lea_app_anmeldung_map()
         'Newsletter ADHS-Mütter' => ['tag' => 'newsletter,adhs-muetter'],
         'Webinar Anmeldung' => ['tag' => 'webinar-serie'],
         'CoachClub Warteliste' => ['tag' => 'coachclub-warteliste'],
-        'Freebie E-Book' => ['tag' => 'freebie-weniger-sorgen,newsletter'],
         'Live-Abend Hybrid-Coaching' => ['tag' => 'live-abend-hybrid-coaching', 'sofort' => true],
         'Coach-Ausbildung Interessensliste' => ['tag' => 'coach-ausbildung-interessensliste', 'sofort' => true],
     ];

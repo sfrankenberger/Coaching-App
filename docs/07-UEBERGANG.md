@@ -62,9 +62,9 @@ Der Import ist wiederholbar (legacy_id) und überschreibt Inhaltsfelder aus Word
 5. Woo-Webhook bleibt, Feeds bleiben, Brücke bleibt (für den Weg von der Website in die App)
 6. Mailster ist seit 1.10. (nachts) deaktiviert, Teilnehmerinnen merken nichts: Systemmails der Website (Anmeldelinks,
    Abendmail, Erinnerungen, Chat) gehen ueber `lea-wp-mail-mailgun.php` weiter per Mailgun (Zugang in der Option
-   `lea_mailgun`, aus den Mailster-Einstellungen uebernommen, Protokoll `lea_mailgun_log`). Die drei Autoresponder mit
-   Wirkung sind Serien in der App (Willkommen auf `newsletter`, E-Book-Strecke 0/7/14 Tage auf `freebie-weniger-sorgen`,
-   Aufzeichnung auf `live-abend-hybrid-coaching`); die Autoresponder "Beitrag veroeffentlicht" ersetzt die Newsletter-Box
+   `lea_mailgun`, aus den Mailster-Einstellungen uebernommen, Protokoll `lea_mailgun_log`). Die Autoresponder mit
+   Wirkung sind Serien in der App (Willkommen auf `newsletter` mit Knopf zum Gratiskurs "Der Anfang", Aufzeichnung auf
+   `live-abend-hybrid-coaching`; das E-Book gibt es nicht mehr, Freebie ist die App mit dem ersten kostenlosen Kurs); die Autoresponder "Beitrag veroeffentlicht" ersetzt die Newsletter-Box
    im Beitragseditor. Alte Abmelde- und Profil-Links aus Mailster-Mails leiten auf `app.leawernli.ch/n/abmelden`
    (Adresse eingeben, Link kommt per Mail). Formulare der Website schreiben ueber `lea-app-anmeldung.php` in die App.
    Am Umzugstag nur noch: Kontakte-Import wiederholen (`--only=kontakte`, holt Anmeldungen vom 30.09. bis 1.10. nach,
