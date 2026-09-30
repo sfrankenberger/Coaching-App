@@ -27,6 +27,7 @@ use App\Models\Tenant;
 use App\Models\Tool;
 use App\Models\Topic;
 use App\Models\Unit;
+use App\Models\UnitVideo;
 use App\Models\User;
 use App\Observers\EventObserver;
 use App\Observers\PostObserver;
@@ -93,6 +94,7 @@ class AppServiceProvider extends ServiceProvider
             'topic' => Topic::class,
             'tool' => Tool::class,
             'sammlung' => Sammlung::class,
+            'unit_video' => UnitVideo::class,
         ]);
 
         // Funktionen je Mandant (Pennant): Schalter in tenants.settings, hier an einer Stelle aufgeloest

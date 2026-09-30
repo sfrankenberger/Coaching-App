@@ -135,6 +135,13 @@ Sortiert nach Nutzen fuer Lea und die Teilnehmerinnen. Mehrfach gefundene Punkte
   Avatar, leiser Push an die Gruppe bei neuer Frage (Schalter "Fragen im Kurs" im Profil). Fragentag: Push um 9 Uhr
   (`Runden::terminErinnerungen`), "Frage stellen" fuehrt zu den Kursfragen, "Frage dazu" aus Lektion, Impuls und Folge,
   Frage aus der Community mit Kurswahl. Import uebernimmt Antwort-Baum, beste Antwort, Herzen, Reaktionen, Folgen.
+- 30.09.: B11 und B12 umgesetzt. Lektionsvideos: Abschrift, Zusammenfassung mit Kapiteln und "Zum Nachlesen, worum es
+  ging" je Vimeo-Video (`unit_videos`, `App\Recordings\LektionsVideo`, laeuft mit `aufzeichnungen:wache`), Stelle je
+  Video der Playlist (`unit-12-1`), Standbalken in Einheiten- und Materialzeilen (`App\Support\Medienstand`).
+  Materialvideos: weiter ab gemerkter Stelle, ab 80 Prozent angeschaut, Knopf "Als angeschaut markieren" und "Nochmal
+  ansehen" (`material.gesehen`). Woche: Wochenband zum Wischen mit Haken, Schloss und "Jetzt", Sprung zur aktuellen
+  Woche, Reflexionstag mit Stand "geschrieben" und der eigenen Reflexion der Woche, eigene Fragen der Woche, naechster
+  Call in der Startseiten-Karte.
 
 ## Was bewusst nicht kommt
 

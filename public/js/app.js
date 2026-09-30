@@ -110,6 +110,9 @@
             }
             document.querySelectorAll('.video-wahl').forEach(function (x) { x.classList.remove('text-primary', 'font-semibold'); });
             wahl.classList.add('text-primary', 'font-semibold');
+            /* Stelle und Kapitel gelten je Video der Playlist */
+            if (wahl.dataset.medien) { player.dataset.medien = wahl.dataset.medien; player.dataset.start = wahl.dataset.start || '0'; }
+            document.querySelectorAll('[data-video-info]').forEach(function (b) { b.hidden = b.dataset.videoInfo !== (wahl.dataset.index || '0'); });
             player.scrollIntoView({ behavior: 'smooth', block: 'center' });
         }
     });
@@ -536,7 +539,7 @@ document.addEventListener('click', function (e) {
 
 /* Kapitelliste laeuft mit: die Medienbeobachtung meldet die Zeit ueber 'medien:zeit' */
 document.addEventListener('medien:zeit', function (e) {
-    var liste = document.querySelector('[data-kapitel]');
+    var liste = Array.prototype.find.call(document.querySelectorAll('[data-kapitel]'), function (l) { return !l.closest('[hidden]'); });
     if (!liste) return;
     var s = e.detail.sekunden, aktiv = null;
     var zeilen = liste.querySelectorAll('li');
@@ -563,15 +566,17 @@ document.addEventListener('medien:zeit', function (e) {
             .catch(function () {});
     }
     function beobachten(box) {
-        var key = box.dataset.medien, start = parseInt(box.dataset.start || '0', 10), zuletzt = 0;
+        var zuletzt = 0;
+        function key() { return box.dataset.medien; }
+        function start() { return parseInt(box.dataset.start || '0', 10); }
         function melden(s, d, sofort) {
-            document.dispatchEvent(new CustomEvent('medien:zeit', { detail: { key: key, sekunden: s } }));
+            document.dispatchEvent(new CustomEvent('medien:zeit', { detail: { key: key(), sekunden: s } }));
             if (!sofort && Math.abs(s - zuletzt) < 10) return;
-            zuletzt = s; senden(key, s, d);
+            zuletzt = s; senden(key(), s, d);
         }
         var v = box.querySelector('video, audio');
         if (v) {
-            v.addEventListener('loadedmetadata', function () { if (start > 5 && start < v.duration - 10) v.currentTime = start; });
+            v.addEventListener('loadedmetadata', function () { var st = start(); if (st > 5 && st < v.duration - 10) v.currentTime = st; });
             v.addEventListener('timeupdate', function () { melden(v.currentTime, v.duration, false); });
             v.addEventListener('pause', function () { melden(v.currentTime, v.duration, true); });
             v.addEventListener('ended', function () { melden(v.duration, v.duration, true); });
@@ -587,7 +592,7 @@ document.addEventListener('medien:zeit', function (e) {
             if (!d) return;
             if (d.event === 'ready') {
                 ['timeupdate', 'pause', 'ended'].forEach(function (ev) { an({ method: 'addEventListener', value: ev }); });
-                if (start > 5 && !gesprungen) { gesprungen = true; an({ method: 'setCurrentTime', value: start }); }
+                if (start() > 5 && !gesprungen) { gesprungen = true; an({ method: 'setCurrentTime', value: start() }); }
             }
             if (d.event === 'timeupdate' && d.data) { dauer = d.data.duration || dauer; melden(d.data.seconds, dauer, false); }
             if (d.event === 'pause' && d.data) melden(d.data.seconds, dauer, true);
@@ -595,8 +600,9 @@ document.addEventListener('medien:zeit', function (e) {
         });
         /* Falls "ready" schon vorbei ist, bevor wir lauschen: nach dem Laden direkt anmelden */
         f.addEventListener('load', function () {
+            gesprungen = false; zuletzt = 0;
             ['timeupdate', 'pause', 'ended'].forEach(function (ev) { an({ method: 'addEventListener', value: ev }); });
-            if (start > 5 && !gesprungen) { gesprungen = true; setTimeout(function () { an({ method: 'setCurrentTime', value: start }); }, 600); }
+            if (start() > 5 && !gesprungen) { gesprungen = true; setTimeout(function () { an({ method: 'setCurrentTime', value: start() }); }, 600); }
         });
     }
     boxen.forEach(beobachten);

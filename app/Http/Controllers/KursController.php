@@ -13,6 +13,7 @@ use App\Models\Program;
 use App\Models\ProgramMember;
 use App\Models\ProgramStep;
 use App\Models\Question;
+use App\Models\Reflection;
 use App\Models\Task;
 use App\Models\Unit;
 use App\Programs\Begleitung;
@@ -99,7 +100,7 @@ class KursController extends Controller
         Gate::authorize('view', $program);
         abort_unless($schritt->program_id === $program->id, 404);
         $user = $request->user();
-        $program->load('steps');
+        $program->load(['steps', 'units']);
         abort_unless($schritt->isUnlocked($program) || $user->canManageCurrentTenant(), 403, 'Dieser Schritt ist noch nicht freigeschaltet.');
 
         $units = $schritt->units()->where('is_published', true)->with('exercises')->get();
@@ -116,7 +117,23 @@ class KursController extends Controller
                 ->orWhere(fn ($w) => $w->where('resourceable_type', 'unit')->whereIn('resourceable_id', $units->pluck('id'))))
             ->orderBy('title')->get();
 
+        // Fenster der Woche: ab Freischaltung bis zur naechsten, sonst die Kalenderwoche des Schritts
+        $von = $schritt->unlocks_at?->copy()->startOfDay();
+        $bis = $idx < $steps->count() - 1 ? $steps[$idx + 1]->unlocks_at?->copy()->startOfDay() : null;
+        $bis ??= $von?->copy()->addDays(7);
+        $imFenster = fn ($q) => $von ? $q->where('created_at', '>=', $von->utc())->where('created_at', '<', $bis->utc()) : $q->whereRaw('1 = 0');
+        $unitsJeSchritt = $program->units->where('is_published', true)->groupBy('step_id');
+        $aktuell = $program->pacing === 'weekly' ? $steps->filter(fn (ProgramStep $s) => $s->isUnlocked($program))->sortByDesc('position')->first() : null;
+
         return view('kurse.schritt', [
+            'band' => $steps->map(fn (ProgramStep $s, $i) => [
+                'step' => $s, 'nummer' => $s->week_number ?? $i + 1, 'offen' => $s->isUnlocked($program) || $user->canManageCurrentTenant(),
+                'fertig' => ($n = $unitsJeSchritt->get($s->id, collect())->count()) > 0 && $unitsJeSchritt->get($s->id)->pluck('id')->diff($done)->isEmpty(),
+                'jetzt' => $aktuell?->id === $s->id, 'hier' => $s->id === $schritt->id,
+            ]),
+            'aktuell' => $aktuell,
+            'reflexion' => $user->canManageCurrentTenant() ? null : Reflection::where('user_id', $user->id)->where(fn ($q) => $q->where('program_id', $program->id)->orWhereNull('program_id'))->where($imFenster)->latest()->first(),
+            'fragen' => Question::where('user_id', $user->id)->where('program_id', $program->id)->where($imFenster)->withCount('answers')->latest()->get(),
             'termine' => $termine,
             'aufgaben' => Task::where('user_id', $user->id)->where('step_id', $schritt->id)
                 ->orderByRaw('CASE WHEN done_at IS NULL THEN 0 ELSE 1 END')->orderBy('due_at')->get(),

@@ -15,17 +15,25 @@
         </div>
         @if ($r->description)<p class="unterzeile m-0 mt-1.5">{{ $r->description }}</p>@endif
 
+        @if ($position && ! $angeschaut && ($video || $audio))<p class="hinweis m-0 mt-3"><i class="fa-solid fa-clock-rotate-left"></i> Du warst bei {{ gmdate($position >= 3600 ? 'G:i:s' : 'i:s', $position) }}, es geht dort weiter.</p>@endif
         @if ($video)
-            <div class="video" data-medien="resource-{{ $r->id }}" style="margin-top:14px">
+            <div class="video" data-medien="resource-{{ $r->id }}" data-start="{{ $angeschaut ? 0 : (int) $position }}" style="margin-top:14px">
                 @if ($video['kind'] === 'iframe')<iframe src="{{ $video['src'] }}" allow="autoplay; fullscreen; picture-in-picture" allowfullscreen title="{{ $r->title }}"></iframe>@else<video controls preload="metadata" src="{{ $video['src'] }}" @if ($r->image_url) poster="{{ $r->image_url }}" @endif></video>@endif
             </div>
         @elseif ($audio)
-            <div class="karte" data-medien="resource-{{ $r->id }}" style="margin-top:14px">
+            <div class="karte" data-medien="resource-{{ $r->id }}" data-start="{{ $angeschaut ? 0 : (int) $position }}" style="margin-top:14px">
                 @if ($r->image_url)<img src="{{ $r->image_url }}" alt="" style="width:100%;border-radius:12px;margin-bottom:10px" loading="lazy">@endif
                 <audio class="w-full" controls preload="metadata" src="{{ $ziel }}"></audio>
             </div>
         @elseif ($ziel)
             <a href="{{ $ziel }}" target="_blank" rel="noopener" class="knopf mt-3.5"><i class="fa-solid fa-arrow-up-right-from-square"></i>Öffnen</a>
+        @endif
+        @if ($video || $audio)
+            <div class="flex flex-wrap items-center gap-2 mt-2.5">
+                @if ($angeschaut)<span class="chip chip-gut"><i class="fa-solid fa-circle-check"></i>Angeschaut</span>@endif
+                <p class="meldung meldung-gut m-0" data-erledigt-hinweis hidden style="flex-basis:100%"><i class="fa-solid fa-circle-check"></i> Fast fertig, als angeschaut markiert.</p>
+                <form method="post" action="{{ route('material.gesehen', $r) }}" class="ml-auto">@csrf<button type="submit" class="knopf knopf-leise knopf-klein"><i class="fa-solid fa-{{ $angeschaut ? 'rotate-left' : 'check' }}"></i>{{ $angeschaut ? 'Nochmal ansehen' : 'Als angeschaut markieren' }}</button></form>
+            </div>
         @endif
 
         @if ($r->summary)

@@ -154,6 +154,7 @@ Route::middleware(['auth', 'membership'])->group(function () {
     Route::get('/material', [MaterialController::class, 'index'])->name('material.index');
     Route::get('/material/{material}', [MaterialController::class, 'show'])->name('material.show');
     Route::get('/material/{material}/datei', [MaterialController::class, 'datei'])->name('material.datei');
+    Route::post('/material/{material}/gesehen', [MaterialController::class, 'gesehen'])->name('material.gesehen');
     Route::post('/merken', [MaterialController::class, 'merken'])->name('merken');
     Route::get('/merkliste', [MerklisteController::class, 'index'])->name('merkliste');
 

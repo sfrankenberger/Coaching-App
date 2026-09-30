@@ -9,6 +9,8 @@ use App\Models\MediaPosition;
 use App\Models\Note;
 use App\Models\Program;
 use App\Models\ProgramMember;
+use App\Models\Question;
+use App\Models\Reflection;
 use App\Models\Resource;
 use App\Models\Resourceable;
 use App\Models\Task;
@@ -164,5 +166,56 @@ class WochenseiteTest extends TestCase
         $titel = $this->in(fn () => Task::where('user_id', $bea->id)->pluck('title')->all());
         $this->assertSame(['Intention aufschreiben'], $titel);
         $this->assertSame($w1->id, $this->in(fn () => Task::where('user_id', $bea->id)->first()->step_id));
+    }
+
+    public function test_wochenband_reflexion_und_fragen_der_woche(): void
+    {
+        $w1 = $this->in(fn () => $this->kurs->steps()->first());
+        $w2 = $this->in(fn () => $this->kurs->steps()->create(['title' => 'Woche 2', 'position' => 2, 'week_number' => 2, 'unlocks_at' => now()->addDays(6)]));
+
+        // Band: Woche 1 ist "Jetzt" und hier, Woche 2 gesperrt; kein Sprungknopf, weil wir auf der aktuellen Woche sind
+        $seite = $this->actingAs($this->anna)->get("http://a.test/kurse/hybrid/schritt/{$w1->id}")->assertOk();
+        $seite->assertSee('wochenband')->assertSee('Jetzt')->assertSee('wb zu')->assertDontSee('Zur aktuellen Woche')->assertSee('Reflexion schreiben')->assertDontSee('Deine Fragen diese Woche');
+
+        // Reflexion und Frage in dieser Woche: Stand "geschrieben", eigene Fragen unter der Woche
+        $this->in(function () {
+            Reflection::create(['user_id' => $this->anna->id, 'program_id' => $this->kurs->id, 'week_label' => 'Woche 40', 'went_well' => 'Der Morgen am Fenster']);
+            Question::create(['user_id' => $this->anna->id, 'program_id' => $this->kurs->id, 'title' => 'Wann atme ich?']);
+        });
+        $this->actingAs($this->anna)->get("http://a.test/kurse/hybrid/schritt/{$w1->id}")->assertOk()
+            ->assertSee('Reflexion geschrieben')->assertSee('Deine Reflexion dieser Woche')->assertSee('Der Morgen am Fenster')
+            ->assertSee('Deine Fragen diese Woche')->assertSee('Wann atme ich?');
+
+        // Lea sieht Woche 2 schon, mit Sprung zur aktuellen Woche
+        $this->actingAs($this->lea)->get("http://a.test/kurse/hybrid/schritt/{$w2->id}")->assertOk()->assertSee('Zur aktuellen Woche');
+        // Startseite: der Call steht in der Wochenkarte
+        $this->in(fn () => $this->anna->membershipIn()->forceFill(['settings' => ['onboarding_seen_at' => now()->toDateTimeString()]])->save());
+        $call = $this->in(fn () => Event::where('title', 'Gruppencall Woche 1')->first());
+        $this->actingAs($this->anna)->get('http://a.test/')->assertOk()->assertSee('Diese Woche im Kurs')->assertSee('Call '.$call->starts_at->translatedFormat('D, j. M, H:i').' Uhr');
+    }
+
+    public function test_stelle_je_video_der_playlist_und_material_angeschaut(): void
+    {
+        $u = $this->in(fn () => $this->kurs->units()->first());
+        // Zweites Video der Playlist hat einen eigenen Schluessel, Unsinn wird abgelehnt
+        $this->actingAs($this->anna)->postJson('http://a.test/medien/position', ['key' => "unit-{$u->id}-1", 'seconds' => 90, 'duration' => 600])->assertOk();
+        $this->actingAs($this->anna)->postJson('http://a.test/medien/position', ['key' => "unit-{$u->id}-100", 'seconds' => 1])->assertStatus(422);
+        $this->assertSame(90, $this->in(fn () => MediaPosition::where('key', "unit-{$u->id}-1")->value('seconds')));
+
+        // Material: Stelle wird wieder aufgenommen, ab 80 Prozent angeschaut, Knopf schaltet um
+        $r = $this->in(function () {
+            $r = Resource::create(['title' => 'Impulsvideo', 'type' => 'video', 'url' => 'https://vimeo.com/555']);
+            Resourceable::create(['resource_id' => $r->id, 'resourceable_type' => 'program', 'resourceable_id' => $this->kurs->id]);
+
+            return $r;
+        });
+        $this->actingAs($this->anna)->postJson('http://a.test/medien/position', ['key' => "resource-{$r->id}", 'seconds' => 100, 'duration' => 1000])->assertOk()->assertJsonPath('erledigt', false);
+        $this->actingAs($this->anna)->get("http://a.test/material/{$r->id}")->assertOk()->assertSee('Du warst bei 01:40')->assertSee('data-start="100"', false)->assertSee('Als angeschaut markieren');
+        $this->actingAs($this->anna)->postJson('http://a.test/medien/position', ['key' => "resource-{$r->id}", 'seconds' => 850, 'duration' => 1000])->assertOk()->assertJsonPath('erledigt', true);
+        $this->actingAs($this->anna)->get("http://a.test/material/{$r->id}")->assertOk()->assertSee('Angeschaut')->assertSee('Nochmal ansehen')->assertDontSee('Du warst bei');
+        $this->actingAs($this->anna)->get("http://a.test/kurse/hybrid/schritt/{$this->in(fn () => $this->kurs->steps()->first())->id}")->assertOk();
+        $this->actingAs($this->anna)->post("http://a.test/material/{$r->id}/gesehen")->assertRedirect();
+        $this->assertNull($this->in(fn () => MediaPosition::where('key', "resource-{$r->id}")->first()->watched_at));
+        $this->assertSame(0, $this->in(fn () => MediaPosition::where('key', "resource-{$r->id}")->value('seconds')));
     }
 }

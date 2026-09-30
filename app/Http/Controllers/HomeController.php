@@ -60,8 +60,9 @@ class HomeController extends Controller
             }
 
             $woche = $step ? $p->steps->sortBy('position')->values()->search(fn ($s) => $s->id === $step->id) + 1 : null;
+            $call = $step ? $this->begleitung->eventsQuery($user)->where('program_id', $p->id)->where('all_day', false)->where('starts_at', '>=', now()->subHours(2)->utc())->orderBy('starts_at')->first() : null;
 
-            return ['program' => $p, 'stand' => $stand, 'step' => $step, 'woche' => $woche, 'wochen' => $p->steps->count()];
+            return ['program' => $p, 'stand' => $stand, 'step' => $step, 'woche' => $woche, 'wochen' => $p->steps->count(), 'call' => $call];
         })->filter(fn ($w) => $w['stand']['total'] > 0);
 
         return view('home', [
