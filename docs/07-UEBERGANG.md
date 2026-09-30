@@ -69,6 +69,10 @@ Der Import ist wiederholbar (legacy_id) und überschreibt Inhaltsfelder aus Word
    (Adresse eingeben, Link kommt per Mail). Formulare der Website schreiben ueber `lea-app-anmeldung.php` in die App.
    Am Umzugstag nur noch: Kontakte-Import wiederholen (`--only=kontakte`, holt Anmeldungen vom 30.09. bis 1.10. nach,
    falls welche nur in Mailster gelandet sind), Mailster-Plugins loeschen (nach 30 Tagen).
+   Gelernt beim Abschalten: `lea-mailster-optik.php` rief `mailster_option()` ohne Waechter im Frontend, die Website
+   war zwei Minuten auf 500; die Datei liegt jetzt unter `novamira-sandbox/alt/`. Der Gratiskurs "Der Anfang"
+   (`lea-anfang-anmeldung.php`) schreibt seither in die App (Tags `freebie-der-anfang`, `coach-ausbildung-interessensliste`,
+   Newsletter mit Opt-in) und nimmt Absender und Briefpapier aus `lea_mailgun` bzw. den alten Mailster-Optionen.
 7. WooCommerce bleibt bis zum Umzugstag, weil der alte Mitgliederbereich daran haengt (Anmeldung ueber "Mein Account",
    27 Sandbox-Module rufen Woo-Funktionen, Verkaufsseiten der Website verlinken `/produkt/...`, 7 Bestellungen fuer
    bexio). Reihenfolge am Umzugstag: Preise und Sichtbarkeit der Angebote in der App setzen (Woo-Produkte 1518, 1623,
