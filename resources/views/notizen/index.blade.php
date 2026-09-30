@@ -22,10 +22,10 @@
             <x-projekt-wahl :projekte="$projekte" :value="old('project_id', $bearbeiten?->project_id)" />
             <div class="flex flex-wrap gap-2">
                 @if ($kurse->count())
-                    <label class="block"><span class="feld-label">Kurs</span><select name="program_id" class="feld"><option value="">Allgemein</option>@foreach ($kurse as $id => $t)<option value="{{ $id }}" @selected((int) old('program_id', $bearbeiten?->program_id) === $id)>{{ $t }}</option>@endforeach</select></label>
+                    <label class="block"><span class="feld-label">Gehört zu</span><select name="program_id" class="feld"><option value="">Allgemein</option>@foreach ($kurse as $id => $t)<option value="{{ $id }}" @selected((int) old('program_id', $bearbeiten?->program_id) === $id)>{{ $t }}</option>@endforeach</select></label>
                 @endif
                 <label class="block"><span class="feld-label">Wer sieht das?</span><select name="visibility" class="feld">
-                    @foreach (\App\Models\Note::VISIBILITIES as $k => $l)
+                    @foreach (\App\Models\Note::sichtbarkeiten() as $k => $l)
                         @if ($k !== 'program' || $gemeinschaft->count())<option value="{{ $k }}" @selected(old('visibility', $bearbeiten?->visibility ?? 'private') === $k)>{{ $l }}</option>@endif
                     @endforeach
                 </select></label>
@@ -56,7 +56,7 @@
                         @if ($n->notable) · zu «{{ $n->notable->title ?? '' }}» @endif
                         @if ($n->program) · {{ $n->program->title }} @endif
                         @if ($n->projekt) · <x-projekt-chip :projekt="$n->projekt" /> @endif
-                        · {{ \App\Models\Note::VISIBILITIES[$n->visibility] ?? '' }}
+                        · {{ \App\Models\Note::sichtbarkeitText($n->visibility) }}
                     </span>
                     <x-kommentare :item="$n" />
                 </div>

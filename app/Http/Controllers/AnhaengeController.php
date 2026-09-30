@@ -11,6 +11,9 @@ class AnhaengeController extends Controller
 {
     public function suche(Request $request, Anhaenge $anhaenge): JsonResponse
     {
-        return response()->json(['karten' => $anhaenge->suche($request->user(), (string) $request->query('q', ''))]);
+        $q = trim((string) $request->query('q', ''));
+
+        // Ohne Suchwort: die letzten je Art, wie beim Oeffnen der Auswahl
+        return response()->json(['karten' => $q === '' ? $anhaenge->auswahl($request->user()) : $anhaenge->suche($request->user(), $q)]);
     }
 }

@@ -14,11 +14,11 @@
                 <label class="block"><span class="feld-label">Bis</span><input type="date" name="due_at" class="feld" value="{{ old('due_at', $bearbeiten?->due_at?->toDateString()) }}"></label>
                 <label class="block"><span class="feld-label">Uhrzeit</span><input type="time" name="due_time" class="feld" value="{{ old('due_time', $bearbeiten?->due_time) }}"></label>
                 @if ($kurse->count())
-                    <label class="block"><span class="feld-label">Kurs</span><select name="program_id" class="feld"><option value="">Allgemein</option>@foreach ($kurse as $id => $t)<option value="{{ $id }}" @selected((int) old('program_id', $bearbeiten?->program_id) === $id)>{{ $t }}</option>@endforeach</select></label>
+                    <label class="block"><span class="feld-label">Gehört zu</span><select name="program_id" class="feld"><option value="">Allgemein</option>@foreach ($kurse as $id => $t)<option value="{{ $id }}" @selected((int) old('program_id', $bearbeiten?->program_id) === $id)>{{ $t }}</option>@endforeach</select></label>
                 @endif
                 <label class="block"><span class="feld-label">Wer sieht das?</span><select name="visibility" class="feld">
                     <option value="private" @selected(old('visibility', $bearbeiten?->visibility) === 'private')>Nur ich</option>
-                    <option value="coach" @selected(old('visibility', $bearbeiten?->visibility) === 'coach')>Meine Coachin</option>
+                    <option value="coach" @selected(old('visibility', $bearbeiten?->visibility) === 'coach')>{{ app(\App\Tenancy\Branding::class)->coachName() }}</option>
                     @if ($gemeinschaft->count())<option value="program" @selected(old('visibility', $bearbeiten?->visibility) === 'program')>Mein Kurs</option>
                     <option value="all" @selected(old('visibility', $bearbeiten?->visibility) === 'all')>In der Community</option>@endif
                 </select></label>

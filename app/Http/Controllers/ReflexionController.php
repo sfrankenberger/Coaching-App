@@ -43,7 +43,7 @@ class ReflexionController extends Controller
             'entwurf' => $entwurf,
             'meine' => Reflection::where('user_id', $user->id)->with(['program:id,title', 'anhaenge.ziel', 'projekt:id,name,farbe,icon', 'comments'])->latest()->limit(60)->get()->filter(fn (Reflection $r) => $filter->passt($r))->values(),
             'filter' => $filter,
-            'kurse' => $this->access->programsFor($user)->pluck('title', 'id'),
+            'kurse' => $this->access->auswahlFor($user),
             'projekte' => ! Funktionen::an('projekte') ? collect() : Projekt::where('user_id', $user->id)->orderBy('name')->get(['id', 'name', 'farbe', 'icon']),
             'gemeinschaft' => $this->access->gemeinschaftFor($user)->pluck('title', 'id'),
             'woche' => 'Woche '.now()->format('W').' ('.now()->translatedFormat('j. F Y').')',

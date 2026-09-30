@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use App\Models\Concerns\HatAnhaenge;
+use App\Tenancy\Branding;
 use App\Tenancy\Concerns\BelongsToTenant;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -24,6 +25,24 @@ class Note extends Model
         'program' => 'Im Kurs sichtbar',
         'all' => 'In der Community',
     ];
+
+    /** Auswahl im Formular, mit dem Namen der Coachin statt "Meine Coachin". */
+    public static function sichtbarkeiten(): array
+    {
+        $coach = app(Branding::class)->coachName();
+
+        return ['private' => 'Nur ich', 'coach' => $coach, 'program' => 'Mein Kurs', 'all' => 'In der Community'];
+    }
+
+    /** Anzeige am Eintrag. */
+    public static function sichtbarkeitText(?string $v): string
+    {
+        $coach = app(Branding::class)->coachName();
+
+        return match ($v) {
+            'coach' => 'Mit '.$coach.' geteilt', 'program' => 'Im Kurs sichtbar', 'all' => 'In der Community', default => 'Nur ich'
+        };
+    }
 
     protected $guarded = [];
 

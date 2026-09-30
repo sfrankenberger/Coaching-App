@@ -579,6 +579,15 @@
     }
     @media (min-width: 900px) { .marke { justify-content: flex-start; } }
     .kopf-platz { width: 44px; flex: 0 0 44px; }
+    /* Team oder wie eine Teilnehmerin: Marke im Kopf, farbiger Strich unter der Kopfleiste */
+    .modus-form { flex: none; margin: 0; }
+    .modus { display: inline-flex; align-items: center; gap: 6px; height: 28px; padding: 0 10px; border: 0; border-radius: 999px; font-size: 11px; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; cursor: pointer; white-space: nowrap; }
+    .modus-team .modus { background: var(--c-primary); color: var(--c-primary-contrast); }
+    .modus-coachee .modus { background: #E5B24B; color: #2E2D29; }
+    .modus-klein { height: 22px; padding: 0 8px; font-size: 10px; margin-left: 6px; vertical-align: middle; }
+    body.modus-team .kopf { border-bottom: 3px solid var(--c-primary); }
+    body.modus-coachee .kopf { border-bottom: 3px solid #E5B24B; }
+    @media (max-width: 420px) { .modus-form .modus { padding: 0 8px; } .modus-form .modus i { display: none; } }
     .kopf-rechts { display: flex; align-items: center; gap: 4px; flex: none; }
     .kopf-rechts a { width: 44px; height: 44px; display: grid; place-items: center; color: var(--c-text-soft); text-decoration: none; border-radius: 50%; position: relative; font-size: 17px; }
     .kopf-rechts a:hover { color: var(--c-primary); }
@@ -887,7 +896,11 @@
     .impuls-bild { position: relative; display: block; aspect-ratio: 40 / 21; overflow: hidden; background: var(--c-neutral); }
     .impuls-bild::before { content: ""; position: absolute; inset: -20px; background: var(--bild) center / cover no-repeat; filter: blur(18px) saturate(1.1); opacity: .55; }
     .impuls-bild img { position: relative; display: block; width: 100%; height: 100%; object-fit: contain; }
-    .impuls-bild .chip { position: absolute; left: 10px; top: 10px; background: color-mix(in srgb, var(--c-text) 78%, transparent); color: #fff; }
+    .impuls-chips { position: absolute; left: 10px; right: 10px; top: 10px; display: flex; justify-content: space-between; align-items: flex-start; gap: 6px; pointer-events: none; }
+    .impuls-bild .chip { background: color-mix(in srgb, var(--c-text) 78%, transparent); color: #fff; max-width: 70%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .impuls-bild .chip-neu { margin-left: auto; flex: none; }
+    .pille .zahl { display: inline-grid; place-items: center; min-width: 20px; height: 20px; padding: 0 6px; border-radius: 999px; background: var(--c-danger); color: #fff; font-size: 11px; font-weight: 700; line-height: 1; }
+    .pille.an .zahl { background: #fff; color: var(--c-text); }
     .impuls-text { padding: 14px 16px 10px; }
     .impuls-fuss { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-top: 8px; }
     .impuls-frage { display: inline-flex; align-items: center; gap: 6px; font-size: var(--fs-sm); font-weight: 600; color: var(--c-text-soft); text-decoration: none; padding: 6px 8px; }

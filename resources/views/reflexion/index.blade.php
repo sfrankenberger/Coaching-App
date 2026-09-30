@@ -35,7 +35,7 @@
                     </select></label>
                 @endif
                 @if ($kurse->count())
-                    <label class="block"><span class="feld-label">Kurs</span><select name="program_id" class="feld"><option value="">Allgemein</option>@foreach ($kurse as $id => $t)<option value="{{ $id }}" @selected((int) old('program_id', $entwurf?->program_id) === $id)>{{ $t }}</option>@endforeach</select></label>
+                    <label class="block"><span class="feld-label">Gehört zu</span><select name="program_id" class="feld"><option value="">Allgemein</option>@foreach ($kurse as $id => $t)<option value="{{ $id }}" @selected((int) old('program_id', $entwurf?->program_id) === $id)>{{ $t }}</option>@endforeach</select></label>
                 @endif
                 <label class="block"><span class="feld-label">Wer sieht das?</span><select name="visibility" class="feld">
                     <option value="private">Nur ich</option>

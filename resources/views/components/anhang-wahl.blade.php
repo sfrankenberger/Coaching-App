@@ -1,11 +1,12 @@
 {{-- Etwas anhaengen: Aufgabe, Notiz, Reflexion, Termin, Aufzeichnung, Material, Lektion. Schickt refs[] als "art:nummer". --}}
-@props(['refs' => [], 'mehrfach' => true, 'name' => 'refs'])
+@props(['refs' => [], 'mehrfach' => true, 'name' => 'refs', 'lazy' => false])
 @php
     $a = app(\App\Support\Anhaenge::class);
     $ich = auth()->user();
     $gewaehlt = collect($refs)->map(fn ($r) => $a->karteRef((string) $r, $ich))->filter()->values();
 @endphp
-<div class="anhang-wahl" data-anhang-wahl data-suche="{{ route('anhaenge.suche') }}" data-name="{{ $name }}" data-mehrfach="{{ $mehrfach ? '1' : '0' }}" data-auswahl='@json($a->auswahl($ich))'>
+{{-- lazy: die Auswahl kommt erst beim Oeffnen vom Server (fuer Seiten mit vielen Formularen, z. B. Kommentare) --}}
+<div class="anhang-wahl" data-anhang-wahl data-suche="{{ route('anhaenge.suche') }}" data-name="{{ $name }}" data-mehrfach="{{ $mehrfach ? '1' : '0' }}" @if ($lazy) data-lazy="1" @else data-auswahl='@json($a->auswahl($ich))' @endif>
     <div class="anhang-zeile">
         <button type="button" class="knopf knopf-leise knopf-klein" data-anhang-auf><i class="fa-solid fa-paperclip"></i>Etwas anhängen</button>
         {{ $slot }}

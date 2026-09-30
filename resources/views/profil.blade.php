@@ -70,7 +70,8 @@
             <div class="min-w-0 flex-1">
                 <form method="post" action="{{ route('profil.foto') }}" enctype="multipart/form-data" class="flex flex-wrap items-center gap-2" data-foto>
                     @csrf
-                    <label class="knopf knopf-ruhig knopf-klein" style="cursor:pointer"><i class="fa-solid fa-camera"></i>{{ $person->avatar_path ? 'Neues Foto' : 'Foto wählen' }}<input type="file" name="foto" accept="image/*" style="display:none" onchange="this.form.submit()"></label>
+                    <label class="knopf knopf-ruhig knopf-klein" style="cursor:pointer"><i class="fa-solid fa-camera"></i>{{ $person->avatar_path ? 'Neues Foto' : 'Foto wählen' }}<input type="file" name="foto" accept="image/*" style="display:none" data-foto-datei></label>
+                    <span class="hinweis" data-foto-status></span>
                     @if ($person->avatar_path)
                         <button type="submit" form="foto-weg" class="knopf knopf-text knopf-klein">Entfernen</button>
                     @endif

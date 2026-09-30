@@ -743,7 +743,12 @@ document.addEventListener('medien:zeit', function (e) {
             box.dispatchEvent(new CustomEvent('anhang', { bubbles: true }));
         }
         gewaehlt.addEventListener('click', function (e) { var w = e.target.closest('[data-weg]'); if (w) entfernen(w.closest('.anhang-chip').dataset.ref); });
-        auf.addEventListener('click', function () { panel.hidden = !panel.hidden; if (!panel.hidden) { zeichnen(auswahl); suche.focus(); } });
+        function auswahlHolen() {
+            if (auswahl.length || box.dataset.lazy !== '1') { zeichnen(auswahl); return; }
+            fetch(box.dataset.suche, { credentials: 'same-origin', headers: { 'Accept': 'application/json' } })
+                .then(function (r) { return r.json(); }).then(function (j) { auswahl = j.karten || []; zeichnen(auswahl); }).catch(function () { zeichnen([]); });
+        }
+        auf.addEventListener('click', function () { panel.hidden = !panel.hidden; if (!panel.hidden) { auswahlHolen(); suche.focus(); } });
         zu.addEventListener('click', function () { panel.hidden = true; });
         suche.addEventListener('input', function () {
             clearTimeout(timer);
@@ -1173,4 +1178,39 @@ document.addEventListener('medien:zeit', function (e) {
         setInterval(nachfragen, 20000);
         document.addEventListener('visibilitychange', function () { if (!document.hidden) nachfragen(); });
     }
+})();
+
+/* ---------- Profilfoto: im Browser auf 1200 px verkleinern, dann hochladen (Handyfotos sind zu gross) ---------- */
+(function () {
+    var form = document.querySelector('form[data-foto]');
+    var input = form && form.querySelector('[data-foto-datei]');
+    if (!form || !input) return;
+    var status = form.querySelector('[data-foto-status]');
+    var csrf = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
+    function melden(t) { if (status) status.textContent = t; }
+    function hochladen(blob, name) {
+        var fd = new FormData(); fd.append('foto', blob, name); fd.append('_token', csrf);
+        return fetch(form.action, { method: 'POST', credentials: 'same-origin', headers: { 'Accept': 'application/json', 'X-CSRF-TOKEN': csrf }, body: fd })
+            .then(function (r) { return r.json().catch(function () { return {}; }).then(function (j) { if (!r.ok) throw new Error(j.fehler || (j.errors && j.errors.foto && j.errors.foto[0]) || ('Fehler ' + r.status)); return j; }); });
+    }
+    input.addEventListener('change', function () {
+        var f = input.files[0];
+        if (!f) return;
+        melden('Foto wird vorbereitet ...');
+        var url = URL.createObjectURL(f), img = new Image();
+        img.onload = function () {
+            URL.revokeObjectURL(url);
+            var max = 1200, s = Math.min(1, max / Math.max(img.width, img.height));
+            var c = document.createElement('canvas'); c.width = Math.round(img.width * s); c.height = Math.round(img.height * s);
+            c.getContext('2d').drawImage(img, 0, 0, c.width, c.height);
+            c.toBlob(function (blob) {
+                if (!blob) { form.submit(); return; }
+                melden('Foto wird hochgeladen ...');
+                hochladen(blob, 'foto.jpg').then(function () { window.location.href = form.action.replace(/\/foto$/, '') + '#foto'; window.location.reload(); })
+                    .catch(function (e) { melden('Das hat nicht geklappt: ' + e.message); });
+            }, 'image/jpeg', 0.86);
+        };
+        img.onerror = function () { URL.revokeObjectURL(url); form.submit(); };   // z. B. HEIC ohne Browser-Unterstuetzung: der Server versucht es
+        img.src = url;
+    });
 })();

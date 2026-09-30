@@ -14,6 +14,7 @@ use App\Models\Task;
 use App\Models\User;
 use App\Notifications\Nachricht;
 use App\Notifications\Notifier;
+use App\Support\Anhaenge;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Str;
 
@@ -69,7 +70,7 @@ class Kommentare
         return in_array($item->visibility ?? 'private', ['program', 'all'], true) && app(Geteilt::class)->darfSehen($user, $item);
     }
 
-    public function schreiben(User $user, Model $item, string $text): Comment
+    public function schreiben(User $user, Model $item, string $text, ?array $refs = null): Comment
     {
         abort_unless($this->darf($user, $item), 403);
         $kommentar = Comment::create([
@@ -78,6 +79,9 @@ class Kommentare
             'commentable_id' => $item->getKey(),
             'body' => trim($text),
         ]);
+        if ($refs) {
+            app(Anhaenge::class)->speichern($kommentar, $refs, $user);
+        }
 
         if ($item->user_id === $user->id) {
             // Die Person schreibt: das Team erfaehrt es, falls der Eintrag geteilt ist

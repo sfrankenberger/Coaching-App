@@ -13,6 +13,7 @@
             <div id="kommentar-{{ $c->id }}" @class(['kommentar', 'vom-team' => $c->user_id !== $item->user_id])>
                 <span class="wer">{{ $c->user_id === $ich->id ? 'Du' : $c->user?->vorname() }} · {{ \App\Support\Zeit::wannKurz($c->created_at) }}</span>
                 <span class="lesetext whitespace-pre-line text-md">{{ $c->body }}</span>
+                <x-anhaenge :item="$c" />
                 @if (! $coach && $c->user_id === $ich->id)
                     <form method="post" action="{{ route('kommentar.destroy', $c) }}" onsubmit="return confirm('Kommentar löschen?')" class="weg">@csrf @method('DELETE')<button aria-label="Kommentar löschen"><i class="fa-solid fa-xmark"></i></button></form>
                 @endif
@@ -33,6 +34,7 @@
                         <input type="hidden" name="id" value="{{ $item->getKey() }}">
                         <textarea name="body" rows="1" class="feld" required maxlength="5000" placeholder="Schreib etwas dazu ..."></textarea>
                         <button type="submit" class="knopf kommentar-senden" aria-label="Senden"><i class="fa-solid fa-paper-plane"></i></button>
+                        <div class="w-full"><x-anhang-wahl :refs="[]" :lazy="true" /></div>
                     </form>
                 </details>
             @endif

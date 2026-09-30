@@ -89,7 +89,7 @@
                         @if ($gemeinschaft->count())<option value="program" @selected(old('visibility', $bearbeiten?->visibility) === 'program')>Im Kurs sichtbar</option><option value="all" @selected(old('visibility', $bearbeiten?->visibility) === 'all')>In der Community</option>@endif
                     </select></label>
                     @if ($gemeinschaft->count())
-                        <label class="block"><span class="feld-label">Kurs</span><select name="program_id" class="feld">@foreach ($gemeinschaft as $id => $t)<option value="{{ $id }}" @selected((int) old('program_id', $bearbeiten?->program_id) === $id)>{{ $t }}</option>@endforeach</select></label>
+                        <label class="block"><span class="feld-label">Gehört zu</span><select name="program_id" class="feld">@foreach ($gemeinschaft as $id => $t)<option value="{{ $id }}" @selected((int) old('program_id', $bearbeiten?->program_id) === $id)>{{ $t }}</option>@endforeach</select></label>
                     @endif
                 </div>
                 <div class="eingabe-knoepfe">

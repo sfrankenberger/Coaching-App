@@ -105,6 +105,12 @@ class Program extends Model
         return $this->type === 'workbook';
     }
 
+    /** Name in Auswahlfeldern: die 1:1-Begleitung ohne den Namen der Person, sonst der Titel. */
+    public function kurzName(): string
+    {
+        return $this->type === 'one_on_one' ? '1:1 Coaching' : $this->title;
+    }
+
     public function isGroup(): bool
     {
         return in_array($this->type, ['hybrid', 'selfpaced', 'club', 'workbook'], true);

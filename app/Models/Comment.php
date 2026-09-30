@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Models\Concerns\HatAnhaenge;
 use App\Tenancy\Concerns\BelongsToTenant;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -12,7 +13,7 @@ use Illuminate\Database\Eloquent\Relations\MorphTo;
 /** Kommentar an einem Element (Aufgabe, Notiz, Reflexion) oder Antwort auf eine Frage. */
 class Comment extends Model
 {
-    use BelongsToTenant;
+    use BelongsToTenant, HatAnhaenge;
 
     /** So lange darf die Autorin ihre Antwort noch aendern. */
     public const BEARBEITEN_MINUTEN = 15;

@@ -13,6 +13,7 @@ use App\Http\Controllers\Auth\LoginController;
 use App\Http\Controllers\Auth\PasskeyController;
 use App\Http\Controllers\Auth\SocialController;
 use App\Http\Controllers\AvatarController;
+use App\Http\Controllers\BrandingController;
 use App\Http\Controllers\BuchenController;
 use App\Http\Controllers\BuchhaltungController;
 use App\Http\Controllers\CoacheesController;
@@ -79,6 +80,8 @@ Route::get('/n/w/{token}', [NewsletterController::class, 'web'])->name('newslett
 // Alte Adressen aus dem WordPress-Mitgliederbereich (nach dem Umschalten per 301 hierher geleitet)
 Route::get('/mitgliederbereich/{pfad?}', AltlinkController::class)->where('pfad', '.*')->name('altlink');
 
+// Logo und App-Icon aus den Einstellungen (ohne Anmeldung, gecacht)
+Route::get('/branding/{datei}', BrandingController::class)->name('branding.datei');
 // Kalender-Abo (ohne Anmeldung, Schluessel je Person)
 Route::get('/kalender/{token}.ics', [KalenderController::class, 'abo'])->name('kalender.abo')->where('token', '[A-Za-z0-9]{32,64}');
 Route::get('/kalender/{token}/{program:slug}.ics', [KalenderController::class, 'abo'])->name('kalender.kurs')->where('token', '[A-Za-z0-9]{32,64}');

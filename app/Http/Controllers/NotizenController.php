@@ -33,7 +33,7 @@ class NotizenController extends Controller
 
         return view('notizen.index', [
             'notes' => $notes->values(),
-            'kurse' => $this->access->programsFor($user)->pluck('title', 'id'),
+            'kurse' => $this->access->auswahlFor($user),
             'projekte' => ! Funktionen::an('projekte') ? collect() : Projekt::where('user_id', $user->id)->orderBy('name')->get(['id', 'name', 'farbe', 'icon']),
             'gemeinschaft' => $this->access->gemeinschaftFor($user)->pluck('title', 'id'),
             'bearbeiten' => $request->query('bearbeiten') ? Note::where('user_id', $user->id)->find((int) $request->query('bearbeiten')) : null,

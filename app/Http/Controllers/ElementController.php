@@ -56,7 +56,7 @@ class ElementController extends Controller
                 $geteilt->melden($user, $item);
             }
 
-            return back()->with('meldung', 'Sichtbarkeit: '.(Note::VISIBILITIES[$sicht] ?? $sicht).'.');
+            return back()->with('meldung', 'Sichtbarkeit: '.Note::sichtbarkeitText($sicht).'.');
         }
 
         abort(422);

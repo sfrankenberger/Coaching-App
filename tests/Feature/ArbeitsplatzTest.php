@@ -65,7 +65,7 @@ class ArbeitsplatzTest extends TestCase
             ->assertSee('Fragen ohne Antwort')->assertSee('Wie geht Woche 2?')
             ->assertSee('Wartet auf Freigabe')->assertSee('Alte Aufzeichnung')
             ->assertSee('Als Nächstes')->assertSee('Call morgen')
-            ->assertSee('Heute')->assertSee('Coachees')->assertSee('Wie eine Teilnehmerin')
+            ->assertSee('Heute')->assertSee('Coachees')->assertSee('Wie eine Teilnehmerin')->assertSee('modus-team', false)
             ->assertDontSee('Mein Journal');
 
         // Als gelesen: Anna wartet nicht mehr
@@ -76,7 +76,8 @@ class ArbeitsplatzTest extends TestCase
         // Umschalten: wie eine Teilnehmerin, dann zurueck
         $this->actingAs($this->lea)->post('http://a.test/ansicht', ['ansicht' => 'teilnehmer'])->assertRedirect('http://a.test');
         $this->actingAs($this->lea)->get('http://a.test/')->assertOk()->assertSee('Hallo Lea')->assertSee('Für dich als Coach')->assertSee('Zurück zum Arbeitsplatz')->assertSee('Meine Sachen')
-            ->assertDontSee('Meine Zeitleiste')->assertDontSee('Meine Projekte');   // vorerst ausgeschaltet
+            ->assertDontSee('Meine Zeitleiste')->assertDontSee('Meine Projekte')   // vorerst ausgeschaltet
+            ->assertSee('modus-coachee', false)->assertSee('Als Teilnehmerin');   // Kennzeichnung im Kopf
         // In der Teilnehmer-Ansicht fuehrt das Gespraech zum eigenen 1:1, nicht zur Liste aller Gespraeche
         $eigenes = $this->in(fn () => app(Chat::class)->directFor($this->lea));
         $this->actingAs($this->lea)->get('http://a.test/gespraech')->assertRedirect('http://a.test/gespraech/'.$eigenes->id);
@@ -98,7 +99,7 @@ class ArbeitsplatzTest extends TestCase
         $this->actingAs($this->anna)->post('http://a.test/ansicht', ['ansicht' => 'arbeitsplatz'])->assertForbidden();
         $this->actingAs($this->anna)->get('http://a.test/')->assertOk()->assertSee('Hallo Anna')->assertSee('Übersicht')->assertSee('1:1 Coaching mit')
             ->assertSee('Meine Sachen')->assertSee('Meine Aufgaben')->assertSee('Meine Kurse')->assertSee('Kurs K')->assertSee('Ressourcen')->assertSee('Community')->assertSee('Mein Profil')
-            ->assertDontSee('Arbeitsplatz')->assertDontSee('Volltext suchen')->assertDontSee('Gemerkt')->assertDontSee('Coachees')->assertDontSee('Dein Bereich')->assertDontSee('class="leiste"', false);
+            ->assertDontSee('Arbeitsplatz')->assertDontSee('modus-team', false)->assertDontSee('modus-coachee', false)->assertDontSee('Volltext suchen')->assertDontSee('Gemerkt')->assertDontSee('Coachees')->assertDontSee('Dein Bereich')->assertDontSee('class="leiste"', false);
         // Community: alle Fragen aus meinen Kursen
         $this->actingAs($this->anna)->get('http://a.test/community')->assertOk()->assertSee('Wie geht Woche 2?')->assertSee('Was beschäftigt dich?');
         // Profil aufgeraeumt: Benachrichtigungen statt Nachrichten, Hilfe eigene Seite, Mitteilungen nur ueber die Glocke

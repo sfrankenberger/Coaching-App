@@ -7,6 +7,7 @@ use App\Tenancy\Branding;
 use App\Tenancy\CurrentTenant;
 use BackedEnum;
 use Filament\Forms\Components\ColorPicker;
+use Filament\Forms\Components\FileUpload;
 use Filament\Forms\Components\Repeater;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\TagsInput;
@@ -94,8 +95,13 @@ class Einstellungen extends Page
                 TextInput::make('short_name')->label('Kurzname (Startbildschirm)')->maxLength(12),
                 ColorPicker::make('primary')->label('Hauptfarbe'),
                 ColorPicker::make('primary_contrast')->label('Schrift auf der Hauptfarbe'),
-                TextInput::make('logo_url')->label('Logo (URL)')->url()->maxLength(500),
-                TextInput::make('icon_url')->label('App-Icon (URL, 512 x 512)')->url()->maxLength(500),
+                TextInput::make('logo_url')->label('Logo (Adresse)')->maxLength(500)->placeholder('https://... oder /pfad/logo.png')->rules(['nullable', 'regex:~^(https?://|/)~'])
+                    ->helperText('Volle Adresse oder Pfad auf dieser Domain. Oder unten eine Datei hochladen, dann wird die Adresse gesetzt.'),
+                TextInput::make('icon_url')->label('App-Icon (Adresse, 512 x 512)')->maxLength(500)->placeholder('https://... oder /pfad/icon.png')->rules(['nullable', 'regex:~^(https?://|/)~']),
+                FileUpload::make('logo_datei')->label('Logo hochladen (PNG oder SVG, Höhe ab 60 px)')->disk('local')->directory(fn () => 'tenants/'.app(CurrentTenant::class)->id().'/branding')
+                    ->acceptedFileTypes(['image/png', 'image/svg+xml', 'image/jpeg', 'image/webp'])->maxSize(2048)->getUploadedFileNameForStorageUsing(fn ($file) => 'logo-'.time().'.'.$file->getClientOriginalExtension()),
+                FileUpload::make('icon_datei')->label('App-Icon hochladen (PNG, 512 x 512)')->disk('local')->directory(fn () => 'tenants/'.app(CurrentTenant::class)->id().'/branding')
+                    ->acceptedFileTypes(['image/png'])->maxSize(2048)->getUploadedFileNameForStorageUsing(fn ($file) => 'icon-'.time().'.png'),
             ])->columns(2),
             Section::make('Funktionen')->description('Bereiche, die sich für die Teilnehmerinnen ein- und ausschalten lassen. Aus: kein Menüpunkt, keine Filter, die Seiten leiten auf die Startseite.')->schema([
                 Toggle::make('feature_zeitleiste')->label('Meine Zeitleiste (Journal)')->inline(false),
@@ -153,6 +159,16 @@ class Einstellungen extends Page
         $s = $tenant->settings ?? [];
         foreach (['app_name', 'short_name', 'primary', 'primary_contrast', 'logo_url', 'icon_url'] as $k) {
             $b[$k] = filled($data[$k] ?? null) ? $data[$k] : null;
+        }
+        // Hochgeladene Dateien: Adresse setzen, Feld wieder leeren
+        foreach (['logo_datei' => 'logo_url', 'icon_datei' => 'icon_url'] as $feld => $ziel) {
+            if (filled($data[$feld] ?? null)) {
+                $b[$ziel] = route('branding.datei', ['datei' => basename((string) $data[$feld])], false);
+                $this->data[$feld] = null;
+            }
+        }
+        if ($b['icon_url'] && ($b['icon_url'] !== ($tenant->branding['icon_url'] ?? null))) {
+            $b['icons'] = [];   // die Liste aus branding:icons gilt nicht mehr, das Manifest nimmt das neue Icon
         }
         $s['coach_name'] = filled($data['coach_name']) ? $data['coach_name'] : null;
         $s['features'] = array_merge($s['features'] ?? [], ['zeitleiste' => (bool) ($data['feature_zeitleiste'] ?? false), 'projekte' => (bool) ($data['feature_projekte'] ?? false)]);

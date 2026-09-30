@@ -15,7 +15,7 @@
             <label><span>Projekt</span><select name="projekt" class="feld" onchange="this.form.submit()"><option value="">Alle</option>@foreach ($projekte as $p)<option value="{{ $p->id }}" @selected($filter->projekt === (string) $p->id)>{{ $p->name }}</option>@endforeach<option value="ohne" @selected($filter->projekt === 'ohne')>ohne Projekt</option></select></label>
         @endif
         @if ($kurse)
-            <label><span>Kurs</span><select name="kurs" class="feld" onchange="this.form.submit()"><option value="">Alle</option>@foreach ($kurse as $id => $t)<option value="{{ $id }}" @selected($filter->kurs === (int) $id)>{{ $t }}</option>@endforeach</select></label>
+            <label><span>Gehört zu</span><select name="kurs" class="feld" onchange="this.form.submit()"><option value="">Alle</option>@foreach ($kurse as $id => $t)<option value="{{ $id }}" @selected($filter->kurs === (int) $id)>{{ $t }}</option>@endforeach</select></label>
         @endif
         @unless ($ohneStatus)
             <label><span>Status</span><select name="st" class="feld" onchange="this.form.submit()"><option value="">Alles</option>@foreach ($status as $k => $l)<option value="{{ $k }}" @selected($filter->st === $k)>{{ $l }}</option>@endforeach</select></label>

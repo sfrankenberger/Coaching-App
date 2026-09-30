@@ -23,7 +23,7 @@
     if ($person && ! $kannVerwalten) {
         $meineKurse = App\Models\Program::query()
             ->whereIn('id', app(App\Programs\ProgramAccess::class)->programIdsFor($person))
-            ->where('is_published', true)->where('type', '!=', 'one_on_one')->orderBy('position')->orderBy('title')
+            ->where('is_published', true)->whereNotIn('type', ['one_on_one', 'workbook'])->orderBy('position')->orderBy('title')
             ->get(['id', 'slug', 'title', 'icon', 'color']);
     }
     $ist = fn ($muster) => request()->routeIs($muster);
@@ -61,7 +61,7 @@
     <link rel="stylesheet" href="{{ asset('css/app.css') }}?v={{ filemtime(public_path('css/app.css')) }}">
     @stack('head')
 </head>
-<body @class([$body, 'ohne-leiste' => $person && ! $arbeitsplatz, 'mit-als' => (bool) $alsEcht])>
+<body @class([$body, 'ohne-leiste' => $person && ! $arbeitsplatz, 'mit-als' => (bool) $alsEcht, 'modus-team' => $kannVerwalten && $arbeitsplatz, 'modus-coachee' => $kannVerwalten && ! $arbeitsplatz])>
     <div class="oben">
     @if ($alsEcht)
         <div class="als-balken">
@@ -84,6 +84,13 @@
                 <span class="n">{{ $appName }}</span>
                 @if ($zusatz)<span class="z">{{ $zusatz }}</span>@endif
             </a>
+            @if ($kannVerwalten)
+                {{-- Team sieht auf einen Blick, ob es gerade als Team oder wie eine Teilnehmerin unterwegs ist; Tipp schaltet um --}}
+                <form method="post" action="{{ route('ansicht') }}" class="modus-form">
+                    @csrf<input type="hidden" name="ansicht" value="{{ $arbeitsplatz ? 'teilnehmer' : 'arbeitsplatz' }}">
+                    <button type="submit" class="modus" title="{{ $arbeitsplatz ? 'Du arbeitest als Team. Tippen: wie eine Teilnehmerin' : 'Du siehst die App wie eine Teilnehmerin. Tippen: zurück zum Team' }}"><i class="fa-solid fa-{{ $arbeitsplatz ? 'briefcase' : 'eye' }}"></i>{{ $arbeitsplatz ? 'Team' : 'Als Teilnehmerin' }}</button>
+                </form>
+            @endif
             @auth
                 @if ($arbeitsplatz)
                     <div class="kopf-rechts">
@@ -109,7 +116,7 @@
 
         <aside class="drawer" id="menue" aria-hidden="true" aria-label="Menü">
             <div class="drawer-kopf">
-                <span>Hallo {{ $person->vorname() }}</span>
+                <span>Hallo {{ $person->vorname() }}@if ($kannVerwalten) <span class="modus modus-klein">{{ $arbeitsplatz ? 'Team' : 'Als Teilnehmerin' }}</span>@endif</span>
                 <button type="button" class="drawer-zu" aria-label="Menü schliessen" data-menue-zu>&times;</button>
             </div>
             <nav>

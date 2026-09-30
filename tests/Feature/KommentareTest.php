@@ -63,7 +63,8 @@ class KommentareTest extends TestCase
             Reflection::create(['user_id' => $this->anna->id, 'went_well' => 'Privat']),
         ]);
 
-        $this->actingAs($this->lea)->post('http://a.test/kommentar', ['typ' => 'reflection', 'id' => $geteilt->id, 'body' => 'Schön, wie du das beschreibst'])->assertRedirect();
+        $this->actingAs($this->lea)->post('http://a.test/kommentar', ['typ' => 'reflection', 'id' => $geteilt->id, 'body' => 'Schön, wie du das beschreibst', 'refs' => ['reflection:'.$geteilt->id]])->assertRedirect();
+        $this->assertSame(1, $this->in(fn () => Comment::first()->anhaenge()->count()), 'Anhang am Kommentar');
         $this->actingAs($this->lea)->post('http://a.test/kommentar', ['typ' => 'reflection', 'id' => $privat->id, 'body' => 'Darf nicht'])->assertForbidden();
         $this->actingAs($this->bea)->post('http://a.test/kommentar', ['typ' => 'reflection', 'id' => $geteilt->id, 'body' => 'Fremd'])->assertForbidden();
         Notification::assertSentTo($this->anna, AppNotification::class);

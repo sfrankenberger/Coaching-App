@@ -13,7 +13,7 @@
                 @elseif ($t->due_at) <span @class(['text-danger font-semibold' => $t->isOverdue()])>{{ $t->weekday ? \App\Models\Task::WEEKDAYS[$t->weekday].', ' : 'bis ' }}{{ $t->due_at->translatedFormat('j. F') }}{{ $t->due_time ? ', '.$t->due_time.' Uhr' : '' }}</span> · @endif
                 @if ($t->program) {{ $t->program->title }} · @endif
                 @if ($t->unit_id && $t->program && $t->unit) <a href="{{ route('kurse.einheit', [$t->program, $t->unit]) }}">zur Übung</a> · @endif
-                {{ \App\Models\Note::VISIBILITIES[$t->visibility] ?? '' }}
+                {{ \App\Models\Note::sichtbarkeitText($t->visibility) }}
                 @if ($t->project_id && $t->projekt) · <x-projekt-chip :projekt="$t->projekt" /> @endif
             </span>
             @if ($t->body)<p class="lesetext mt-1 whitespace-pre-line text-md">{{ $t->body }}</p>@endif

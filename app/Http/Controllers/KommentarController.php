@@ -19,10 +19,12 @@ class KommentarController extends Controller
             'typ' => ['required', 'in:'.implode(',', array_keys(Kommentare::TYPEN))],
             'id' => ['required', 'integer'],
             'body' => ['required', 'string', 'max:5000'],
+            'refs' => ['nullable', 'array', 'max:6'],
+            'refs.*' => ['string', 'max:40'],
         ]);
         $item = $this->kommentare->finden($data['typ'], (int) $data['id']);
         abort_unless($item, 404);
-        $this->kommentare->schreiben($request->user(), $item, $data['body']);
+        $this->kommentare->schreiben($request->user(), $item, $data['body'], $data['refs'] ?? null);
 
         return back()->with('meldung', 'Kommentar gespeichert.');
     }

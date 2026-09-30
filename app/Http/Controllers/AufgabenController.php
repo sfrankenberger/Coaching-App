@@ -33,7 +33,7 @@ class AufgabenController extends Controller
         return view('aufgaben.index', [
             'offen' => $tasks->filter(fn (Task $t) => ! $t->isDone())->values(),
             'fertig' => $tasks->filter(fn (Task $t) => $t->isDone())->values(),
-            'kurse' => $this->access->programsFor($user)->pluck('title', 'id'),
+            'kurse' => $this->access->auswahlFor($user),
             'projekte' => ! Funktionen::an('projekte') ? collect() : Projekt::where('user_id', $user->id)->orderBy('name')->get(['id', 'name', 'farbe', 'icon']),
             'gemeinschaft' => $this->access->gemeinschaftFor($user)->pluck('title', 'id'),
             'filter' => $filter,

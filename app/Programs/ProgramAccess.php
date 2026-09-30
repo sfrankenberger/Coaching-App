@@ -59,6 +59,12 @@ class ProgramAccess
     }
 
     /** Programme der Person, sortiert, mit Schritten und Einheiten geladen. */
+    /** Fuer "Gehoert zu" in Aufgaben, Notizen, Reflexionen: ohne Arbeitsbuecher (gehoeren zum Kurs), 1:1 ohne Namen. */
+    public function auswahlFor(User $user): Collection
+    {
+        return $this->programsFor($user)->reject(fn (Program $p) => $p->isWorkbook())->mapWithKeys(fn (Program $p) => [$p->id => $p->kurzName()]);
+    }
+
     public function programsFor(User $user): Collection
     {
         $ids = $this->programIdsFor($user);

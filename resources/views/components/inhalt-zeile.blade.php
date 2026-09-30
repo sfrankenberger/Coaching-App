@@ -7,8 +7,10 @@
     <article class="karte impuls-karte">
         <a href="{{ $z['url'] }}" class="impuls-bild" style="--bild: url('{{ $z['bild'] }}')">
             <img src="{{ $z['bild'] }}" alt="" loading="lazy">
-            <span class="chip"><i class="fa-solid fa-{{ $z['art'] === 'episode' ? 'microphone' : 'lightbulb' }}"></i>{{ $z['typ'] }}@if (! empty($z['versteckt'])) · {{ $z['versteckt'] }}@endif</span>
-            @if (! empty($z['neu']))<span class="chip chip-neu" style="position:absolute;right:10px;top:10px">Neu</span>@endif
+            <span class="impuls-chips">
+                <span class="chip"><i class="fa-solid fa-{{ $z['art'] === 'episode' ? 'microphone' : 'lightbulb' }}"></i>{{ $z['typ'] }}@if (! empty($z['versteckt'])) · {{ $z['versteckt'] }}@endif</span>
+                @if (! empty($z['neu']))<span class="chip chip-neu">Neu</span>@endif
+            </span>
         </a>
         <div class="impuls-text">
             <a href="{{ $z['url'] }}" class="t no-underline">{{ $z['titel'] }}</a>
