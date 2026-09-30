@@ -106,10 +106,13 @@ class AnhaengeTest extends TestCase
             ->assertSee('Brief schreiben')->assertSee('Call Woche 3')->assertSee('Arbeitsblatt Werte')->assertDontSee('Beas Geheimnis')
             ->assertSee('Etwas anhängen');
 
-        // Bearbeiten ersetzt die Anhaenge, Loeschen raeumt auf
+        // Bearbeiten ersetzt die Anhaenge. Loeschen legt die Notiz in den Papierkorb, die Anhaenge bleiben dran,
+        // erst das endgueltige Loeschen raeumt auf
         $this->actingAs($this->anna)->post("http://a.test/notizen/{$note->id}", ['body' => 'Neu', 'refs' => ['event:'.$this->termin->id]])->assertRedirect();
         $this->assertSame(['event:'.$this->termin->id], $this->in(fn () => $note->fresh()->anhangRefs()));
         $this->actingAs($this->anna)->delete("http://a.test/notizen/{$note->id}")->assertRedirect();
+        $this->assertSame(1, $this->in(fn () => Anhang::count()));
+        $this->in(fn () => Note::onlyTrashed()->find($note->id)->forceDelete());
         $this->assertSame(0, $this->in(fn () => Anhang::count()));
     }
 

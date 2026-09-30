@@ -4,6 +4,7 @@ namespace App\Models;
 
 use App\Content\Concerns\HasTopics;
 use App\Recordings\Vimeo;
+use App\Support\Papierkorb\ImPapierkorb;
 use App\Support\Protokoll\Protokolliert;
 use App\Support\Suche;
 use App\Tenancy\Concerns\BelongsToTenant;
@@ -20,7 +21,12 @@ use Laravel\Scout\Searchable;
 class Unit extends Model
 {
     use BelongsToTenant, HasTopics, Searchable;
+    use ImPapierkorb;
     use Protokolliert;
+
+    protected static array $papierkorbKinder = ['exercises'];
+
+    protected static ?string $papierkorbEltern = 'step';
 
     public const TYPES = [
         'lesson' => 'Lektion',

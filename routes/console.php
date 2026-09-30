@@ -35,3 +35,6 @@ Schedule::command('buchhaltung:zahlungen')->hourlyAt(40)->withoutOverlapping(30)
 
 // Aenderungsprotokoll: Eintraege aelter als config('activitylog.clean_after_days') (730 Tage) entfernen
 Schedule::command('activitylog:clean')->dailyAt('03:40')->name('protokoll-aufraeumen');
+
+// Papierkorb: was laenger als 90 Tage drin liegt, endgueltig loeschen
+Schedule::command('papierkorb:leeren')->dailyAt('03:50')->name('papierkorb-leeren');

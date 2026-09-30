@@ -44,6 +44,7 @@ class Tenant extends Model
     {
         return $this->belongsToMany(User::class, 'memberships')
             ->using(Membership::class)
+            ->wherePivotNull('deleted_at')
             ->withPivot(['role', 'status', 'legacy_id', 'joined_at'])
             ->withTimestamps();
     }

@@ -104,7 +104,7 @@ class KaufenController extends Controller
         $email = Str::lower(trim($email));
         $user = User::where('email', $email)->first() ?? User::create(['name' => trim($name), 'email' => $email]);
         if (! $user->membershipIn($tenant)) {
-            Membership::create(['user_id' => $user->id, 'role' => Role::Member->value, 'status' => 'active', 'joined_at' => now(), 'settings' => ['quelle' => 'kasse']]);
+            Membership::anlegen(['user_id' => $user->id, 'role' => Role::Member->value, 'status' => 'active', 'joined_at' => now(), 'settings' => ['quelle' => 'kasse']]);
         }
 
         return $user;

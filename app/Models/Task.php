@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use App\Models\Concerns\HatAnhaenge;
+use App\Support\Papierkorb\ImPapierkorb;
 use App\Support\Protokoll\Protokolliert;
 use App\Tenancy\Concerns\BelongsToTenant;
 use Illuminate\Database\Eloquent\Builder;
@@ -19,6 +20,7 @@ class Task extends Model
 {
     use BelongsToTenant;
     use HatAnhaenge;
+    use ImPapierkorb;
     use Protokolliert;
 
     public const SOURCES = ['manual' => 'Selbst', 'coach' => 'Von der Coachin', 'program' => 'Aus dem Kurs', 'ai_summary' => 'Aus der Zusammenfassung', 'exercise' => 'Aus einer Übung'];

@@ -40,7 +40,7 @@ class Zugang
         $membership = $user->membershipIn();
         $newMembership = false;
         if (! $membership) {
-            Membership::create(['user_id' => $user->id, 'role' => Role::Member->value, 'status' => 'active', 'joined_at' => now()]);
+            Membership::anlegen(['user_id' => $user->id, 'role' => Role::Member->value, 'status' => 'active', 'joined_at' => now()]);
             $newMembership = true;
         } elseif (! $membership->isActive()) {
             $membership->forceFill(['status' => 'active'])->save();

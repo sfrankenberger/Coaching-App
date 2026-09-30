@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Support\Papierkorb\ImPapierkorb;
 use App\Support\Protokoll\Protokolliert;
 use App\Tenancy\Concerns\BelongsToTenant;
 use Illuminate\Database\Eloquent\Model;
@@ -15,7 +16,10 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 class Exercise extends Model
 {
     use BelongsToTenant;
+    use ImPapierkorb;
     use Protokolliert;
+
+    protected static ?string $papierkorbEltern = 'unit';
 
     public const TYPES = [
         'text' => 'Frage mit Textfeld',

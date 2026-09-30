@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Support\Papierkorb\ImPapierkorb;
 use App\Support\Protokoll\Protokolliert;
 use App\Tenancy\Concerns\BelongsToTenant;
 use Illuminate\Database\Eloquent\Builder;
@@ -14,7 +15,10 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 class Entitlement extends Model
 {
     use BelongsToTenant;
+    use ImPapierkorb;
     use Protokolliert;
+
+    protected static ?string $papierkorbEltern = 'offer';
 
     protected $guarded = [];
 

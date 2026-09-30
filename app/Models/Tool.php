@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use App\Content\Concerns\HasTopics;
+use App\Support\Papierkorb\ImPapierkorb;
 use App\Support\Protokoll\Protokolliert;
 use App\Support\Suche;
 use App\Tenancy\Concerns\BelongsToTenant;
@@ -17,7 +18,10 @@ use Laravel\Scout\Searchable;
 class Tool extends Model
 {
     use BelongsToTenant, HasTopics, Searchable;
+    use ImPapierkorb;
     use Protokolliert;
+
+    protected static array $papierkorbEindeutig = ['slug'];
 
     public const FELDER = [
         'purpose' => ['Wofür ist es da', 'Ein bis zwei Sätze: welches Problem löst dieses Werkzeug?'],

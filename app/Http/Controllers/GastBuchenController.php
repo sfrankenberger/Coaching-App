@@ -73,7 +73,7 @@ class GastBuchenController extends Controller
             $user->forceFill(['phone' => trim($data['phone'])])->save();
         }
         if (! $user->membershipIn($tenant)) {
-            Membership::create(['user_id' => $user->id, 'role' => Role::Guest->value, 'status' => 'active', 'joined_at' => now(), 'settings' => array_filter(['quelle' => 'klarheitsgespraech', 'herkunft' => $herkunft])]);
+            Membership::anlegen(['user_id' => $user->id, 'role' => Role::Guest->value, 'status' => 'active', 'joined_at' => now(), 'settings' => array_filter(['quelle' => 'klarheitsgespraech', 'herkunft' => $herkunft])]);
             $neu = true;
         }
 

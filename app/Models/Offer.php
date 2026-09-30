@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Support\Papierkorb\ImPapierkorb;
 use App\Support\Protokoll\Protokolliert;
 use App\Tenancy\Concerns\BelongsToTenant;
 use Illuminate\Database\Eloquent\Model;
@@ -16,7 +17,12 @@ use Illuminate\Support\Str;
 class Offer extends Model
 {
     use BelongsToTenant;
+    use ImPapierkorb;
     use Protokolliert;
+
+    protected static array $papierkorbKinder = ['entitlements'];
+
+    protected static array $papierkorbEindeutig = ['slug'];
 
     public const TYPES = [
         'course' => 'Einzelkurs',

@@ -72,9 +72,13 @@ class ProjekteTest extends TestCase
         $this->actingAs($this->anna)->get('http://a.test/notizen')->assertOk()->assertSee('Mein Nebenerwerb');
         $this->actingAs($this->anna)->get("http://a.test/journal?projekt={$p->id}")->assertOk()->assertSee('Erste Idee')->assertSee('Flyer drucken')->assertDontSee('Ohne Projekt');
 
-        // Projekt entfernen: Eintraege bleiben
+        // Projekt entfernen: es liegt im Papierkorb, die Eintraege bleiben und behalten die Zuordnung bis zum endgueltigen Loeschen
         $this->actingAs($this->anna)->delete("http://a.test/projekte/{$p->id}")->assertRedirect();
         $this->assertSame(0, $this->in(fn () => Projekt::count()));
+        $this->assertSame(1, $this->in(fn () => Projekt::onlyTrashed()->count()));
+        $this->assertSame($p->id, $this->in(fn () => Note::first()->project_id));
+        $this->assertSame(2, $this->in(fn () => Task::count()));
+        $this->in(fn () => Projekt::onlyTrashed()->first()->forceDelete());
         $this->assertNull($this->in(fn () => Note::first()->project_id));
         $this->assertSame(2, $this->in(fn () => Task::count()));
     }

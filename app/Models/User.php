@@ -5,6 +5,7 @@ namespace App\Models;
 use App\Enums\Role;
 use App\Support\Protokoll\Protokolliert;
 use App\Tenancy\CurrentTenant;
+use App\Tenancy\TenantScope;
 use Filament\Models\Contracts\FilamentUser;
 use Filament\Panel;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -53,6 +54,7 @@ class User extends Authenticatable implements FilamentUser, WebAuthnAuthenticata
     {
         return $this->belongsToMany(Tenant::class, 'memberships')
             ->using(Membership::class)
+            ->wherePivotNull('deleted_at')
             ->withPivot(['role', 'status', 'legacy_id', 'joined_at', 'settings'])
             ->withTimestamps();
     }
@@ -70,7 +72,7 @@ class User extends Authenticatable implements FilamentUser, WebAuthnAuthenticata
             return null;
         }
 
-        return Membership::withoutGlobalScopes()
+        return Membership::withoutGlobalScope(TenantScope::class)
             ->where('tenant_id', $tenant->id)
             ->where('user_id', $this->id)
             ->first();
