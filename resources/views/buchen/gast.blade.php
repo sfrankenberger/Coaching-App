@@ -7,6 +7,7 @@
     @else
         <form method="post" action="{{ route('buchen.gast.store', $art) }}" class="buchen">
             @csrf
+            <input type="hidden" name="ref" value="{{ request()->query('ref') ?: request()->query('utm_source') }}">
             <input type="text" name="website" value="" tabindex="-1" autocomplete="off" style="position:absolute;left:-9999px" aria-hidden="true">
             <div class="karte">
                 <label class="block mb-3"><span class="feld-label">Dein Name</span><input type="text" name="name" class="feld" required maxlength="120" value="{{ old('name') }}" autocomplete="name"></label>

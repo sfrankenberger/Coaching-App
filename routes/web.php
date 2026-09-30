@@ -65,6 +65,7 @@ Route::get('/sso', BridgeController::class)->name('sso');
 
 // Kalender-Abo (ohne Anmeldung, Schluessel je Person)
 Route::get('/kalender/{token}.ics', [KalenderController::class, 'abo'])->name('kalender.abo')->where('token', '[A-Za-z0-9]{32,64}');
+Route::get('/kalender/{token}/{program:slug}.ics', [KalenderController::class, 'abo'])->name('kalender.kurs')->where('token', '[A-Za-z0-9]{32,64}');
 
 // Klarheitsgespraech fuer Gaeste, ohne Anmeldung (Website verweist hierher)
 Route::get('/buchen/gast/{art}', [GastBuchenController::class, 'zeiten'])->name('buchen.gast');

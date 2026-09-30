@@ -110,7 +110,9 @@ class BenachrichtigungenTest extends TestCase
         Notification::assertSentTo($this->anna, AppNotification::class, fn (AppNotification $n) => str_starts_with($n->nachricht->titel, 'Heute'));
         Notification::assertSentTo($this->anna, AppNotification::class, fn (AppNotification $n) => str_starts_with($n->nachricht->titel, 'In einer Stunde'));
         Notification::assertNotSentTo($this->bea, AppNotification::class);
-        $this->assertSame(2, $n);
+        // Das Team (Lea) bekommt die Erinnerung an den eigenen Call mit
+        Notification::assertSentTo($this->lea, AppNotification::class, fn (AppNotification $n) => str_starts_with($n->nachricht->titel, 'In einer Stunde'));
+        $this->assertSame(4, $n);
 
         $this->assertSame(0, $this->in(fn () => app(Runden::class)->terminErinnerungen()), 'kein zweites Mal');
         $this->assertNotNull($event->fresh()->reminded_hour_at);

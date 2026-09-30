@@ -60,6 +60,10 @@
             </div>
         @endif
 
+        @php $abo = ($mm = auth()->user()->membershipIn()) && $program->isGroup() ? route('kalender.kurs', ['token' => \App\Support\Ics::tokenFor($mm), 'program' => $program]) : null; @endphp
+        @if ($abo)
+            <p class="m-0 mb-2 text-right"><a href="{{ preg_replace('~^https?://~', 'webcal://', $abo) }}" class="hinweis no-underline"><i class="fa-solid fa-calendar-plus"></i> Termine dieses Kurses abonnieren</a></p>
+        @endif
         @if ($termine->count() > 1)
             {{-- Kurs ohne Module (z. B. Coffee und Coaching): die naechsten Termine --}}
             <h2 class="abschnitt"><i class="fa-solid fa-calendar"></i>Nächste Termine<em>{{ $termine->count() }}</em></h2>

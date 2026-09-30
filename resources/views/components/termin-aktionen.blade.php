@@ -15,6 +15,8 @@
         <a href="{{ $event->zoom_url }}" target="_blank" rel="noopener" class="knopf {{ $k }}"><i class="fa-solid fa-video"></i>{{ $live ? 'Jetzt beitreten' : 'Zoom öffnen' }}</a>
     @endif
     @if (! $vorbei)
+        <a href="{{ \App\Support\Ics::googleUrl($event) }}" target="_blank" rel="noopener" class="knopf knopf-ruhig {{ $k }}" title="In Google Calendar eintragen"><i class="fa-brands fa-google"></i></a>
+        <a href="{{ \App\Support\Ics::outlookUrl($event) }}" target="_blank" rel="noopener" class="knopf knopf-ruhig {{ $k }}" title="In Outlook eintragen"><i class="fa-brands fa-microsoft"></i></a>
         <a href="{{ route('termine.ics', $event) }}" class="knopf knopf-ruhig {{ $k }}"><i class="fa-solid fa-calendar-plus"></i>In meinen Kalender</a>
     @endif
     @if ($buchung && $buchung->istAktiv() && ! $vorbei)

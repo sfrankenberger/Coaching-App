@@ -31,7 +31,7 @@ class Lage
         $team = $this->chat->teamIds();
         $wartet = $this->wartende($team);
 
-        return Membership::query()->where('status', 'active')->whereIn('role', ['member', 'client'])->with('user')->get()
+        return Membership::query()->where('status', 'active')->whereIn('role', ['member', 'client', 'guest'])->with('user')->get()
             ->filter(fn (Membership $m) => $m->user)
             ->map(fn (Membership $m) => $this->fuer($m, $wartet))
             ->sortBy([['stufe', 'desc'], ['seit', 'asc']])->values();

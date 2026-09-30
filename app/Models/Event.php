@@ -54,6 +54,7 @@ class Event extends Model
             'all_day' => 'boolean',
             'is_published' => 'boolean',
             'reminded_day_at' => 'datetime',
+            'cancelled_at' => 'datetime',
             'reminded_hour_at' => 'datetime',
             'recording_notified_at' => 'datetime',
             'settings' => 'array',

@@ -2,6 +2,7 @@
 
 namespace App\Chat;
 
+use App\Booking\Buchung;
 use App\Models\Event;
 use App\Models\Message;
 use App\Models\User;
@@ -38,18 +39,9 @@ class Terminvorschlag
         $start = $vorschlag->vorschlaege()->get($i);
         abort_unless($start && $start->isFuture(), 422, 'Diese Zeit ist nicht mehr frei.');
 
-        $tenant = $this->current->get();
-        $event = Event::create([
-            'title' => (string) ($tenant?->setting('termine.einzel_titel') ?: 'Einzelsitzung'),
-            'type' => 'one_on_one',
-            'user_id' => $person->id,
-            'starts_at' => $start,
-            'ends_at' => $start->copy()->addMinutes((int) ($vorschlag->meta['dauer'] ?? 60)),
-            'zoom_url' => $tenant?->setting('termine.einzel_zoom_url') ?: null,
-            'location' => $tenant?->setting('termine.einzel_zoom_url') ? 'Online via Zoom' : null,
-            'is_published' => true,
-            'settings' => ['gebucht_von' => $person->id, 'vorschlag' => $vorschlag->id],
-        ]);
+        // Wie eine richtige Buchung: Termin, Buchung, Google-Eintrag, Bestaetigung mit Kalenderdatei
+        $event = app(Buchung::class)->fest($person, $start, (int) ($vorschlag->meta['dauer'] ?? 60), $person, null, 'vorschlag')->event;
+        $event->forceFill(['settings' => ($event->settings ?? []) + ['vorschlag' => $vorschlag->id]])->saveQuietly();
 
         $vorschlag->forceFill(['meta' => ($vorschlag->meta ?? []) + ['gebucht' => ['i' => $i, 'event_id' => $event->id, 'am' => now()->toIso8601String()]]])->save();
 

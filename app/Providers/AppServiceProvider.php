@@ -95,6 +95,7 @@ class AppServiceProvider extends ServiceProvider
             'tool' => Tool::class,
             'sammlung' => Sammlung::class,
             'unit_video' => UnitVideo::class,
+            'booking' => Booking::class,
         ]);
 
         // Funktionen je Mandant (Pennant): Schalter in tenants.settings, hier an einer Stelle aufgeloest

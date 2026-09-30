@@ -4,6 +4,8 @@ namespace App\Support;
 
 use App\Models\Event;
 use App\Models\Membership;
+use App\Tenancy\Branding;
+use App\Tenancy\CurrentTenant;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Str;
 
@@ -33,6 +35,13 @@ class Ics
             $out[] = 'DTEND:'.($e->ends_at ?? $e->starts_at->copy()->addHours(2))->copy()->utc()->format('Ymd\THis\Z');
         }
         $out[] = 'SUMMARY:'.self::text($e->title);
+        if ($e->cancelled_at) {
+            $out[] = 'STATUS:CANCELLED';
+            $out[] = 'SEQUENCE:1';
+        }
+        if ($e->all_day) {
+            $out[] = 'TRANSP:TRANSPARENT';   // Reflexions- und Fragentag blockieren nichts
+        }
         $desc = trim(strip_tags((string) $e->description));
         if ($e->zoom_url) {
             $desc = trim($e->zoom_url."\n\n".$desc);
@@ -44,9 +53,50 @@ class Ics
         if ($e->location || $e->zoom_url) {
             $out[] = 'LOCATION:'.self::text($e->location ?: $e->zoom_url);
         }
+        if (! $e->all_day && ! $e->cancelled_at) {
+            $out = array_merge($out, ['BEGIN:VALARM', 'ACTION:DISPLAY', 'DESCRIPTION:'.self::text($e->title), 'TRIGGER:-PT15M', 'END:VALARM']);
+        }
         $out[] = 'END:VEVENT';
 
         return $out;
+    }
+
+    /** Kalenderdatei eines Termins als Text, z. B. fuer den Mailanhang. */
+    public static function datei(Event $e): string
+    {
+        $tz = app(CurrentTenant::class)->get()?->timezone ?: config('app.timezone');
+
+        return self::calendar(collect([$e]), app(Branding::class)->appName(), $tz, self::domain());
+    }
+
+    public static function domain(): string
+    {
+        try {
+            return request()?->getHost() ?: (parse_url((string) config('app.url'), PHP_URL_HOST) ?: 'app');
+        } catch (\Throwable) {
+            return parse_url((string) config('app.url'), PHP_URL_HOST) ?: 'app';
+        }
+    }
+
+    /** Termin direkt in Google Calendar eintragen. */
+    public static function googleUrl(Event $e): string
+    {
+        $ende = $e->ends_at ?? $e->starts_at->copy()->addHours(2);
+        $dates = $e->all_day ? $e->starts_at->format('Ymd').'/'.$ende->copy()->addDay()->format('Ymd')
+            : $e->starts_at->copy()->utc()->format('Ymd\THis\Z').'/'.$ende->copy()->utc()->format('Ymd\THis\Z');
+
+        return 'https://calendar.google.com/calendar/render?'.http_build_query(array_filter(['action' => 'TEMPLATE', 'text' => $e->title, 'dates' => $dates,
+            'details' => trim(($e->zoom_url ? $e->zoom_url."\n\n" : '').route('termine.show', $e)), 'location' => $e->location ?: $e->zoom_url]));
+    }
+
+    /** Termin in Outlook (Web) eintragen. */
+    public static function outlookUrl(Event $e): string
+    {
+        $ende = $e->ends_at ?? $e->starts_at->copy()->addHours(2);
+
+        return 'https://outlook.live.com/calendar/0/deeplink/compose?'.http_build_query(array_filter(['path' => '/calendar/action/compose', 'rru' => 'addevent', 'subject' => $e->title,
+            'startdt' => $e->starts_at->copy()->utc()->toIso8601ZuluString(), 'enddt' => $ende->copy()->utc()->toIso8601ZuluString(), 'allday' => $e->all_day ? 'true' : null,
+            'body' => trim(($e->zoom_url ? $e->zoom_url."\n\n" : '').route('termine.show', $e)), 'location' => $e->location ?: $e->zoom_url]));
     }
 
     /** Abo-Schluessel der Person (wird beim ersten Mal angelegt). */

@@ -152,6 +152,14 @@ Sortiert nach Nutzen fuer Lea und die Teilnehmerinnen. Mehrfach gefundene Punkte
   (`App\Support\Besuche`: Impulse, Ressourcen, Community, Termine seit dem letzten Besuch), "Was ist neu" mit
   Antworten auf eigene Eintraege und Fragen. Einzelsitzungen auch in Hybrid-Kursen (Feld fuer alle Arten ausser
   Arbeitsbuch, Kontingent auf Kursseite und im Profil).
+- 30.09.: C17, C18, C20, C21 umgesetzt. Gaeste stehen in der Coachees-Liste und der Suche, "kam ueber" im Dossier
+  (Herkunft aus dem Gastformular, `ref` oder `utm_source`). Termin aus Vorschlag und "Termin eintragen" sind echte
+  Buchungen (`Buchung::fest`): Booking-Zeile, Google-Eintrag, Pruefung gegen Doppelbelegung, Bestaetigungsmail mit
+  Kalenderdatei (`Nachricht::anhang`), verschieben und absagen wie gebucht; Knopf "Drei freie Zeiten vorschlagen".
+  Buchung: Kalenderdatei an jeder Bestaetigung, "Etwas mitgeben" (Anhaenge an der Buchung) und Vorab-Antworten im
+  Dossier der App-Huelle, Herkunft. Kalender: Erinnerung 15 Minuten vorher (VALARM), Reflexionstage als frei,
+  abgesagte Termine bleiben als abgesagt im Feed, Feed je Kurs (`kalender.kurs`), Google- und Outlook-Links am
+  Termin, Team bekommt die Termin-Erinnerungen mit. Terminliste: Aufgaben mit Datum, Filter "Was", Suche.
 
 ## Was bewusst nicht kommt
 

@@ -108,7 +108,8 @@ class Runden
 
     protected function melden(Event $event, string $titel, string $text, string $wann): int
     {
-        $ids = EventObserver::recipients($event);
+        // Das Team bekommt die Erinnerung an die eigenen Calls und 1:1-Termine mit (wie lea_te_leute)
+        $ids = EventObserver::recipients($event)->merge(app(Chat::class)->teamIds())->unique()->values();
         if ($ids->isEmpty()) {
             return 0;
         }

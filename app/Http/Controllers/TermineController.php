@@ -9,6 +9,7 @@ use App\Models\Event;
 use App\Models\EventAttendee;
 use App\Models\MediaPosition;
 use App\Models\Program;
+use App\Models\Task;
 use App\Programs\Begleitung;
 use App\Support\Besuche;
 use App\Support\Ics;
@@ -29,6 +30,8 @@ class TermineController extends Controller
         $user = $request->user();
         $zeit = in_array($request->query('zeit'), ['kommend', 'vorbei', 'alle'], true) ? $request->query('zeit') : 'kommend';
         $kurs = (int) $request->query('kurs');
+        $was = in_array($request->query('was'), ['termine', 'aufgaben'], true) ? $request->query('was') : 'alles';
+        $suche = trim((string) $request->query('q', ''));
 
         $q = $this->begleitung->eventsQuery($user)->with(['program:id,title,color', 'attendees' => fn ($a) => $a->where('user_id', $user->id)]);
         match ($zeit) {
@@ -39,14 +42,33 @@ class TermineController extends Controller
         if ($kurs) {
             $q->where('program_id', $kurs);
         }
-        $events = $q->limit(200)->get();
+        if ($suche !== '') {
+            $q->where('title', 'like', '%'.str_replace(['%', '_'], ['\\%', '\\_'], $suche).'%');
+        }
+        $events = $was === 'aufgaben' ? collect() : $q->limit(200)->get();
+
+        // Aufgaben mit Datum laufen im Kalender mit (wie lea_tm_aufgaben)
+        $aufgaben = collect();
+        if ($was !== 'termine' && ! $user->canManageCurrentTenant()) {
+            $ta = Task::where('user_id', $user->id)->whereNotNull('due_at')->when($kurs, fn ($t) => $t->where('program_id', $kurs))
+                ->when($suche !== '', fn ($t) => $t->where('title', 'like', '%'.str_replace(['%', '_'], ['\\%', '\\_'], $suche).'%'));
+            match ($zeit) {
+                'kommend' => $ta->where('due_at', '>=', now()->startOfDay())->orderBy('due_at'),
+                'vorbei' => $ta->where('due_at', '<', now()->startOfDay())->orderByDesc('due_at'),
+                default => $ta->orderBy('due_at'),
+            };
+            $aufgaben = $ta->limit(100)->get();
+        }
+        $eintraege = $events->map(fn ($e) => ['zeit' => $e->starts_at, 'event' => $e])
+            ->concat($aufgaben->map(fn ($t) => ['zeit' => $t->due_at->copy()->setTime(23, 59), 'task' => $t]))
+            ->sortBy(fn ($x) => $x['zeit']->getTimestamp() * ($zeit === 'vorbei' ? -1 : 1))->values();
 
         $kurse = Program::whereIn('id', $this->begleitung->eventsQuery($user)->select('program_id'))->orderBy('title')->pluck('title', 'id');
 
         $m = $user->membershipIn();
 
         return view('termine.index', [
-            'events' => $events, 'zeit' => $zeit, 'kurs' => $kurs, 'kurse' => $kurse,
+            'events' => $events, 'eintraege' => $eintraege, 'zeit' => $zeit, 'kurs' => $kurs, 'kurse' => $kurse, 'was' => $was, 'suche' => $suche,
             'kalenderUrl' => $m ? route('kalender.abo', ['token' => Ics::tokenFor($m)]) : null,
             // Eigene Buchung, wenn der Kalender angebunden ist, sonst ein Link nach aussen
             'buchenUrl' => app(GoogleCalendar::class)->aktiv() ? route('buchen.index') : data_get($this->current->get()?->settings, 'links.buchung'),
