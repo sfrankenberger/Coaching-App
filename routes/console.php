@@ -1,6 +1,9 @@
 <?php
 
+use App\Ai\Anthropic;
 use App\Auth\MagicLink;
+use App\Models\Tenant;
+use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\Schedule;
 
 // Der Queue-Worker laeuft als Systemd-Dienst (lea-app-queue.service), siehe docs/05-BETRIEB-PLESK.md
@@ -23,6 +26,15 @@ Schedule::command('inhalte:feeds')->hourly()->withoutOverlapping();
 // Parallelbetrieb: geplante WordPress-Importe je Mandant (settings.import.wordpress.schedule)
 Schedule::command('import:geplant')->hourlyAt(17)->withoutOverlapping(50)->runInBackground();
 Schedule::command('inhalte:veroeffentlichen')->everyTenMinutes()->withoutOverlapping();
+// Podcast: neue Folgen abschreiben und mit Kapiteln versehen; Themenfinder nachts ueber alles Neue
+Schedule::command('podcast:aufbereiten')->hourlyAt(35)->withoutOverlapping(50)->runInBackground();
+Schedule::call(function () {
+    foreach (Tenant::where('is_active', true)->get() as $t) {
+        if (Anthropic::configured($t)) {
+            Artisan::call('themen:profil', ['tenant' => $t->slug, '--limit' => 30]);
+        }
+    }
+})->dailyAt('03:15')->name('themen-profil')->withoutOverlapping(120);
 
 // Aufzeichnungen: nach jedem Termin auf Vimeo suchen, Abschrift und Zusammenfassung, dann melden
 Schedule::command('aufzeichnungen:wache')->everyFifteenMinutes()->withoutOverlapping(30)->runInBackground();

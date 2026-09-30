@@ -66,6 +66,19 @@
         </x-karte>
     @endif
 
+    @if (($vorher ?? null) || ($nachher ?? null))
+        <div class="flex flex-wrap gap-2 mt-2">
+            @if ($vorher ?? null)<a href="{{ route('impulse.folge', $vorher) }}" class="knopf knopf-leise knopf-klein"><i class="fa-solid fa-chevron-left"></i>{{ \Illuminate\Support\Str::limit($vorher->title, 40) }}</a>@endif
+            @if ($nachher ?? null)<a href="{{ route('impulse.folge', $nachher) }}" class="knopf knopf-leise knopf-klein ml-auto">{{ \Illuminate\Support\Str::limit($nachher->title, 40) }}<i class="fa-solid fa-chevron-right"></i></a>@endif
+        </div>
+    @endif
+    @if (($verwandt ?? collect())->isNotEmpty())
+        <h2 class="abschnitt"><i class="fa-solid fa-link"></i>Passt dazu<em>{{ $verwandt->count() }}</em></h2>
+        @foreach ($verwandt as $z)
+            <x-inhalt-zeile :z="$z + ['bild' => null]" :gemerkt="$gemerkt" />
+        @endforeach
+    @endif
+
     @if ($folge->topics->isNotEmpty() || $folge->keywords)
         <x-karte titel="Themen" icon="tag">
             <div class="flex flex-wrap gap-2">

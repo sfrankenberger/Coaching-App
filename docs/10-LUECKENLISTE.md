@@ -175,6 +175,13 @@ Sortiert nach Nutzen fuer Lea und die Teilnehmerinnen. Mehrfach gefundene Punkte
   Warnung ans Team; sieben Tage vor Ablauf eines Zugangs Hinweis an Person und Team. Waehrung je Kundin gemerkt,
   im Dossier-Verkauf Preis aus dem Angebot vorbefuellt, Sicherheitsabfrage bei kostenlos. Abos mit Stripe und
   Kundenportal (E30, Rest) und Newsletter (E33) folgen mit Etappe 10 und 11.
+- 30.09.: D26 bis D28 umgesetzt (ohne Instagram). Podcast: Abschrift aus dem Audio mit Zeitmarken ueber den
+  Audio-Dienst des Mandanten (`Transkript::ausUrl`), Kapitel, Zusammenfassung, FAQ und Schlagworte per KI, Sammellauf
+  `podcast:aufbereiten` stuendlich nach den Feeds, Themenfinder nachts um 3:15 fuer alle Mandanten mit KI-Schluessel,
+  Nachbarn (vorige und naechste Folge) und "Passt dazu" ueber gemeinsame Themen. Ressourcen-Regal: Filter nach Art
+  und Herkunft, Sortierung, Vorschaubild und Beschreibung, Dateiname, "in n Lektionen", Angeschaut-Marke, Teilen-Knopf
+  (Material kommt angehaengt ins Gespraech), "Gehoert zu" auf der Einzelseite. Neuigkeiten: mehrere Kurse als
+  Zielgruppe (`posts.program_ids`), Gruppierung nach Monat, Gelesen-Zustand je Beitrag mit Zaehler an der Pille.
 
 ## Was bewusst nicht kommt
 

@@ -835,6 +835,9 @@
     .kurs-karte.gesperrt .kurs-bild { position: relative; filter: saturate(.6); }
     .kurs-karte.gesperrt .kurs-bild .schloss { position: absolute; right: 8px; top: 8px; background: rgba(0, 0, 0, .45); color: #fff; border-radius: 50%; width: 26px; height: 26px; display: grid; place-items: center; font-size: 12px; }
     .kurs-karte.bald { cursor: default; }
+    .regal-karte { align-items: flex-start; }
+    .regal-bild { flex: 0 0 88px; width: 88px; height: 62px; border-radius: 10px; overflow: hidden; background: var(--c-ghost); display: block; }
+    .regal-bild img { width: 100%; height: 100%; object-fit: cover; display: block; }
 
     /* ---------- Medien ---------- */
     .video { position: relative; aspect-ratio: 16 / 9; border-radius: calc(var(--radius) - 4px); overflow: hidden; background: #000; }

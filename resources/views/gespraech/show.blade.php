@@ -65,8 +65,8 @@
                 <button type="button" class="knopf knopf-klein" data-probe-senden><i class="fa-solid fa-paper-plane"></i>Senden</button>
                 <button type="button" class="knopf knopf-text knopf-klein" data-probe-weg><i class="fa-solid fa-trash"></i>Verwerfen</button>
             </div>
-            <div data-chat-anhang hidden>
-                <x-anhang-wahl :mehrfach="false">
+            <div data-chat-anhang @unless (request()->query('ref')) hidden @endunless>
+                <x-anhang-wahl :mehrfach="false" :refs="array_values(array_filter([request()->query('ref')], fn ($r) => is_string($r) && preg_match('~^[a-z]+:\d+$~', $r)))">
                     <label class="knopf knopf-leise knopf-klein" style="cursor:pointer"><i class="fa-solid fa-camera"></i>Foto oder Datei<input type="file" name="file" class="hidden" accept="image/*,application/pdf,audio/*"></label>
                 </x-anhang-wahl>
             </div>

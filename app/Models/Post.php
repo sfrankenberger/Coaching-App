@@ -31,6 +31,7 @@ class Post extends Model
     {
         return [
             'categories' => 'array',
+            'program_ids' => 'array',
             'notify_channels' => 'array',
             'notified_at' => 'datetime',
             'published_at' => 'datetime',

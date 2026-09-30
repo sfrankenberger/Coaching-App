@@ -6,6 +6,7 @@ use App\Filament\Coach\Resources\Posts\Pages\CreatePost;
 use App\Filament\Coach\Resources\Posts\Pages\EditPost;
 use App\Filament\Coach\Resources\Posts\Pages\ListPosts;
 use App\Models\Post;
+use App\Models\Program;
 use BackedEnum;
 use Filament\Actions\EditAction;
 use Filament\Forms\Components\CheckboxList;
@@ -63,6 +64,7 @@ class PostResource extends Resource
 
             Section::make('Wer es sieht und erfährt')->schema([
                 Select::make('visibility')->label('Sichtbar für')->options(Post::VISIBILITIES)->default('members')->required()->native(false)->live(),
+                Select::make('program_ids')->label('Weitere Programme')->multiple()->options(fn () => Program::orderBy('title')->pluck('title', 'id'))->native(false)->helperText('Sichtbar fuer alle genannten Kurse, nicht nur fuer das erste Programm.'),
                 Select::make('program_id')->label('Programm')->relationship('program', 'title')->native(false)->preload()
                     ->visible(fn ($get) => $get('visibility') === 'program')->required(fn ($get) => $get('visibility') === 'program'),
                 CheckboxList::make('notify_channels')->label('Bescheid geben per')->options(['push' => 'Push und Telegram (wer es hat)', 'mail' => 'Mail (wer kein Push hat)'])

@@ -81,7 +81,7 @@ class KursController extends Controller
         return view('kurse.show', [
             'naechsterCall' => $begleitung->eventsQuery($user)->where('program_id', $program->id)->whereNull('user_id')
                 ->whereNotIn('type', Event::ALL_DAY_TYPES)->upcoming()->limit(5)->get()->first(fn ($e) => ! $e->isPast()),
-            'infos' => app(Inhalte::class)->postsQuery($user)->published()->where('visibility', 'program')->where('program_id', $program->id)
+            'infos' => app(Inhalte::class)->postsQuery($user)->published()->where('visibility', 'program')->where(fn ($k) => Inhalte::fuerProgramme($k, [$program->id]))
                 ->latest('published_at')->limit(3)->get(),
             'fragen' => Question::where('program_id', $program->id)->sichtbarFuer($user)->whereIn('status', ['offen', 'call'])->count(),
             'coach' => app(Branding::class)->coachName(),

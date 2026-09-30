@@ -40,7 +40,34 @@ class Inhalte
         $programIds = $this->access->programIdsFor($user);
 
         return $q->where(fn (Builder $w) => $w->where('visibility', 'members')
-            ->orWhere(fn (Builder $p) => $p->where('visibility', 'program')->whereIn('program_id', $programIds)));
+            ->orWhere(fn (Builder $p) => $p->where('visibility', 'program')->where(fn (Builder $k) => self::fuerProgramme($k, $programIds->all()))));
+    }
+
+    /** Beitrag gehoert zu einem der Programme: program_id oder eines aus program_ids. */
+    public static function fuerProgramme(Builder $q, array $programIds): Builder
+    {
+        $q->whereIn('program_id', $programIds);
+        foreach ($programIds as $id) {
+            $q->orWhereJsonContains('program_ids', (int) $id);
+        }
+
+        return $q;
+    }
+
+    /** Gelesene Beitraege der Person (Neuigkeiten mit Gelesen-Zustand, wie lea_news_gelesen). */
+    public function gelesen(User $user): Collection
+    {
+        return collect((array) $user->membershipIn()?->setting('gelesen_posts', []))->map(fn ($i) => (int) $i);
+    }
+
+    public function gelesenMerken(User $user, Post $post): void
+    {
+        $m = $user->membershipIn();
+        if (! $m) {
+            return;
+        }
+        $liste = $this->gelesen($user)->push($post->id)->unique()->values()->take(-400);
+        $m->forceFill(['settings' => array_merge($m->settings ?? [], ['gelesen_posts' => $liste->all()])])->saveQuietly();
     }
 
     public function canViewPost(User $user, Post $post): bool

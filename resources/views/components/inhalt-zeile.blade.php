@@ -8,6 +8,7 @@
         <a href="{{ $z['url'] }}" class="impuls-bild" style="--bild: url('{{ $z['bild'] }}')">
             <img src="{{ $z['bild'] }}" alt="" loading="lazy">
             <span class="chip"><i class="fa-solid fa-{{ $z['art'] === 'episode' ? 'microphone' : 'lightbulb' }}"></i>{{ $z['typ'] }}@if (! empty($z['versteckt'])) · {{ $z['versteckt'] }}@endif</span>
+            @if (! empty($z['neu']))<span class="chip chip-neu" style="position:absolute;right:10px;top:10px">Neu</span>@endif
         </a>
         <div class="impuls-text">
             <a href="{{ $z['url'] }}" class="t no-underline">{{ $z['titel'] }}</a>
@@ -25,7 +26,7 @@
     <article class="zeile">
         <span class="ic"><i class="fa-solid fa-{{ match ($z['art']) { 'episode' => 'microphone', 'unit', 'step', 'program' => 'graduation-cap', 'resource' => 'folder-open', 'event' => 'calendar', default => 'lightbulb' } }}"></i></span>
         <div class="tx">
-            <a href="{{ $z['url'] }}" class="no-underline text-ink"><b>{{ $z['titel'] }}</b></a>
+            <a href="{{ $z['url'] }}" class="no-underline text-ink"><b>{{ $z['titel'] }}</b>@if (! empty($z['neu'])) <span class="chip chip-neu">Neu</span>@endif</a>
             <span>{{ $z['typ'] }}@if (! empty($z['versteckt'])) · <b>{{ $z['versteckt'] }}</b>@endif @if ($z['ts'])· {{ $z['ts']->translatedFormat('j. M Y') }}@endif</span>
         </div>
         <x-merken :art="$z['art']" :id="$z['id']" :an="$gemerkt->has($key)" />

@@ -11,8 +11,12 @@
                 <span class="eyebrow">{{ $r->typeLabel() }}@if ($kurs) · {{ $kurs->title }}@endif@if ($r->duration) · {{ \App\Support\Zeit::dauerLesbar($r->duration) }}@endif</span>
                 <h1 class="m-0 mt-0.5">{{ $r->title }}</h1>
             </div>
+            <a href="{{ route('gespraech.index', ['ref' => 'resource:'.$r->id]) }}" class="merken" title="Im Gespräch teilen" aria-label="Teilen"><i class="fa-solid fa-share-nodes"></i></a>
             <x-merken art="resource" :id="$r->id" :an="$gemerkt" />
         </div>
+        @if ($einheiten->isNotEmpty())
+            <p class="hinweis m-0 mt-1.5"><i class="fa-solid fa-graduation-cap"></i> Gehört zu: @foreach ($einheiten as $u)<a href="{{ route('kurse.einheit', [$u->program, $u]) }}">{{ $u->title }}</a>@if (! $loop->last), @endif @endforeach</p>
+        @endif
         @if ($r->description)<p class="unterzeile m-0 mt-1.5">{{ $r->description }}</p>@endif
 
         @if ($position && ! $angeschaut && ($video || $audio))<p class="hinweis m-0 mt-3"><i class="fa-solid fa-clock-rotate-left"></i> Du warst bei {{ gmdate($position >= 3600 ? 'G:i:s' : 'i:s', $position) }}, es geht dort weiter.</p>@endif

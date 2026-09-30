@@ -4,7 +4,7 @@
     <div class="pillen">
         <a href="{{ route('impulse.index') }}" @class(['pille', 'an' => $filter === ''])>Alles</a>
         <a href="{{ route('impulse.index', ['f' => 'impuls']) }}" @class(['pille', 'an' => $filter === 'impuls'])>Impulse</a>
-        <a href="{{ route('impulse.index', ['f' => 'neuigkeit']) }}" @class(['pille', 'an' => $filter === 'neuigkeit'])>Neuigkeiten</a>
+        <a href="{{ route('impulse.index', ['f' => 'neuigkeit']) }}" @class(['pille', 'an' => $filter === 'neuigkeit'])>Neuigkeiten @if ($ungelesen)<span class="zahl">{{ $ungelesen }}</span>@endif</a>
         @if ($shows->count() === 1)
             <a href="{{ route('impulse.index', ['f' => 'podcast']) }}" @class(['pille', 'an' => $filter === 'podcast'])>Podcast</a>
         @else
@@ -20,7 +20,13 @@
         <input type="search" name="q" value="{{ $suche }}" placeholder="Impulse durchsuchen" aria-label="Impulse durchsuchen">
     </form>
 
+    @php $monat = ''; @endphp
     @forelse ($zeilen as $z)
+        @php $m = $filter === 'neuigkeit' && $z['ts'] ? $z['ts']->translatedFormat('F Y') : ''; @endphp
+        @if ($m !== '' && $m !== $monat)
+            @php $monat = $m; @endphp
+            <h2 class="abschnitt"><i class="fa-solid fa-bullhorn"></i>{{ $m }}</h2>
+        @endif
         <x-inhalt-zeile :z="$z" :gemerkt="$gemerkt" />
         @if ($loop->last && $mehr)
             <a href="{{ route('impulse.index', array_filter(['f' => $filter, 'q' => $suche, 'seite' => $mehr])) }}#mehr-{{ $loop->iteration }}" id="mehr-{{ $loop->iteration }}" class="knopf knopf-anstoss knopf-breit">Weitere anzeigen ({{ $gesamt - $zeilen->count() }})</a>
