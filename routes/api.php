@@ -3,6 +3,7 @@
 use App\Http\Controllers\Api\AngeboteController;
 use App\Http\Controllers\Api\McpController;
 use App\Http\Controllers\Api\V1Controller;
+use App\Http\Controllers\NewsletterController;
 use App\Tenancy\Middleware\IdentifyTenant;
 use Illuminate\Support\Facades\Route;
 
@@ -32,4 +33,5 @@ Route::match(['get', 'post', 'delete'], '/mcp', McpController::class)->middlewar
 Route::middleware([IdentifyTenant::class, 'throttle:120,1'])->group(function () {
     Route::get('/angebote', [AngeboteController::class, 'index'])->name('api.angebote');
     Route::get('/angebote/{slug}', [AngeboteController::class, 'show'])->name('api.angebot');
+    Route::post('/anmelden', [NewsletterController::class, 'anmelden'])->middleware('throttle:10,10')->name('api.anmelden');
 });

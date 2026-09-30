@@ -2,7 +2,7 @@
 
 /**
  * Plugin Name: Coaching-App - Angebote
- * Description: Zeigt Angebote aus der Coaching-App auf der Website. Shortcodes: [app_kaufen slug="..." text="Jetzt dabei sein" ref="herbst-webinar"] (Knopf), [app_angebot slug="..."] (Karte mit Preis und Knopf), [app_angebote] (alle sichtbaren Angebote). Die Daten kommen aus /api/angebote der App, zehn Minuten zwischengespeichert. Adresse der App unter Einstellungen > Allgemein > "Coaching-App Adresse" (Option coaching_app_url).
+ * Description: Zeigt Angebote aus der Coaching-App auf der Website. Shortcodes: [app_kaufen slug="..." text="Jetzt dabei sein" ref="herbst-webinar"] (Knopf), [app_angebot slug="..."] (Karte mit Preis und Knopf), [app_angebote] (alle sichtbaren Angebote), [app_anmelden tag="newsletter" text="Anmelden" sofort="0"] (Anmeldeformular fuer Newsletter, Freebie oder Veranstaltung; sofort=1 ohne Bestaetigungsmail). Die Daten kommen aus /api/angebote der App, zehn Minuten zwischengespeichert. Adresse der App unter Einstellungen > Allgemein > "Coaching-App Adresse" (Option coaching_app_url).
  * Version: 1.0
  */
 if (! defined('ABSPATH')) {
@@ -129,4 +129,39 @@ add_action('admin_init', function () {
     add_settings_field('coaching_app_url', 'Coaching-App Adresse', function () {
         echo '<input type="url" name="coaching_app_url" value="'.esc_attr(get_option('coaching_app_url', '')).'" class="regular-text" placeholder="https://app.example.ch">';
     }, 'general');
+});
+
+/** Anmeldeformular: schickt an die App (POST /newsletter/anmelden), die App bestaetigt per Mail und leitet hierher zurueck (?newsletter=postfach|dabei). */
+add_shortcode('app_anmelden', function ($atts) {
+    $a = shortcode_atts(['tag' => 'newsletter', 'text' => 'Anmelden', 'sofort' => '0', 'name' => '1', 'hinweis' => 'Kein Spam, abmelden geht mit einem Klick.'], $atts);
+    $basis = capp_url();
+    if ($basis === '') {
+        return '';
+    }
+    $css = capp_css();
+    $stand = isset($_GET['newsletter']) ? sanitize_key($_GET['newsletter']) : '';
+    if ($stand === 'postfach') {
+        return $css.'<div class="capp-karte"><p><strong>Fast geschafft.</strong> Schau in dein Postfach und bestätige deine Anmeldung mit einem Klick. Auch im Spam nachsehen.</p></div>';
+    }
+    if ($stand === 'dabei') {
+        return $css.'<div class="capp-karte"><p><strong>Du bist dabei.</strong> Danke für dein Vertrauen.</p></div>';
+    }
+    $zurueck = esc_url((is_ssl() ? 'https://' : 'http://').$_SERVER['HTTP_HOST'].strtok($_SERVER['REQUEST_URI'], '?'));
+    $h = $css.'<form method="post" action="'.esc_url($basis.'/newsletter/anmelden').'" class="capp-karte capp-form">';
+    $h .= '<input type="hidden" name="tag" value="'.esc_attr($a['tag']).'"><input type="hidden" name="zurueck" value="'.$zurueck.'"><input type="hidden" name="herkunft" value="website:'.esc_attr(sanitize_title(get_the_title() ?: 'seite')).'">';
+    if ($a['sofort'] === '1') {
+        $h .= '<input type="hidden" name="sofort" value="1">';
+    }
+    $h .= '<input type="text" name="website" value="" tabindex="-1" autocomplete="off" style="position:absolute;left:-9999px" aria-hidden="true">';
+    if ($a['name'] === '1') {
+        $h .= '<p><label>Dein Vorname<br><input type="text" name="name" maxlength="120" autocomplete="given-name" style="width:100%"></label></p>';
+    }
+    $h .= '<p><label>Deine E-Mail<br><input type="email" name="email" required maxlength="190" autocomplete="email" style="width:100%"></label></p>';
+    $h .= '<p><label><input type="checkbox" name="einwilligung" value="1" required> Ja, schreibt mir. Ich weiss, dass ich mich jederzeit abmelden kann.</label></p>';
+    $h .= '<p><button type="submit" class="capp-knopf">'.esc_html($a['text']).'</button></p>';
+    if ($a['hinweis'] !== '') {
+        $h .= '<p style="font-size:.85em;opacity:.7">'.esc_html($a['hinweis']).'</p>';
+    }
+
+    return $h.'</form>';
 });

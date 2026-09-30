@@ -35,6 +35,7 @@ use App\Http\Controllers\MedienController;
 use App\Http\Controllers\MerklisteController;
 use App\Http\Controllers\MitteilungenController;
 use App\Http\Controllers\NachschlagenController;
+use App\Http\Controllers\NewsletterController;
 use App\Http\Controllers\NotizenController;
 use App\Http\Controllers\ProfilController;
 use App\Http\Controllers\ProjekteController;
@@ -66,6 +67,15 @@ Route::post('/hooks/woocommerce', WooCommerceController::class)->name('hooks.woo
 
 // Bruecke aus dem alten Mitgliederbereich (signierter Link, 60 Sekunden, einmalig)
 Route::get('/sso', BridgeController::class)->name('sso');
+// Newsletter: Anmeldung (Website-Formular), Bestaetigung, Abmeldung, Zaehlung, Webversion (ohne Anmeldung)
+Route::get('/newsletter/anmelden', [NewsletterController::class, 'anmeldenForm'])->name('newsletter.anmelden');
+Route::post('/newsletter/anmelden', [NewsletterController::class, 'anmelden'])->middleware('throttle:10,10')->name('newsletter.anmelden.store');
+Route::get('/newsletter/bestaetigen/{kontakt}', [NewsletterController::class, 'bestaetigen'])->middleware('signed')->name('newsletter.bestaetigen');
+Route::match(['get', 'post'], '/n/abmelden/{token}', [NewsletterController::class, 'abmelden'])->name('newsletter.abmelden')->where('token', '[A-Za-z0-9]{40}');
+Route::post('/n/dabei/{token}', [NewsletterController::class, 'wiederAnmelden'])->name('newsletter.dabei')->where('token', '[A-Za-z0-9]{40}');
+Route::get('/n/o/{token}.gif', [NewsletterController::class, 'oeffnen'])->name('newsletter.oeffnen')->where('token', '[A-Za-z0-9]{40}');
+Route::get('/n/k/{token}', [NewsletterController::class, 'klick'])->name('newsletter.klick')->where('token', '[A-Za-z0-9]{40}');
+Route::get('/n/w/{token}', [NewsletterController::class, 'web'])->name('newsletter.web')->where('token', '[A-Za-z0-9]{40}');
 // Alte Adressen aus dem WordPress-Mitgliederbereich (nach dem Umschalten per 301 hierher geleitet)
 Route::get('/mitgliederbereich/{pfad?}', AltlinkController::class)->where('pfad', '.*')->name('altlink');
 

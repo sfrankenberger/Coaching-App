@@ -9,6 +9,7 @@ use App\Models\Entitlement;
 use App\Models\Membership;
 use App\Models\Offer;
 use App\Models\User;
+use App\Newsletter\Kontakte;
 use App\Notifications\Nachricht;
 use App\Notifications\Notifier;
 use App\Tenancy\CurrentTenant;
@@ -63,6 +64,13 @@ class Zugang
         $e = Entitlement::firstOrNew(['user_id' => $user->id, 'offer_id' => $offer->id, 'source' => $source, 'source_ref' => $ref]);
         $wasCurrent = $e->exists && $e->isCurrent();
         $e->fill(['status' => 'active', 'starts_at' => $startsAt, 'ends_at' => $endsAt])->save();
+
+        // Als Kontakt mit Angebots-Tag fuehren (Newsletter, Serien je Kurs), still bei Stoerung
+        try {
+            app(Kontakte::class)->ausMitglied($user, [$offer->slug ?: 'angebot-'.$offer->id]);
+        } catch (\Throwable $ex) {
+            report($ex);
+        }
 
         if ($notify && ! $wasCurrent) {
             $eigener = self::willkommenText($offer);

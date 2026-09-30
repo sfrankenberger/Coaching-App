@@ -44,3 +44,7 @@ Schedule::command('zoom:anwesenheit')->hourlyAt(25)->withoutOverlapping(30)->run
 
 // Buchhaltung: offene Rechnungen mit bexio abgleichen, wartende Zugaenge freischalten
 Schedule::command('buchhaltung:zahlungen')->hourlyAt(40)->withoutOverlapping(30)->runInBackground();
+
+// Newsletter: Wellen jede Minute (bis 60 Mails), Serien stuendlich
+Schedule::command('newsletter:lauf wellen')->everyMinute()->withoutOverlapping(5);
+Schedule::command('newsletter:lauf serien')->hourlyAt(12)->withoutOverlapping(30);

@@ -4,6 +4,7 @@ namespace App\Console\Commands;
 
 use App\Import\WordPress\BegleitungImport;
 use App\Import\WordPress\InhalteImport;
+use App\Import\WordPress\KontakteImport;
 use App\Import\WordPress\ProgramsImport;
 use App\Import\WordPress\PushImport;
 use App\Import\WordPress\UsersImport;
@@ -21,7 +22,7 @@ use Illuminate\Console\Command;
 class ImportWordPress extends Command
 {
     protected $signature = 'import:wordpress {tenant : Kuerzel des Mandanten}
-        {--only=users : Was importiert wird, kommagetrennt (users, programs, begleitung, inhalte, push) oder alles}
+        {--only=users : Was importiert wird, kommagetrennt (users, programs, begleitung, inhalte, push, kontakte) oder alles}
                             {--schluessel : Beim Teil push auch die VAPID-Schluessel aus WordPress uebernehmen}
         {--with-guests : Auch Konten ohne Kurszugang als Gast anlegen}
         {--dry-run : Nur zeigen, nichts schreiben}';
@@ -50,7 +51,8 @@ class ImportWordPress extends Command
                     'begleitung', 'termine' => $this->begleitung($tenant),
                     'inhalte', 'impulse' => $this->inhalte($tenant),
                     'push' => $this->push($tenant),
-                    default => $this->warn("Unbekannter Teil: {$part} (moeglich: users, programs, begleitung, inhalte, push, alles)"),
+                    'kontakte', 'mailster' => $this->kontakte($tenant),
+                    default => $this->warn("Unbekannter Teil: {$part} (moeglich: users, programs, begleitung, inhalte, push, kontakte, alles)"),
                 };
             }
 
@@ -83,6 +85,19 @@ class ImportWordPress extends Command
         $this->table(['personen', 'abos', 'neu', 'ohne_konto', 'schluessel'], [[
             $stats['personen'], $stats['abos'], $stats['neu'], $stats['ohne_konto'], $stats['schluessel'] ? 'ja' : 'nein',
         ]]);
+    }
+
+    protected function kontakte(Tenant $tenant): void
+    {
+        $this->info('Kontakte aus Mailster (Abonnentinnen, Listen als Tags)'.($this->option('dry-run') ? ' (Probelauf)' : ''));
+
+        $import = new KontakteImport($tenant, new WordPressSource, (bool) $this->option('dry-run'));
+        $stats = $import->run(fn (string $line) => $this->line('  '.$line, verbosity: 'v'));
+
+        $this->table(['gelesen', 'angelegt', 'aktualisiert', 'abgemeldet', 'listen'], [[$stats['gelesen'], $stats['angelegt'], $stats['aktualisiert'], $stats['abgemeldet'], $stats['listen']]]);
+        foreach ($stats['hinweise'] as $h) {
+            $this->warn('  '.$h);
+        }
     }
 
     protected function programs(Tenant $tenant): void

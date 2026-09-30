@@ -111,11 +111,11 @@ Stand: kein einziger Kauf in WooCommerce, ein laufendes Abo, Lea hat Stripe. Die
 
 Stand: rund 300 Abonnentinnen, 13 Listen (drei mit Gewicht), 18 Kampagnen, 9 Autoresponder, keine Mailster-Formulare.
 
-- [ ] Stufe "Kontakt" unter Gast: Mail, Name, Einwilligung mit Datum und Herkunft, Tags statt Listen, kein Login; Import aus Mailster
-- [ ] Newsletter aus der App: Vorlage, Empfaenger nach Tag, Versand ueber Mailgun in Wellen, Abmeldung mit einem Klick, Oeffnungen und Klicks, Double-Opt-in
-- [ ] Anmeldeformular fuer die Website (`[app_anmelden tag="..."]`) mit Freebie-Versand
-- [ ] Serien (Autoresponder): Tag loest aus, Mails mit Abstand in Tagen
-- [ ] Mailster abschalten
+- [x] Stufe "Kontakt" unter Gast (`kontakte`, `App\Newsletter\Kontakte`): Mail, Name, Einwilligung mit Zeit, IP, Referrer und Herkunft, Tags statt Listen, kein Login; Mitglieder werden mit Tag `kundin` und Angebots-Slug gefuehrt; Import aus Mailster (`import:wordpress lea --only=kontakte`, Listen als Tags)
+- [x] Newsletter aus der App (`/coach/newsletter`, `App\Newsletter\Versand`): Vorlage mit Bild, Headline, Text, Knopf, Vorschautext; Empfaenger nach Tag; Test an bis zu fuenf Adressen; Rueckfrage vor dem Senden; Versand in Wellen (60 pro Minute, `newsletter:lauf wellen`), geplant zur Zeit; Abmeldung mit einem Klick (auch List-Unsubscribe); Oeffnungen und Klicks; Webversion; Double-Opt-in mit signiertem Link (30 Tage)
+- [x] Anmeldeformular fuer die Website (`[app_anmelden tag="..." sofort="0"]` in `resources/wordpress/app-angebote.php`, eigene Seite `/newsletter/anmelden`, JSON `POST /api/anmelden`); Freebie geht als Serie mit Schritt "0 Tage"
+- [x] Serien (`/coach/serien`, `App\Newsletter\Serien`): Tag loest aus, Mails mit Abstand in Tagen, stuendlich `newsletter:lauf serien`
+- [ ] Mailster abschalten: Kontakte importieren, Formulare auf der Website auf `[app_anmelden]` umstellen, Autoresponder als Serien nachbauen (9 Stueck, Texte aus Mailster kopieren), Mailster deaktivieren
 
 ## Etappe 12 - Website mit Statamic (Versuch)
 

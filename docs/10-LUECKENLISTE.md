@@ -202,6 +202,11 @@ Sortiert nach Nutzen fuer Lea und die Teilnehmerinnen. Mehrfach gefundene Punkte
   Verkauf mit Quittung in bexio und Mail, Zahlungsausfall meldet Person und Team, Kuendigung zum Periodenende, Ende
   meldet dem Team. Kundenportal aus dem Profil (`/abo/portal`, Stripe-Kundennummer in `memberships.settings`).
   Bestehendes Abo umziehen mit `abo:umziehen` (docs/07, 4b), dort auch der Ablauf zum Abschalten von WooCommerce.
+- 30.09.: E33 umgesetzt (Etappe 11). Kontakte mit Einwilligungsnachweis und Tags, Double-Opt-in mit signiertem Link,
+  Anmeldung ueber Website-Shortcode, eigene Seite oder JSON, Abmeldung mit einem Klick (auch aus dem Mailprogramm),
+  Newsletter mit Vorlage, Tags, Test an bis zu fuenf Adressen, Rueckfrage, Versand in Wellen, Planung, Oeffnungen,
+  Klicks und Webversion, Serien mit Abstand in Tagen (Freebie sofort), Import aus Mailster (Listen als Tags),
+  Mitglieder automatisch als Kontakt mit Angebots-Tag. Offen: Mailster abschalten (Handarbeit nach dem Import).
 
 ## Was bewusst nicht kommt
 
