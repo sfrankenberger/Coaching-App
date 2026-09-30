@@ -67,6 +67,8 @@ class OfferResource extends Resource
                 TextInput::make('settings.aktion_preis_eur')->label('Aktionspreis EUR')->numeric()->step(0.05)->minValue(0),
                 DatePicker::make('settings.aktion_bis')->label('Aktion gilt bis')->native(false)->displayFormat('d.m.Y'),
                 Toggle::make('settings.kauf_rechnung')->label('Kauf auf Rechnung erlauben')->default(true)->inline(false),
+                Select::make('settings.abo_intervall')->label('Abo')->options(Offer::ABO_INTERVALLE)->placeholder('Kein Abo, Einmalkauf')->native(false)
+                    ->helperText('Als Abo wird der Preis regelmässig über Stripe abgebucht (Karte oder Twint), die Person verwaltet es im Profil. Kein Kauf auf Rechnung.'),
                 Textarea::make('settings.teaser')->label('Kurztext (Karte auf der Website, in der App)')->rows(3)->maxLength(400)->columnSpanFull(),
                 TextInput::make('settings.bild_url')->label('Bild (URL)')->url()->maxLength(500)->columnSpanFull(),
                 Placeholder::make('kauflink')->label('Kauflink und Shortcodes')

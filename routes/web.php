@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\AboController;
 use App\Http\Controllers\AlsController;
 use App\Http\Controllers\AltlinkController;
 use App\Http\Controllers\AngeboteController;
@@ -115,6 +116,7 @@ Route::middleware(['auth', 'membership'])->group(function () {
     Route::delete('/profil/foto', [AvatarController::class, 'loeschen'])->name('profil.foto.loeschen');
     Route::get('/avatar/{user}', [AvatarController::class, 'show'])->name('avatar');
     Route::get('/angebote', [AngeboteController::class, 'index'])->name('angebote');
+    Route::get('/abo/portal', [AboController::class, 'portal'])->name('abo.portal');
     Route::get('/rechnungen/{rechnung}/pdf', [BuchhaltungController::class, 'pdf'])->name('rechnung.pdf');
     Route::get('/buchhaltung/bexio/start', [BuchhaltungController::class, 'bexioStart'])->name('buchhaltung.bexio.start');
     Route::get('/buchhaltung/bexio/rueckkehr', [BuchhaltungController::class, 'bexioRueckkehr'])->name('buchhaltung.bexio.rueckkehr');

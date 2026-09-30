@@ -47,6 +47,7 @@ class AngeboteController extends Controller
             'bild' => $o->settings['bild_url'] ?? null,
             'gratis' => (bool) $o->is_free,
             'preise' => $o->preise(),
+            'abo' => $o->aboIntervall(),
             'preise_regulaer' => $o->aktionLaeuft() ? array_filter(['CHF' => $o->preisRegulaer('CHF'), 'EUR' => $o->preisRegulaer('EUR')]) : [],
             'aktion_bis' => $o->aktionLaeuft() ? $o->settings['aktion_bis'] : null,
             'rechnung' => $o->kaufAufRechnung(),

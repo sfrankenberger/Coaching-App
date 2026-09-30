@@ -7,6 +7,7 @@ use App\Models\Membership;
 use App\Models\Offer;
 use App\Models\User;
 use App\Models\Verkauf;
+use App\Shop\Abo;
 use App\Shop\Buchhaltung;
 use App\Shop\Stripe;
 use App\Shop\Verkaufen;
@@ -120,7 +121,7 @@ class KaufenController extends Controller
             try {
                 $s = app(Stripe::class)->session($sid);
                 if (($s['payment_status'] ?? null) === 'paid') {
-                    $this->verkaufen->stripeBezahlt($v, $s);
+                    ($s['mode'] ?? 'payment') === 'subscription' ? app(Abo::class)->gestartet($v, $s) : $this->verkaufen->stripeBezahlt($v, $s);
                     $v->refresh();
                 }
             } catch (\Throwable $e) {

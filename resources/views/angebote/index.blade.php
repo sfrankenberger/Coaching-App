@@ -9,7 +9,7 @@
             <h2 class="m-0 mb-1" style="font-family:var(--font-heading);font-size:20px;font-weight:400">{{ $o->title }}</h2>
             @if ($o->settings['teaser'] ?? null)<p class="lesetext m-0 mb-2">{{ $o->settings['teaser'] }}</p>@endif
             <div class="flex items-center gap-3 flex-wrap">
-                <b>{{ $o->is_free ? 'Kostenlos' : \App\Models\Offer::preisText($preise[$w], $w) }}</b>
+                <b>{{ $o->is_free ? 'Kostenlos' : $o->preisMitIntervall($preise[$w], $w) }}</b>
                 @if (in_array($o->id, $meine, true))
                     <span class="chip chip-ok">Hast du schon</span>
                 @else

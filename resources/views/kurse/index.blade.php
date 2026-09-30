@@ -59,7 +59,7 @@
                     <span class="kurs-titel">{{ $o->title }}</span>
                     @if ($o->subtitle ?? $p?->subtitle)<span class="x block mt-1">{{ \Illuminate\Support\Str::limit($o->subtitle ?? $p?->subtitle, 110) }}</span>@endif
                     <span class="flex flex-wrap items-center gap-2 mt-2">
-                        @if ($o->is_free)<span class="chip chip-gut">Kostenlos</span>@else @foreach ($preise as $w => $b)<span class="chip">{{ \App\Models\Offer::preisText($b, $w) }}</span>@endforeach @endif
+                        @if ($o->is_free)<span class="chip chip-gut">Kostenlos</span>@else @foreach ($preise as $w => $b)<span class="chip">{{ $o->preisMitIntervall($b, $w) }}</span>@endforeach @endif
                         <span class="hinweis">Freischalten &rarr;</span>
                     </span>
                 </span>

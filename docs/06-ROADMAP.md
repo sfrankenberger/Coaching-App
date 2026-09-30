@@ -104,8 +104,8 @@ Stand: kein einziger Kauf in WooCommerce, ein laufendes Abo, Lea hat Stripe. Die
 - [x] Zugang bei Kauf auf Rechnung: sofort oder erst nach Zahlungseingang (`buchhaltung.zugang_bei_rechnung`), Abgleich stuendlich (`buchhaltung:zahlungen`)
 - [x] Angebote oeffentlich: Preise am Angebot (CHF, EUR, Aktion bis Datum), Kauflink `/kaufen/{angebot}` (Kauf auf Rechnung, Gastfluss mit Konto, Herkunft `ref`), Schnittstelle `/api/angebote`, Seite `/angebote` in der App, WordPress-Plugin `resources/wordpress/app-angebote.php` mit `[app_kaufen]`, `[app_angebot]`, `[app_angebote]`
 - [x] Kasse mit Stripe je Mandant (Schluessel unter Verbindungen): Checkout (Karte, Twint aus dem Dashboard), Gastfluss mit Konto, Webhook `/hooks/stripe`, Zugang mit der Zahlung, bexio-Quittung, Mail mit PDF und Anmeldelink; Kasse rechtlich: AGB- und Datenschutz-Links, Widerrufsverzicht mit Zeitstempel, Rechnungsadresse
-- [ ] Abos mit Stripe und Kundenportal, das eine bestehende Abo umziehen
-- [ ] Website: Kaufknoepfe auf die App, WooCommerce, German Market, Kasse, Preise, bexio-Modul und Woo-Webhook abschalten
+- [x] Abos mit Stripe und Kundenportal (`App\Shop\Abo`, Angebot mit `settings.abo_intervall`, Checkout im Abo-Modus, Verlaengerung mit Quittung, Zahlungsausfall, Kuendigung, Portal unter `/abo/portal`); das bestehende Abo zieht `abo:umziehen` um (docs/07, 4b)
+- [ ] Website: Kaufknoepfe auf die App, WooCommerce, German Market, Kasse, Preise, bexio-Modul und Woo-Webhook abschalten (Ablauf in docs/07, 4b; Handarbeit in WordPress beim Umschalten)
 
 ## Etappe 11 - Kontakte und Newsletter (Mailster abloesen)
 

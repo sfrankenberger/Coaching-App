@@ -107,9 +107,37 @@ class Offer extends Model
         return $this->is_active && ($this->is_free || $this->preise() !== []);
     }
 
+    /** Abos gehen nur ueber Stripe (Karte oder Twint), nie auf Rechnung. */
     public function kaufAufRechnung(): bool
     {
-        return (bool) ($this->settings['kauf_rechnung'] ?? true);
+        return ! $this->istAbo() && (bool) ($this->settings['kauf_rechnung'] ?? true);
+    }
+
+    /* ---------- Abo ---------- */
+
+    public const ABO_INTERVALLE = ['monat' => 'monatlich', 'jahr' => 'jährlich'];
+
+    public function istAbo(): bool
+    {
+        return array_key_exists((string) ($this->settings['abo_intervall'] ?? ''), self::ABO_INTERVALLE);
+    }
+
+    /** monat | jahr, null wenn kein Abo. */
+    public function aboIntervall(): ?string
+    {
+        return $this->istAbo() ? $this->settings['abo_intervall'] : null;
+    }
+
+    /** "monatlich" oder "jaehrlich" fuer die Preisangabe, leer bei Einmalkauf. */
+    public function intervallText(): string
+    {
+        return self::ABO_INTERVALLE[$this->aboIntervall()] ?? '';
+    }
+
+    /** Preis mit Zusatz: "49.00 CHF monatlich". */
+    public function preisMitIntervall(float $betrag, string $waehrung): string
+    {
+        return self::preisText($betrag, $waehrung).($this->istAbo() ? ' '.$this->intervallText() : '');
     }
 
     public function kaufUrl(?string $ref = null): string

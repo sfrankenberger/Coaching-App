@@ -196,8 +196,12 @@ Sortiert nach Nutzen fuer Lea und die Teilnehmerinnen. Mehrfach gefundene Punkte
   (`push.test`). Rundnachricht fragt vor dem Senden nach (Empfaengerzahl, Kanaele, Titel). Zahlen fuer die
   Inhaberin unter `/coach/zahlen` (`App\Shop\Zahlen`: Umsatz Jahr, Monat, offen, ueberfaellig, zwoelf Monate,
   Jahre, Angebote, beste Kundinnen) und Kennzahlen im Dossier-Reiter Rechnungen (Umsatz, offen, Rang und Anteil,
-  letzte Rechnung, dabei seit, wofuer bezahlt, Handlungshinweis). Offen bleiben E30 (Abos mit Stripe, Kundenportal,
-  WooCommerce abschalten) und E33 (Newsletter, Etappe 11).
+  letzte Rechnung, dabei seit, wofuer bezahlt, Handlungshinweis). Offen bleibt E33 (Newsletter, Etappe 11).
+- 30.09.: E30 (Rest) umgesetzt. Abos ueber Stripe: Angebot mit `settings.abo_intervall` (monatlich, jaehrlich), Kasse im
+  Abo-Modus (nie auf Rechnung), Zugang bis Periodenende plus drei Tage Kulanz (`App\Shop\Abo`), jede Verlaengerung als
+  Verkauf mit Quittung in bexio und Mail, Zahlungsausfall meldet Person und Team, Kuendigung zum Periodenende, Ende
+  meldet dem Team. Kundenportal aus dem Profil (`/abo/portal`, Stripe-Kundennummer in `memberships.settings`).
+  Bestehendes Abo umziehen mit `abo:umziehen` (docs/07, 4b), dort auch der Ablauf zum Abschalten von WooCommerce.
 
 ## Was bewusst nicht kommt
 

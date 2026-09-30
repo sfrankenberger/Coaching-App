@@ -114,6 +114,29 @@ In WordPress darum nicht pauschal auf die Startseite leiten, sondern Pfad und Qu
 von selbst an). Vor dem Umschalten die Liste der tatsaechlich verwendeten Adressen aus den Mailvorlagen und
 `lea-push.php` ziehen und gegen `Altlinks` pruefen (`php84 artisan tinker`, `(new App\Support\Altlinks($tenant))->ziel('...')`).
 
+## 4b. Verkauf umziehen: WooCommerce abschalten, Abo nach Stripe
+
+Stand 29.09.: kein Kauf in WooCommerce, ein laufendes Abo (Stripe als Zahlungsdienst hinter WooCommerce Subscriptions).
+
+1. Angebote in der App pruefen: Preise, Sichtbarkeit, `abo_intervall` beim Club-Angebot, Kauflinks (`/kaufen/{slug}`).
+2. Kaufknoepfe auf der Website auf die App umstellen: `[app_kaufen slug="..."]` bzw. Links auf `/kaufen/{slug}` aus
+   `resources/wordpress/app-angebote.php`. Danke-Seite und Mails in WordPress nicht mehr noetig, die App hat eigene.
+3. Das laufende Abo umziehen. Aus WordPress die Stripe-Kundennummer holen (Bestellung oder Abo, Meta `_stripe_customer_id`,
+   beginnt mit `cus_`) und den naechsten Abbuchungstag ablesen. Dann:
+   ```bash
+   php84 artisan abo:umziehen lea kundin@mail.ch club-abo --kunde=cus_xxx --ab=2026-11-01 --trocken
+   php84 artisan abo:umziehen lea kundin@mail.ch club-abo --kunde=cus_xxx --ab=2026-11-01
+   ```
+   Die App legt in Stripe ein Abo auf die bestehende Kundin an (gespeicherte Zahlungsmethode bleibt, erste Abbuchung
+   am genannten Tag, bis dahin ohne Berechnung) und gibt den Zugang sofort. Danach das Abo in WooCommerce Subscriptions
+   auf "abgebrochen" setzen (nicht "storniert", sonst schickt Woo eine Mail) und das Woo-Webhook-Ereignis pruefen.
+4. WooCommerce-Webhook in der App loeschen (`shop.webhook_secret` leeren), in WordPress WooCommerce, German Market,
+   Kasse, Preise und das bexio-Modul deaktivieren. Erst deaktivieren, nach 30 Tagen loeschen.
+5. Stripe-Dashboard: Webhook auf `https://app.leawernli.ch/hooks/stripe` mit den Ereignissen `checkout.session.completed`,
+   `checkout.session.async_payment_succeeded`, `invoice.paid`, `invoice.payment_failed`, `customer.subscription.updated`,
+   `customer.subscription.deleted`; Kundenportal unter Einstellungen, Billing, Customer portal einschalten (Kuendigen erlauben,
+   Zahlungsmethode aendern, Rechnungsverlauf).
+
 **Anmeldung ohne Magic Link.** Die Weiterleitung von `/mitgliederbereich/*` sollte fuer angemeldete Personen
 ueber die Bruecke gehen (`lea_neueapp_token()` aus `lea-neueapp-bruecke.php`, signierter Einmal-Link), dann
 sind sie in der App sofort angemeldet. Nicht angemeldete landen auf `/anmelden`.

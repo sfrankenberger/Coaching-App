@@ -26,6 +26,7 @@
                         <b>{{ $z->offer->title }}</b>
                         <span>
                             @if (! $z->aktiv) Beendet{{ $z->ends_at ? ' am '.$z->ends_at->translatedFormat('j. F Y') : '' }}
+                            @elseif ($z->source === 'stripe' && $z->offer->istAbo()) Abo, {{ $z->offer->intervallText() }}{{ $z->ends_at ? ', bezahlt bis '.$z->ends_at->copy()->subDays(\App\Shop\Abo::KULANZ_TAGE)->translatedFormat('j. F Y') : '' }}
                             @elseif ($z->ends_at) Zugang bis {{ $z->ends_at->translatedFormat('j. F Y') }}
                             @else Ohne Ablaufdatum @endif
                             @if ($z->starts_at) · seit {{ $z->starts_at->translatedFormat('j. F Y') }} @endif
@@ -38,7 +39,9 @@
                                 @foreach ($z->offer->programs->take(3) as $p)
                                     <a href="{{ route('kurse.show', $p) }}" class="knopf knopf-ruhig knopf-klein">Zum {{ $p->isWorkbook() ? 'Arbeitsbuch' : 'Programm' }}</a>
                                 @endforeach
-                                @if ($z->offer->type === 'club' && $aboUrl)
+                                @if ($z->source === 'stripe' && $z->offer->istAbo())
+                                    <a href="{{ route('abo.portal') }}" class="knopf knopf-leise knopf-klein">Abo verwalten</a>
+                                @elseif (($z->offer->type === 'club' || $z->offer->istAbo()) && $aboUrl)
                                     <a href="{{ $aboUrl }}" target="_blank" rel="noopener" class="knopf knopf-leise knopf-klein">Abo verwalten</a>
                                 @endif
                             </span>

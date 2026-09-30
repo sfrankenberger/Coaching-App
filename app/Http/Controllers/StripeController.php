@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\Verkauf;
+use App\Shop\Abo;
 use App\Shop\Verkaufen;
 use App\Tenancy\CurrentTenant;
 use Illuminate\Http\JsonResponse;
@@ -11,11 +12,12 @@ use Illuminate\Support\Facades\Log;
 
 /**
  * Stripe-Webhook je Mandant: POST /hooks/stripe. Prueft die Signatur mit settings.stripe.webhook_secret.
- * Die Ereignisse werden bestaetigt und protokolliert; die Auswertung (Kasse, Abos) kommt mit Etappe 10.
+ * Kasse: checkout.session.completed schaltet frei. Abos: invoice.paid verlaengert, invoice.payment_failed meldet,
+ * customer.subscription.updated/deleted vermerken Kuendigung und Ende.
  */
 class StripeController extends Controller
 {
-    public function webhook(Request $request, CurrentTenant $current, Verkaufen $verkaufen): JsonResponse
+    public function webhook(Request $request, CurrentTenant $current, Verkaufen $verkaufen, Abo $abo): JsonResponse
     {
         $secret = (string) $current->get()?->setting('stripe.webhook_secret');
         abort_if($secret === '', 404);
@@ -30,8 +32,16 @@ class StripeController extends Controller
             $id = (int) ($obj['metadata']['verkauf_id'] ?? $obj['client_reference_id'] ?? 0);
             $v = $id ? Verkauf::find($id) : null;
             if ($v && $v->zahlungsart === 'stripe' && (string) ($obj['metadata']['tenant_id'] ?? $current->id()) === (string) $current->id()) {
-                $verkaufen->stripeBezahlt($v, $obj);
+                ($obj['mode'] ?? 'payment') === 'subscription' ? $abo->gestartet($v, $obj) : $verkaufen->stripeBezahlt($v, $obj);
             }
+        } elseif ($typ === 'invoice.paid' || $typ === 'invoice.payment_succeeded') {
+            $abo->verlaengert($obj);
+        } elseif ($typ === 'invoice.payment_failed') {
+            $abo->zahlungFehlgeschlagen($obj);
+        } elseif ($typ === 'customer.subscription.deleted') {
+            $abo->beendet($obj);
+        } elseif ($typ === 'customer.subscription.updated') {
+            $abo->geaendert($obj);
         }
 
         return response()->json(['received' => true]);

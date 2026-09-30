@@ -11,7 +11,7 @@
             @if ($offer->is_free)
                 <b style="font-family:var(--font-heading);font-size:28px;font-weight:400">Kostenlos</b>
             @elseif ($preis !== null)
-                <b style="font-family:var(--font-heading);font-size:28px;font-weight:400">{{ \App\Models\Offer::preisText($preis, $waehrung) }}</b>
+                <b style="font-family:var(--font-heading);font-size:28px;font-weight:400">{{ \App\Models\Offer::preisText($preis, $waehrung) }}</b>@if ($offer->istAbo())<span class="hinweis">{{ $offer->intervallText() }}, jederzeit kündbar</span>@endif
                 @if ($regulaer && $regulaer > $preis)<span class="hinweis" style="text-decoration:line-through">{{ \App\Models\Offer::preisText($regulaer, $waehrung) }}</span><span class="chip chip-ok">Aktion{{ $offer->settings['aktion_bis'] ? ' bis '.\Carbon\Carbon::parse($offer->settings['aktion_bis'])->translatedFormat('j. F') : '' }}</span>@endif
             @endif
             @if (count($preise) > 1)
@@ -39,7 +39,7 @@
                 <input type="hidden" name="zahlung" value="gratis">
             @elseif ($stripe && $rechnung)
                 <span class="feld-label">Wie möchtest du bezahlen?</span>
-                <label class="flex items-center gap-2 mb-1 text-md"><input type="radio" name="zahlung" value="stripe" class="accent-primary" @checked(old('zahlung', 'stripe') === 'stripe')> Karte oder Twint, sofort</label>
+                <label class="flex items-center gap-2 mb-1 text-md"><input type="radio" name="zahlung" value="stripe" class="accent-primary" @checked(old('zahlung', 'stripe') === 'stripe')> Karte oder Twint, sofort{{ $offer->istAbo() ? ', danach '.$offer->intervallText().' automatisch' : '' }}</label>
                 <label class="flex items-center gap-2 mb-3 text-md"><input type="radio" name="zahlung" value="rechnung" class="accent-primary" @checked(old('zahlung') === 'rechnung')> Auf Rechnung, zahlbar innert 30 Tagen</label>
             @else
                 <input type="hidden" name="zahlung" value="{{ $stripe ? 'stripe' : 'rechnung' }}">
@@ -61,6 +61,7 @@
                     <select name="land" class="feld" autocomplete="country">@foreach (['CH' => 'Schweiz', 'DE' => 'Deutschland', 'AT' => 'Österreich', 'LI' => 'Liechtenstein', 'FR' => 'Frankreich', 'IT' => 'Italien'] as $k => $l)<option value="{{ $k }}" @selected(old('land', $adresse['land'] ?? 'CH') === $k)>{{ $l }}</option>@endforeach</select>
                 </div>
                 @error('strasse')<p class="fehler mb-2">{{ $message }}</p>@enderror
+                @if ($offer->istAbo())<p class="hinweis mb-3"><i class="fa-solid fa-rotate"></i> Das Abo verlängert sich {{ $offer->intervallText() }} von selbst. Du kannst es jederzeit in deinem Profil kündigen, dann läuft es zum Ende der bezahlten Zeit aus.</p>@endif
                 <p class="hinweis mb-3"><i class="fa-regular fa-file-lines"></i> Die Rechnung oder Quittung kommt per Mail. Dein Zugang {{ ($zugangSofort ?? true) ? 'ist sofort offen' : 'öffnet sich mit der Zahlung' }}.</p>
             @endunless
             <label class="flex items-start gap-2 mb-2 text-md"><input type="checkbox" name="agb" value="1" required class="mt-1"> <span>Ich bestelle {{ $offer->is_free ? '' : 'zahlungspflichtig ' }}und akzeptiere die @if (! empty($links['agb']))<a href="{{ $links['agb'] }}" target="_blank" rel="noopener">AGB</a>@else AGB @endif@if (! empty($links['datenschutz'])) und die <a href="{{ $links['datenschutz'] }}" target="_blank" rel="noopener">Datenschutzerklärung</a>@endif.</span></label>
