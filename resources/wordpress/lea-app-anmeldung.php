@@ -118,3 +118,20 @@ function lea_app_anmeldung_log($msg)
     array_unshift($log, gmdate('Y-m-d H:i:s').' UTC  '.$msg);
     update_option('lea_app_anmeldung_log', array_slice($log, 0, 60), false);
 }
+
+/* ---------- Nach Mailster: alte Abmelde- und Profil-Links aus frueheren Mails landen in der App ---------- */
+add_action('template_redirect', function () {
+    if (is_admin()) {
+        return;
+    }
+    $basis = lea_app_anmeldung_url();
+    if ($basis === '') {
+        return;
+    }
+    $pfad = trim((string) parse_url((string) ($_SERVER['REQUEST_URI'] ?? ''), PHP_URL_PATH), '/');
+    $alt = preg_match('~^newsletter-anmeldung/(abmelden|profil)(/|$)~', $pfad) || isset($_GET['mailster_unsubscribe']) || isset($_GET['mailster_profile']);
+    if ($alt) {
+        wp_redirect($basis.'/n/abmelden', 302);
+        exit;
+    }
+}, 0);

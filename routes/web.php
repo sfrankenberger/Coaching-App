@@ -74,6 +74,8 @@ Route::get('/sso', BridgeController::class)->name('sso');
 Route::get('/newsletter/anmelden', [NewsletterController::class, 'anmeldenForm'])->name('newsletter.anmelden');
 Route::post('/newsletter/anmelden', [NewsletterController::class, 'anmelden'])->middleware('throttle:10,10')->name('newsletter.anmelden.store');
 Route::get('/newsletter/bestaetigen/{kontakt}', [NewsletterController::class, 'bestaetigen'])->middleware('signed')->name('newsletter.bestaetigen');
+Route::get('/n/abmelden', [NewsletterController::class, 'abmeldenForm'])->name('newsletter.abmelden.form');
+Route::post('/n/abmelden', [NewsletterController::class, 'abmeldeLink'])->middleware('throttle:10,10')->name('newsletter.abmelden.suchen');
 Route::match(['get', 'post'], '/n/abmelden/{token}', [NewsletterController::class, 'abmelden'])->name('newsletter.abmelden')->where('token', '[A-Za-z0-9]{40}');
 Route::post('/n/dabei/{token}', [NewsletterController::class, 'wiederAnmelden'])->name('newsletter.dabei')->where('token', '[A-Za-z0-9]{40}');
 Route::get('/n/o/{token}.gif', [NewsletterController::class, 'oeffnen'])->name('newsletter.oeffnen')->where('token', '[A-Za-z0-9]{40}');

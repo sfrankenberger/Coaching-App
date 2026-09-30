@@ -4,6 +4,7 @@ namespace Tests\Feature;
 
 use App\Enums\Role;
 use App\Filament\Coach\Resources\Posts\Pages\EditPost;
+use App\Mail\AbmeldeLinkMail;
 use App\Mail\KontaktBestaetigenMail;
 use App\Mail\NewsletterMail;
 use App\Models\Kontakt;
@@ -229,5 +230,17 @@ class NewsletterTest extends TestCase
         $this->actingAs($this->lea)->get('http://a.test/coach/newsletter')->assertOk();
         $this->actingAs($this->lea)->get('http://a.test/coach/serien')->assertOk();
         $this->get('http://a.test/newsletter/anmelden?tag=live-abend&zurueck=https://lea.test/x')->assertOk()->assertSee('value="live-abend"', false)->assertSee('https://lea.test/x');
+    }
+
+    public function test_abmelden_ohne_token_schickt_den_link(): void
+    {
+        Mail::fake();
+        $k = $this->in(fn () => app(Kontakte::class)->anmelden('doris@example.com', 'Doris', ['newsletter'], [], false));
+        $this->get('http://a.test/n/abmelden')->assertOk()->assertSee('Abmeldelink schicken');
+        $this->post('http://a.test/n/abmelden', ['email' => 'Doris@example.com'])->assertOk()->assertSee('hast du gleich Post');
+        Mail::assertSent(AbmeldeLinkMail::class, fn ($m) => $m->hasTo('doris@example.com') && str_contains($m->url, '/n/abmelden/'.$k->token));
+        // Unbekannte Adresse: gleiche Antwort, keine Mail
+        $this->post('http://a.test/n/abmelden', ['email' => 'niemand@example.com'])->assertOk()->assertSee('hast du gleich Post');
+        Mail::assertSent(AbmeldeLinkMail::class, 1);
     }
 }

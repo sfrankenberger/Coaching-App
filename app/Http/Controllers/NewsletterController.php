@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Mail\AbmeldeLinkMail;
 use App\Models\Kontakt;
 use App\Models\NewsletterVersand;
 use App\Newsletter\Kontakte;
@@ -12,6 +13,8 @@ use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
+use Illuminate\Support\Facades\Mail;
+use Illuminate\Support\Str;
 use Illuminate\View\View;
 
 /**
@@ -67,6 +70,23 @@ class NewsletterController extends Controller
     }
 
     /** Ein Klick genuegt (auch List-Unsubscribe-Post der Mailprogramme). */
+    /** Abmelden ohne Token, z.B. aus alten Mails eines frueheren Mailprogramms: Adresse eingeben, Link kommt per Mail. */
+    public function abmeldenForm(): View
+    {
+        return view('newsletter.abmelden');
+    }
+
+    public function abmeldeLink(Request $request): View
+    {
+        $data = $request->validate(['email' => ['required', 'email:rfc', 'max:190'], 'website' => ['nullable', 'size:0']]);
+        $k = Kontakt::where('email', Str::lower(trim($data['email'])))->first();
+        if ($k && $k->status !== 'abgemeldet') {
+            Mail::to($k->email, $k->name)->send(new AbmeldeLinkMail($k, route('newsletter.abmelden', $k->token)));
+        }
+
+        return view('newsletter.abmelden', ['geschickt' => true]);   // immer dieselbe Antwort, verraet nicht, wer eingetragen ist
+    }
+
     public function abmelden(Request $request, string $token): View
     {
         $k = Kontakt::where('token', $token)->firstOrFail();
