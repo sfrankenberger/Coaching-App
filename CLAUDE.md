@@ -2,7 +2,7 @@
 
 Dieses Repository ist die **mandantenfähige Coaching-App** (Arbeitstitel offen). Erster Mandant ist Lea Wernli (`app.leawernli.ch`). Die App ersetzt den Eigenbau-Mitgliederbereich auf leawernli.ch (WordPress, `wp-content/novamira-sandbox/`, 203 Dateien).
 
-Lies vor jeder grösseren Arbeit: `docs/01-ENTSCHEIDUNG.md`, `docs/02-ARCHITEKTUR.md`, `docs/03-DATENMODELL.md`. Stand und nächste Schritte: `docs/06-ROADMAP.md`.
+Lies vor jeder grösseren Arbeit: `docs/01-ENTSCHEIDUNG.md`, `docs/02-ARCHITEKTUR.md`, `docs/03-DATENMODELL.md`. Stand und nächste Schritte: `docs/06-ROADMAP.md`. Was gegenüber dem alten Bereich noch fehlt: `docs/10-LUECKENLISTE.md` (Tabellen in `docs/luecken/`).
 
 ## Auftraggeber und Arbeitsweise
 

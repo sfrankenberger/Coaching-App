@@ -131,3 +131,7 @@ Nach dem Umzug der App: eine einfache Website mit Statamic nachbauen (gleicher S
 ## Später
 
 Community, Auswertung, Stripe als zweite Zugangsquelle, Mandanten-Onboarding, Abrechnung der Plattform, native Apps (iOS/Android ueber die API und NativePHP, siehe 09).
+
+## Lueckenliste (30.09., siehe 10-LUECKENLISTE)
+
+Funktion fuer Funktion durch alle 225 alten Dateien plus das JavaScript aus den WordPress-Optionen: 630 Funktionen geprueft, 126 fehlen, 148 teilweise. Reihenfolge und Details in `docs/10-LUECKENLISTE.md`, Tabellen in `docs/luecken/`.
