@@ -25,6 +25,12 @@ class Ansicht
         return ! self::teilnehmerWert($user->membershipIn()?->setting('ansicht'));
     }
 
+    /** Team-Sicht: verwaltende Rolle und gerade im Arbeitsplatz. In der Teilnehmer-Ansicht verhaelt sich das Team wie eine Teilnehmerin. */
+    public static function teamSicht(?User $user): bool
+    {
+        return $user && $user->canManageCurrentTenant() && self::arbeitsplatz($user);
+    }
+
     /** Fuer Teammitglieder in der Teilnehmer-Ansicht: die App verhaelt sich wie fuer eine Teilnehmerin (eigenes Gespraech, eigene Zaehler). */
     public static function wieTeilnehmerin(?User $user): bool
     {

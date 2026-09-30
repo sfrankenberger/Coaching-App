@@ -281,7 +281,7 @@ class DossierController extends Controller
     protected function gespraech($user, $ich): array
     {
         $conv = $this->chat->directFor($user, false);
-        $nachrichten = $conv ? Message::where('conversation_id', $conv->id)->with('user:id,name')->latest('id')->limit(40)->get()->reverse()->values() : collect();
+        $nachrichten = $conv ? Message::where('conversation_id', $conv->id)->with('user:id,name,avatar_path,updated_at')->latest('id')->limit(40)->get()->reverse()->values() : collect();
         if ($conv) {
             $this->chat->markRead($conv, $ich);
         }

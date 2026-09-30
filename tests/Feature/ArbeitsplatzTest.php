@@ -82,6 +82,14 @@ class ArbeitsplatzTest extends TestCase
         $eigenes = $this->in(fn () => app(Chat::class)->directFor($this->lea));
         $this->actingAs($this->lea)->get('http://a.test/gespraech')->assertRedirect('http://a.test/gespraech/'.$eigenes->id);
         $this->assertSame(0, $this->in(fn () => app(Chat::class)->unreadFor($this->lea)), 'Annas wartende Nachricht zaehlt in der Teilnehmer-Ansicht nicht');
+        // Im eigenen Gespraech: kein Knopf zur Team-Liste, dafuer die Karte mit Sitzungen und Buchung wie bei einer Teilnehmerin
+        $this->actingAs($this->lea)->get('http://a.test/gespraech/'.$eigenes->id)->assertOk()->assertDontSee('Alle Gespräche')->assertSee('1:1 mit');
+        // Termine: nur die eigenen und die der eigenen Kurse, nicht alle im Mandanten
+        $this->in(fn () => Event::create(['title' => 'Fremder Call', 'starts_at' => now()->addDays(2), 'user_id' => $this->anna->id, 'is_published' => true]));
+        $this->actingAs($this->lea)->get('http://a.test/termine')->assertOk()->assertDontSee('Fremder Call');
+        $this->actingAs($this->lea)->post('http://a.test/ansicht', ['ansicht' => 'arbeitsplatz']);
+        $this->actingAs($this->lea)->get('http://a.test/termine')->assertOk()->assertSee('Fremder Call');
+        $this->actingAs($this->lea)->post('http://a.test/ansicht', ['ansicht' => 'teilnehmer']);
         $this->actingAs($this->lea)->get('http://a.test/journal')->assertRedirect('http://a.test');
         $this->actingAs($this->lea)->get('http://a.test/projekte')->assertRedirect('http://a.test');
         // Der aeltere Wert "teilnehmerin" gilt weiter als Teilnehmer-Ansicht

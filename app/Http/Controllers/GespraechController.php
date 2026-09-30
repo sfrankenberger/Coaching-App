@@ -52,10 +52,10 @@ class GespraechController extends Controller
     {
         $user = $request->user();
         Gate::authorize('view', $gespraech);
-        $gespraech->load(['participants.user:id,name', 'user:id,name', 'program:id,title,slug']);
+        $gespraech->load(['participants.user:id,name,avatar_path,updated_at', 'user:id,name,avatar_path,updated_at', 'program:id,title,slug']);
 
         $alle = (bool) $request->query('alle');
-        $q = $gespraech->messages()->with(['user:id,name', 'reactions', 'ref']);
+        $q = $gespraech->messages()->with(['user:id,name,avatar_path,updated_at', 'reactions', 'ref']);
         $total = $gespraech->messages()->count();
         $messages = $alle || $total <= 30 ? $q->get() : $q->skip($total - 30)->take(30)->get();
 
@@ -72,9 +72,9 @@ class GespraechController extends Controller
             'gegenueber' => $this->gegenueber($gespraech, $user),
             'darfSprache' => true,
             // 1:1-Seite wie im alten Bereich: Sitzungen im Paket und der Weg zum Termin
-            'kontingent' => $gespraech->isDirect() && ! $user->canManageCurrentTenant() ? app(Lage::class)->kontingent($user) : null,
-            'buchen' => $gespraech->isDirect() && ! $user->canManageCurrentTenant() && app(GoogleCalendar::class)->aktiv(),
-            'naechster' => $gespraech->isDirect() && ! $user->canManageCurrentTenant() ? Event::where('user_id', $user->id)->where('is_published', true)->where('starts_at', '>=', now()->subHour())->orderBy('starts_at')->first() : null,
+            'kontingent' => $gespraech->isDirect() && ! Ansicht::teamSicht($user) ? app(Lage::class)->kontingent($user) : null,
+            'buchen' => $gespraech->isDirect() && ! Ansicht::teamSicht($user) && app(GoogleCalendar::class)->aktiv(),
+            'naechster' => $gespraech->isDirect() && ! Ansicht::teamSicht($user) ? Event::where('user_id', $user->id)->where('is_published', true)->where('starts_at', '>=', now()->subHour())->orderBy('starts_at')->first() : null,
         ]);
     }
 
@@ -122,7 +122,7 @@ class GespraechController extends Controller
         Gate::authorize('view', $gespraech);
         $seit = (int) $request->query('seit', 0);
 
-        $neue = $gespraech->messages()->where('id', '>', $seit)->with(['user:id,name', 'reactions', 'ref'])->get();
+        $neue = $gespraech->messages()->where('id', '>', $seit)->with(['user:id,name,avatar_path,updated_at', 'reactions', 'ref'])->get();
         if ($neue->isNotEmpty()) {
             $this->chat->markRead($gespraech, $user);
         }

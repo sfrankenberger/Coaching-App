@@ -2,6 +2,7 @@
 
 namespace App\Programs;
 
+use App\Coach\Ansicht;
 use App\Models\Event;
 use App\Models\Resource;
 use App\Models\Resourceable;
@@ -21,7 +22,7 @@ class Begleitung
     public function eventsQuery(User $user): Builder
     {
         $programIds = $this->access->programIdsFor($user);
-        $manages = $user->canManageCurrentTenant();
+        $manages = Ansicht::teamSicht($user);
 
         return Event::query()
             ->where('is_published', true)

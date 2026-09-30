@@ -15,7 +15,7 @@
             <a href="{{ route('termine.index', array_filter(['zeit' => $k, 'kurs' => $kurs, 'was' => $was === 'alles' ? null : $was, 'q' => $suche])) }}" @class(['pille', 'an' => $zeit === $k])>{{ $label }}</a>
         @endforeach
         <input type="hidden" name="zeit" value="{{ $zeit }}">
-        @unless (auth()->user()->canManageCurrentTenant())
+        @unless (App\Coach\Ansicht::teamSicht(auth()->user()))
             <select name="was" class="pille" onchange="this.form.submit()" aria-label="Was">
                 <option value="" @selected($was === 'alles')>Termine und Aufgaben</option>
                 <option value="termine" @selected($was === 'termine')>Nur Termine</option>
@@ -54,7 +54,7 @@
             $ab = $mein?->status === 'declined';
             $live = $event->isLive();
         @endphp
-        <article @class(['karte flex items-start gap-3', 'heute' => $live, 'fertig' => $ab]) style="--kc: {{ $event->program?->color ?: 'var(--c-primary)' }}">
+        <article @class(['karte flex flex-wrap items-start gap-3', 'heute' => $live, 'fertig' => $ab]) style="--kc: {{ $event->program?->color ?: 'var(--c-primary)' }}">
             <a href="{{ route('termine.show', $event) }}" class="w-11 shrink-0 text-center no-underline text-ink" style="padding-top:2px">
                 <span class="block font-heading text-2xl leading-none">{{ $event->starts_at->format('j') }}</span>
                 <span class="eyebrow">{{ $event->starts_at->translatedFormat('D') }}</span>

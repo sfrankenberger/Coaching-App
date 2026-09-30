@@ -2,7 +2,7 @@
     $ich = auth()->user();
     $chat = app(\App\Chat\Chat::class);
     $alsCoach = $chat->alsCoach($m, $conv);
-    $verwaltet = $ich->canManageCurrentTenant();
+    $verwaltet = \App\Coach\Ansicht::teamSicht($ich);
     // Im 1:1 steht das ganze Team auf einer Seite: was das Team schreibt, ist fuer Lea "meine" Seite
     $meine = $m->user_id === $ich->id || ($alsCoach && $verwaltet);
     $gelesen = $meine && isset($gelesenBis) && $gelesenBis && $gelesenBis->gte($m->created_at);
@@ -67,4 +67,7 @@
         </div>
         @include('gespraech._reaktionen', ['m' => $m, 'eigene' => $meine])
     </div>
+    @if ($meine)
+        <x-avatar :user="$m->user_id === $ich->id ? $ich : $gesicht" :size="30" class="blase-avatar" />
+    @endif
 </div>

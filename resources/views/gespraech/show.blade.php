@@ -2,7 +2,7 @@
     @php $ich = auth()->user(); @endphp
     <div class="chat-kopf">
     <div class="flex items-center gap-3 m-0 mb-3">
-        @if ($ich->canManageCurrentTenant())
+        @if (App\Coach\Ansicht::teamSicht($ich))
             <a href="{{ route('gespraech.index') }}" class="knopf knopf-ruhig knopf-quadrat" aria-label="Alle Gespräche"><i class="fa-solid fa-chevron-left"></i></a>
         @elseif (! $conv->isDirect() && $conv->program)
             <a href="{{ route('kurse.show', $conv->program) }}" class="knopf knopf-ruhig" style="width:44px;padding:0;flex:none" aria-label="Zum Kurs"><i class="fa-solid fa-chevron-left"></i></a>
@@ -13,7 +13,7 @@
         </span>
     </div>
 
-    @if ($conv->isDirect() && ! $ich->canManageCurrentTenant() && ($kontingent || $buchen || $naechster))
+    @if ($conv->isDirect() && ! App\Coach\Ansicht::teamSicht($ich) && ($kontingent || $buchen || $naechster))
         <div class="karte" style="margin-bottom:12px">
             @if ($kontingent)
                 <span class="eyebrow"><i class="fa-solid fa-ticket"></i> Deine Sitzungen</span>

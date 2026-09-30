@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Ai\Summarizer;
 use App\Booking\GoogleCalendar;
+use App\Coach\Ansicht;
 use App\Models\AiSummary;
 use App\Models\Event;
 use App\Models\EventAttendee;
@@ -49,7 +50,7 @@ class TermineController extends Controller
 
         // Aufgaben mit Datum laufen im Kalender mit (wie lea_tm_aufgaben)
         $aufgaben = collect();
-        if ($was !== 'termine' && ! $user->canManageCurrentTenant()) {
+        if ($was !== 'termine' && ! Ansicht::teamSicht($user)) {
             $ta = Task::where('user_id', $user->id)->whereNotNull('due_at')->when($kurs, fn ($t) => $t->where('program_id', $kurs))
                 ->when($suche !== '', fn ($t) => $t->where('title', 'like', '%'.str_replace(['%', '_'], ['\\%', '\\_'], $suche).'%'));
             match ($zeit) {

@@ -3,12 +3,14 @@
 namespace Tests\Feature;
 
 use App\Enums\Role;
+use App\Filament\Coach\Resources\Posts\Pages\EditPost;
 use App\Mail\KontaktBestaetigenMail;
 use App\Mail\NewsletterMail;
 use App\Models\Kontakt;
 use App\Models\Newsletter;
 use App\Models\NewsletterVersand;
 use App\Models\Offer;
+use App\Models\Post;
 use App\Models\Serie;
 use App\Models\SerienLauf;
 use App\Models\Tenant;
@@ -20,6 +22,7 @@ use App\Shop\Zugang;
 use App\Tenancy\CurrentTenant;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Mail;
+use Livewire\Livewire;
 use Tests\TestCase;
 
 /** Etappe 11: Kontakte mit Double-Opt-in, Tags, Newsletter in Wellen mit Zaehlung, Serien, Abmeldung, Isolation. */
@@ -174,6 +177,20 @@ class NewsletterTest extends TestCase
         $this->in(fn () => app(Versand::class)->welle());
         $this->assertSame('gesendet', $g->fresh()->status);
         $this->assertSame(2, $g->fresh()->empfaenger);
+    }
+
+    public function test_impuls_wird_zum_newsletter_entwurf(): void
+    {
+        $this->lea->membershipIn($this->a)->forceFill(['settings' => ['onboarding_seen_at' => now()->toDateTimeString()]])->save();
+        $post = $this->in(fn () => Post::create(['title' => 'Herbst-Impuls', 'slug' => 'herbst-impuls', 'type' => 'impuls', 'excerpt' => 'Kurz gesagt: atmen.', 'body' => '<p>Langer Text</p>', 'image_url' => 'https://lea.test/bild.jpg', 'url' => 'https://lea.test/blog/herbst', 'is_published' => true, 'published_at' => now()]));
+        $this->in(fn () => Livewire::actingAs($this->lea)->test(EditPost::class, ['record' => $post->id])->callAction('newsletter'));
+        $n = $this->in(fn () => Newsletter::first());
+        $this->assertSame('Herbst-Impuls', $n->betreff);
+        $this->assertSame('https://lea.test/bild.jpg', $n->bild_url);
+        $this->assertSame('https://lea.test/blog/herbst', $n->knopf_url);
+        $this->assertSame(['newsletter'], $n->tags);
+        $this->assertSame('entwurf', $n->status);
+        $this->assertStringContainsString('atmen', $n->text);
     }
 
     public function test_mitglied_wird_kontakt_mit_tag_und_mandanten_sehen_sich_nicht(): void
