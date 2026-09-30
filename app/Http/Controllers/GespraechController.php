@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Booking\GoogleCalendar;
 use App\Chat\Chat;
 use App\Chat\Terminvorschlag;
+use App\Coach\Ansicht;
 use App\Coach\Lage;
 use App\Http\Requests\NachrichtRequest;
 use App\Models\Conversation;
@@ -31,7 +32,8 @@ class GespraechController extends Controller
     public function index(Request $request): View|RedirectResponse
     {
         $user = $request->user();
-        if (! $user->canManageCurrentTenant()) {
+        // Teilnehmerin, oder Team in der Teilnehmer-Ansicht: das eigene 1:1, nicht die Liste aller Gespraeche
+        if (! $user->canManageCurrentTenant() || Ansicht::wieTeilnehmerin($user)) {
             return redirect()->route('gespraech.show', array_filter([$this->chat->directFor($user), 'entwurf' => $request->query('entwurf'), 'ref' => $request->query('ref')]));
         }
 

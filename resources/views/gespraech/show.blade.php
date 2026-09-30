@@ -1,5 +1,6 @@
 <x-layouts.app :title="$conv->isDirect() ? '1:1 mit '.$gegenueber : $gegenueber" body="chat-seite">
     @php $ich = auth()->user(); @endphp
+    <div class="chat-kopf">
     <div class="flex items-center gap-3 m-0 mb-3">
         @if ($ich->canManageCurrentTenant())
             <a href="{{ route('gespraech.index') }}" class="knopf knopf-ruhig knopf-quadrat" aria-label="Alle Gespräche"><i class="fa-solid fa-chevron-left"></i></a>
@@ -30,6 +31,8 @@
             </div>
         </div>
     @endif
+
+    </div>
 
     <div id="verlauf" class="flex flex-col gap-2" data-verlauf="{{ route('gespraech.neu', $conv) }}" data-kanal="gespraech.{{ $conv->id }}" data-letzte="{{ $messages->last()?->id ?? 0 }}" data-ich="{{ $ich->id }}">
         @if ($versteckt)

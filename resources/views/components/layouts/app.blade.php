@@ -168,8 +168,8 @@
                         <li class="unter"><a href="{{ route('aufgaben.index') }}" @class(['aktiv' => $ist('aufgaben.*')])><i class="fa-solid fa-list-check"></i>Meine Aufgaben</a></li>
                         <li class="unter"><a href="{{ route('notizen.index') }}" @class(['aktiv' => $ist('notizen.*')])><i class="fa-solid fa-note-sticky"></i>Meine Notizen</a></li>
                         <li class="unter"><a href="{{ route('reflexion.index') }}" @class(['aktiv' => $ist('reflexion.*')])><i class="fa-solid fa-pen-to-square"></i>Meine Reflexionen</a></li>
-                        <li class="unter"><a href="{{ route('projekte.index') }}" @class(['aktiv' => $ist('projekte.*')])><i class="fa-solid fa-lightbulb"></i>Meine Projekte</a></li>
-                        <li class="unter"><a href="{{ route('journal.index') }}" @class(['aktiv' => $ist('journal.*')])><i class="fa-solid fa-timeline"></i>Meine Zeitleiste</a></li>
+                        @if (App\Support\Funktionen::an('projekte'))<li class="unter"><a href="{{ route('projekte.index') }}" @class(['aktiv' => $ist('projekte.*')])><i class="fa-solid fa-lightbulb"></i>Meine Projekte</a></li>@endif
+                        @if (App\Support\Funktionen::an('zeitleiste'))<li class="unter"><a href="{{ route('journal.index') }}" @class(['aktiv' => $ist('journal.*')])><i class="fa-solid fa-timeline"></i>Meine Zeitleiste</a></li>@endif
                         @if ($meineKurse->isNotEmpty())
                             <li class="gruppe"><span><i class="fa-solid fa-graduation-cap"></i>Meine Kurse</span></li>
                             @foreach ($meineKurse as $k)

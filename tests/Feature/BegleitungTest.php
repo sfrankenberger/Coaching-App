@@ -33,7 +33,7 @@ class BegleitungTest extends TestCase
     protected function setUp(): void
     {
         parent::setUp();
-        $this->a = Tenant::create(['slug' => 'a', 'name' => 'A']);
+        $this->a = Tenant::create(['slug' => 'a', 'name' => 'A', 'settings' => ['features' => ['zeitleiste' => true, 'projekte' => true]]]);
         $this->a->domains()->create(['domain' => 'a.test', 'is_primary' => true]);
         $this->anna = User::factory()->create();
         $this->fremd = User::factory()->create();

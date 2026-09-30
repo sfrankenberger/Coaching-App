@@ -57,6 +57,8 @@ class Einstellungen extends Page
             'logo_url' => $b['logo_url'] ?? null,
             'icon_url' => $b['icon_url'] ?? null,
             'coach_name' => $s['coach_name'] ?? null,
+            'feature_zeitleiste' => (bool) ($s['features']['zeitleiste'] ?? false),
+            'feature_projekte' => (bool) ($s['features']['projekte'] ?? false),
             'website' => $s['website'] ?? null,
             'shop_url' => $s['shop']['url'] ?? null,
             'ausbildung_url' => $s['ausbildung_url'] ?? null,
@@ -94,6 +96,10 @@ class Einstellungen extends Page
                 ColorPicker::make('primary_contrast')->label('Schrift auf der Hauptfarbe'),
                 TextInput::make('logo_url')->label('Logo (URL)')->url()->maxLength(500),
                 TextInput::make('icon_url')->label('App-Icon (URL, 512 x 512)')->url()->maxLength(500),
+            ])->columns(2),
+            Section::make('Funktionen')->description('Bereiche, die sich für die Teilnehmerinnen ein- und ausschalten lassen. Aus: kein Menüpunkt, keine Filter, die Seiten leiten auf die Startseite.')->schema([
+                Toggle::make('feature_zeitleiste')->label('Meine Zeitleiste (Journal)')->inline(false),
+                Toggle::make('feature_projekte')->label('Meine Projekte')->inline(false),
             ])->columns(2),
             Section::make('Du und deine Website')->schema([
                 TextInput::make('coach_name')->label('Dein Vorname (für die Anrede in Texten)')->maxLength(60),
@@ -149,6 +155,7 @@ class Einstellungen extends Page
             $b[$k] = filled($data[$k] ?? null) ? $data[$k] : null;
         }
         $s['coach_name'] = filled($data['coach_name']) ? $data['coach_name'] : null;
+        $s['features'] = array_merge($s['features'] ?? [], ['zeitleiste' => (bool) ($data['feature_zeitleiste'] ?? false), 'projekte' => (bool) ($data['feature_projekte'] ?? false)]);
         $s['website'] = filled($data['website']) ? $data['website'] : null;
         $s['shop'] = array_merge($s['shop'] ?? [], ['url' => filled($data['shop_url'] ?? null) ? $data['shop_url'] : null]);
         $s['ausbildung_url'] = filled($data['ausbildung_url'] ?? null) ? $data['ausbildung_url'] : null;

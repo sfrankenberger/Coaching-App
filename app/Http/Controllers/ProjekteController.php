@@ -6,6 +6,7 @@ use App\Coach\Geteilt;
 use App\Models\Program;
 use App\Models\Projekt;
 use App\Programs\ProgramAccess;
+use App\Support\Funktionen;
 use App\Tenancy\Branding;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
@@ -17,8 +18,11 @@ class ProjekteController extends Controller
 {
     public function __construct(protected ProgramAccess $access) {}
 
-    public function index(Request $request): View
+    public function index(Request $request): View|RedirectResponse
     {
+        if (! Funktionen::an('projekte')) {
+            return redirect()->route('home');
+        }
         $user = $request->user();
         $projekte = Projekt::where('user_id', $user->id)->with('program:id,title')->withCount(['notes', 'tasks', 'reflections', 'comments'])->orderBy('position')->orderBy('name')->get();
         $bearbeiten = $request->query('bearbeiten') ? $projekte->firstWhere('id', (int) $request->query('bearbeiten')) : null;

@@ -46,6 +46,7 @@ use App\Programs\ProgramAccess;
 use App\Support\Database\MariaDbVerbindung;
 use App\Support\Database\MySqlVerbindung;
 use App\Support\Database\SqliteVerbindung;
+use App\Support\Funktionen;
 use App\Tenancy\Branding;
 use App\Tenancy\CurrentTenant;
 use Illuminate\Database\Connection;
@@ -104,6 +105,10 @@ class AppServiceProvider extends ServiceProvider
         Feature::define('aufzeichnungen', fn (Tenant $t) => filled($t->setting('vimeo.token')));
         Feature::define('zoom', fn (Tenant $t) => filled($t->setting('zoom.client_secret')));
         Feature::define('community', fn (Tenant $t) => (bool) $t->setting('community.enabled'));
+        // Schaltbare Bereiche (vorerst aus): Einstellungen, Abschnitt "Funktionen"
+        foreach (Funktionen::SCHALTER as $name => [$label, $vorgabe]) {
+            Feature::define($name, fn (Tenant $t) => (bool) $t->setting("features.$name", $vorgabe));
+        }
 
         // Wer darf was: je Modell eine Policy, die Regeln liegen in ProgramAccess, Begleitung, Chat
         Gate::policy(Program::class, ProgramPolicy::class);

@@ -5,14 +5,19 @@ namespace App\Http\Controllers;
 use App\Models\Projekt;
 use App\Models\Task;
 use App\Programs\Zeitleiste;
+use App\Support\Funktionen;
+use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
 
 /** Mein Journal: die Zeitleiste aus Aufgaben, Notizen, Reflexionen, Begleitung, Terminen und Aufzeichnungen. */
 class JournalController extends Controller
 {
-    public function index(Request $request, Zeitleiste $zeitleiste): View
+    public function index(Request $request, Zeitleiste $zeitleiste): View|RedirectResponse
     {
+        if (! Funktionen::an('zeitleiste')) {
+            return redirect()->route('home');
+        }
         $user = $request->user();
         $art = array_key_exists((string) $request->query('art'), Zeitleiste::ARTEN) ? (string) $request->query('art') : null;
         $projekte = Projekt::where('user_id', $user->id)->orderBy('position')->orderBy('name')->get(['id', 'name', 'farbe', 'icon']);

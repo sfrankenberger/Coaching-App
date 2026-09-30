@@ -138,7 +138,11 @@
     var csrf = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
     var ich = verlauf.dataset.ich;
 
-    function nachUnten() { window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' }); }
+    /* Der Verlauf scrollt selbst (Kopf und Eingabe bleiben stehen); als Netz auch die Seite */
+    function nachUnten() {
+        verlauf.scrollTo({ top: verlauf.scrollHeight, behavior: 'smooth' });
+        if (verlauf.scrollHeight <= verlauf.clientHeight + 2) window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' });
+    }
     function tagTrenner() {
         var letzter = '';
         verlauf.querySelectorAll('.tag-trenner').forEach(function (t) { t.remove(); });
@@ -171,7 +175,7 @@
         nachUnten();
     }
     tagTrenner();
-    nachUnten();
+    verlauf.scrollTop = verlauf.scrollHeight;
 
     /* Nachfragen */
     var laeuft = false;
@@ -220,6 +224,8 @@
     /* Trenner "Neu" verblasst nach ein paar Sekunden, die Markierung bleibt */
     var trenner = verlauf.querySelector('[data-neu-trenner]');
     if (trenner) { trenner.scrollIntoView({ block: 'center' }); setTimeout(function () { trenner.classList.add('weg'); }, 5000); }
+    /* Waechst die Eingabe (Anhang, Aufnahme, langer Text), bleibt die letzte Nachricht sichtbar */
+    if (window.ResizeObserver) new ResizeObserver(function () { if (verlauf.scrollHeight - verlauf.scrollTop - verlauf.clientHeight < 160) verlauf.scrollTop = verlauf.scrollHeight; }).observe(form);
     /* Nur ein Player gleichzeitig, Hinweis wenn eine Aufnahme nicht abspielbar ist */
     verlauf.addEventListener('play', function (e) {
         if (!e.target.matches('audio, video')) return;

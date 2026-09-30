@@ -1,5 +1,5 @@
 <x-layouts.app title="Wochenreflexion">
-    <p class="m-0 mb-2"><a href="{{ route('journal.index') }}" class="hinweis no-underline"><i class="fa-solid fa-chevron-left text-[11px]"></i> Mein Journal</a></p>
+    @if (App\Support\Funktionen::an('zeitleiste'))<p class="m-0 mb-2"><a href="{{ route('journal.index') }}" class="hinweis no-underline"><i class="fa-solid fa-chevron-left text-[11px]"></i> Mein Journal</a></p>@endif
     <h1 class="mb-1">Wochenreflexion</h1>
     <p class="unterzeile m-0 mb-3.5">Nimm dir zehn Minuten. Deine Antworten bleiben bei dir; wenn du magst, gehen sie zusätzlich an deine Coachin.</p>
 

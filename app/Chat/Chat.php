@@ -3,6 +3,7 @@
 namespace App\Chat;
 
 use App\Audio\Transkript;
+use App\Coach\Ansicht;
 use App\Enums\Role;
 use App\Events\MessageSent;
 use App\Jobs\ConvertAudio;
@@ -149,6 +150,12 @@ class Chat
     /** Zahl am Knopf: fuer die Person die ungelesenen Nachrichten, fuers Team die Menschen, die warten. */
     public function unreadFor(User $user): int
     {
+        // Team in der Teilnehmer-Ansicht: nur das eigene 1:1 zaehlt
+        if (Ansicht::wieTeilnehmerin($user)) {
+            $eigenes = $this->directFor($user, false);
+
+            return $eigenes ? $eigenes->unreadCountFor($user) : 0;
+        }
         $liste = $this->conversationsFor($user);
 
         return $user->canManageCurrentTenant() ? $liste->filter(fn (Conversation $c) => $c->wartet && $c->ungelesen > 0)->count() : $liste->sum('ungelesen');

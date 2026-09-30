@@ -4,6 +4,7 @@ namespace Tests\Feature;
 
 use App\Ai\Assistent;
 use App\Chat\Chat;
+use App\Coach\Ansicht;
 use App\Enums\Role;
 use App\Models\Event;
 use App\Models\Membership;
@@ -74,7 +75,22 @@ class ArbeitsplatzTest extends TestCase
 
         // Umschalten: wie eine Teilnehmerin, dann zurueck
         $this->actingAs($this->lea)->post('http://a.test/ansicht', ['ansicht' => 'teilnehmer'])->assertRedirect('http://a.test');
-        $this->actingAs($this->lea)->get('http://a.test/')->assertOk()->assertSee('Hallo Lea')->assertSee('Für dich als Coach')->assertSee('Zurück zum Arbeitsplatz')->assertSee('Meine Sachen');
+        $this->actingAs($this->lea)->get('http://a.test/')->assertOk()->assertSee('Hallo Lea')->assertSee('Für dich als Coach')->assertSee('Zurück zum Arbeitsplatz')->assertSee('Meine Sachen')
+            ->assertDontSee('Meine Zeitleiste')->assertDontSee('Meine Projekte');   // vorerst ausgeschaltet
+        // In der Teilnehmer-Ansicht fuehrt das Gespraech zum eigenen 1:1, nicht zur Liste aller Gespraeche
+        $eigenes = $this->in(fn () => app(Chat::class)->directFor($this->lea));
+        $this->actingAs($this->lea)->get('http://a.test/gespraech')->assertRedirect('http://a.test/gespraech/'.$eigenes->id);
+        $this->assertSame(0, $this->in(fn () => app(Chat::class)->unreadFor($this->lea)), 'Annas wartende Nachricht zaehlt in der Teilnehmer-Ansicht nicht');
+        $this->actingAs($this->lea)->get('http://a.test/journal')->assertRedirect('http://a.test');
+        $this->actingAs($this->lea)->get('http://a.test/projekte')->assertRedirect('http://a.test');
+        // Der aeltere Wert "teilnehmerin" gilt weiter als Teilnehmer-Ansicht
+        $this->lea->membershipIn($this->a)->forceFill(['settings' => ['ansicht' => 'teilnehmerin']])->save();
+        $this->assertFalse(Ansicht::arbeitsplatz($this->lea->fresh()));
+        // Eingeschaltet: Menuepunkte da
+        $this->a->forceFill(['settings' => array_merge($this->a->settings ?? [], ['features' => ['zeitleiste' => true, 'projekte' => true]])])->save();
+        $this->actingAs($this->lea)->get('http://a.test/')->assertOk()->assertSee('Meine Zeitleiste')->assertSee('Meine Projekte');
+        $this->actingAs($this->lea)->get('http://a.test/journal')->assertOk();
+        $this->a->forceFill(['settings' => array_merge($this->a->settings ?? [], ['features' => []])])->save();
         $this->actingAs($this->lea)->post('http://a.test/ansicht', ['ansicht' => 'arbeitsplatz'])->assertRedirect();
         $this->actingAs($this->lea)->get('http://a.test/')->assertOk()->assertSee('Guten Tag, Lea');
 

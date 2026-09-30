@@ -9,6 +9,7 @@ use App\Models\Task;
 use App\Programs\ProgramAccess;
 use App\Support\Anhaenge;
 use App\Support\Filter;
+use App\Support\Funktionen;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -33,7 +34,7 @@ class AufgabenController extends Controller
             'offen' => $tasks->filter(fn (Task $t) => ! $t->isDone())->values(),
             'fertig' => $tasks->filter(fn (Task $t) => $t->isDone())->values(),
             'kurse' => $this->access->programsFor($user)->pluck('title', 'id'),
-            'projekte' => Projekt::where('user_id', $user->id)->orderBy('name')->get(['id', 'name', 'farbe', 'icon']),
+            'projekte' => ! Funktionen::an('projekte') ? collect() : Projekt::where('user_id', $user->id)->orderBy('name')->get(['id', 'name', 'farbe', 'icon']),
             'gemeinschaft' => $this->access->gemeinschaftFor($user)->pluck('title', 'id'),
             'filter' => $filter,
             'bearbeiten' => $request->query('bearbeiten') ? Task::where('user_id', $user->id)->find((int) $request->query('bearbeiten')) : null,

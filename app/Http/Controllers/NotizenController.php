@@ -10,6 +10,7 @@ use App\Programs\ProgramAccess;
 use App\Programs\Wochenaufgabe;
 use App\Support\Anhaenge;
 use App\Support\Filter;
+use App\Support\Funktionen;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Gate;
@@ -33,7 +34,7 @@ class NotizenController extends Controller
         return view('notizen.index', [
             'notes' => $notes->values(),
             'kurse' => $this->access->programsFor($user)->pluck('title', 'id'),
-            'projekte' => Projekt::where('user_id', $user->id)->orderBy('name')->get(['id', 'name', 'farbe', 'icon']),
+            'projekte' => ! Funktionen::an('projekte') ? collect() : Projekt::where('user_id', $user->id)->orderBy('name')->get(['id', 'name', 'farbe', 'icon']),
             'gemeinschaft' => $this->access->gemeinschaftFor($user)->pluck('title', 'id'),
             'bearbeiten' => $request->query('bearbeiten') ? Note::where('user_id', $user->id)->find((int) $request->query('bearbeiten')) : null,
             'filter' => $filter,

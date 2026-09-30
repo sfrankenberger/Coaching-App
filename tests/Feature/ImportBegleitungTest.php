@@ -109,7 +109,7 @@ class ImportBegleitungTest extends TestCase
             $t->text('meta_value')->nullable();
         });
 
-        $this->lea = Tenant::create(['slug' => 'lea', 'name' => 'Lea', 'timezone' => 'Europe/Zurich', 'settings' => ['import' => ['wordpress' => [
+        $this->lea = Tenant::create(['slug' => 'lea', 'name' => 'Lea', 'timezone' => 'Europe/Zurich', 'settings' => ['features' => ['zeitleiste' => true, 'projekte' => true], 'import' => ['wordpress' => [
             'owner_ids' => [2], 'team_roles' => ['administrator'],
         ]]]]);
         $this->coach = User::factory()->create(['name' => 'Lea Wernli']);

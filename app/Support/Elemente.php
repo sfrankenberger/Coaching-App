@@ -24,6 +24,10 @@ class Elemente
 
     public function projekte(User $user): Collection
     {
+        if (! Funktionen::an('projekte')) {
+            return collect();
+        }
+
         return $this->projekte[$user->id] ??= Projekt::where('user_id', $user->id)->orderBy('position')->orderBy('name')->get(['id', 'name', 'farbe', 'icon']);
     }
 

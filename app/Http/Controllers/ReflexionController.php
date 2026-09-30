@@ -10,6 +10,7 @@ use App\Programs\ProgramAccess;
 use App\Programs\Wochenaufgabe;
 use App\Support\Anhaenge;
 use App\Support\Filter;
+use App\Support\Funktionen;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Gate;
@@ -43,7 +44,7 @@ class ReflexionController extends Controller
             'meine' => Reflection::where('user_id', $user->id)->with(['program:id,title', 'anhaenge.ziel', 'projekt:id,name,farbe,icon', 'comments'])->latest()->limit(60)->get()->filter(fn (Reflection $r) => $filter->passt($r))->values(),
             'filter' => $filter,
             'kurse' => $this->access->programsFor($user)->pluck('title', 'id'),
-            'projekte' => Projekt::where('user_id', $user->id)->orderBy('name')->get(['id', 'name', 'farbe', 'icon']),
+            'projekte' => ! Funktionen::an('projekte') ? collect() : Projekt::where('user_id', $user->id)->orderBy('name')->get(['id', 'name', 'farbe', 'icon']),
             'gemeinschaft' => $this->access->gemeinschaftFor($user)->pluck('title', 'id'),
             'woche' => 'Woche '.now()->format('W').' ('.now()->translatedFormat('j. F Y').')',
             'aufgabe' => $this->wochenaufgabe->ausAufgabe($request, $user),

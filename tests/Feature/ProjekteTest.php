@@ -34,9 +34,9 @@ class ProjekteTest extends TestCase
     protected function setUp(): void
     {
         parent::setUp();
-        $this->a = Tenant::create(['slug' => 'a', 'name' => 'A', 'settings' => ['coach_name' => 'Lea']]);
+        $this->a = Tenant::create(['slug' => 'a', 'name' => 'A', 'settings' => ['coach_name' => 'Lea', 'features' => ['zeitleiste' => true, 'projekte' => true]]]);
         $this->a->domains()->create(['domain' => 'a.test', 'is_primary' => true]);
-        $this->b = Tenant::create(['slug' => 'b', 'name' => 'B']);
+        $this->b = Tenant::create(['slug' => 'b', 'name' => 'B', 'settings' => ['features' => ['zeitleiste' => true, 'projekte' => true]]]);
         $this->b->domains()->create(['domain' => 'b.test', 'is_primary' => true]);
         $this->lea = User::factory()->create(['name' => 'Lea Coach']);
         $this->anna = User::factory()->create(['name' => 'Anna Muster']);

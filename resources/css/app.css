@@ -929,10 +929,16 @@
 }
 
 @layer components {
-    /* Gespraech: Eingabe fest unten, zweizeilig (Feld oben, Knoepfe unten) */
-    .chat-seite .leiste, .chat-seite .chat-knopf { display: none; }
-    .chat-seite .inhalt { padding-bottom: calc(150px + env(safe-area-inset-bottom)); }
-    .chat-eingabe { position: fixed; left: 0; right: 0; bottom: 0; z-index: 41; background: var(--c-bar); border-top: 1px solid var(--c-card-border); padding: 10px 14px calc(10px + env(safe-area-inset-bottom)); }
+    /* Gespraech: Kopf bleibt stehen, nur der Verlauf scrollt, Eingabe unten im Fluss (zweizeilig: Feld oben, Knoepfe unten) */
+    .chat-seite .leiste, .chat-seite .chat-knopf, .chat-seite .pull { display: none; }
+    .chat-seite { overflow: hidden; }
+    .chat-seite .inhalt { display: flex; flex-direction: column; height: calc(100dvh - 56px - env(safe-area-inset-top)); padding-block: 12px 0; overflow: hidden; }
+    @media (min-width: 761px) { .chat-seite .inhalt { padding-block: 20px 0; } }
+    @media (min-width: 900px) { .chat-seite .inhalt { height: calc(100dvh - 64px - env(safe-area-inset-top)); } }
+    .chat-kopf { flex: none; }
+    .chat-seite #verlauf { flex: 1; min-height: 0; overflow-y: auto; overscroll-behavior: contain; -webkit-overflow-scrolling: touch; padding: 4px 2px 18px; scroll-padding-bottom: 18px; }
+    .chat-eingabe { flex: none; margin: 0 -14px; background: var(--c-bar); border-top: 1px solid var(--c-card-border); padding: 10px 14px calc(10px + env(safe-area-inset-bottom)); }
+    @media (min-width: 761px) { .chat-eingabe { margin: 0 -18px; padding-inline: 18px; } }
     .chat-eingabe-in { max-width: var(--page-width); margin: 0 auto; display: flex; flex-direction: column; gap: 8px; }
     .chat-eingabe textarea { border-radius: 24px; padding: 12px 18px; resize: none; }
     .chat-knoepfe { display: flex; align-items: center; gap: 8px; }
