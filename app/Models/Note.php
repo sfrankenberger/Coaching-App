@@ -38,6 +38,11 @@ class Note extends Model
         return ['is_pinned' => 'boolean'];
     }
 
+    public function projekt(): BelongsTo
+    {
+        return $this->belongsTo(Projekt::class, 'project_id');
+    }
+
     public function user(): BelongsTo
     {
         return $this->belongsTo(User::class);
@@ -51,6 +56,11 @@ class Note extends Model
     public function program(): BelongsTo
     {
         return $this->belongsTo(Program::class);
+    }
+
+    public function reactions(): MorphMany
+    {
+        return $this->morphMany(Reaction::class, 'reactable');
     }
 
     public function comments(): MorphMany

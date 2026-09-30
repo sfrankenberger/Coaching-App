@@ -30,7 +30,7 @@ class ProgramMemberObserver
             // Leise anlegen: keine Einzelmeldung je Aufgabe beim Eintritt (ohne Events, darum tenant_id ausdruecklich)
             Task::withoutEvents(fn () => Task::create([
                 'tenant_id' => $member->tenant_id, 'user_id' => $member->user_id, 'program_id' => $v->program_id, 'step_id' => $v->step_id,
-                'title' => $v->title, 'body' => $v->body, 'due_at' => $v->due_at, 'due_time' => $v->due_time,
+                'title' => $v->title, 'body' => $v->body, 'kind' => $v->kind, 'weekday' => $v->weekday, 'due_at' => $v->due_at, 'due_time' => $v->due_time,
                 'is_daily' => $v->is_daily, 'visibility' => $v->visibility, 'assigned_by' => $v->assigned_by, 'source' => 'program',
             ]));
         }

@@ -27,10 +27,13 @@ use App\Models\Resource;
 use App\Models\Tool;
 use App\Models\Unit;
 use App\Models\User;
+use App\Models\Verkauf;
 use App\Models\Wissen;
+use App\Shop\Buchhaltung;
 use App\Support\Zeit;
 use App\Tenancy\Branding;
 use App\Tenancy\CurrentTenant;
+use Carbon\Carbon;
 use Illuminate\Support\Str;
 use Throwable;
 
@@ -181,7 +184,21 @@ class Assistent
             $f['gespraech'] = $conv ? 'Gespräch offen, noch keine Nachricht' : 'kein Gespräch';
         }
         $f['buchungen'] = Booking::where('user_id', $user->id)->with('type:id,title')->orderByDesc('starts_at')->limit(5)->get()
-            ->map(fn (Booking $b) => ($b->type?->title ?? 'Buchung').' am '.Zeit::wann($b->starts_at).($b->status === 'abgesagt' ? ' (abgesagt)' : ''))->values()->all();
+            ->map(fn (Booking $b) => ($b->type?->title ?? 'Buchung').' am '.Zeit::wann($b->starts_at).($b->status === 'abgesagt' ? ' (abgesagt)' : '').($b->herkunft ? ', kam über '.$b->herkunft : ''))->values()->all();
+        // Verkaeufe aus der App und Rechnungen aus der Buchhaltung, damit "ist die Rechnung verschickt?" eine Antwort hat
+        $f['verkaeufe'] = Verkauf::where('user_id', $user->id)->orderByDesc('id')->limit(8)->get()
+            ->map(fn (Verkauf $v) => $v->title.': '.number_format((float) $v->betrag, 2, '.', "'").' '.$v->waehrung.', '.(Verkauf::ZAHLUNGSARTEN[$v->zahlungsart] ?? $v->zahlungsart).', '.(Verkauf::STATUS[$v->status] ?? $v->status)
+                .($v->rechnung_nr ? ', Rechnung '.$v->rechnung_nr : ($v->rechnung_id ? ', Rechnung in der Buchhaltung' : ', ohne Rechnung')).($v->faellig_am ? ', fällig '.$v->faellig_am->format('j.n.Y') : '').' am '.$v->created_at->format('j.n.Y'))->values()->all();
+        try {
+            $bh = Buchhaltung::fuer(app(CurrentTenant::class)->get());
+            if ($bh && $bh->verbunden() && $user->email) {
+                $f['rechnungen'] = $bh->rechnungen($user)->take(8)->map(fn ($r) => ($r['nr'] ?: 'Rechnung').': '.number_format((float) $r['betrag'], 2, '.', "'").' '.$r['waehrung'].', '.Buchhaltung::statusText($r['status'])
+                    .($r['datum'] ? ' vom '.Carbon::parse($r['datum'])->format('j.n.Y') : '').(! empty($r['faellig']) && in_array($r['status'], ['offen', 'teilweise', 'gemahnt'], true) ? ', fällig '.Carbon::parse($r['faellig'])->format('j.n.Y') : ''))->values()->all();
+                $f['rechnungen_offen'] = collect($bh->offen($user))->map(fn ($s, $w) => number_format((float) $s, 2, '.', "'").' '.$w)->values()->join(', ') ?: 'nichts offen';
+            }
+        } catch (Throwable $e) {
+            $f['rechnungen'] = 'Buchhaltung gerade nicht erreichbar';
+        }
         $f['dossier'] = route('coachees.show', $m);
         $f['gespraech_url'] = $conv ? route('gespraech.show', $conv) : null;
 

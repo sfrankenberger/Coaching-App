@@ -4,10 +4,21 @@
     <p class="unterzeile m-0 mb-3.5">Nimm dir zehn Minuten. Deine Antworten bleiben bei dir; wenn du magst, gehen sie zusätzlich an deine Coachin.</p>
 
     <x-karte>
-        <form method="post" action="{{ route('reflexion.store') }}" class="eingabe">
+        <form id="neu" method="post" action="{{ route('reflexion.store') }}" class="eingabe">
             @csrf
             <input type="hidden" name="refl_id" value="{{ $entwurf?->id }}">
+            @if ($aufgabe ?? null)
+                <input type="hidden" name="aufgabe_id" value="{{ $aufgabe->id }}">
+                <p class="hinweis m-0"><i class="fa-solid fa-list-check"></i> Zur Aufgabe «{{ $aufgabe->title }}». Speichern hakt sie ab.</p>
+            @endif
             <p class="hinweis">{{ $entwurf?->week_label ?? $woche }}</p>
+            @if ($vorher)
+                <div class="karte" style="background:var(--c-primary-tint)">
+                    <span class="eyebrow"><i class="fa-solid fa-clock-rotate-left"></i> Rückblick: Was hattest du dir vorgenommen?</span>
+                    <p class="lesetext whitespace-pre-line m-0 mt-1">{{ $vorher->focus }}</p>
+                    <p class="hinweis m-0 mt-1">{{ $vorher->week_label ?: $vorher->created_at->translatedFormat('j. F') }}@if ($vorher->step) · {{ $vorher->step->title }}@endif</p>
+                </div>
+            @endif
             @foreach ($fragen as $k => [$ico, $frage, $tipp])
                 <div>
                     <label for="refl-{{ $k }}" class="block font-heading" style="font-size:var(--fs-xl);line-height:1.3">{{ $ico }} {{ $frage }}</label>
@@ -15,15 +26,21 @@
                     <textarea id="refl-{{ $k }}" name="{{ $k }}" rows="4" class="feld" placeholder="Schreib oder diktiere ...">{{ old($k, $entwurf?->$k) }}</textarea>
                 </div>
             @endforeach
-            <x-anhang-wahl :refs="old('refs', $entwurf?->anhangRefs() ?? [])" />
+            <x-anhang-wahl :refs="old('refs', $entwurf?->anhangRefs() ?? (($aufgabe ?? null) ? ['task:'.$aufgabe->id] : []))" />
+            <x-projekt-wahl :projekte="$projekte" :value="old('project_id', $entwurf?->project_id)" />
             <div class="flex flex-wrap gap-2">
+                @if ($wochen->isNotEmpty())
+                    <label class="block"><span class="feld-label">Kurswoche</span><select name="step_id" class="feld"><option value="">Keine</option>
+                        @foreach ($wochen as $kursTitel => $schritte)<optgroup label="{{ $kursTitel }}">@foreach ($schritte as $s)<option value="{{ $s->id }}" @selected((int) old('step_id', $entwurf?->step_id) === $s->id)>{{ $s->week_number ? 'Woche '.$s->week_number.': ' : '' }}{{ $s->title }}</option>@endforeach</optgroup>@endforeach
+                    </select></label>
+                @endif
                 @if ($kurse->count())
                     <label class="block"><span class="feld-label">Kurs</span><select name="program_id" class="feld"><option value="">Allgemein</option>@foreach ($kurse as $id => $t)<option value="{{ $id }}" @selected((int) old('program_id', $entwurf?->program_id) === $id)>{{ $t }}</option>@endforeach</select></label>
                 @endif
                 <label class="block"><span class="feld-label">Wer sieht das?</span><select name="visibility" class="feld">
                     <option value="private">Nur ich</option>
                     <option value="coach">Meine Coachin</option>
-                    @if ($gemeinschaft->count())<option value="program">Mein Kurs</option>@endif
+                    @if ($gemeinschaft->count())<option value="program">Mein Kurs</option><option value="all">In der Community</option>@endif
                 </select></label>
             </div>
             @if ($entwurf)
@@ -33,13 +50,15 @@
         </form>
     </x-karte>
 
-    @if ($meine->isNotEmpty())
+    @if ($meine->isNotEmpty() || $filter->aktiv())
         <h2 class="abschnitt"><i class="fa-solid fa-clock-rotate-left"></i>Deine bisherigen Reflexionen<em>{{ $meine->count() }}</em></h2>
+        <x-filterleiste :filter="$filter" :projekte="$projekte" :kurse="$gemeinschaft->all()" :status="['neu' => 'Mit Kommentaren']" platzhalter="In deinen Reflexionen suchen" />
+        @if ($meine->isEmpty())<p class="hinweis">Nichts gefunden.</p>@endif
         @foreach ($meine as $r)
             <article id="reflexion-{{ $r->id }}" class="karte">
                 <div class="flex items-start gap-3">
                     <div class="min-w-0 flex-1">
-                        <span class="hinweis">{{ $r->week_label ?: $r->created_at->translatedFormat('j. F Y') }}@if ($r->program) · {{ $r->program->title }}@endif · {{ $r->isShared() ? 'Geteilt' : 'Nur ich' }}</span>
+                        <span class="hinweis">{{ $r->week_label ?: $r->created_at->translatedFormat('j. F Y') }}@if ($r->program) · {{ $r->program->title }}@endif@if ($r->step) · {{ $r->step->title }}@endif · {{ $r->isShared() ? 'Geteilt' : 'Nur ich' }}@if ($r->projekt) · <x-projekt-chip :projekt="$r->projekt" />@endif</span>
                         @foreach ($fragen as $k => [$ico, $frage])
                             @if ($r->$k)<p class="mt-2"><b class="block text-md">{{ $ico }} {{ $frage }}</b><span class="lesetext whitespace-pre-line">{{ $r->$k }}</span></p>@endif
                         @endforeach
@@ -58,13 +77,7 @@
                         </div>
                         <x-kommentare :item="$r" />
                     </div>
-                    <details class="relative shrink-0">
-                        <summary class="list-none cursor-pointer knopf-rund grid place-items-center" aria-label="Mehr"><i class="fa-solid fa-ellipsis-vertical"></i></summary>
-                        <div class="menue" style="right:0;top:36px">
-                            @if ($r->isShared())<form method="post" action="{{ route('reflexion.teilen', $r) }}">@csrf<input type="hidden" name="visibility" value="private"><button class="e"><i class="fa-solid fa-lock"></i>Nicht mehr teilen</button></form>@endif
-                            <form method="post" action="{{ route('reflexion.destroy', $r) }}" onsubmit="return confirm('Reflexion löschen?')">@csrf @method('DELETE')<button class="e gefahr"><i class="fa-solid fa-trash"></i>Löschen</button></form>
-                        </div>
-                    </details>
+                    <x-element-menue :item="$r" typ="reflection" :loeschen="route('reflexion.destroy', $r)" frage="Reflexion löschen?" />
                 </div>
             </article>
         @endforeach

@@ -30,7 +30,7 @@ class Arbeitsliste
         $istTest = fn ($user) => $user && $test->contains(mb_strtolower($user->email));
 
         $wartende = $this->wartende($team)->reject(fn ($z) => $istTest($z['user']));
-        $geteilt = $this->neues->zeilen(7, 8)->filter(fn ($z) => in_array($z['art'], ['antwort', 'reflexion', 'aufgabe'], true))->values();
+        $geteilt = $this->neues->zeilen(7, 8)->filter(fn ($z) => in_array($z['art'], ['antwort', 'reflexion', 'aufgabe', 'notiz', 'aufgabe_geteilt'], true))->values();
         $fragen = $this->fragen($team)->reject(fn ($f) => $istTest($f->user))->take(6)->values();
         $freigaben = Event::query()->where('is_published', true)->whereNotNull('recording_url')->whereNotNull('summary')
             ->whereNull('recording_notified_at')->orderByDesc('starts_at')->limit(4)->get();

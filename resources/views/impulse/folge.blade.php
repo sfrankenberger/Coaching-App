@@ -23,6 +23,7 @@
             @if ($folge->url)
                 <a href="{{ $folge->url }}" target="_blank" rel="noopener" class="knopf knopf-leise knopf-klein">Zur Folge im Web</a>
             @endif
+            <a href="{{ route('community', ['frage' => 1, 'titel' => 'Frage zur Folge «'.\Illuminate\Support\Str::limit($folge->title, 120, '').'»', 'text' => route('impulse.folge', $folge)]) }}" class="knopf knopf-leise knopf-klein"><i class="fa-solid fa-circle-question"></i>Frage dazu</a>
         </div>
     </x-karte>
 

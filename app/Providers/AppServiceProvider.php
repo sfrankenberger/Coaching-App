@@ -25,6 +25,7 @@ use App\Models\Post;
 use App\Models\Program;
 use App\Models\ProgramMember;
 use App\Models\ProgramStep;
+use App\Models\Projekt;
 use App\Models\Protokoll;
 use App\Models\Question;
 use App\Models\Reflection;
@@ -36,6 +37,7 @@ use App\Models\TenantDomain;
 use App\Models\Tool;
 use App\Models\Topic;
 use App\Models\Unit;
+use App\Models\UnitVideo;
 use App\Models\User;
 use App\Models\Verkauf;
 use App\Models\Wissen;
@@ -93,6 +95,7 @@ class AppServiceProvider extends ServiceProvider
             'note' => Note::class,
             'reflection' => Reflection::class,
             'journal' => JournalEntry::class,
+            'projekt' => Projekt::class,
             'message' => Message::class,
             'comment' => Comment::class,
             'answer' => Answer::class,
@@ -103,6 +106,7 @@ class AppServiceProvider extends ServiceProvider
             'topic' => Topic::class,
             'tool' => Tool::class,
             'sammlung' => Sammlung::class,
+            'unit_video' => UnitVideo::class,
             // fuer das Aenderungsprotokoll (subject_type)
             'tenant' => Tenant::class,
             'domain' => TenantDomain::class,

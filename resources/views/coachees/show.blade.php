@@ -8,7 +8,7 @@
             <x-avatar :user="$person" :size="52" />
             <div class="min-w-0 flex-1">
                 <h1 class="m-0" style="font-size:var(--fs-xl)">{{ $person->name }}</h1>
-                <p class="hinweis m-0">{{ $person->email }}{{ $person->phone ? ' · '.$person->phone : '' }} · {{ $m->role->label() }}</p>
+                <p class="hinweis m-0">{{ $person->email }}{{ $person->phone ? ' · '.$person->phone : '' }} · {{ $m->role->label() }}@if ($m->setting('herkunft')) · kam über {{ $m->setting('herkunft') }}@endif</p>
                 <p class="hinweis m-0">Zuletzt hier: {{ $m->last_seen_at ? \App\Support\Zeit::relativ($m->last_seen_at) : 'noch nie' }}{{ $m->joined_at ? ' · dabei seit '.\App\Support\Zeit::datum($m->joined_at) : '' }}</p>
                 @if ($lage['stufe'] > 1)<span class="badge {{ $lage['stufe'] === 3 ? 'badge-wartet' : 'badge-rec' }}">{{ $lage['grund'] }}</span>@endif
             </div>

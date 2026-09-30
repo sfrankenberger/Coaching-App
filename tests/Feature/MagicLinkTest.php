@@ -138,7 +138,7 @@ class MagicLinkTest extends TestCase
         $this->assertSame('079 123 45 67', $this->anna->fresh()->phone);
 
         $this->actingAs($this->anna)->post('http://a.test/profil/benachrichtigungen', ['termine' => 1])->assertRedirect();
-        $this->assertSame(['termine' => true, 'abendmail' => false, 'aufgaben' => false], $this->anna->membershipIn($this->a)->setting('notifications'));
+        $this->assertSame(['termine' => true, 'abendmail' => false, 'aufgaben' => false, 'fragen' => false], $this->anna->membershipIn($this->a)->setting('notifications'));
     }
 
     public function test_gast_wird_zur_anmeldung_geschickt(): void

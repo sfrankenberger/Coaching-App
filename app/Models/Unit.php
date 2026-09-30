@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use App\Content\Concerns\HasTopics;
+use App\Recordings\Vimeo;
 use App\Support\Protokoll\Protokolliert;
 use App\Support\Suche;
 use App\Tenancy\Concerns\BelongsToTenant;
@@ -71,6 +72,20 @@ class Unit extends Model
     public function videoList(): array
     {
         return array_values(array_filter((array) $this->videos, fn ($v) => filled($v['url'] ?? null)));
+    }
+
+    /** Abschrift und Zusammenfassung je Vimeo-Video (das Feld videos bleibt die Quelle). */
+    public function videoDaten(): HasMany
+    {
+        return $this->hasMany(UnitVideo::class);
+    }
+
+    /** Die aufbereiteten Daten zu einer Videoadresse, wenn es welche gibt. */
+    public function videoInfo(?string $url): ?UnitVideo
+    {
+        $id = Vimeo::nummerAus($url);
+
+        return $id ? $this->videoDaten->firstWhere('vimeo_id', $id) : null;
     }
 
     /** Nur die Uebungsteile, auf die geantwortet werden kann. */

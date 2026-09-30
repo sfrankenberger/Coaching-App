@@ -14,8 +14,8 @@
             </div>
         @else
             <p style="margin:0"><strong>Noch nicht verbunden.</strong> Speichere Client-ID und Client-Secret, dann "Mit bexio verbinden". Oder trage einen festen Zugriffstoken ein.</p>
-            <p class="text-gray-500" style="margin:6px 0 0">Im bexio-Entwicklerportal muss diese Rückkehr-Adresse eingetragen sein: <code>{{ $stand['rueckkehr'] }}</code></p>
         @endif
+        <p class="text-gray-500" style="margin:8px 0 0">Redirect-URL für das bexio-Entwicklerportal (dort bei der App eintragen): <code style="user-select:all">{{ $stand['rueckkehr'] }}</code></p>
     </div>
 
     <form wire:submit="speichern">

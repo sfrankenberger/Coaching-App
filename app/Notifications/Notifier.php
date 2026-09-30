@@ -133,8 +133,9 @@ class Notifier
     {
         return match ($anlass) {
             'termin', 'termin_neu' => (bool) $membership->setting('notifications.termine', true),
-            'aufgabe_erinnerung' => (bool) $membership->setting('notifications.aufgaben', true),
+            'aufgabe_erinnerung', 'aufgabe_kopie' => (bool) $membership->setting('notifications.aufgaben', true),
             'abendmail' => (bool) $membership->setting('notifications.abendmail', true),
+            'frage_neu', 'fragentag' => (bool) $membership->setting('notifications.fragen', true),
             default => true,
         };
     }

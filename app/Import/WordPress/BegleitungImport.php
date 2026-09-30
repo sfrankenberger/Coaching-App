@@ -13,7 +13,9 @@ use App\Models\Message;
 use App\Models\Note;
 use App\Models\Program;
 use App\Models\ProgramStep;
+use App\Models\Projekt;
 use App\Models\Question;
+use App\Models\QuestionState;
 use App\Models\Reaction;
 use App\Models\Reflection;
 use App\Models\Resource;
@@ -50,6 +52,9 @@ class BegleitungImport
     /** WordPress-Post-ID => [typ, id] fuer Verweise (chat_ref, Kommentare) */
     protected array $elementMap = [];
 
+    /** WordPress-User-ID => [alte Projekt-ID => projekte.id] */
+    protected array $projektMap = [];
+
     protected $report = null;
 
     public function __construct(protected Tenant $tenant, protected WordPressSource $source, protected bool $dryRun = false)
@@ -79,6 +84,7 @@ class BegleitungImport
 
         $this->importEvents();
         $this->importResources();
+        $this->importProjekte();
         $this->importTasks();
         $this->importNotes();
         $this->importReflections();
@@ -367,8 +373,11 @@ class BegleitungImport
                 'due_at' => $dueAt,
                 'due_time' => preg_match('~^\d{2}:\d{2}$~', (string) $m('af_zeit')) ? $m('af_zeit') : null,
                 'is_daily' => (bool) $m('af_taeglich'),
+                'kind' => array_key_exists((string) $m('af_art'), Task::KINDS) ? (string) $m('af_art') : 'haken',
+                'weekday' => ($wt = array_search((string) $m('af_tag'), ['mo', 'di', 'mi', 'do', 'fr', 'sa', 'so'], true)) === false ? null : $wt + 1,
                 'visibility' => $this->visibility($sicht),
                 'is_pinned' => (bool) $m('el_pin'),
+                'project_id' => $this->projektId($authorWp, (string) $m('el_projekt')),
             ];
 
             $this->stats['aufgaben']++;
@@ -401,6 +410,49 @@ class BegleitungImport
         }
     }
 
+    /* ---------- Projekte (usermeta lea_projekte) ---------- */
+
+    protected function importProjekte(): void
+    {
+        foreach ($this->source->userMetaByKey('lea_projekte') as $wpUid => $roh) {
+            $author = $this->userMap[(int) $wpUid] ?? null;
+            $liste = @unserialize((string) $roh);
+            if (! $author || ! is_array($liste)) {
+                continue;
+            }
+            foreach ($liste as $i => $p) {
+                if (! is_array($p) || blank($p['name'] ?? null) || blank($p['id'] ?? null)) {
+                    continue;
+                }
+                $this->stats['projekte'] = ($this->stats['projekte'] ?? 0) + 1;
+                $this->say("Projekt {$p['name']} von #{$wpUid}");
+                if ($this->dryRun) {
+                    continue;
+                }
+                $sicht = (string) ($p['sicht'] ?? 'privat');
+                $projekt = Projekt::firstOrNew(['legacy_id' => $wpUid.':'.$p['id']]);
+                $projekt->fill([
+                    'user_id' => $author,
+                    'name' => mb_substr((string) $p['name'], 0, 80),
+                    'worum' => filled($p['worum'] ?? null) ? (string) $p['worum'] : null,
+                    'farbe' => preg_match('/^#[0-9a-fA-F]{6}$/', (string) ($p['farbe'] ?? '')) ? $p['farbe'] : Projekt::FARBEN[0],
+                    'icon' => preg_replace('/^fa-/', '', (string) ($p['icon'] ?? 'fa-lightbulb')) ?: 'lightbulb',
+                    'schritt' => array_key_exists((string) ($p['schritt'] ?? ''), Projekt::SCHRITTE) ? $p['schritt'] : null,
+                    'visibility' => $this->visibility($sicht),
+                    'program_id' => $sicht === 'kurs' && ($pr = $this->programMap[(int) ($p['kurs'] ?? 0)] ?? null) ? $pr->id : null,
+                    'position' => (int) $i,
+                ])->save();
+                $this->projektMap[(int) $wpUid][(string) $p['id']] = $projekt->id;
+            }
+        }
+    }
+
+    /** projekte.id zu einer alten Projekt-ID (el_projekt) der Person, oder null. */
+    protected function projektId(int $wpUid, ?string $alt): ?int
+    {
+        return $alt ? ($this->projektMap[$wpUid][$alt] ?? null) : null;
+    }
+
     /* ---------- Notizen ---------- */
 
     protected function importNotes(): void
@@ -428,6 +480,9 @@ class BegleitungImport
                 'visibility' => $this->visibility((string) $m('el_sicht', 'privat')),
                 'program_id' => ($p = $this->programMap[(int) $m('notiz_kurs')] ?? $this->programMap[(int) $m('el_kurs')] ?? null) ? $p->id : null,
                 'is_pinned' => (bool) $m('el_pin'),
+                'project_id' => $this->projektId((int) $post->post_author, (string) $m('el_projekt')),
+                'image_url' => str_starts_with((string) $m('notiz_bild'), 'http') ? (string) $m('notiz_bild') : null,
+                'link_url' => str_starts_with((string) $m('notiz_link'), 'http') ? (string) $m('notiz_link') : null,
             ])->save();
             $note->timestamps = false;
             $note->forceFill(['created_at' => $this->lokal($post->post_date), 'updated_at' => $this->lokal($post->post_modified ?: $post->post_date)])->saveQuietly();
@@ -463,6 +518,7 @@ class BegleitungImport
                 'focus' => trim((string) $m('refl_fokus')) ?: null,
                 'visibility' => $visibility,
                 'shared_at' => $visibility !== 'private' ? ($r->shared_at ?? $this->lokal($post->post_modified ?: $post->post_date)) : null,
+                'project_id' => $this->projektId((int) $post->post_author, (string) $m('el_projekt')),
             ])->save();
             $r->forceFill(['created_at' => $this->lokal($post->post_date)])->saveQuietly();
             $this->elementMap[$id] = ['reflection', $r->id];
@@ -536,6 +592,29 @@ class BegleitungImport
         }
     }
 
+    /** Callwuensche und Reaktionen an der Frage, wer folgt oder stumm ist. */
+    protected function importFrageMeta(int $wpId, int $questionId): void
+    {
+        $emojis = ['ja' => 'ja', 'auchich' => 'auchich', 'call' => Question::CALLWUNSCH, 'danke' => 'herz'];
+        foreach ((array) WordPressSource::unserialize($this->source->meta($wpId, 'lea_kr_reaktionen')) as $key => $users) {
+            if (! isset($emojis[$key])) {
+                continue;
+            }
+            foreach ((array) $users as $wpUid) {
+                if ($uid = $this->userMap[(int) $wpUid] ?? null) {
+                    Reaction::firstOrCreate(['user_id' => $uid, 'reactable_type' => 'question', 'reactable_id' => $questionId, 'emoji' => $emojis[$key]]);
+                }
+            }
+        }
+        foreach (['lea_kr_folgen' => true, 'lea_kr_stumm' => false] as $key => $folgen) {
+            foreach ((array) WordPressSource::unserialize($this->source->meta($wpId, $key)) as $wpUid) {
+                if ($uid = $this->userMap[(int) $wpUid] ?? null) {
+                    QuestionState::updateOrCreate(['question_id' => $questionId, 'user_id' => $uid], ['folgen' => $folgen]);
+                }
+            }
+        }
+    }
+
     protected function importComments(): void
     {
         if ($this->dryRun || ! $this->source->hasTable('comments')) {
@@ -545,8 +624,11 @@ class BegleitungImport
         if ($ids === []) {
             return;
         }
+        $kommentarMap = [];
+        $eltern = [];
         foreach ($this->source->db()->table('comments')->whereIn('comment_post_ID', $ids)->where('comment_approved', '1')->orderBy('comment_ID')->get() as $c) {
             [$type, $elId] = $this->elementMap[(int) $c->comment_post_ID];
+            $eltern[(int) $c->comment_ID] = (int) ($c->comment_parent ?? 0);
             $uid = $this->userMap[(int) $c->user_id] ?? null;
             if (! $uid || ! $elId || trim((string) $c->comment_content) === '') {
                 continue;
@@ -554,10 +636,45 @@ class BegleitungImport
             $comment = Comment::firstOrNew(['legacy_id' => (string) $c->comment_ID]);
             $comment->fill(['user_id' => $uid, 'commentable_type' => $type, 'commentable_id' => $elId, 'body' => trim($c->comment_content)])->save();
             $comment->forceFill(['created_at' => $this->lokal($c->comment_date)])->saveQuietly();
+            $kommentarMap[(int) $c->comment_ID] = $comment;
             $this->stats['kommentare']++;
+        }
+        // Antwort auf Antwort (eine Ebene), beste Antwort und Herzen aus dem alten Kursraum
+        $meta = $this->source->hasTable('commentmeta') ? $this->source->db()->table('commentmeta')->whereIn('comment_id', array_keys($kommentarMap ?? []))->whereIn('meta_key', ['lea_kr_beste', 'lea_kr_herz'])->get()->groupBy('comment_id') : collect();
+        foreach ($kommentarMap ?? [] as $wpCid => $comment) {
+            $parent = (int) ($eltern[$wpCid] ?? 0);
+            $daten = [];
+            if ($parent && isset($kommentarMap[$parent]) && ! $kommentarMap[$parent]->parent_id) {
+                $daten['parent_id'] = $kommentarMap[$parent]->id;
+            }
+            foreach ($meta->get($wpCid, collect()) as $m) {
+                if ($m->meta_key === 'lea_kr_beste' && $m->meta_value) {
+                    $daten['is_best'] = true;
+                }
+                if ($m->meta_key === 'lea_kr_herz') {
+                    foreach ((array) WordPressSource::unserialize($m->meta_value) as $wpUid) {
+                        if ($uid = $this->userMap[(int) $wpUid] ?? null) {
+                            Reaction::firstOrCreate(['user_id' => $uid, 'reactable_type' => 'comment', 'reactable_id' => $comment->id, 'emoji' => 'herz']);
+                        }
+                    }
+                }
+            }
+            if ($daten) {
+                $comment->forceFill($daten)->saveQuietly();
+            }
+        }
+        // Letzte Antwort je Frage, fuer "Neue Antworten"
+        foreach ($ids as $wpId) {
+            [$type, $elId] = $this->elementMap[$wpId];
+            if ($type === 'question' && $elId && ($q = Question::find($elId))) {
+                $q->forceFill(['last_answer_at' => $q->answers()->max('created_at')])->saveQuietly();
+            }
         }
         foreach ($ids as $wpId) {
             [$type, $elId] = $this->elementMap[$wpId];
+            if ($type === 'question' && $elId) {
+                $this->importFrageMeta($wpId, $elId);
+            }
             $reaktionen = WordPressSource::unserialize($this->source->meta($wpId, 'el_reaktionen'));
             if (! is_array($reaktionen) || ! $elId) {
                 continue;

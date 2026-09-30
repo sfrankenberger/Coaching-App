@@ -31,7 +31,7 @@ class Lage
         $team = $this->chat->teamIds();
         $wartet = $this->wartende($team);
 
-        return Membership::query()->where('status', 'active')->whereIn('role', ['member', 'client'])->with('user')->get()
+        return Membership::query()->where('status', 'active')->whereIn('role', ['member', 'client', 'guest'])->with('user')->get()
             ->filter(fn (Membership $m) => $m->user)
             ->map(fn (Membership $m) => $this->fuer($m, $wartet))
             ->sortBy([['stufe', 'desc'], ['seit', 'asc']])->values();
@@ -123,7 +123,7 @@ class Lage
     public function kontingent(User $user): ?array
     {
         $mitglied = ProgramMember::where('user_id', $user->id)->pluck('settings', 'program_id');
-        $programme = Program::where('type', 'one_on_one')->whereIn('id', $mitglied->keys())->get();
+        $programme = Program::whereIn('id', $mitglied->keys())->get()->filter(fn (Program $p) => (int) ($p->settings['sitzungen_gesamt'] ?? 0) > 0 || $p->type === 'one_on_one');
         $gesamt = 0;
         foreach ($programme as $p) {
             $gesamt += (int) ($p->settings['sitzungen_gesamt'] ?? 0) + (int) (($mitglied[$p->id] ?? [])['sitzungen_extra'] ?? 0);

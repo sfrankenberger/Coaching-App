@@ -8,6 +8,7 @@ use App\Models\Answer;
 use App\Models\Comment;
 use App\Models\Membership;
 use App\Models\Note;
+use App\Models\Projekt;
 use App\Models\Reflection;
 use App\Models\Task;
 use App\Models\User;
@@ -28,6 +29,7 @@ class Kommentare
         'note' => Note::class,
         'task' => Task::class,
         'answer' => Answer::class,
+        'projekt' => Projekt::class,
     ];
 
     public function __construct(protected Notifier $notifier, protected Chat $chat) {}
@@ -52,13 +54,19 @@ class Kommentare
             $item instanceof Note => in_array($item->visibility, ['coach', 'program', 'all'], true),
             $item instanceof Task => $item->visibility !== 'private' || $item->assigned_by !== null,
             $item instanceof Answer => (bool) $item->shared_with_coach,
+            $item instanceof Projekt => $item->visibility !== 'private',
             default => false,
         };
     }
 
     public function darf(User $user, Model $item): bool
     {
-        return $item->user_id === $user->id || ($user->canManageCurrentTenant() && $this->geteilt($item));
+        if ($item->user_id === $user->id || ($user->canManageCurrentTenant() && $this->geteilt($item))) {
+            return true;
+        }
+
+        // Kursmitglieder auf Geteiltem aus dem Kurs oder der Community
+        return in_array($item->visibility ?? 'private', ['program', 'all'], true) && app(Geteilt::class)->darfSehen($user, $item);
     }
 
     public function schreiben(User $user, Model $item, string $text): Comment
@@ -84,8 +92,9 @@ class Kommentare
                 ));
             }
         } else {
+            $vomTeam = $this->chat->teamIds()->contains($user->id);
             $this->notifier->send([$item->user_id], new Nachricht(
-                titel: $user->vorname().' hat dir zurückgeschrieben',
+                titel: $user->vorname().($vomTeam ? ' hat dir zurückgeschrieben' : ' hat auf deinen Eintrag geantwortet'),
                 text: Str::limit($kommentar->body, 140),
                 url: $this->urlFuerPerson($item),
                 anlass: 'kommentar',
@@ -104,6 +113,7 @@ class Kommentare
             $item instanceof Reflection => route('reflexion.index').'#reflexion-'.$item->id,
             $item instanceof Note => route('notizen.index').'#notiz-'.$item->id,
             $item instanceof Task => route('aufgaben.index').'#aufgabe-'.$item->id,
+            $item instanceof Projekt => route('projekte.index', ['ansicht' => 'liste']).'#projekt-'.$item->id,
             $item instanceof Answer && $item->exercise?->unit?->program => route('kurse.einheit', [$item->exercise->unit->program, $item->exercise->unit]).'#uebung-'.$item->exercise_id,
             default => route('home'),
         };
