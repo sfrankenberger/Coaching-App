@@ -75,7 +75,7 @@ class ArbeitsplatzTest extends TestCase
 
         // Umschalten: wie eine Teilnehmerin, dann zurueck
         $this->actingAs($this->lea)->post('http://a.test/ansicht', ['ansicht' => 'teilnehmer'])->assertRedirect('http://a.test');
-        $this->actingAs($this->lea)->get('http://a.test/')->assertOk()->assertSee('Hallo Lea')->assertSee('Für dich als Coach')->assertSee('Zurück zum Arbeitsplatz')->assertSee('Meine Sachen')
+        $this->actingAs($this->lea)->get('http://a.test/')->assertOk()->assertSee('Hallo Lea')->assertDontSee('Für dich als Coach')->assertSee('Zurück zum Arbeitsplatz')->assertSee('Meine Sachen')
             ->assertDontSee('Meine Zeitleiste')->assertDontSee('Meine Projekte')   // vorerst ausgeschaltet
             ->assertSee('modus-coachee', false)->assertSee('Als Teilnehmerin');   // Kennzeichnung im Kopf
         // In der Teilnehmer-Ansicht fuehrt das Gespraech zum eigenen 1:1, nicht zur Liste aller Gespraeche

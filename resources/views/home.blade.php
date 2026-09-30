@@ -96,12 +96,4 @@
         <p class="hinweis">Gerade ist nichts offen. Schau in deine Sachen, wenn du zurückblicken magst.</p>
     @endif
 
-    @if ($person->canManageCurrentTenant())
-        <h2 class="abschnitt"><i class="fa-solid fa-user-group"></i>Für dich als Coach</h2>
-        <div class="karte">
-            <p class="x m-0 mb-3">{{ $personen }} aktive Personen. Kurse, Termine, Material und Impulse pflegst du im Coach-Bereich.</p>
-            <a href="{{ route('coachees.index') }}" class="knopf"><i class="fa-solid fa-people-group"></i>Coachees</a>
-            <a href="/coach" class="knopf knopf-leise">Coach-Bereich</a>
-        </div>
-    @endif
 </x-layouts.app>

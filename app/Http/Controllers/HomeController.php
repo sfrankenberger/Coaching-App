@@ -6,7 +6,6 @@ use App\Chat\Chat;
 use App\Coach\Ansicht;
 use App\Coach\Arbeitsliste;
 use App\Content\Inhalte;
-use App\Models\Membership;
 use App\Models\Program;
 use App\Models\ProgramStep;
 use App\Models\Task;
@@ -75,7 +74,6 @@ class HomeController extends Controller
             'offen' => Task::where('user_id', $user->id)->open()->count(),
             'ungelesen' => $this->chat->unreadFor($user),
             'impuls' => $this->inhalte->postsQuery($user)->orderByDesc('published_at')->first(),
-            'personen' => $user->canManageCurrentTenant() ? Membership::where('status', 'active')->count() : null,
         ]);
     }
 
