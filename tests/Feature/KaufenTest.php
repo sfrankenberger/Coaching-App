@@ -88,7 +88,9 @@ class KaufenTest extends TestCase
         $r->assertSee('Hybrid-Coaching Herbst')->assertSee('990.00 CHF')->assertSee("1'200.00 CHF")->assertSee('Aktion')->assertSee('Auf Rechnung kaufen')->assertSee('Dein Name');
         $this->get('http://a.test/kaufen/hybrid-coaching-herbst?w=EUR')->assertOk()->assertSee("1'250.00 EUR");
 
-        $this->post('http://a.test/kaufen/hybrid-coaching-herbst', ['name' => 'Nora Neu', 'email' => 'Nora@Test.ch', 'waehrung' => 'CHF', 'zahlung' => 'rechnung', 'ref' => 'herbst-webinar', 'agb' => 1])
+        // Ohne Widerrufsverzicht und Rechnungsadresse geht es nicht
+        $this->post('http://a.test/kaufen/hybrid-coaching-herbst', ['name' => 'Nora Neu', 'email' => 'Nora@Test.ch', 'waehrung' => 'CHF', 'zahlung' => 'rechnung', 'agb' => 1])->assertSessionHasErrors(['widerruf', 'strasse']);
+        $this->post('http://a.test/kaufen/hybrid-coaching-herbst', ['name' => 'Nora Neu', 'email' => 'Nora@Test.ch', 'waehrung' => 'CHF', 'zahlung' => 'rechnung', 'ref' => 'herbst-webinar', 'agb' => 1, 'widerruf' => 1, 'strasse' => 'Weg 1', 'plz' => '8000', 'ort' => 'Zürich', 'land' => 'CH'])
             ->assertRedirect('http://a.test/kaufen/hybrid-coaching-herbst/danke');
         $nora = User::where('email', 'nora@test.ch')->first();
         $this->assertNotNull($nora);
@@ -101,6 +103,9 @@ class KaufenTest extends TestCase
             $this->assertSame('kasse:herbst-webinar', $v->herkunft);
             $this->assertSame('RE-0701', $v->rechnung_nr);
             $this->assertNull($v->created_by);
+            $this->assertNotNull($v->settings['widerruf_verzicht_at']);
+            $this->assertSame('Zürich', $v->settings['adresse']['ort']);
+            $this->assertSame('CHF', Membership::where('user_id', $nora->id)->first()->setting('waehrung'));
             $this->assertTrue(Entitlement::where('user_id', $nora->id)->first()->isCurrent());
         });
         Mail::assertSent(RechnungMail::class, fn ($m) => $m->hasTo('nora@test.ch'));
@@ -117,7 +122,7 @@ class KaufenTest extends TestCase
 
         $this->actingAs($anna)->get('http://a.test/angebote')->assertOk()->assertSee('Hybrid-Coaching Herbst')->assertSee('Kaufen')->assertDontSee('Nur über Link')->assertDontSee('Fremdes Angebot');
         $this->actingAs($anna)->get('http://a.test/kaufen/hybrid-coaching-herbst')->assertOk()->assertSee('Du bist angemeldet als')->assertDontSee('Dein Name');
-        $this->actingAs($anna)->post('http://a.test/kaufen/hybrid-coaching-herbst', ['zahlung' => 'rechnung', 'agb' => 1])->assertRedirect('http://a.test/kaufen/hybrid-coaching-herbst/danke');
+        $this->actingAs($anna)->post('http://a.test/kaufen/hybrid-coaching-herbst', ['zahlung' => 'rechnung', 'agb' => 1, 'widerruf' => 1, 'strasse' => 'Weg 1', 'plz' => '8000', 'ort' => 'Zürich'])->assertRedirect('http://a.test/kaufen/hybrid-coaching-herbst/danke');
         $this->assertTrue(app(CurrentTenant::class)->run($this->a, fn () => Entitlement::where('user_id', $anna->id)->first()->isCurrent()), 'Zugang auch wenn bexio ausfaellt');
         $this->actingAs($anna)->get('http://a.test/angebote')->assertOk()->assertSee('Hast du schon');
         $this->actingAs($anna)->get('http://a.test/kaufen/hybrid-coaching-herbst')->assertOk()->assertSee('Das hast du schon');

@@ -3,6 +3,7 @@
 namespace App\Shop;
 
 use App\Auth\MagicLink;
+use App\Chat\Chat;
 use App\Mail\RechnungMail;
 use App\Models\CoachNote;
 use App\Models\Entitlement;
@@ -10,6 +11,8 @@ use App\Models\Offer;
 use App\Models\Program;
 use App\Models\User;
 use App\Models\Verkauf;
+use App\Notifications\Nachricht;
+use App\Notifications\Notifier;
 use App\Programs\ProgramAccess;
 use App\Tenancy\CurrentTenant;
 use Illuminate\Support\Facades\Log;
@@ -37,8 +40,9 @@ class Verkaufen
         $betrag = round((float) ($daten['betrag'] ?? 0), 2);
         $art = $betrag > 0 ? (string) ($daten['zahlungsart'] ?? 'rechnung') : 'kostenlos';
         $b = Buchhaltung::fuer($tenant);
-        $rechnung = $betrag > 0 && ($daten['rechnung'] ?? false) && $b && $b->kannSchreiben();
-        $wartenAufZahlung = $art === 'rechnung' && $rechnung && $tenant->setting('buchhaltung.zugang_bei_rechnung', 'sofort') === 'bezahlt';
+        // Bei Stripe kommt die Rechnung (als Quittung) erst mit der Zahlung
+        $rechnung = $betrag > 0 && $art !== 'stripe' && ($daten['rechnung'] ?? false) && $b && $b->kannSchreiben();
+        $wartenAufZahlung = $art === 'stripe' || ($art === 'rechnung' && $rechnung && $tenant->setting('buchhaltung.zugang_bei_rechnung', 'sofort') === 'bezahlt');
 
         $ende = filled($daten['tage'] ?? null) ? now()->addDays((int) $daten['tage']) : ($offer->access_days ? now()->addDays((int) $offer->access_days) : null);
         $ref = 'verkauf-'.now()->format('YmdHis').'-'.$user->id;
@@ -55,24 +59,18 @@ class Verkaufen
         $v = Verkauf::create([
             'user_id' => $user->id, 'offer_id' => $offer->id, 'entitlement_id' => $e->id, 'created_by' => $verkaeufer?->id,
             'title' => $offer->title, 'betrag' => $betrag, 'waehrung' => strtoupper((string) ($daten['waehrung'] ?? $tenant->currency ?? 'CHF')),
-            'zahlungsart' => $art, 'status' => $art === 'rechnung' ? 'offen' : 'bezahlt', 'bezahlt_am' => $art === 'rechnung' ? null : now(),
+            'zahlungsart' => $art, 'status' => in_array($art, ['rechnung', 'stripe'], true) ? 'offen' : 'bezahlt', 'bezahlt_am' => in_array($art, ['rechnung', 'stripe'], true) ? null : now(),
             'herkunft' => $daten['herkunft'] ?? 'dossier', 'notiz' => filled($daten['notiz'] ?? null) ? trim($daten['notiz']) : null,
-            'settings' => ['sitzungen' => (int) ($daten['sitzungen'] ?? 0), 'warten_auf_zahlung' => $wartenAufZahlung],
+            'settings' => ['sitzungen' => (int) ($daten['sitzungen'] ?? 0), 'warten_auf_zahlung' => $wartenAufZahlung, 'rechnung_gewuenscht' => (bool) ($daten['rechnung'] ?? false)] + (array) ($daten['settings'] ?? []),
         ]);
-
-        $fehler = null;
-        if ($rechnung) {
-            try {
-                $r = $b->rechnungAnlegen($user, $offer->title, [['text' => $offer->title, 'betrag' => $betrag, 'anzahl' => 1]], $v->waehrung, $art === 'bezahlt', 'app-verkauf-'.$v->id);
-                $v->forceFill(['rechnung_id' => (string) $r['id'], 'rechnung_nr' => $r['nr'] ?: null, 'rechnung_link' => $r['link'] ?: null, 'faellig_am' => $art === 'rechnung' ? $r['faellig'] : null])->save();
-            } catch (RuntimeException $ex) {
-                report($ex);
-                $fehler = $ex->getMessage();
-                $v->forceFill(['settings' => array_merge($v->settings ?? [], ['rechnung_fehler' => $fehler])])->save();
-            }
+        // Waehrung der Person merken (wie im alten Bereich je Kundin)
+        if ($m) {
+            $m->forceFill(['settings' => array_merge($m->settings ?? [], ['waehrung' => $v->waehrung])])->saveQuietly();
         }
 
-        if ($daten['mail'] ?? false) {
+        $fehler = $rechnung ? $this->rechnungAnlegen($v, $b, $art === 'bezahlt') : null;
+
+        if (($daten['mail'] ?? false) && $art !== 'stripe') {
             $this->mailen($v, $b, ! $wartenAufZahlung);
         }
 
@@ -90,6 +88,76 @@ class Verkaufen
         }
 
         return $v;
+    }
+
+    /** Rechnung in der Buchhaltung anlegen; bei Stoerung wird der Fehler am Verkauf vermerkt und spaeter nachgeholt. */
+    public function rechnungAnlegen(Verkauf $v, ?Buchhaltung $b, bool $bezahlt): ?string
+    {
+        if (! $b || ! $b->kannSchreiben() || $v->rechnung_id || (float) $v->betrag <= 0) {
+            return null;
+        }
+        try {
+            $r = $b->rechnungAnlegen($v->user, $v->title, [['text' => $v->title, 'betrag' => (float) $v->betrag, 'anzahl' => 1]], $v->waehrung, $bezahlt, 'app-verkauf-'.$v->id);
+            $s = $v->settings ?? [];
+            unset($s['rechnung_fehler'], $s['rechnung_versuche']);
+            $v->forceFill(['rechnung_id' => (string) $r['id'], 'rechnung_nr' => $r['nr'] ?: null, 'rechnung_link' => $r['link'] ?: null, 'faellig_am' => $bezahlt ? null : $r['faellig'], 'settings' => $s])->save();
+
+            return null;
+        } catch (RuntimeException $ex) {
+            report($ex);
+            $v->forceFill(['settings' => array_merge($v->settings ?? [], ['rechnung_fehler' => $ex->getMessage(), 'rechnung_versuche' => (int) ($v->settings['rechnung_versuche'] ?? 0) + 1])])->save();
+
+            return $ex->getMessage();
+        }
+    }
+
+    /**
+     * Rechnung nachholen, wenn die Buchhaltung beim Verkauf gestoert war (wie E31): gelingt es, geht die
+     * Mail mit PDF raus; nach drei Fehlversuchen bekommt das Team eine Warnung. Gibt true zurueck, wenn nachgeholt.
+     */
+    public function rechnungNachholen(Verkauf $v): bool
+    {
+        if ($v->rechnung_id || empty($v->settings['rechnung_fehler']) || $v->status === 'storniert') {
+            return false;
+        }
+        $b = Buchhaltung::fuer($this->current->getOrFail());
+        $fehler = $this->rechnungAnlegen($v, $b, $v->status === 'bezahlt');
+        if ($fehler === null && $v->rechnung_id) {
+            if (! empty($v->settings['mail_offen'])) {
+                $this->mailen($v, $b, ! ($v->settings['warten_auf_zahlung'] ?? false));
+                $v->forceFill(['settings' => array_merge($v->settings ?? [], ['mail_offen' => false])])->save();
+            }
+
+            return true;
+        }
+        if ((int) ($v->settings['rechnung_versuche'] ?? 0) === 3) {
+            app(Notifier::class)->send(app(Chat::class)->teamIds(), new Nachricht(
+                titel: 'Rechnung nicht angelegt: '.$v->user?->name,
+                text: $v->title.', '.$v->betragText()."\n".($v->settings['rechnung_fehler'] ?? '')."\nDie App versucht es weiter, bitte in der Buchhaltung nachschauen.",
+                url: ($mm = $v->user?->membershipIn()) ? route('coachees.show', $mm) : url('/coach/buchhaltung'), anlass: 'system', tag: 'rechnung-fehler-'.$v->id, mailImmer: true,
+            ));
+        }
+
+        return false;
+    }
+
+    /** Zahlung ueber Stripe eingegangen: Zugang, Quittung in der Buchhaltung, Mail mit PDF und Anmeldelink, Team-Hinweis. */
+    public function stripeBezahlt(Verkauf $v, array $session): void
+    {
+        if ($v->status === 'bezahlt') {
+            return;
+        }
+        $v->forceFill(['settings' => array_merge($v->settings ?? [], ['stripe_payment_intent' => $session['payment_intent'] ?? null, 'stripe_session_id' => $session['id'] ?? ($v->settings['stripe_session_id'] ?? null)])])->save();
+        $this->bezahlt($v);
+        $b = Buchhaltung::fuer($this->current->getOrFail());
+        if ($v->settings['rechnung_gewuenscht'] ?? true) {
+            $this->rechnungAnlegen($v, $b, true);
+        }
+        $this->mailen($v, $b, true);
+        app(Notifier::class)->send(app(Chat::class)->teamIds(), new Nachricht(
+            titel: 'Bezahlt über Stripe: '.$v->user?->name, text: $v->title.', '.$v->betragText().($v->herkunft ? "\nKam über: ".$v->herkunft : ''),
+            url: ($mm = $v->user?->membershipIn()) ? route('coachees.show', $mm) : url('/coach'), anlass: 'system', tag: 'verkauf-'.$v->id,
+        ));
     }
 
     /**
@@ -148,7 +216,7 @@ class Verkaufen
         if ($v->status === 'bezahlt') {
             return;
         }
-        $v->forceFill(['status' => 'bezahlt', 'bezahlt_am' => now()])->save();
+        $v->forceFill(['status' => 'bezahlt', 'bezahlt_am' => now(), 'settings' => array_merge($v->settings ?? [], ['warten_auf_zahlung' => false])])->save();
         $e = $v->entitlement;
         if ($e && $e->status === 'pending' && $v->offer) {
             $this->zugang->grant($v->user, $v->offer, $e->source, $e->source_ref, $e->starts_at ?? now(), $e->ends_at, true);

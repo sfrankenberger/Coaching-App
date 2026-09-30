@@ -74,7 +74,7 @@ class DossierController extends Controller
             'ki' => Anthropic::configured($tenant),
             'verkaeufe' => Verkauf::where('user_id', $user->id)->whereNotNull('entitlement_id')->get()->keyBy('entitlement_id'),
             'buchhaltung' => ($bh = Buchhaltung::fuer($tenant)) && $bh->verbunden() ? $bh : null,
-            'waehrung' => strtoupper((string) ($tenant?->currency ?: 'CHF')),
+            'waehrung' => strtoupper((string) ($membership->setting('waehrung') ?: ($tenant?->currency ?: 'CHF'))),
         ];
 
         $daten += match ($reiter) {

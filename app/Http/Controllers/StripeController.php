@@ -2,6 +2,8 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Verkauf;
+use App\Shop\Verkaufen;
 use App\Tenancy\CurrentTenant;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -13,7 +15,7 @@ use Illuminate\Support\Facades\Log;
  */
 class StripeController extends Controller
 {
-    public function webhook(Request $request, CurrentTenant $current): JsonResponse
+    public function webhook(Request $request, CurrentTenant $current, Verkaufen $verkaufen): JsonResponse
     {
         $secret = (string) $current->get()?->setting('stripe.webhook_secret');
         abort_if($secret === '', 404);
@@ -21,6 +23,16 @@ class StripeController extends Controller
 
         $event = $request->json()->all();
         Log::info('Stripe-Webhook', ['tenant' => $current->id(), 'type' => $event['type'] ?? null, 'id' => $event['id'] ?? null]);
+
+        $typ = (string) ($event['type'] ?? '');
+        $obj = (array) ($event['data']['object'] ?? []);
+        if (in_array($typ, ['checkout.session.completed', 'checkout.session.async_payment_succeeded'], true) && ($obj['payment_status'] ?? null) === 'paid') {
+            $id = (int) ($obj['metadata']['verkauf_id'] ?? $obj['client_reference_id'] ?? 0);
+            $v = $id ? Verkauf::find($id) : null;
+            if ($v && $v->zahlungsart === 'stripe' && (string) ($obj['metadata']['tenant_id'] ?? $current->id()) === (string) $current->id()) {
+                $verkaufen->stripeBezahlt($v, $obj);
+            }
+        }
 
         return response()->json(['received' => true]);
     }

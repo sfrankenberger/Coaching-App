@@ -5,11 +5,19 @@
         <p class="lesetext m-0">
             @if ($v->zahlungsart === 'kostenlos')
                 {{ $offer->title }} ist für dich freigeschaltet.
+            @elseif ($v->zahlungsart === 'stripe')
+                @if ($v->status === 'bezahlt')
+                    Deine Zahlung über {{ $v->betragText() }} ist da. {{ $offer->title }} ist freigeschaltet, die Quittung kommt per Mail.
+                @else
+                    Deine Zahlung wird noch bestätigt. Sobald sie da ist, öffnet sich dein Zugang und du bekommst die Quittung per Mail.
+                @endif
             @else
                 {{ $offer->title }} ist bestellt. Deine Rechnung über {{ $v->betragText() }} kommt per Mail{{ $v->rechnung_link ? ', online bezahlen geht sofort' : '' }}.
             @endif
         </p>
-        @if (! ($v->settings['warten_auf_zahlung'] ?? false))
+        @if ($v->zahlungsart === 'stripe')
+            @if ($v->status === 'bezahlt')<p class="lesetext m-0 mt-2">{{ $angemeldet ? 'Dein Zugang ist offen.' : 'In der Mail ist dein Anmeldelink, ein Passwort brauchst du nicht.' }}</p>@endif
+        @elseif (! ($v->settings['warten_auf_zahlung'] ?? false))
             <p class="lesetext m-0 mt-2">{{ $angemeldet ? 'Dein Zugang ist offen.' : 'In der Mail ist dein Anmeldelink, ein Passwort brauchst du nicht.' }}</p>
         @else
             <p class="lesetext m-0 mt-2">Sobald die Zahlung da ist, öffnet sich dein Zugang, du bekommst Bescheid.</p>

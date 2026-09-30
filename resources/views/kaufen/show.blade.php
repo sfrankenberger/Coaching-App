@@ -26,14 +26,24 @@
 
     @if ($hat)
         <x-leer icon="circle-check" knopf="Zu deinen Kursen" :href="route('kurse.index')">Das hast du schon. Dein Zugang ist offen.</x-leer>
-    @elseif (! $offer->is_free && ! $rechnung)
-        <x-leer icon="envelope">Die Bezahlung online kommt bald. Schreib uns kurz, dann bekommst du den Zugang von Hand.</x-leer>
+    @elseif (! $offer->is_free && ! $rechnung && ! $stripe)
+        <x-leer icon="envelope">Die Kasse ist gerade nicht bereit. Schreib uns kurz, dann bekommst du den Zugang von Hand.</x-leer>
     @else
+        @if (session('fehler'))<p class="fehler mb-2">{{ session('fehler') }}</p>@endif
+        @if (request()->boolean('abbruch'))<p class="hinweis mb-2">Die Zahlung wurde abgebrochen. Du kannst es jederzeit nochmal versuchen.</p>@endif
         <form method="post" action="{{ route('kaufen.store', $offer->slug) }}" class="karte mt-3">
             @csrf
             <input type="hidden" name="waehrung" value="{{ $waehrung }}">
             <input type="hidden" name="ref" value="{{ $ref }}">
-            <input type="hidden" name="zahlung" value="{{ $offer->is_free ? 'gratis' : 'rechnung' }}">
+            @if ($offer->is_free)
+                <input type="hidden" name="zahlung" value="gratis">
+            @elseif ($stripe && $rechnung)
+                <span class="feld-label">Wie möchtest du bezahlen?</span>
+                <label class="flex items-center gap-2 mb-1 text-md"><input type="radio" name="zahlung" value="stripe" class="accent-primary" @checked(old('zahlung', 'stripe') === 'stripe')> Karte oder Twint, sofort</label>
+                <label class="flex items-center gap-2 mb-3 text-md"><input type="radio" name="zahlung" value="rechnung" class="accent-primary" @checked(old('zahlung') === 'rechnung')> Auf Rechnung, zahlbar innert 30 Tagen</label>
+            @else
+                <input type="hidden" name="zahlung" value="{{ $stripe ? 'stripe' : 'rechnung' }}">
+            @endif
             <input type="text" name="website" value="" tabindex="-1" autocomplete="off" style="position:absolute;left:-9999px" aria-hidden="true">
             @if ($person)
                 <p class="m-0 mb-3 text-md">Du bist angemeldet als <b>{{ $person->name }}</b> ({{ $person->email }}).</p>
@@ -43,11 +53,24 @@
                 @error('email')<p class="fehler mb-2">{{ $message }}</p>@enderror
             @endif
             @unless ($offer->is_free)
-                <p class="hinweis mb-3"><i class="fa-regular fa-file-lines"></i> Du bekommst die Rechnung per Mail, zahlbar innert 30 Tagen, auch online per Karte oder Twint. Dein Zugang {{ ($zugangSofort ?? true) ? 'ist sofort offen' : 'öffnet sich mit der Zahlung' }}.</p>
+                <span class="feld-label">Rechnungsadresse</span>
+                <label class="block mb-2"><input type="text" name="strasse" class="feld" required maxlength="160" placeholder="Strasse und Nummer" value="{{ old('strasse', $adresse['strasse'] ?? '') }}" autocomplete="street-address"></label>
+                <div class="grid gap-2 mb-2" style="grid-template-columns:1fr 2fr 1fr">
+                    <input type="text" name="plz" class="feld" required maxlength="12" placeholder="PLZ" value="{{ old('plz', $adresse['plz'] ?? '') }}" autocomplete="postal-code">
+                    <input type="text" name="ort" class="feld" required maxlength="120" placeholder="Ort" value="{{ old('ort', $adresse['ort'] ?? '') }}" autocomplete="address-level2">
+                    <select name="land" class="feld" autocomplete="country">@foreach (['CH' => 'Schweiz', 'DE' => 'Deutschland', 'AT' => 'Österreich', 'LI' => 'Liechtenstein', 'FR' => 'Frankreich', 'IT' => 'Italien'] as $k => $l)<option value="{{ $k }}" @selected(old('land', $adresse['land'] ?? 'CH') === $k)>{{ $l }}</option>@endforeach</select>
+                </div>
+                @error('strasse')<p class="fehler mb-2">{{ $message }}</p>@enderror
+                <p class="hinweis mb-3"><i class="fa-regular fa-file-lines"></i> Die Rechnung oder Quittung kommt per Mail. Dein Zugang {{ ($zugangSofort ?? true) ? 'ist sofort offen' : 'öffnet sich mit der Zahlung' }}.</p>
             @endunless
-            <label class="flex items-start gap-2 mb-3 text-md"><input type="checkbox" name="agb" value="1" required class="mt-1"> <span>Ich bestelle zahlungspflichtig und bin einverstanden, dass es sofort losgeht.</span></label>
+            <label class="flex items-start gap-2 mb-2 text-md"><input type="checkbox" name="agb" value="1" required class="mt-1"> <span>Ich bestelle {{ $offer->is_free ? '' : 'zahlungspflichtig ' }}und akzeptiere die @if (! empty($links['agb']))<a href="{{ $links['agb'] }}" target="_blank" rel="noopener">AGB</a>@else AGB @endif@if (! empty($links['datenschutz'])) und die <a href="{{ $links['datenschutz'] }}" target="_blank" rel="noopener">Datenschutzerklärung</a>@endif.</span></label>
             @error('agb')<p class="fehler mb-2">{{ $message }}</p>@enderror
-            <button type="submit" class="knopf" style="width:100%"><i class="fa-solid fa-cart-plus"></i>{{ $offer->is_free ? 'Kostenlos dabei sein' : 'Auf Rechnung kaufen' }}</button>
+            @unless ($offer->is_free)
+                <label class="flex items-start gap-2 mb-3 text-md"><input type="checkbox" name="widerruf" value="1" required class="mt-1"> <span>Ich möchte, dass es sofort losgeht, und weiss, dass ich damit auf mein Widerrufsrecht verzichte.@if (! empty($links['widerruf'])) <a href="{{ $links['widerruf'] }}" target="_blank" rel="noopener">Widerrufsbelehrung</a>@endif</span></label>
+                @error('widerruf')<p class="fehler mb-2">{{ $message }}</p>@enderror
+            @endunless
+            <button type="submit" class="knopf" style="width:100%"><i class="fa-solid fa-{{ $offer->is_free ? 'cart-plus' : ($stripe ? 'credit-card' : 'file-lines') }}"></i>{{ $offer->is_free ? 'Kostenlos dabei sein' : ($stripe && $rechnung ? 'Verbindlich kaufen' : ($stripe ? 'Jetzt bezahlen' : 'Auf Rechnung kaufen')) }}</button>
+            @if (! empty($links['impressum']))<p class="hinweis m-0 mt-2 text-center"><a href="{{ $links['impressum'] }}" target="_blank" rel="noopener">Impressum</a></p>@endif
         </form>
     @endif
 </x-layouts.app>

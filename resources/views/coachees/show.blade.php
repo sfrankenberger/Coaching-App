@@ -45,12 +45,12 @@
 
     <details id="verkaufen" class="karte mt-2" @if ($errors->has('offer_id')) open @endif>
         <summary class="cursor-pointer" style="font-weight:600"><i class="fa-solid fa-cart-plus"></i> Etwas verkaufen oder Zugang geben</summary>
-        <form method="post" action="{{ route('coachees.zugang', $m) }}" class="mt-3">
+        <form method="post" action="{{ route('coachees.zugang', $m) }}" class="mt-3" onsubmit="return (parseFloat(this.betrag.value) > 0) || confirm('Ohne Preis wird der Zugang kostenlos freigeschaltet. Wirklich?')">
             @csrf
             <label class="feld-label">Angebot
-                <select name="offer_id" class="feld" required>
+                <select name="offer_id" class="feld" required onchange="var p = {}; try { p = JSON.parse(this.selectedOptions[0].dataset.preise || '{}'); } catch (e) {} var w = this.form.waehrung.value; if (p[w] !== undefined) this.form.betrag.value = p[w]; else if (Object.keys(p).length) { var k = Object.keys(p)[0]; this.form.waehrung.value = k; this.form.betrag.value = p[k]; }">
                     <option value="">Bitte wählen</option>
-                    @foreach ($angebote as $o)<option value="{{ $o->id }}">{{ $o->title }}{{ $o->access_days ? ' ('.$o->access_days.' Tage)' : '' }}</option>@endforeach
+                    @foreach ($angebote as $o)<option value="{{ $o->id }}" data-preise='@json($o->is_free ? [] : $o->preise())'>{{ $o->title }}{{ $o->access_days ? ' ('.$o->access_days.' Tage)' : '' }}{{ $o->preise() ? ' · '.collect($o->preise())->map(fn ($b, $w) => \App\Models\Offer::preisText($b, $w))->join(' / ') : ($o->is_free ? ' · kostenlos' : '') }}</option>@endforeach
                 </select>
             </label>
             <div class="grid gap-2" style="grid-template-columns:2fr 1fr 2fr">

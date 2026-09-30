@@ -167,6 +167,14 @@ Sortiert nach Nutzen fuer Lea und die Teilnehmerinnen. Mehrfach gefundene Punkte
   zaehlt nach Kurswoche. Notizen mit Foto (Upload, `notizen.foto`) und Link, Import uebernimmt `notiz_bild` und
   `notiz_link`; Arbeitsbuch-Freigabe laesst sich auf der Kursseite aendern. Auskunft kennt Verkaeufe und
   Rechnungen aus der Buchhaltung (offene Summen, Faelligkeit). Redirect-URL fuer bexio steht auf /coach/buchhaltung.
+- 30.09.: E29 bis E32 umgesetzt. Kasse: Zahlweise Karte oder Twint ueber Stripe (`App\Shop\Stripe`, Checkout ohne SDK,
+  Webhook `/hooks/stripe` mit Signaturpruefung, Danke-Seite prueft die Zahlung selbst), Zugang und Quittung in bexio
+  erst mit der Zahlung, Mail mit PDF und Anmeldelink, Team-Hinweis. Rechtlich: Links auf AGB, Datenschutz und
+  Widerruf (Einstellungen, Abschnitt Rechtliches), Widerrufsverzicht und AGB mit Zeitstempel und IP am Verkauf,
+  Rechnungsadresse (auch an der Person). bexio-Ausfall: Rechnung wird stuendlich nachgeholt, nach drei Fehlversuchen
+  Warnung ans Team; sieben Tage vor Ablauf eines Zugangs Hinweis an Person und Team. Waehrung je Kundin gemerkt,
+  im Dossier-Verkauf Preis aus dem Angebot vorbefuellt, Sicherheitsabfrage bei kostenlos. Abos mit Stripe und
+  Kundenportal (E30, Rest) und Newsletter (E33) folgen mit Etappe 10 und 11.
 
 ## Was bewusst nicht kommt
 
