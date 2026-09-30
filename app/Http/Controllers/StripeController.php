@@ -20,8 +20,18 @@ class StripeController extends Controller
     public function webhook(Request $request, CurrentTenant $current, Verkaufen $verkaufen, Abo $abo): JsonResponse
     {
         $secret = (string) $current->get()?->setting('stripe.webhook_secret');
-        abort_if($secret === '', 404);
-        abort_unless(self::signaturGueltig($request->getContent(), (string) $request->header('Stripe-Signature'), $secret), 400, 'Signatur ungültig.');
+        if ($secret === '') {
+            Log::warning('Stripe-Webhook ohne Webhook-Secret im Mandanten', ['tenant' => $current->id()]);
+
+            return response()->json(['error' => 'Kein Webhook-Secret hinterlegt.'], 404);
+        }
+        $header = (string) $request->header('Stripe-Signature');
+        if (! self::signaturGueltig($request->getContent(), $header, $secret, $grund)) {
+            // Abgelehnte Aufrufe protokollieren, damit sich ein falsches Secret oder eine falsche Uhr finden laesst
+            Log::warning('Stripe-Webhook abgelehnt: '.$grund, ['tenant' => $current->id(), 'header' => mb_substr($header, 0, 60), 'secret_endet' => substr($secret, -4), 'laenge' => strlen($request->getContent())]);
+
+            return response()->json(['error' => 'Signatur ungültig: '.$grund], 400);
+        }
 
         $event = $request->json()->all();
         Log::info('Stripe-Webhook', ['tenant' => $current->id(), 'type' => $event['type'] ?? null, 'id' => $event['id'] ?? null]);
@@ -48,7 +58,7 @@ class StripeController extends Controller
     }
 
     /** Stripe-Signatur: t=Zeit,v1=HMAC-SHA256 ueber "t.payload", hoechstens fuenf Minuten alt. */
-    public static function signaturGueltig(string $payload, string $header, string $secret): bool
+    public static function signaturGueltig(string $payload, string $header, string $secret, ?string &$grund = null): bool
     {
         $teile = [];
         foreach (explode(',', $header) as $t) {
@@ -56,15 +66,23 @@ class StripeController extends Controller
             $teile[$k][] = $v;
         }
         $zeit = (int) ($teile['t'][0] ?? 0);
-        if (! $zeit || abs(time() - $zeit) > 300) {
+        if (! $zeit) {
+            $grund = $header === '' ? 'keine Stripe-Signature-Kopfzeile' : 'Kopfzeile ohne Zeitstempel';
+
             return false;
         }
-        $erwartet = hash_hmac('sha256', $zeit.'.'.$payload, $secret);
+        if (abs(time() - $zeit) > 300) {
+            $grund = 'Zeitstempel weicht '.abs(time() - $zeit).' Sekunden ab (Uhr des Servers?)';
+
+            return false;
+        }
+        $erwartet = hash_hmac('sha256', $zeit.'.'.$payload, trim($secret));
         foreach ($teile['v1'] ?? [] as $sig) {
             if (hash_equals($erwartet, $sig)) {
                 return true;
             }
         }
+        $grund = ($teile['v1'] ?? []) === [] ? 'keine v1-Signatur' : 'Signatur passt nicht zum hinterlegten Webhook-Secret';
 
         return false;
     }
