@@ -26,12 +26,13 @@ class MedienController extends Controller
     public function position(Request $request): JsonResponse
     {
         $data = $request->validate([
-            'key' => ['required', 'regex:/^(unit|event|resource)-\d+$/'],
+            'key' => ['required', 'regex:/^(unit|event|resource)-\d+(-\d{1,2})?$/'],   // unit-12-1: zweites Video der Playlist
             'seconds' => ['required', 'numeric', 'min:0', 'max:86400'],
             'duration' => ['nullable', 'numeric', 'min:0', 'max:86400'],
         ]);
         $user = $request->user();
         [$art, $id] = explode('-', $data['key']);
+        $id = (int) $id;
         $ziel = match ($art) {
             'unit' => Unit::with('program')->find($id),
             'event' => Event::find($id),
@@ -53,6 +54,10 @@ class MedienController extends Controller
         if ($pos->duration && $pos->seconds >= $pos->duration * self::GESEHEN_AB) {
             if ($art === 'unit' && ! $this->progress->completedUnitIds($user, $ziel->program)->contains($ziel->id)) {
                 $this->progress->toggle($user, $ziel, true);
+                $erledigt = true;
+            }
+            if ($art === 'resource' && ! $pos->watched_at) {
+                $pos->forceFill(['watched_at' => now()])->save();
                 $erledigt = true;
             }
             if ($art === 'event') {

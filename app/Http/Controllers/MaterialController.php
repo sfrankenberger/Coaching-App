@@ -3,9 +3,12 @@
 namespace App\Http\Controllers;
 
 use App\Models\Bookmark;
+use App\Models\MediaPosition;
 use App\Models\Program;
 use App\Models\Resource;
 use App\Programs\Begleitung;
+use App\Support\Besuche;
+use App\Support\Medienstand;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -20,6 +23,7 @@ class MaterialController extends Controller
 
     public function index(Request $request): View
     {
+        app(Besuche::class)->merken($request->user(), 'material');
         $user = $request->user();
         $filter = (string) $request->query('f', '');
         $suche = mb_strtolower(trim((string) $request->query('q', '')));
@@ -70,11 +74,30 @@ class MaterialController extends Controller
         }
         $kurs = $material->links->firstWhere('resourceable_type', 'program')?->resourceable_id;
 
+        $stand = app(Medienstand::class)->fuer($request->user(), 'resource-'.$material->id);
+
         return view('material.show', [
             'r' => $material,
+            'position' => $stand?->seconds,
+            'angeschaut' => (bool) $stand?->watched_at,
             'kurs' => $kurs ? Program::find($kurs) : null,
             'gemerkt' => Bookmark::where('user_id', $request->user()->id)->where('bookmarkable_type', 'resource')->where('bookmarkable_id', $material->id)->exists(),
         ]);
+    }
+
+    /** "Als angeschaut markieren" und "Nochmal ansehen" (setzt die Stelle zurueck). */
+    public function gesehen(Request $request, Resource $material): RedirectResponse
+    {
+        Gate::authorize('view', $material);
+        $pos = MediaPosition::firstOrNew(['user_id' => $request->user()->id, 'key' => 'resource-'.$material->id]);
+        if ($pos->watched_at) {
+            $pos->forceFill(['watched_at' => null, 'seconds' => 0])->save();
+
+            return back()->with('meldung', 'Alles klar, du kannst von vorne anfangen.');
+        }
+        $pos->forceFill(['watched_at' => now()])->save();
+
+        return back()->with('meldung', 'Als angeschaut markiert.');
     }
 
     /** Datei ausliefern (nur mit Zugang). */

@@ -31,6 +31,16 @@
             </details>
         @endif
 
+        @if (! $freigabeOffen && $program->isWorkbook() && $program->teilbar() && $member?->share_mode && ! auth()->user()->canManageCurrentTenant())
+            <details class="karte">
+                <summary class="hinweis cursor-pointer"><i class="fa-solid fa-lock-open"></i> Freigabe: {{ $member->share_mode === 'alles' ? 'alles ist mit deiner Coachin geteilt' : 'du entscheidest je Übung' }} · ändern</summary>
+                <form method="post" action="{{ route('kurse.freigabe', $program) }}" class="flex flex-wrap gap-2 mt-2">
+                    @csrf
+                    <button type="submit" name="modus" value="alles" @class(['knopf knopf-klein', 'knopf-ruhig' => $member->share_mode === 'alles'])>Alles teilen</button>
+                    <button type="submit" name="modus" value="einzeln" @class(['knopf knopf-klein', 'knopf-ruhig' => $member->share_mode === 'einzeln'])>Ich entscheide je Übung</button>
+                </form>
+            </details>
+        @endif
         @if ($freigabeOffen)
             <div class="baustein">
                 <p class="eyebrow m-0 mb-2">Bevor du anfängst</p>
@@ -47,7 +57,7 @@
         @if ($kontingent)
             @php $hallo = $coach === 'deine Coachin' ? 'Hallo, ' : 'Hallo '.$coach.', '; @endphp
             <div class="karte">
-                <span class="eyebrow"><i class="fa-solid fa-ticket"></i> Deine Sitzungen</span>
+                <span class="eyebrow"><i class="fa-solid fa-ticket"></i> {{ $program->type === 'one_on_one' ? 'Deine Sitzungen' : 'Einzelsitzungen im Kurs enthalten' }}</span>
                 <div class="flex items-baseline gap-2 mt-1">
                     <b style="font-family:var(--font-heading);font-size:26px;font-weight:400">{{ $kontingent['offen'] }}</b>
                     <span class="x">von {{ $kontingent['gesamt'] }} noch offen</span>
@@ -60,7 +70,21 @@
             </div>
         @endif
 
-        @if ($naechsterCall)
+        @php $abo = ($mm = auth()->user()->membershipIn()) && $program->isGroup() ? route('kalender.kurs', ['token' => \App\Support\Ics::tokenFor($mm), 'program' => $program]) : null; @endphp
+        @if ($abo)
+            <p class="m-0 mb-2 text-right"><a href="{{ preg_replace('~^https?://~', 'webcal://', $abo) }}" class="hinweis no-underline"><i class="fa-solid fa-calendar-plus"></i> Termine dieses Kurses abonnieren</a></p>
+        @endif
+        @if ($termine->count() > 1)
+            {{-- Kurs ohne Module (z. B. Coffee und Coaching): die naechsten Termine --}}
+            <h2 class="abschnitt"><i class="fa-solid fa-calendar"></i>Nächste Termine<em>{{ $termine->count() }}</em></h2>
+            @foreach ($termine as $t)
+                <a href="{{ route('termine.show', $t) }}" class="zeile">
+                    <span class="ic"><i class="fa-solid fa-{{ $t->isLive() ? 'video' : 'calendar' }}"></i></span>
+                    <span class="tx"><b>{{ $t->title }}</b><span>{{ $t->starts_at->translatedFormat('l, j. F') }}@unless ($t->all_day) · {{ $t->starts_at->format('H:i') }} Uhr @endunless</span></span>
+                    <i class="fa-solid fa-chevron-right pf"></i>
+                </a>
+            @endforeach
+        @elseif ($naechsterCall)
             <x-termin-karte :termin="$naechsterCall" :status="false" />
         @endif
 

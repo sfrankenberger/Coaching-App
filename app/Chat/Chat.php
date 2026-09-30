@@ -2,9 +2,11 @@
 
 namespace App\Chat;
 
+use App\Audio\Transkript;
 use App\Enums\Role;
 use App\Events\MessageSent;
 use App\Jobs\ConvertAudio;
+use App\Jobs\TranskribiereSprachnachricht;
 use App\Models\Conversation;
 use App\Models\ConversationParticipant;
 use App\Models\Membership;
@@ -12,6 +14,7 @@ use App\Models\Message;
 use App\Models\Program;
 use App\Models\User;
 use App\Programs\ProgramAccess;
+use App\Tenancy\Branding;
 use App\Tenancy\CurrentTenant;
 use Carbon\Carbon;
 use Illuminate\Http\UploadedFile;
@@ -30,6 +33,40 @@ class Chat
     public function teamIds(): Collection
     {
         return Membership::query()->whereIn('role', [Role::Owner->value, Role::Team->value])->where('status', 'active')->pluck('user_id');
+    }
+
+    /**
+     * Im 1:1 schreibt das Team fuer die Coachin: die Nachricht von Andrea steht als Nachricht der Coachin
+     * mit dem Hinweis "Team", die Coachin sieht "geschrieben von Andrea". Einstellung chat.team_als_coach.
+     */
+    public function alsCoach(Message $msg, Conversation $conv): bool
+    {
+        if (! $conv->isDirect() || $msg->user_id === $conv->user_id || $msg->user_id === null) {
+            return false;
+        }
+        $tenant = $this->current->get();
+        if (! (bool) $tenant?->setting('chat.team_als_coach', true)) {
+            return false;
+        }
+        $coach = app(Branding::class)->coach();
+
+        return $coach !== null && $coach->id !== $msg->user_id && $this->teamIds()->contains($msg->user_id);
+    }
+
+    /** Name der Absenderin, wie die Person sie sieht: die Coachin, wenn das Team fuer sie schreibt. */
+    public function absenderName(Message $msg, Conversation $conv): string
+    {
+        if ($this->alsCoach($msg, $conv)) {
+            return app(Branding::class)->coachName();
+        }
+
+        return $msg->user?->vorname() ?? 'Jemand';
+    }
+
+    /** Bezeichnung des Teams fuer den Hinweis an der Nachricht (Einstellung chat.team_name, sonst "Team Lea"). */
+    public function teamName(): string
+    {
+        return (string) ($this->current->get()?->setting('chat.team_name') ?: 'Team '.app(Branding::class)->coachName());
     }
 
     /** Das 1:1-Gespraech einer Person mit der Coachin (wird bei Bedarf angelegt). */
@@ -92,19 +129,44 @@ class Chat
             $q->whereHas('participants', fn ($p) => $p->where('user_id', $user->id));
         }
 
-        return $q->orderByDesc('last_message_at')->orderByDesc('id')->get()
-            ->each(fn (Conversation $c) => $c->setAttribute('ungelesen', $c->unreadCountFor($user)));
+        $team = $this->teamIds();
+        $liste = $q->orderByDesc('last_message_at')->orderByDesc('id')->get()->each(function (Conversation $c) use ($user, $team) {
+            $c->setAttribute('ungelesen', $c->unreadCountFor($user));
+            // Fuer die Team-Liste: letzte Nachricht als Vorschau, "wartet" (die Person hat zuletzt geschrieben), "gelesen" (die Person hat die Antwort gesehen)
+            $letzte = Message::where('conversation_id', $c->id)->latest('id')->first();   // messages() sortiert aufsteigend, darum direkt
+            $c->setAttribute('letzte', $letzte);
+            $vomTeam = $letzte && $team->contains($letzte->user_id);
+            $c->setAttribute('wartet', $c->isDirect() && $letzte && ! $vomTeam);
+            $c->setAttribute('gelesen', $c->isDirect() && $letzte && $vomTeam && $c->user_id && ($stand = $c->participants->firstWhere('user_id', $c->user_id)?->last_read_at) && $stand->gte($letzte->created_at));
+        });
+        if ($user->canManageCurrentTenant()) {
+            $liste = $liste->sortBy(fn (Conversation $c) => [$c->wartet ? 0 : 1, -($c->last_message_at?->getTimestamp() ?? 0)])->values();
+        }
+
+        return $liste;
     }
 
+    /** Zahl am Knopf: fuer die Person die ungelesenen Nachrichten, fuers Team die Menschen, die warten. */
     public function unreadFor(User $user): int
     {
-        return $this->conversationsFor($user)->sum('ungelesen');
+        $liste = $this->conversationsFor($user);
+
+        return $user->canManageCurrentTenant() ? $liste->filter(fn (Conversation $c) => $c->wartet && $c->ungelesen > 0)->count() : $liste->sum('ungelesen');
     }
 
     public function send(Conversation $conv, User $from, array $data): Message
     {
         $tenantId = $this->current->id();
         $dir = "tenants/{$tenantId}/chat/{$conv->id}";
+
+        // Doppelsende-Schutz: derselbe Text derselben Person innerhalb von fuenf Sekunden ist ein Doppelklick
+        if (filled($data['body'] ?? null) && empty($data['file']) && empty($data['audio'])) {
+            $doppelt = Message::where('conversation_id', $conv->id)->where('user_id', $from->id)->where('body', trim($data['body']))
+                ->where('created_at', '>=', now()->subSeconds(5))->latest('id')->first();
+            if ($doppelt) {
+                return $doppelt;
+            }
+        }
 
         $msg = new Message([
             'conversation_id' => $conv->id,
@@ -135,6 +197,9 @@ class Chat
         $msg->save();
         if (ConvertAudio::noetig($msg->audio_path) && config('services.ffmpeg.enabled', true)) {
             ConvertAudio::dispatch((int) $msg->tenant_id, $msg->id);
+        }
+        if ($msg->audio_path && blank($msg->transcript) && app(Transkript::class)->konfiguriert()) {
+            TranskribiereSprachnachricht::dispatch((int) $msg->tenant_id, $msg->id);
         }
 
         $conv->forceFill(['last_message_at' => now()])->save();

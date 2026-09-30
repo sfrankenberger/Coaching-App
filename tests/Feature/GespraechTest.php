@@ -12,9 +12,11 @@ use App\Models\ProgramMember;
 use App\Models\Reaction;
 use App\Models\Tenant;
 use App\Models\User;
+use App\Notifications\AppNotification;
 use App\Tenancy\CurrentTenant;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\UploadedFile;
+use Illuminate\Support\Facades\Notification;
 use Illuminate\Support\Facades\Queue;
 use Illuminate\Support\Facades\Storage;
 use Tests\TestCase;
@@ -67,9 +69,9 @@ class GespraechTest extends TestCase
     {
         $conv = $this->in(fn () => app(Chat::class)->directFor($this->anna));
 
-        \Illuminate\Support\Facades\Notification::fake();
+        Notification::fake();
         $this->actingAs($this->anna)->postJson("http://a.test/gespraech/{$conv->id}/senden", ['body' => 'Hallo Lea, kurze Frage'])->assertOk()->assertJsonStructure(['id', 'html']);
-        \Illuminate\Support\Facades\Notification::assertSentToTimes($this->lea, \App\Notifications\AppNotification::class, 1);
+        Notification::assertSentToTimes($this->lea, AppNotification::class, 1);
         $this->actingAs($this->anna)->postJson("http://a.test/gespraech/{$conv->id}/senden", [])->assertStatus(422);
         $m = $this->in(fn () => Message::first());
         $this->assertSame('Hallo Lea, kurze Frage', $m->body);
@@ -126,6 +128,25 @@ class GespraechTest extends TestCase
 
         $this->a->forceFill(['settings' => ['coach_name' => 'Lea W.']])->save();
         $this->actingAs($this->anna)->get("http://a.test/gespraech/{$conv->id}")->assertOk()->assertSee('Gespräch mit Lea W.');
+    }
+
+    public function test_team_schreibt_fuer_die_coachin(): void
+    {
+        Notification::fake();
+        $andrea = User::factory()->create(['name' => 'Andrea Team']);
+        $this->a->users()->attach($andrea, ['role' => Role::Team->value, 'status' => 'active']);
+        $conv = $this->in(fn () => app(Chat::class)->directFor($this->anna));
+
+        $this->actingAs($andrea)->postJson("http://a.test/gespraech/{$conv->id}/senden", ['body' => 'Hallo Anna, hier eine Antwort'])->assertOk();
+        // Anna sieht die Nachricht als Nachricht von Lea, mit Hinweis Team
+        $this->actingAs($this->anna)->get("http://a.test/gespraech/{$conv->id}")->assertOk()->assertSee('Team Lea')->assertSee('Hallo Anna')->assertDontSee('Andrea');
+        // Lea sieht, wer geschrieben hat, auf ihrer Seite
+        $this->actingAs($this->lea)->get("http://a.test/gespraech/{$conv->id}")->assertOk()->assertSee('geschrieben von Andrea');
+        Notification::assertSentTo($this->anna, AppNotification::class, fn ($n) => $n->nachricht->titel === 'Lea hat dir geschrieben');
+
+        // Ausgeschaltet: Andrea steht unter ihrem Namen
+        $this->a->forceFill(['settings' => ['chat' => ['team_als_coach' => false]]])->save();
+        $this->actingAs($this->anna)->get("http://a.test/gespraech/{$conv->id}")->assertOk()->assertDontSee('Team Lea');
     }
 
     public function test_gruppe_je_programm(): void

@@ -59,7 +59,7 @@ class BuchenController extends Controller
         $start = Carbon::createFromTimestamp((int) $data['start'], app(CurrentTenant::class)->get()?->timezone ?: config('app.timezone'));
         $antworten = collect($art->questions ?? [])->values()->map(fn ($frage, $i) => ['frage' => $frage, 'antwort' => trim((string) ($data['antworten'][$i] ?? ''))])->all();
 
-        $booking = $this->buchung->buchen($request->user(), $art, $start, $antworten);
+        $booking = $this->buchung->buchen($request->user(), $art, $start, $antworten, true, filled($data['ref'] ?? null) ? trim($data['ref']) : null, (array) ($data['refs'] ?? []));
 
         return redirect()->route('termine.show', $booking->event_id)->with('meldung', 'Gebucht. Ich freue mich auf dich.');
     }

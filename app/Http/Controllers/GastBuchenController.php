@@ -57,7 +57,9 @@ class GastBuchenController extends Controller
             'antworten' => ['nullable', 'array', 'max:10'],
             'antworten.*' => ['nullable', 'string', 'max:3000'],
             'website' => ['nullable', 'size:0'],   // Honigtopf: Menschen lassen das Feld leer
+            'ref' => ['nullable', 'string', 'max:120'],
         ]);
+        $herkunft = filled($data['ref'] ?? null) ? trim($data['ref']) : null;
         $tenant = $this->current->getOrFail();
         $start = Carbon::createFromTimestamp((int) $data['start'], $tenant->timezone ?: config('app.timezone'));
         $antworten = collect($art->questions ?? [])->values()->map(fn ($frage, $i) => ['frage' => $frage, 'antwort' => trim((string) ($data['antworten'][$i] ?? ''))])->all();
@@ -71,11 +73,11 @@ class GastBuchenController extends Controller
             $user->forceFill(['phone' => trim($data['phone'])])->save();
         }
         if (! $user->membershipIn($tenant)) {
-            Membership::create(['user_id' => $user->id, 'role' => Role::Guest->value, 'status' => 'active', 'joined_at' => now(), 'settings' => ['quelle' => 'klarheitsgespraech']]);
+            Membership::create(['user_id' => $user->id, 'role' => Role::Guest->value, 'status' => 'active', 'joined_at' => now(), 'settings' => array_filter(['quelle' => 'klarheitsgespraech', 'herkunft' => $herkunft])]);
             $neu = true;
         }
 
-        $booking = $this->buchung->buchen($user, $art, $start, $antworten, melden: false);
+        $booking = $this->buchung->buchen($user, $art, $start, $antworten, melden: false, herkunft: $herkunft);
 
         $url = app(MagicLink::class)->create($user, route('termine.show', $booking->event_id, absolute: false), $request->ip(), 60 * 24 * 7);
         Mail::to($user->email, $user->name)->send(new GastBuchungMail($user, $booking, $url, $neu));

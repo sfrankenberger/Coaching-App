@@ -42,6 +42,14 @@
                     <p class="hinweis m-0">Freiwillig. Das liest nur deine Coachin.</p>
                 </div>
             @endif
+            @if (! $booking)
+                <div class="karte mt-2">
+                    <span class="feld-label">Etwas mitgeben?</span>
+                    <p class="hinweis m-0 mb-2">Eine Notiz, eine Aufgabe, eine Reflexion oder Material, um das es gehen soll.</p>
+                    <x-anhang-wahl :refs="old('refs', [])" />
+                </div>
+                <input type="hidden" name="ref" value="{{ request()->query('ref') }}">
+            @endif
 
             <button type="submit" class="knopf knopf-gross" style="width:100%;margin-top:14px"><i class="fa-solid fa-calendar-check"></i>{{ $booking ? 'Auf diese Zeit verschieben' : 'Verbindlich buchen' }}</button>
         </form>

@@ -17,6 +17,7 @@ class Nachricht
         public ?string $html = null,          // nur Mail: zusaetzlicher Inhalt, z. B. die Zusammenfassung
         public bool $mailImmer = false,       // Mail auch an Personen mit Push (z. B. Aufzeichnung mit Zusammenfassung)
         public bool $inApp = true,            // auch als Mitteilung in der App (Glocke)
+        public ?array $anhang = null,         // nur Mail: ['name' => 'termin.ics', 'inhalt' => '...', 'typ' => 'text/calendar']
     ) {
         $this->tag ??= $anlass;
     }

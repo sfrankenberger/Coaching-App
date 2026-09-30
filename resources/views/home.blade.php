@@ -12,7 +12,7 @@
             </span>
             <span class="lab">{{ $p->title }}</span>
             <span class="t">{{ $step ? $step->title : ($stand['next']?->title ?? $p->title) }}</span>
-            @if ($step && $w['woche'])<span class="k">Woche {{ $w['woche'] }} von {{ $w['wochen'] }}</span>@endif
+            @if ($step && $w['woche'])<span class="k">Woche {{ $w['woche'] }} von {{ $w['wochen'] }}@if ($w['call'] ?? null) · <i class="fa-solid fa-video"></i> {{ $w['call']->isLive() ? 'Call läuft gerade' : 'Call '.$w['call']->starts_at->translatedFormat('D, j. M, H:i').' Uhr' }}@endif</span>@endif
             <span class="reihe">
                 <span class="balken"><span style="width: {{ $stand['percent'] }}%"></span></span>
                 <span class="z">{{ $stand['done'] }} von {{ $stand['total'] }} erledigt</span>
@@ -72,7 +72,7 @@
                 @elseif ($termin->type === 'reflection_day')
                     <a href="{{ route('reflexion.index') }}" class="knopf knopf-ruhig"><i class="fa-solid fa-pen-to-square"></i>Reflexion schreiben</a>
                 @elseif ($termin->type === 'question_day')
-                    <a href="{{ route('gespraech.index') }}" class="knopf knopf-ruhig"><i class="fa-solid fa-circle-question"></i>Frage stellen</a>
+                    <a href="{{ $termin->program ? route('kurse.fragen', [$termin->program, 'frage' => 1]) : route('community', ['frage' => 1]) }}" class="knopf knopf-ruhig"><i class="fa-solid fa-circle-question"></i>Frage stellen</a>
                 @elseif ($termin->isOneOnOne())
                     <x-termin-aktionen :event="$termin" :klein="true" class="contents" />
                 @else

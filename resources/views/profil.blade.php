@@ -144,6 +144,7 @@
                 'termine' => ['Termin-Erinnerungen', 'Am Morgen und eine Stunde vor jedem Call.'],
                 'abendmail' => ['Abendmail', 'Abends eine Sammelmail, wenn etwas Neues da ist. Nur ohne Push.'],
                 'aufgaben' => ['Aufgaben-Erinnerungen', 'Morgens und abends ein Hinweis auf offene Aufgaben.'],
+                'fragen' => ['Fragen im Kurs', 'Neue Fragen aus deiner Gruppe und der Hinweis am Fragentag. Nur als Push, nie als Mail.'],
             ] as $schluessel => [$titel, $text])
                 <label class="flex items-start gap-3 py-1">
                     <input type="checkbox" name="{{ $schluessel }}" value="1" class="mt-1 size-5 accent-primary" @checked(data_get($einstellungen, "notifications.$schluessel", true))>

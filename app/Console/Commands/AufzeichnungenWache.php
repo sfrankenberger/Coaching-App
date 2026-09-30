@@ -3,6 +3,7 @@
 namespace App\Console\Commands;
 
 use App\Models\Tenant;
+use App\Recordings\LektionsVideo;
 use App\Recordings\MaterialVideo;
 use App\Recordings\Wache;
 use App\Tenancy\CurrentTenant;
@@ -34,6 +35,10 @@ class AufzeichnungenWache extends Command
                 $m = $current->run($tenant, fn () => app(MaterialVideo::class)->lauf());
                 if (array_sum($m)) {
                     $this->line("{$tenant->slug}: Material {$m['fertig']} aufbereitet, {$m['wartet']} wartet auf die Textspur, {$m['offen']} ohne Abschrift");
+                }
+                $l = $current->run($tenant, fn () => app(LektionsVideo::class)->lauf());
+                if (array_sum($l)) {
+                    $this->line("{$tenant->slug}: Lektionsvideos {$l['fertig']} aufbereitet, {$l['wartet']} wartet auf die Textspur, {$l['offen']} ohne Abschrift");
                 }
             } catch (\Throwable $e) {
                 report($e);

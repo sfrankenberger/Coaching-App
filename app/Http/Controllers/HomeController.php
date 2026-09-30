@@ -60,8 +60,9 @@ class HomeController extends Controller
             }
 
             $woche = $step ? $p->steps->sortBy('position')->values()->search(fn ($s) => $s->id === $step->id) + 1 : null;
+            $call = $step ? $this->begleitung->eventsQuery($user)->where('program_id', $p->id)->where('all_day', false)->where('starts_at', '>=', now()->subHours(2)->utc())->orderBy('starts_at')->first() : null;
 
-            return ['program' => $p, 'stand' => $stand, 'step' => $step, 'woche' => $woche, 'wochen' => $p->steps->count()];
+            return ['program' => $p, 'stand' => $stand, 'step' => $step, 'woche' => $woche, 'wochen' => $p->steps->count(), 'call' => $call];
         })->filter(fn ($w) => $w['stand']['total'] > 0);
 
         return view('home', [
@@ -69,7 +70,7 @@ class HomeController extends Controller
             'rolle' => $user->roleIn(),
             'neues' => $this->runden->neuesFuer($user, $seit, 20),
             'weiter' => $weiter,
-            'termin' => $this->begleitung->eventsQuery($user)->upcoming()->with('program:id,title')->limit(6)->get()->first(fn ($e) => ! $e->isPast()),
+            'termin' => $this->begleitung->eventsQuery($user)->upcoming()->with('program:id,title,slug')->limit(6)->get()->first(fn ($e) => ! $e->isPast()),
             'aufgaben' => Task::where('user_id', $user->id)->open()->orderByRaw('CASE WHEN due_at IS NULL THEN 1 ELSE 0 END')->orderBy('due_at')->limit(4)->get(),
             'offen' => Task::where('user_id', $user->id)->open()->count(),
             'ungelesen' => $this->chat->unreadFor($user),

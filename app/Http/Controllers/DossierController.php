@@ -3,6 +3,9 @@
 namespace App\Http\Controllers;
 
 use App\Ai\Anthropic;
+use App\Booking\Buchung;
+use App\Booking\GoogleCalendar;
+use App\Booking\Verfuegbarkeit;
 use App\Chat\Chat;
 use App\Chat\Terminvorschlag;
 use App\Coach\Kommentare;
@@ -11,6 +14,7 @@ use App\Jobs\VorbereitungErstellen;
 use App\Models\AiSummary;
 use App\Models\Answer;
 use App\Models\Booking;
+use App\Models\BookingType;
 use App\Models\CoachNote;
 use App\Models\Entitlement;
 use App\Models\Event;
@@ -34,6 +38,7 @@ use App\Tenancy\CurrentTenant;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
+use Illuminate\Support\Collection;
 use Illuminate\View\View;
 
 /**
@@ -73,7 +78,7 @@ class DossierController extends Controller
         ];
 
         $daten += match ($reiter) {
-            'termine' => $this->termine($user->id),
+            'termine' => $this->termine($user->id) + ['freieZeiten' => $this->freieZeiten()],
             'kurs' => ['programme' => $this->programme($user)],
             'aufgaben' => [
                 'aufgaben' => Task::where('user_id', $user->id)->where(fn ($q) => $q->where('visibility', '!=', 'private')->orWhereNotNull('assigned_by'))
@@ -153,21 +158,10 @@ class DossierController extends Controller
     {
         $this->pruefen($request, $membership);
         $data = $request->validate(['start' => ['required', 'date'], 'dauer' => ['required', 'integer', 'min:15', 'max:240'], 'title' => ['nullable', 'string', 'max:200']]);
-        $tenant = $this->current->get();
         $start = Carbon::parse($data['start'], $this->zone())->utc();
-        Event::create([
-            'title' => filled($data['title'] ?? null) ? trim($data['title']) : (string) ($tenant?->setting('termine.einzel_titel') ?: 'Einzelsitzung'),
-            'type' => 'one_on_one',
-            'user_id' => $membership->user_id,
-            'starts_at' => $start,
-            'ends_at' => $start->copy()->addMinutes((int) $data['dauer']),
-            'zoom_url' => $tenant?->setting('termine.einzel_zoom_url') ?: null,
-            'location' => $tenant?->setting('termine.einzel_zoom_url') ? 'Online via Zoom' : null,
-            'is_published' => true,
-            'settings' => ['eingetragen_von' => $request->user()->id],
-        ]);
+        app(Buchung::class)->fest($membership->user, $start, (int) $data['dauer'], $request->user(), $data['title'] ?? null, 'dossier');
 
-        return redirect()->route('coachees.show', [$membership, 'r' => 'termine'])->with('meldung', 'Termin eingetragen, '.$membership->user->vorname().' bekommt Bescheid.');
+        return redirect()->route('coachees.show', [$membership, 'r' => 'termine'])->with('meldung', 'Termin eingetragen, '.$membership->user->vorname().' bekommt Bescheid mit Kalenderdatei.');
     }
 
     /** Zeiten vorschlagen: landen im Gespraech, die Person tippt eine an. */
@@ -252,6 +246,24 @@ class DossierController extends Controller
         }
     }
 
+    /** Drei freie Zeiten aus dem Kalender, moeglichst an verschiedenen Tagen, fuer "Zeiten vorschlagen". */
+    protected function freieZeiten(): Collection
+    {
+        $art = BookingType::where('is_active', true)->where('is_open', false)->orderBy('position')->first() ?? BookingType::where('is_active', true)->orderBy('position')->first();
+        if (! $art || ! app(GoogleCalendar::class)->aktiv()) {
+            return collect();
+        }
+        try {
+            $zeiten = app(Verfuegbarkeit::class)->zeiten($art);
+        } catch (\Throwable $e) {
+            return collect();
+        }
+        $tage = $zeiten->groupBy(fn (Carbon $z) => $z->toDateString());
+        $aus = $tage->map(fn ($z) => $z->values()->get((int) floor($z->count() / 2)))->values()->take(3);
+
+        return $aus->count() < 3 ? $zeiten->take(3)->values() : $aus;
+    }
+
     protected function pruefen(Request $request, Membership $membership): void
     {
         abort_unless($request->user()->canManageCurrentTenant(), 403);
@@ -284,7 +296,7 @@ class DossierController extends Controller
         $einzel = Event::where('user_id', $userId)->orderByDesc('starts_at')->limit(20)->get();
         $buchungen = Booking::where('user_id', $userId)->get()->keyBy('event_id');
         $gruppe = EventAttendee::where('user_id', $userId)->with('event')->get()->filter(fn ($a) => $a->event);
-        $zeilen = $einzel->map(fn (Event $e) => ['event' => $e, 'art' => '1:1', 'status' => ($b = $buchungen->get($e->id)) && $b->status === 'abgesagt' ? 'abgesagt' : ($b ? 'selbst gebucht' : null)])
+        $zeilen = $einzel->map(fn (Event $e) => ['event' => $e, 'art' => '1:1', 'buchung' => $buchungen->get($e->id), 'status' => ($b = $buchungen->get($e->id)) && $b->status === 'abgesagt' ? 'abgesagt' : ($b && $b->booked_by === $b->user_id ? 'selbst gebucht' : null)])
             ->concat($gruppe->map(fn (EventAttendee $a) => ['event' => $a->event, 'art' => $a->event->program?->title ?: 'Gruppe', 'status' => ['invited' => null, 'declined' => 'abgesagt', 'attended' => 'live dabei', 'watched' => 'Aufzeichnung gesehen'][$a->status] ?? $a->status]));
 
         return [

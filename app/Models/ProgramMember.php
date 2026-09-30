@@ -29,6 +29,18 @@ class ProgramMember extends Model
         return $this->belongsTo(Program::class);
     }
 
+    /** Der Zugang, aus dem diese Mitgliedschaft kommt (null: von Hand oder Import, gilt ohne Ablauf). */
+    public function entitlement(): BelongsTo
+    {
+        return $this->belongsTo(Entitlement::class);
+    }
+
+    /** Gilt die Mitgliedschaft noch? Ohne Zugang immer, mit Zugang nur solange er laeuft. */
+    public function gilt(): bool
+    {
+        return $this->entitlement_id === null || ($this->entitlement?->isCurrent() ?? false);
+    }
+
     public function user(): BelongsTo
     {
         return $this->belongsTo(User::class);

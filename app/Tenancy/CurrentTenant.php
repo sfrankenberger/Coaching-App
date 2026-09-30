@@ -18,6 +18,7 @@ class CurrentTenant
     public function set(?Tenant $tenant): void
     {
         $this->tenant = $tenant;
+        MandantenMail::anwenden($tenant);
     }
 
     public function get(): ?Tenant
@@ -49,12 +50,14 @@ class CurrentTenant
         $this->tenant = $tenant;
         $vorherigeWurzel = $this->wurzel;
         $this->wurzelSetzen($tenant);
+        MandantenMail::anwenden($tenant);
 
         try {
             return $callback($tenant);
         } finally {
             $this->tenant = $previous;
             $this->wurzel = $vorherigeWurzel;
+            MandantenMail::anwenden($previous);
             if (app()->runningInConsole()) {
                 app('url')->forceRootUrl($vorherigeWurzel);
             }

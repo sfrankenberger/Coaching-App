@@ -110,6 +110,9 @@
             }
             document.querySelectorAll('.video-wahl').forEach(function (x) { x.classList.remove('text-primary', 'font-semibold'); });
             wahl.classList.add('text-primary', 'font-semibold');
+            /* Stelle und Kapitel gelten je Video der Playlist */
+            if (wahl.dataset.medien) { player.dataset.medien = wahl.dataset.medien; player.dataset.start = wahl.dataset.start || '0'; }
+            document.querySelectorAll('[data-video-info]').forEach(function (b) { b.hidden = b.dataset.videoInfo !== (wahl.dataset.index || '0'); });
             player.scrollIntoView({ behavior: 'smooth', block: 'center' });
         }
     });
@@ -214,11 +217,37 @@
             .then(function (r) { return r.json().then(function (j) { if (!r.ok) throw new Error(j.fehler || 'Senden fehlgeschlagen'); return j; }); })
             .then(function (j) { verlauf.dataset.letzte = j.id; anhaengen(j.html); });
     }
+    /* Trenner "Neu" verblasst nach ein paar Sekunden, die Markierung bleibt */
+    var trenner = verlauf.querySelector('[data-neu-trenner]');
+    if (trenner) { trenner.scrollIntoView({ block: 'center' }); setTimeout(function () { trenner.classList.add('weg'); }, 5000); }
+    /* Nur ein Player gleichzeitig, Hinweis wenn eine Aufnahme nicht abspielbar ist */
+    verlauf.addEventListener('play', function (e) {
+        if (!e.target.matches('audio, video')) return;
+        verlauf.querySelectorAll('audio, video').forEach(function (a) { if (a !== e.target) a.pause(); });
+    }, true);
+    verlauf.addEventListener('error', function (e) {
+        if (!e.target.matches('audio')) return;
+        var h = document.createElement('span'); h.className = 'hinweis block'; h.textContent = 'Diese Aufnahme lässt sich hier nicht abspielen.';
+        e.target.insertAdjacentElement('afterend', h);
+    }, true);
+
+    var sendeKnopf = form.querySelector('button[type="submit"]'), sendet = false;
+    function vorschau(text) {
+        var d = document.createElement('div'); d.className = 'flex items-end gap-2 justify-end'; d.setAttribute('data-vorschau', '1');
+        d.innerHTML = '<div class="blase blase-meine blase-sendet"><div class="lesetext whitespace-pre-line break-words"></div><div class="blase-zeit"><span>wird gesendet ...</span></div></div>';
+        d.querySelector('.lesetext').textContent = text || '📎';
+        verlauf.appendChild(d); nachUnten();
+        return d;
+    }
     form.addEventListener('submit', function (e) {
         e.preventDefault();
+        if (sendet) return;
         var fd = new FormData(form);
         if (!textarea.value.trim() && !hatAnhang()) return;
-        senden(fd).then(aufraeumen).catch(function (err) { alert(err.message); });
+        sendet = true; if (sendeKnopf) sendeKnopf.disabled = true;
+        var v = vorschau(textarea.value.trim());
+        senden(fd).then(function () { v.remove(); aufraeumen(); }).catch(function (err) { v.querySelector('.blase').classList.add('blase-fehler'); v.querySelector('.blase-zeit span').textContent = err.message; setTimeout(function () { v.remove(); }, 4000); })
+            .finally(function () { sendet = false; if (sendeKnopf) sendeKnopf.disabled = false; });
     });
 
     /* Diktieren: Gesprochenes wird zu Text im Feld */
@@ -536,7 +565,7 @@ document.addEventListener('click', function (e) {
 
 /* Kapitelliste laeuft mit: die Medienbeobachtung meldet die Zeit ueber 'medien:zeit' */
 document.addEventListener('medien:zeit', function (e) {
-    var liste = document.querySelector('[data-kapitel]');
+    var liste = Array.prototype.find.call(document.querySelectorAll('[data-kapitel]'), function (l) { return !l.closest('[hidden]'); });
     if (!liste) return;
     var s = e.detail.sekunden, aktiv = null;
     var zeilen = liste.querySelectorAll('li');
@@ -563,15 +592,17 @@ document.addEventListener('medien:zeit', function (e) {
             .catch(function () {});
     }
     function beobachten(box) {
-        var key = box.dataset.medien, start = parseInt(box.dataset.start || '0', 10), zuletzt = 0;
+        var zuletzt = 0;
+        function key() { return box.dataset.medien; }
+        function start() { return parseInt(box.dataset.start || '0', 10); }
         function melden(s, d, sofort) {
-            document.dispatchEvent(new CustomEvent('medien:zeit', { detail: { key: key, sekunden: s } }));
+            document.dispatchEvent(new CustomEvent('medien:zeit', { detail: { key: key(), sekunden: s } }));
             if (!sofort && Math.abs(s - zuletzt) < 10) return;
-            zuletzt = s; senden(key, s, d);
+            zuletzt = s; senden(key(), s, d);
         }
         var v = box.querySelector('video, audio');
         if (v) {
-            v.addEventListener('loadedmetadata', function () { if (start > 5 && start < v.duration - 10) v.currentTime = start; });
+            v.addEventListener('loadedmetadata', function () { var st = start(); if (st > 5 && st < v.duration - 10) v.currentTime = st; });
             v.addEventListener('timeupdate', function () { melden(v.currentTime, v.duration, false); });
             v.addEventListener('pause', function () { melden(v.currentTime, v.duration, true); });
             v.addEventListener('ended', function () { melden(v.duration, v.duration, true); });
@@ -587,7 +618,7 @@ document.addEventListener('medien:zeit', function (e) {
             if (!d) return;
             if (d.event === 'ready') {
                 ['timeupdate', 'pause', 'ended'].forEach(function (ev) { an({ method: 'addEventListener', value: ev }); });
-                if (start > 5 && !gesprungen) { gesprungen = true; an({ method: 'setCurrentTime', value: start }); }
+                if (start() > 5 && !gesprungen) { gesprungen = true; an({ method: 'setCurrentTime', value: start() }); }
             }
             if (d.event === 'timeupdate' && d.data) { dauer = d.data.duration || dauer; melden(d.data.seconds, dauer, false); }
             if (d.event === 'pause' && d.data) melden(d.data.seconds, dauer, true);
@@ -595,8 +626,9 @@ document.addEventListener('medien:zeit', function (e) {
         });
         /* Falls "ready" schon vorbei ist, bevor wir lauschen: nach dem Laden direkt anmelden */
         f.addEventListener('load', function () {
+            gesprungen = false; zuletzt = 0;
             ['timeupdate', 'pause', 'ended'].forEach(function (ev) { an({ method: 'addEventListener', value: ev }); });
-            if (start > 5 && !gesprungen) { gesprungen = true; setTimeout(function () { an({ method: 'setCurrentTime', value: start }); }, 600); }
+            if (start() > 5 && !gesprungen) { gesprungen = true; setTimeout(function () { an({ method: 'setCurrentTime', value: start() }); }, 600); }
         });
     }
     boxen.forEach(beobachten);
@@ -636,6 +668,22 @@ document.addEventListener('medien:zeit', function (e) {
             rec.onerror = function () { rec = null; b.classList.remove('an'); };
             rec.start(); b.classList.add('an');
         });
+    });
+})();
+
+/* ---------- Reaktionen an geteilten Eintraegen ohne Neuladen ---------- */
+(function () {
+    var csrf = document.querySelector('meta[name="csrf-token"]');
+    if (!csrf) return;
+    csrf = csrf.getAttribute('content');
+    document.addEventListener('submit', function (e) {
+        var f = e.target.closest('form[data-reaktion-allgemein]');
+        if (!f) return;
+        e.preventDefault();
+        fetch(f.action, { method: 'POST', credentials: 'same-origin', headers: { 'Accept': 'application/json', 'X-CSRF-TOKEN': csrf }, body: new FormData(f) })
+            .then(function (r) { return r.json(); })
+            .then(function (j) { var box = f.closest('[data-reaktionen-allgemein]'); if (box && j.html) { var t = document.createElement('div'); t.innerHTML = j.html; box.replaceWith(t.firstElementChild); } })
+            .catch(function () {});
     });
 })();
 
@@ -1012,5 +1060,105 @@ document.addEventListener('medien:zeit', function (e) {
     if (location.hash) {
         var d = document.querySelector(location.hash);
         if (d && d.tagName === 'DETAILS') d.open = true;
+    }
+})();
+
+/* ---------- Fragen: Weiterlesen, Antwort auf Antwort, @-Erwaehnungen, neue Antworten nachladen ---------- */
+(function () {
+    document.addEventListener('click', function (e) {
+        var k = e.target.closest('[data-weiterlesen-knopf]');
+        if (!k) return;
+        var t = k.previousElementSibling;
+        if (!t || t.dataset.weiterlesen === undefined) return;
+        var offen = t.classList.toggle('offen');
+        k.textContent = offen ? 'Weniger' : 'Weiterlesen';
+    });
+
+    /* Antworten auf eine Antwort: das eine Formular unten bekommt parent_id und springt hoch */
+    var form = document.getElementById('antworten');
+    if (form) {
+        var parent = form.querySelector('[data-parent]'), hinweis = form.querySelector('[data-antwort-auf-hinweis]'), name = form.querySelector('[data-antwort-auf-name]');
+        document.addEventListener('click', function (e) {
+            var b = e.target.closest('[data-antwort-auf]');
+            if (b) {
+                parent.value = b.dataset.antwortAuf; name.textContent = b.dataset.name || ''; hinweis.hidden = false;
+                form.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                var t = form.querySelector('textarea'); if (t) { t.focus(); if (b.dataset.name && !t.value) t.value = '@' + b.dataset.name.replace(/\s+/g, '-') + ' '; }
+            }
+            if (e.target.closest('[data-antwort-auf-weg]')) { parent.value = ''; hinweis.hidden = true; }
+        });
+    }
+
+    /* @-Erwaehnungen: beim Tippen von @ Namen vorschlagen */
+    document.querySelectorAll('textarea[data-erwaehnen]').forEach(function (t) {
+        var namen = [];
+        try { namen = JSON.parse(t.dataset.erwaehnen || '[]'); } catch (e) {}
+        if (!namen.length) return;
+        var liste = null, wahl = 0, treffer = [];
+        function zu() { if (liste) { liste.remove(); liste = null; } }
+        function wort() {
+            var bis = t.selectionStart, vor = t.value.slice(0, bis), m = vor.match(/(?:^|[\s(])@([\p{L}\-]*)$/u);
+            return m ? { start: bis - m[1].length - 1, text: m[1] } : null;
+        }
+        function einsetzen(n) {
+            var w = wort(); if (!w) return;
+            var voll = '@' + n.replace(/\s+/g, '-') + ' ';
+            t.value = t.value.slice(0, w.start) + voll + t.value.slice(t.selectionStart);
+            var pos = w.start + voll.length; t.setSelectionRange(pos, pos); t.focus(); zu();
+            t.dispatchEvent(new Event('input', { bubbles: true }));
+        }
+        function zeichnen() {
+            var w = wort();
+            if (!w) return zu();
+            var such = w.text.toLowerCase();
+            treffer = namen.filter(function (n) { return n.toLowerCase().indexOf(such) === 0 || n.toLowerCase().split(' ')[0].indexOf(such) === 0; }).slice(0, 6);
+            if (!treffer.length) return zu();
+            if (!liste) { liste = document.createElement('div'); liste.className = 'erwaehnen-liste'; t.parentNode.style.position = 'relative'; t.parentNode.appendChild(liste); }
+            wahl = Math.min(wahl, treffer.length - 1);
+            liste.innerHTML = '';
+            treffer.forEach(function (n, i) {
+                var b = document.createElement('button'); b.type = 'button'; b.textContent = n; if (i === wahl) b.classList.add('an');
+                b.addEventListener('mousedown', function (e) { e.preventDefault(); einsetzen(n); });
+                liste.appendChild(b);
+            });
+            liste.style.left = '12px'; liste.style.top = (t.offsetTop + t.offsetHeight - 6) + 'px';
+        }
+        t.addEventListener('input', function () { wahl = 0; zeichnen(); });
+        t.addEventListener('keydown', function (e) {
+            if (!liste) return;
+            if (e.key === 'ArrowDown') { e.preventDefault(); wahl = (wahl + 1) % treffer.length; zeichnen(); }
+            else if (e.key === 'ArrowUp') { e.preventDefault(); wahl = (wahl - 1 + treffer.length) % treffer.length; zeichnen(); }
+            else if (e.key === 'Enter' || e.key === 'Tab') { e.preventDefault(); einsetzen(treffer[wahl]); }
+            else if (e.key === 'Escape') { zu(); }
+        });
+        t.addEventListener('blur', function () { setTimeout(zu, 150); });
+    });
+
+    /* Neue Antworten nachladen: alle 20 Sekunden nachfragen, Knopf "2 neue Antworten anzeigen" */
+    var seite = document.querySelector('[data-frage-neu]');
+    if (seite) {
+        var knopf = seite.querySelector('[data-neue-antworten]'), box = seite.querySelector('[data-antworten]');
+        var letzte = parseInt(seite.dataset.letzte || '0', 10), wartend = null;
+        function nachfragen() {
+            if (document.hidden) return;
+            fetch(seite.dataset.frageNeu + '?seit=' + letzte, { credentials: 'same-origin', headers: { 'Accept': 'application/json' } })
+                .then(function (r) { return r.json(); })
+                .then(function (j) {
+                    if (!j.anzahl) return;
+                    wartend = j; letzte = j.letzte;
+                    knopf.textContent = j.anzahl === 1 ? 'Eine neue Antwort anzeigen' : j.anzahl + ' neue Antworten anzeigen';
+                    knopf.hidden = false;
+                })
+                .catch(function () {});
+        }
+        knopf.addEventListener('click', function () {
+            if (!wartend) return;
+            var t = document.createElement('div'); t.innerHTML = wartend.html;
+            while (t.firstChild) box.appendChild(t.firstChild);
+            wartend = null; knopf.hidden = true;
+            var leer = seite.querySelector('.leer'); if (leer) leer.remove();
+        });
+        setInterval(nachfragen, 20000);
+        document.addEventListener('visibilitychange', function () { if (!document.hidden) nachfragen(); });
     }
 })();

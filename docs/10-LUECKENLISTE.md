@@ -121,6 +121,53 @@ Sortiert nach Nutzen fuer Lea und die Teilnehmerinnen. Mehrfach gefundene Punkte
 36. **Willkommensmail und Abendmail schlichter**, Mailrahmen ohne Logo und Fusszeile, kein Test-Push und keine
     Bestaetigung vor Rundnachrichten. Zahlen fuer Lea (Umsatz Jahr, Monat, offen, beste Kundinnen) fehlen.
 
+## Stand der Umsetzung
+
+- 30.09.: A1 bis A8 umgesetzt (Geteiltes in der Community mit Reaktionen und Kommentaren, Wochenaufgaben mit Art und
+  Wochentag, Team schreibt fuer die Coachin, Zugang laeuft ab, Zeitleiste und Projekte mit den neun Schritten, Meldung ans
+  Team bei Geteiltem, Filterleiste und Dreipunkt-Menue, Aufgaben-Erinnerungen mit Mail, Tages-Haken, Team-Kopie und
+  "Jetzt dran"). Dazu Schluessel je Mandant unter `/coach/verbindungen` und Transkripte fuer Sprachnachrichten (C19).
+- 30.09.: B9 und B10 umgesetzt. Fragen: Antwort auf Antwort (eine Ebene), Herz an Antworten, Reaktionen an der Frage,
+  "Das ist die Antwort" durch die Coachin, Bearbeiten 15 Minuten (Team immer), Folgen und Stummschalten
+  (`question_states`), @-Erwaehnung mit Vorschlaegen und Meldung (`App\Support\Erwaehnungen`), Links klickbar und
+  Weiterlesen (`App\Support\Textform`), neue Antworten seit dem letzten Besuch markiert und nachladbar, Sortierung der
+  Antworten, abgeschlossene Fragen nehmen nichts mehr an, Liste mit Suche, Sortierung, "Meine" und "Neue Antworten",
+  Avatar, leiser Push an die Gruppe bei neuer Frage (Schalter "Fragen im Kurs" im Profil). Fragentag: Push um 9 Uhr
+  (`Runden::terminErinnerungen`), "Frage stellen" fuehrt zu den Kursfragen, "Frage dazu" aus Lektion, Impuls und Folge,
+  Frage aus der Community mit Kurswahl. Import uebernimmt Antwort-Baum, beste Antwort, Herzen, Reaktionen, Folgen.
+- 30.09.: B11 und B12 umgesetzt. Lektionsvideos: Abschrift, Zusammenfassung mit Kapiteln und "Zum Nachlesen, worum es
+  ging" je Vimeo-Video (`unit_videos`, `App\Recordings\LektionsVideo`, laeuft mit `aufzeichnungen:wache`), Stelle je
+  Video der Playlist (`unit-12-1`), Standbalken in Einheiten- und Materialzeilen (`App\Support\Medienstand`).
+  Materialvideos: weiter ab gemerkter Stelle, ab 80 Prozent angeschaut, Knopf "Als angeschaut markieren" und "Nochmal
+  ansehen" (`material.gesehen`). Woche: Wochenband zum Wischen mit Haken, Schloss und "Jetzt", Sprung zur aktuellen
+  Woche, Reflexionstag mit Stand "geschrieben" und der eigenen Reflexion der Woche, eigene Fragen der Woche, naechster
+  Call in der Startseiten-Karte.
+- 30.09.: B13 bis B16 umgesetzt. Gratiskurs-Strecke (`App\Programs\Strecke`, Programm-Schalter "Begleitstrecke"):
+  Anstoss nach 2 Tagen mit frischem Einstiegslink, letzter Anstoss nach 7 Tagen mit Gespraechslink, signierter
+  Stopp-Link, Abschlussmail "Deine Goldnuggets" mit den eigenen Listenantworten, Push ans Team, Hinweis auf der
+  letzten Seite; Lauf `benachrichtigungen:runde strecke` taeglich 10:10. Newsletter-Haken bleibt bei Mailster
+  (Etappe 11). Meine Kurse als Schaufenster: Gliederung nach Zugangsart, naechster Call in der Karte,
+  "Freigeschaltet bis" aus dem Zugang, gesperrte Angebote mit Preis und Kauflink, "Kommt bald" (Programm-Schalter),
+  "Sag mir Bescheid" im leeren Zustand, Kurs ohne Module zeigt die naechsten acht Termine. Neu-Punkte im Menue
+  (`App\Support\Besuche`: Impulse, Ressourcen, Community, Termine seit dem letzten Besuch), "Was ist neu" mit
+  Antworten auf eigene Eintraege und Fragen. Einzelsitzungen auch in Hybrid-Kursen (Feld fuer alle Arten ausser
+  Arbeitsbuch, Kontingent auf Kursseite und im Profil).
+- 30.09.: C17, C18, C20, C21 umgesetzt. Gaeste stehen in der Coachees-Liste und der Suche, "kam ueber" im Dossier
+  (Herkunft aus dem Gastformular, `ref` oder `utm_source`). Termin aus Vorschlag und "Termin eintragen" sind echte
+  Buchungen (`Buchung::fest`): Booking-Zeile, Google-Eintrag, Pruefung gegen Doppelbelegung, Bestaetigungsmail mit
+  Kalenderdatei (`Nachricht::anhang`), verschieben und absagen wie gebucht; Knopf "Drei freie Zeiten vorschlagen".
+  Buchung: Kalenderdatei an jeder Bestaetigung, "Etwas mitgeben" (Anhaenge an der Buchung) und Vorab-Antworten im
+  Dossier der App-Huelle, Herkunft. Kalender: Erinnerung 15 Minuten vorher (VALARM), Reflexionstage als frei,
+  abgesagte Termine bleiben als abgesagt im Feed, Feed je Kurs (`kalender.kurs`), Google- und Outlook-Links am
+  Termin, Team bekommt die Termin-Erinnerungen mit. Terminliste: Aufgaben mit Datum, Filter "Was", Suche.
+- 30.09.: C22 bis C25 umgesetzt. Chat: Trenner "Neu" und Markierung ungelesener Nachrichten, Sendevorschau mit
+  gesperrtem Knopf, Doppelsende-Schutz auch serverseitig (5 Sekunden), Team-Liste mit Textvorschau, "wartet" und
+  "gelesen", Zahl am Knopf fuers Team = wartende Personen, ein Player gleichzeitig mit Hinweis bei Fehler.
+  Reflexion mit Kurswoche (`reflections.step_id`) und Rueckblick "Was hattest du dir vorgenommen?", Wochencheck
+  zaehlt nach Kurswoche. Notizen mit Foto (Upload, `notizen.foto`) und Link, Import uebernimmt `notiz_bild` und
+  `notiz_link`; Arbeitsbuch-Freigabe laesst sich auf der Kursseite aendern. Auskunft kennt Verkaeufe und
+  Rechnungen aus der Buchhaltung (offene Summen, Faelligkeit). Redirect-URL fuer bexio steht auf /coach/buchhaltung.
+
 ## Was bewusst nicht kommt
 
 Website-Anteile (Blog-Stile, Elementor, Menue-Ordnung von WordPress, Woo-Checkout-Design, Altlinks) bleiben bei

@@ -27,7 +27,9 @@ class ProgramAccess
             return Program::query()->pluck('id');
         }
 
-        $direct = ProgramMember::query()->where('user_id', $user->id)->pluck('program_id');
+        // Direkte Mitgliedschaften: ohne Zugang dauerhaft, aus einem Verkauf nur solange der Zugang laeuft
+        $direct = ProgramMember::query()->where('user_id', $user->id)->with('entitlement')->get()
+            ->filter(fn (ProgramMember $pm) => $pm->gilt())->pluck('program_id');
 
         $viaOffers = Entitlement::query()
             ->current()
@@ -71,11 +73,17 @@ class ProgramAccess
     }
 
     /** Direktes Mitglied werden (idempotent). */
-    public function join(User $user, Program $program, string $role = 'participant'): ProgramMember
+    public function join(User $user, Program $program, string $role = 'participant', ?Entitlement $entitlement = null): ProgramMember
     {
-        return ProgramMember::firstOrCreate(
+        $pm = ProgramMember::firstOrCreate(
             ['program_id' => $program->id, 'user_id' => $user->id],
-            ['role_in_program' => $role, 'joined_at' => now()],
+            ['role_in_program' => $role, 'joined_at' => now(), 'entitlement_id' => $entitlement?->id],
         );
+        // Ein neuer Verkauf haengt die Mitgliedschaft an den neuen Zugang (der alte ist womoeglich abgelaufen)
+        if ($entitlement && $pm->entitlement_id !== $entitlement->id) {
+            $pm->forceFill(['entitlement_id' => $entitlement->id])->save();
+        }
+
+        return $pm;
     }
 }

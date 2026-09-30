@@ -17,6 +17,7 @@
                 @if ($post->url)
                     <a href="{{ $post->url }}" target="_blank" rel="noopener" class="knopf knopf-leise knopf-klein">Im Web öffnen</a>
                 @endif
+                <a href="{{ route('community', ['frage' => 1, 'titel' => 'Frage zum Impuls «'.\Illuminate\Support\Str::limit($post->title, 120, '').'»', 'text' => route('impulse.show', $post)]) }}" class="knopf knopf-leise knopf-klein"><i class="fa-solid fa-circle-question"></i>Frage dazu</a>
             </div>
         </div>
     </x-karte>

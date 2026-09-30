@@ -17,6 +17,7 @@ use App\Models\Post;
 use App\Models\Program;
 use App\Models\ProgramMember;
 use App\Models\ProgramStep;
+use App\Models\Projekt;
 use App\Models\Question;
 use App\Models\Reflection;
 use App\Models\Resourceable;
@@ -26,6 +27,7 @@ use App\Models\Tenant;
 use App\Models\Tool;
 use App\Models\Topic;
 use App\Models\Unit;
+use App\Models\UnitVideo;
 use App\Models\User;
 use App\Observers\EventObserver;
 use App\Observers\PostObserver;
@@ -81,6 +83,7 @@ class AppServiceProvider extends ServiceProvider
             'note' => Note::class,
             'reflection' => Reflection::class,
             'journal' => JournalEntry::class,
+            'projekt' => Projekt::class,
             'message' => Message::class,
             'comment' => Comment::class,
             'answer' => Answer::class,
@@ -91,6 +94,8 @@ class AppServiceProvider extends ServiceProvider
             'topic' => Topic::class,
             'tool' => Tool::class,
             'sammlung' => Sammlung::class,
+            'unit_video' => UnitVideo::class,
+            'booking' => Booking::class,
         ]);
 
         // Funktionen je Mandant (Pennant): Schalter in tenants.settings, hier an einer Stelle aufgeloest
