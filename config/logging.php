@@ -81,6 +81,14 @@ return [
             'replace_placeholders' => true,
         ],
 
+        // Wer wann welche Wiederherstellung angestossen hat. Eigene Datei, bleibt lange erhalten.
+        'backup-restore' => [
+            'driver' => 'single',
+            'path' => storage_path('logs/backup-restore.log'),
+            'level' => 'info',
+            'replace_placeholders' => true,
+        ],
+
         'slack' => [
             'driver' => 'slack',
             'url' => env('LOG_SLACK_WEBHOOK_URL'),
