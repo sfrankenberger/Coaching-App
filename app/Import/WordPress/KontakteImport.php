@@ -15,6 +15,9 @@ use Illuminate\Support\Str;
  */
 class KontakteImport
 {
+    /** Mailster-Listen, die in der App unter einem anderen Tag laufen (die Hauptliste heisst in der App schlicht "newsletter"). */
+    public const TAG_MAP = ['newsletter-alle' => 'newsletter'];
+
     public function __construct(protected Tenant $tenant, protected WordPressSource $wp, protected bool $dryRun = false) {}
 
     public function run(?callable $report = null): array
@@ -42,7 +45,7 @@ class KontakteImport
             }
             $f = ($felder[$s->ID] ?? collect())->pluck('meta_value', 'meta_key');
             $name = trim(($f['firstname'] ?? '').' '.($f['lastname'] ?? '')) ?: null;
-            $tags = ($zuordnung[$s->ID] ?? collect())->map(fn ($z) => $listen[$z->list_id] ?? null)->filter()->map(fn ($l) => Kontakt::tagSauber($l->slug ?: $l->name))->unique()->values()->all();
+            $tags = ($zuordnung[$s->ID] ?? collect())->map(fn ($z) => $listen[$z->list_id] ?? null)->filter()->map(fn ($l) => self::TAG_MAP[Kontakt::tagSauber($l->slug ?: $l->name)] ?? Kontakt::tagSauber($l->slug ?: $l->name))->unique()->values()->all();
             $status = match ((int) $s->status) {
                 1 => 'bestaetigt', 2 => 'abgemeldet', 0 => 'angemeldet', default => 'abgeprallt'
             };

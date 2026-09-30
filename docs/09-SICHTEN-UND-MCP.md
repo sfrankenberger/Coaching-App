@@ -133,6 +133,13 @@ Veroeffentlichen ruft es `POST /api/v1/newsletter` mit Titel, Auszug, Beitragsbi
 einmal je Beitrag (`_capp_newsletter_id`). Schluessel: Sanctum-Token mit `mcp` unter Einstellungen, Allgemein,
 "Coaching-App Schluessel". Dieselben Werkzeuge stecken dahinter (`NewsletterAnlegen`, `NewsletterSenden`).
 
+Anmeldungen von der Website: die Elementor-Formulare bleiben, wie sie sind. `resources/wordpress/lea-app-anmeldung.php`
+(auf dem Server in `wp-content/novamira-sandbox/`) haengt sich an `elementor_pro/forms/new_record` und schickt jede
+Anmeldung an `POST /api/anmelden` (Formularname zu Tag in `lea_app_anmeldung_map()`, Veranstaltungen mit `sofort`,
+Newsletter-Haken auf Veranstaltungsformularen zuerst mit Opt-in). Protokoll in der Option `lea_app_anmeldung_log`.
+Neue Seiten koennen direkt `[app_anmelden tag="..."]` nutzen. Die Hauptliste heisst in der App `newsletter`
+(Import bildet Mailsters "Newsletter Alle" darauf ab, `KontakteImport::TAG_MAP`).
+
 ## MCP-Server
 
 `POST /api/mcp` (`App\Http\Controllers\Api\McpController`), Streamable HTTP ohne Sitzung: jede Anfrage ist ein

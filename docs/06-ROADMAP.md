@@ -115,7 +115,9 @@ Stand: rund 300 Abonnentinnen, 13 Listen (drei mit Gewicht), 18 Kampagnen, 9 Aut
 - [x] Newsletter aus der App (`/coach/newsletter`, `App\Newsletter\Versand`): Vorlage mit Bild, Headline, Text, Knopf, Vorschautext; Empfaenger nach Tag; Test an bis zu fuenf Adressen; Rueckfrage vor dem Senden; Versand in Wellen (60 pro Minute, `newsletter:lauf wellen`), geplant zur Zeit; Abmeldung mit einem Klick (auch List-Unsubscribe); Oeffnungen und Klicks; Webversion; Double-Opt-in mit signiertem Link (30 Tage)
 - [x] Anmeldeformular fuer die Website (`[app_anmelden tag="..." sofort="0"]` in `resources/wordpress/app-angebote.php`, eigene Seite `/newsletter/anmelden`, JSON `POST /api/anmelden`); Freebie geht als Serie mit Schritt "0 Tage"
 - [x] Serien (`/coach/serien`, `App\Newsletter\Serien`): Tag loest aus, Mails mit Abstand in Tagen, stuendlich `newsletter:lauf serien`
-- [ ] Mailster abschalten: Kontakte importieren, Formulare auf der Website auf `[app_anmelden]` umstellen, Autoresponder als Serien nachbauen (9 Stueck, Texte aus Mailster kopieren), Mailster deaktivieren
+- [x] Formulare der Website laufen in die App (30.09.): `resources/wordpress/lea-app-anmeldung.php` haengt sich wie die Mailster-Bruecke an `elementor_pro/forms/new_record` und ruft `POST /api/anmelden` (Formularname zu Tag, Veranstaltungen `sofort`, Newsletter-Haken mit Opt-in). Kontakte importiert (313, Hauptliste als Tag `newsletter`), Schluessel in WordPress eingetragen
+- [x] Ausgefuelltes Arbeitsbuch als PDF (`/kurse/{slug}/pdf`, `App\Programs\ArbeitsbuchPdf`, dompdf): alle Einheiten mit Frage und Antwort, Notiz je Einheit, Knopf auf der Kursseite und im Baustein "Mitnehmen"
+- [ ] Am Umzugstag: Autoresponder als Serien nachbauen (9 Stueck, Texte aus Mailster kopieren), letzter Kontakte-Import, Mailster deaktivieren
 
 ## Etappe 12 - Website mit Statamic (Versuch)
 

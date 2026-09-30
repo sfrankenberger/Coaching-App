@@ -92,6 +92,7 @@ class KursController extends Controller
             'done' => $done,
             'aktuellerSchritt' => $this->currentStep($program),
             'member' => $member,
+            'pdfMoeglich' => Exercise::whereIn('unit_id', $program->units->pluck('id'))->whereIn('type', Exercise::ANSWERABLE)->exists(),
             'freigabeOffen' => $program->isWorkbook() && $program->teilbar() && ! $user->canManageCurrentTenant() && ($member?->share_mode === null),
         ]);
     }

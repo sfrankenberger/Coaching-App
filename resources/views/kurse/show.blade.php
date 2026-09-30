@@ -21,6 +21,9 @@
                 @else
                     <span class="chip chip-gut"><i class="fa-solid fa-check"></i>Alles erledigt</span>
                 @endif
+                @if ($pdfMoeglich)
+                    <a href="{{ route('kurse.pdf', $program) }}" class="knopf knopf-ruhig"><i class="fa-solid fa-file-pdf"></i>Meine Antworten als PDF</a>
+                @endif
             </div>
         @endif
 

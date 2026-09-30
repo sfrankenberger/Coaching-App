@@ -37,5 +37,5 @@ Route::match(['get', 'post', 'delete'], '/mcp', McpController::class)->middlewar
 Route::middleware([IdentifyTenant::class, 'throttle:120,1'])->group(function () {
     Route::get('/angebote', [AngeboteController::class, 'index'])->name('api.angebote');
     Route::get('/angebote/{slug}', [AngeboteController::class, 'show'])->name('api.angebot');
-    Route::post('/anmelden', [NewsletterController::class, 'anmelden'])->middleware('throttle:10,10')->name('api.anmelden');
+    Route::post('/anmelden', [NewsletterController::class, 'anmelden'])->middleware('throttle:60,10')->name('api.anmelden');
 });

@@ -60,6 +60,10 @@ Der Import ist wiederholbar (legacy_id) und überschreibt Inhaltsfelder aus Word
    Pfad und Query mitgeben (siehe 4a): die App ordnet alte Adressen selbst zu
 4. Sandbox-Module im WordPress abschalten (nicht löschen), nach 30 Tagen aufräumen
 5. Woo-Webhook bleibt, Feeds bleiben, Brücke bleibt (für den Weg von der Website in die App)
+6. Mailster: letzter Kontakte-Import (`import:wordpress lea --only=kontakte`), Autoresponder als Serien nachbauen, dann
+   Mailster deaktivieren. Die Formulare der Website schreiben seit 30.09. bereits in die App
+   (`lea-app-anmeldung.php` neben `lea-mailster-forms.php`), der Schluessel ist unter Einstellungen, Allgemein eingetragen.
+   Abo-Umzug (4b, Punkt 3) entfaellt: es gibt kein laufendes Abo.
 
 ## 5. Installierte App (Home-Bildschirm) und Push beim Umzug
 

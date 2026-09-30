@@ -235,6 +235,7 @@
                                 <div class="flex flex-wrap gap-2 mt-2.5">
                                     <button type="button" class="knopf knopf-ruhig" data-kopieren="{{ $mitnehmen->map(fn ($m) => $m['titel']."\n".$m['text'])->join("\n\n") }}"><i class="fa-regular fa-copy"></i>Text kopieren</button>
                                     <button type="button" class="knopf knopf-ruhig" data-drucken><i class="fa-solid fa-print"></i>Drucken oder als PDF</button>
+                                    <a href="{{ route('kurse.pdf', $program) }}" class="knopf knopf-ruhig"><i class="fa-solid fa-file-pdf"></i>Ganzes Arbeitsbuch als PDF</a>
                                 </div>
                             @endif
                         </div>

@@ -11,6 +11,7 @@ use App\Models\Task;
 use App\Models\Tenant;
 use App\Models\Unit;
 use App\Models\User;
+use App\Programs\ArbeitsbuchPdf;
 use App\Tenancy\CurrentTenant;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\UploadedFile;
@@ -112,5 +113,31 @@ class ArbeitsbuchTest extends TestCase
         $this->actingAs($this->bea)->get("http://a.test/kurse/antwort/{$a->id}/aufnahme")->assertForbidden();
         // Ueber den normalen Antwortweg laesst sich keine Aufnahme setzen
         $this->actingAs($this->anna)->postJson('http://a.test/kurse/antwort', ['exercise_id' => $this->ex['ton']->id, 'value' => '/etc/passwd'])->assertStatus(422);
+    }
+
+    public function test_ausgefuelltes_arbeitsbuch_als_pdf(): void
+    {
+        $antwort = fn ($ex, $v) => $this->actingAs($this->anna)->postJson('http://a.test/kurse/antwort', ['exercise_id' => $ex->id, 'value' => $v])->assertOk();
+        $antwort($this->ex['liste'], ['Ruhe am Morgen', 'Ein Garten']);
+        $antwort($this->ex['paare'], [['Ich schaffe das nie', 'Ich habe schon viel geschafft']]);
+        $antwort($this->ex['brief'], "Liebe Anna,\ndu bist genug.");
+
+        $r = $this->actingAs($this->anna)->get('http://a.test/kurse/brief/pdf');
+        $r->assertOk()->assertHeader('Content-Type', 'application/pdf');
+        $this->assertStringContainsString('liebesbrief-', $r->headers->get('Content-Disposition'));
+        $this->assertStringStartsWith('%PDF', $r->getContent());
+
+        // Die Vorlage selbst: alle Teile mit Frage und Antwort, Spiegel zeigt die Liste
+        $daten = $this->in(fn () => app(ArbeitsbuchPdf::class)->daten($this->anna, Program::where('slug', 'brief')->first()));
+        $html = view('kurse.pdf', $daten)->render();
+        foreach (['Ruhe am Morgen', 'Ein Garten', 'Ich schaffe das nie', 'Ich habe schon viel geschafft', 'du bist genug.', 'Das hast du dir gewuenscht', 'Liebesbrief'] as $s) {
+            $this->assertStringContainsString($s, $html);
+        }
+        $this->assertStringNotContainsString('Nimm ihn mit', $html);
+
+        // Bea hat keinen Zugang zum Arbeitsbuch
+        $this->actingAs($this->bea)->get('http://a.test/kurse/brief/pdf')->assertForbidden();
+        // Auf der Kursseite steht der Knopf
+        $this->actingAs($this->anna)->get('http://a.test/kurse/brief')->assertOk()->assertSee('Meine Antworten als PDF');
     }
 }

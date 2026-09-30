@@ -6,6 +6,7 @@ use App\Http\Controllers\AltlinkController;
 use App\Http\Controllers\AngeboteController;
 use App\Http\Controllers\AnhaengeController;
 use App\Http\Controllers\AnsichtController;
+use App\Http\Controllers\ArbeitsbuchPdfController;
 use App\Http\Controllers\AssistentChatController;
 use App\Http\Controllers\AssistentController;
 use App\Http\Controllers\AufgabenController;
@@ -156,6 +157,7 @@ Route::middleware(['auth', 'membership'])->group(function () {
     Route::get('/kurse/antwort/{antwort}/aufnahme', [UebungController::class, 'hoeren'])->name('uebung.aufnahme.hoeren');
     Route::post('/kurse/uebung/{uebung}/praxis', [UebungController::class, 'praxis'])->name('uebung.praxis');
     Route::get('/kurse/{program:slug}', [KursController::class, 'show'])->name('kurse.show');
+    Route::get('/kurse/{program:slug}/pdf', ArbeitsbuchPdfController::class)->name('kurse.pdf');
     Route::post('/kurse/{program:slug}/freigabe', [KursController::class, 'freigabe'])->name('kurse.freigabe');
     Route::get('/kurse/{program:slug}/schritt/{schritt}', [KursController::class, 'schritt'])->name('kurse.schritt');
     Route::get('/kurse/{program:slug}/einheit/{einheit}', [KursController::class, 'einheit'])->name('kurse.einheit');
