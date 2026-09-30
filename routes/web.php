@@ -102,14 +102,14 @@ Route::middleware('guest')->group(function () {
     Route::get('/anmelden', [LoginController::class, 'form'])->name('anmelden');
     Route::post('/anmelden/link', [LoginController::class, 'sendLink'])->name('anmelden.link');
     Route::post('/anmelden/passwort', [LoginController::class, 'password'])->name('anmelden.passwort');
-    Route::get('/anmelden/dienst/{dienst}', [SocialController::class, 'redirect'])->name('anmelden.dienst');
-    Route::post('/passkeys/anmelden/optionen', [PasskeyController::class, 'loginOptions'])->name('passkeys.anmelden.optionen');
-    Route::post('/passkeys/anmelden', [PasskeyController::class, 'login'])->name('passkeys.anmelden');
+    Route::get('/anmelden/dienst/{dienst}', [SocialController::class, 'redirect'])->middleware('throttle:20,1')->name('anmelden.dienst');
+    Route::post('/passkeys/anmelden/optionen', [PasskeyController::class, 'loginOptions'])->middleware('throttle:30,1')->name('passkeys.anmelden.optionen');
+    Route::post('/passkeys/anmelden', [PasskeyController::class, 'login'])->middleware('throttle:10,1')->name('passkeys.anmelden');
 });
 // Rueckkehr von Google/Apple: auch angemeldet, denn aus dem Profil laesst sich ein Dienst verknuepfen.
 Route::match(['get', 'post'], '/anmelden/dienst/{dienst}/zurueck', [SocialController::class, 'callback'])->name('anmelden.dienst.zurueck');
 // Der Link aus der Mail darf auch klappen, wenn schon jemand angemeldet ist (anderes Konto).
-Route::get('/anmelden/{token}', [LoginController::class, 'token'])->name('anmelden.token')->where('token', '[A-Za-z0-9]{40,64}');
+Route::get('/anmelden/{token}', [LoginController::class, 'token'])->middleware('throttle:20,1')->name('anmelden.token')->where('token', '[A-Za-z0-9]{40,64}');
 Route::post('/abmelden', [LoginController::class, 'logout'])->name('abmelden');
 
 // Angemeldet, mit Mitgliedschaft im Mandanten
