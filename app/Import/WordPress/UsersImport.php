@@ -222,6 +222,9 @@ class UsersImport
             ->where('tenant_id', $this->tenant->id)
             ->where(fn ($q) => $q->where('legacy_id', (string) $wpUser->ID)->orWhere('user_id', $user->id))
             ->first() ?? new Membership(['tenant_id' => $this->tenant->id]);
+        if ($membership->trashed()) {
+            $membership->restore();
+        }
 
         // Parallelbetrieb: zuletzt aktiv im alten Bereich zaehlt auch (Ampel, "zuletzt da"), nie rueckwaerts
         $zuletzt = collect((array) $this->config['last_seen_meta'])->map(fn ($k) => (int) ($meta[$k] ?? 0))->filter()

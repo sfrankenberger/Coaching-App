@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use App\Content\Concerns\HasTopics;
+use App\Support\Papierkorb\ImPapierkorb;
 use App\Support\Protokoll\Protokolliert;
 use App\Tenancy\Concerns\BelongsToTenant;
 use Illuminate\Database\Eloquent\Model;
@@ -17,7 +18,12 @@ use Illuminate\Support\Collection;
 class Program extends Model
 {
     use BelongsToTenant, HasTopics;
+    use ImPapierkorb;
     use Protokolliert;
+
+    protected static array $papierkorbKinder = ['steps', 'units'];
+
+    protected static array $papierkorbEindeutig = ['slug'];
 
     public const TYPES = [
         'hybrid' => 'Hybrid-Coaching (Gruppe, Wochen)',

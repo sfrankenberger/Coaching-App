@@ -171,9 +171,7 @@ class FragenController extends Controller
     {
         Gate::authorize('delete', $frage);
         $program = $frage->program;
-        $frage->answers()->delete();
-        $frage->reactions()->delete();
-        $frage->delete();
+        $frage->delete(); // Papierkorb, Antworten und Reaktionen bleiben bis zum endgueltigen Loeschen
 
         return $program ? redirect()->route('kurse.fragen', $program)->with('meldung', 'Frage gelöscht.') : redirect()->route('home');
     }

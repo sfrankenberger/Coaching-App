@@ -45,6 +45,8 @@ php artisan test --parallel                            # lokal, mit paratest etw
 php84 artisan themen:profil lea --limit=20             # Themenfinder per KI
 php84 artisan branding:icons lea <ordner>              # App-Icons uebernehmen
 php84 artisan filament:assets                          # nach Filament-Updates, laeuft im Deploy
+php84 artisan papierkorb:leeren --trocken             # Papierkorb: aelter als 90 Tage endgueltig loeschen (taeglich 03:50)
+php84 artisan activitylog:clean                       # Aenderungsprotokoll: aelter als 730 Tage entfernen (taeglich 03:40)
 bin/build-css                                          # Tailwind bauen (bin/build-css --watch beim Entwickeln)
 ```
 
@@ -69,6 +71,16 @@ Anmeldung: Magic Link (`App\Auth\MagicLink`, Tabelle `login_tokens`), Passwort o
 5. Dateien unter `storage/app/tenants/{tenant_id}/...`.
 6. Für jede neue mandantenfähige Tabelle ein Test, der zeigt, dass Mandant B die Daten von A nicht sieht.
 7. Rollen hängen an `memberships` (pro Mandant), nicht am User. Plattform-Admin (`users.is_platform_admin`) nur für Sebastian.
+
+## Standard: Datensicherung, Papierkorb, Änderungsprotokoll
+
+Gilt für alle Laravel-Apps des Teams, hier zuerst eingebaut.
+
+- **Datensicherung** (`/plattform/datensicherungen`, nur Plattform-Admin): Die App sichert nichts selbst. Das Server-Skript `sudo -n /usr/local/bin/app-restore list|status|restore <app>` liefert JSON (Format in `config/backup-restore.php`), `App\Support\Backup\BackupRestoreService` ruft es auf. Server und HiDrive aus demselben Lauf stehen in einer Zeile (90 Sekunden Toleranz). Wiederherstellen nur mit Code per Mail (10 Minuten, 5 Versuche), Passwort falls gesetzt und abgetipptem App-Namen (`BackupRestoreConfirmation`). Vorher schreibt der Server einen "Stand vor Wiederherstellung", die App loggt in den Kanal `backup-restore` (`storage/logs/backup-restore.log`). Während des Restores ist die App im Wartungsmodus, die Seite wartet auf die 503 und lädt neu. Ein echter Restore in Produktion nur nach ausdrücklichem OK von Sebastian.
+- **Änderungsprotokoll** (spatie/laravel-activitylog, Tabelle `activity_log` mit `tenant_id` und `person_id`): Trait `App\Support\Protokoll\Protokolliert` am Modell schreibt angelegt, geändert, gelöscht, wiederhergestellt, endgültig gelöscht. Regeln in `config/protokoll.php` (Typnamen, sensible Felder, ignorierte Felder). Sensible Felder (`$protokollSensibel`) stehen nur als "geändert" drin, private Einträge (`visibility = private`) ohne Titel und Inhalt. Seite "Verlauf" in beiden Panels (`/coach/verlauf` eigener Mandant, `/plattform/verlauf` alles), Abschnitt "Verlauf" im Dossier. Importe protokollieren nicht (`ActivityLogStatus::disable()`). Frist 730 Tage.
+- **Papierkorb** (SoftDeletes auf 24 Tabellen): Trait `App\Support\Papierkorb\ImPapierkorb` am Modell. `$papierkorbKinder` gehen mit in den Papierkorb und kommen mit zurück, `$papierkorbEindeutig` (slug, key, guid, vimeo_id) bekommen beim Löschen ein Suffix `~geloescht-…`, damit der Wert frei wird, `$papierkorbEltern` blendet Kinder in der Liste aus. Seite "Papierkorb" in beiden Panels (`App\Support\Papierkorb\Papierkorb`), endgültig löschen nur in der Plattform, `papierkorb:leeren` räumt nach 90 Tagen auf. Anhänge und Antworten bleiben bis zum endgültigen Löschen. Zugänge (`memberships`, Pivot mit unique `tenant_id,user_id`): `Tenant::users()` und `User::tenants()` filtern gelöschte Pivots, `Membership::anlegen()` holt einen Zugang im Papierkorb samt Einstellungen zurück, ein neues `attach` räumt den alten weg. "Person endgültig löschen" unter `/plattform/personen` (Adresse abtippen, nie Plattform-Admins).
+- **Neues Modell mit Mandantendaten:** `BelongsToTenant` + `Protokolliert` + `ImPapierkorb` (wenn es gelöscht werden kann), Morph-Alias in `AppServiceProvider`, Typname in `config/protokoll.php`, Tabelle mit `softDeletes()`, Modell in `Papierkorb::MODELLE`. Löschen im Code heisst `delete()` (Papierkorb), `forceDelete()` nur in Plattform-Aktionen und im Aufräumen.
+- **Tests:** Pest neben PHPUnit (`tests/Pest.php`), GitHub Actions bei jedem Push (`.github/workflows/tests.yml`).
 
 ## Stack
 

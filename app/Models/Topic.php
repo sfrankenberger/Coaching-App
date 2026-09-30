@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Support\Papierkorb\ImPapierkorb;
 use App\Support\Protokoll\Protokolliert;
 use App\Tenancy\Concerns\BelongsToTenant;
 use Illuminate\Database\Eloquent\Model;
@@ -12,7 +13,10 @@ use Illuminate\Support\Str;
 class Topic extends Model
 {
     use BelongsToTenant;
+    use ImPapierkorb;
     use Protokolliert;
+
+    protected static array $papierkorbEindeutig = ['slug'];
 
     protected $guarded = [];
 

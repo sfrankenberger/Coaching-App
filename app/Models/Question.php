@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use App\Models\Concerns\HatAnhaenge;
+use App\Support\Papierkorb\ImPapierkorb;
 use App\Support\Protokoll\Protokolliert;
 use App\Tenancy\Concerns\BelongsToTenant;
 use Illuminate\Database\Eloquent\Builder;
@@ -15,7 +16,17 @@ class Question extends Model
 {
     use BelongsToTenant;
     use HatAnhaenge;
+    use ImPapierkorb;
     use Protokolliert;
+
+    protected static function booted(): void
+    {
+        // Antworten sind Kommentare mit Papierkorb: beim endgueltigen Loeschen der Frage gehen sie endgueltig mit
+        static::forceDeleting(function (Question $q) {
+            $q->answers()->withTrashed()->get()->each->forceDelete();
+            $q->reactions()->delete();
+        });
+    }
 
     public const STATUS = [
         'offen' => 'Offen',

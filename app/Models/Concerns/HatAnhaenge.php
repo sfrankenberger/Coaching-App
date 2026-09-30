@@ -10,7 +10,8 @@ trait HatAnhaenge
 {
     public static function bootHatAnhaenge(): void
     {
-        static::deleting(fn (self $m) => $m->anhaenge()->delete());
+        // Im Papierkorb bleiben die Anhaenge dran, erst beim endgueltigen Loeschen gehen sie weg
+        static::deleting(fn (self $m) => (! method_exists($m, 'isForceDeleting') || $m->isForceDeleting()) ? $m->anhaenge()->delete() : null);
     }
 
     public function anhaenge(): MorphMany

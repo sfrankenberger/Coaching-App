@@ -78,7 +78,7 @@ class Protokoll extends Activity
     /** Lesbares Ereignis, z. B. "geaendert". */
     public function ereignis(): string
     {
-        return config('protokoll.ereignisse')[$this->event] ?? $this->description;
+        return $this->description ?: (config('protokoll.ereignisse')[$this->event] ?? (string) $this->event);
     }
 
     /** Ein Satz fuer Listen: "Programm «Frühling» geändert". */

@@ -75,7 +75,9 @@ trait Protokolliert
                         $eintrag->tenant_id = $model->getAttribute('tenant_id') ?? app(CurrentTenant::class)->id();
                         $eintrag->person_id = $model->protokollPerson();
                     })
-                    ->log($model->getDescriptionForEvent($ereignis));
+                    ->log($ereignis === 'deleted' && method_exists($model, 'isForceDeleting') && $model->isForceDeleting()
+                        ? 'endgültig gelöscht'
+                        : $model->getDescriptionForEvent($ereignis));
 
                 $model->activitylogOptions = null;
             });
