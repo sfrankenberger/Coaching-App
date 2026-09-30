@@ -2,9 +2,11 @@
 
 namespace App\Models;
 
+use App\Support\Protokoll\Protokolliert;
 use App\Tenancy\Concerns\BelongsToTenant;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\MorphMany;
 
 /**
  * Antwort einer Person auf einen Uebungsteil. Privat, bis sie geteilt wird.
@@ -12,6 +14,10 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 class Answer extends Model
 {
     use BelongsToTenant;
+    use Protokolliert;
+
+    /** Inhalt bleibt privat, im Verlauf steht nur, dass sich etwas geaendert hat. */
+    protected static array $protokollSensibel = ['value'];
 
     protected $guarded = [];
 
@@ -49,7 +55,7 @@ class Answer extends Model
         return is_array($v) ? $v !== [] : trim((string) $v) !== '';
     }
 
-    public function comments(): \Illuminate\Database\Eloquent\Relations\MorphMany
+    public function comments(): MorphMany
     {
         return $this->morphMany(Comment::class, 'commentable')->oldest();
     }

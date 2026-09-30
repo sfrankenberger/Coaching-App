@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use App\Content\Concerns\HasTopics;
+use App\Support\Protokoll\Protokolliert;
 use App\Support\Suche;
 use App\Support\Video;
 use App\Tenancy\Concerns\BelongsToTenant;
@@ -18,6 +19,7 @@ use Laravel\Scout\Searchable;
 class Resource extends Model
 {
     use BelongsToTenant, HasTopics, Searchable;
+    use Protokolliert;
 
     public const TYPES = [
         'pdf' => 'PDF',

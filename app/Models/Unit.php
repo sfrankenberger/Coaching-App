@@ -4,6 +4,7 @@ namespace App\Models;
 
 use App\Content\Concerns\HasTopics;
 use App\Recordings\Vimeo;
+use App\Support\Protokoll\Protokolliert;
 use App\Support\Suche;
 use App\Tenancy\Concerns\BelongsToTenant;
 use Illuminate\Database\Eloquent\Model;
@@ -19,6 +20,7 @@ use Laravel\Scout\Searchable;
 class Unit extends Model
 {
     use BelongsToTenant, HasTopics, Searchable;
+    use Protokolliert;
 
     public const TYPES = [
         'lesson' => 'Lektion',

@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use App\Models\Concerns\HatAnhaenge;
+use App\Support\Protokoll\Protokolliert;
 use App\Tenancy\Concerns\BelongsToTenant;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
@@ -16,6 +17,7 @@ class Question extends Model
 {
     use BelongsToTenant;
     use HatAnhaenge;
+    use Protokolliert;
 
     public const STATUS = [
         'offen' => 'Offen',

@@ -3,32 +3,44 @@
 namespace App\Providers;
 
 use App\Ai\Anthropic;
+use App\Models\Anhang;
 use App\Models\Answer;
 use App\Models\Booking;
+use App\Models\BookingType;
+use App\Models\CoachNote;
 use App\Models\Comment;
 use App\Models\Conversation;
+use App\Models\Entitlement;
 use App\Models\Event;
+use App\Models\EventAttendee;
+use App\Models\Exercise;
 use App\Models\JournalEntry;
 use App\Models\Membership;
 use App\Models\Message;
 use App\Models\Note;
+use App\Models\Offer;
+use App\Models\OfferProduct;
 use App\Models\PodcastEpisode;
 use App\Models\Post;
 use App\Models\Program;
 use App\Models\ProgramMember;
 use App\Models\ProgramStep;
 use App\Models\Projekt;
+use App\Models\Protokoll;
 use App\Models\Question;
 use App\Models\Reflection;
 use App\Models\Resourceable;
 use App\Models\Sammlung;
 use App\Models\Task;
 use App\Models\Tenant;
+use App\Models\TenantDomain;
 use App\Models\Tool;
 use App\Models\Topic;
 use App\Models\Unit;
 use App\Models\UnitVideo;
 use App\Models\User;
+use App\Models\Verkauf;
+use App\Models\Wissen;
 use App\Observers\EventObserver;
 use App\Observers\PostObserver;
 use App\Observers\ProgramMemberObserver;
@@ -95,7 +107,23 @@ class AppServiceProvider extends ServiceProvider
             'tool' => Tool::class,
             'sammlung' => Sammlung::class,
             'unit_video' => UnitVideo::class,
+            // fuer das Aenderungsprotokoll (subject_type)
+            'tenant' => Tenant::class,
+            'domain' => TenantDomain::class,
+            'program_member' => ProgramMember::class,
+            'exercise' => Exercise::class,
+            'attendee' => EventAttendee::class,
             'booking' => Booking::class,
+            'booking_type' => BookingType::class,
+            'coach_note' => CoachNote::class,
+            'anhang' => Anhang::class,
+            'offer' => Offer::class,
+            'offer_product' => OfferProduct::class,
+            'entitlement' => Entitlement::class,
+            'verkauf' => Verkauf::class,
+            'wissen' => Wissen::class,
+            'conversation' => Conversation::class,
+            'protokoll' => Protokoll::class,
         ]);
 
         // Funktionen je Mandant (Pennant): Schalter in tenants.settings, hier an einer Stelle aufgeloest
