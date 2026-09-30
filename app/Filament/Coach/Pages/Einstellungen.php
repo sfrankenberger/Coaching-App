@@ -3,6 +3,7 @@
 namespace App\Filament\Coach\Pages;
 
 use App\Enums\Role;
+use App\Tenancy\Branding;
 use App\Tenancy\CurrentTenant;
 use BackedEnum;
 use Filament\Forms\Components\ColorPicker;
@@ -66,6 +67,8 @@ class Einstellungen extends Page
             'reply_to' => $s['mail']['reply_to'] ?? null,
             'feeds' => array_values((array) ($s['feeds'] ?? [])),
             'telegram_bot_username' => $s['telegram']['bot_username'] ?? null,
+            'team_als_coach' => (bool) ($s['chat']['team_als_coach'] ?? true),
+            'team_name' => $s['chat']['team_name'] ?? null,
             'test_only' => (bool) ($s['notifications']['test_only'] ?? false),
             'test_emails' => array_values((array) ($s['notifications']['test_emails'] ?? [])),
         ]);
@@ -115,6 +118,10 @@ class Einstellungen extends Page
             Section::make('Telegram')->description('Der Bot-Token liegt in der Plattform. Hier nur der Name, den die Personen sehen.')->schema([
                 TextInput::make('telegram_bot_username')->label('Bot-Name (ohne @)')->maxLength(60),
             ]),
+            Section::make('Chat')->description('Wenn dein Team im 1:1 antwortet, steht die Nachricht in deinem Namen mit dem Hinweis "Team". Du siehst, wer sie geschrieben hat.')->schema([
+                Toggle::make('team_als_coach')->label('Team schreibt in meinem Namen')->default(true),
+                TextInput::make('team_name')->label('Hinweis an der Nachricht')->placeholder('Team '.app(Branding::class)->coachName())->maxLength(40),
+            ])->columns(2),
         ])->statePath('data');
     }
 
@@ -135,6 +142,7 @@ class Einstellungen extends Page
         $s['mail'] = array_merge($s['mail'] ?? [], ['from_name' => $data['from_name'] ?: null, 'from_address' => $data['from_address'] ?: null, 'reply_to' => $data['reply_to'] ?: null]);
         $s['feeds'] = array_values(array_map(fn ($f) => array_filter(['type' => $f['type'] ?? 'post', 'url' => $f['url'] ?? null, 'show' => $f['show'] ?? null, 'limit' => (int) ($f['limit'] ?? 0) ?: null]), $data['feeds'] ?? []));
         $s['telegram'] = array_merge($s['telegram'] ?? [], ['bot_username' => $data['telegram_bot_username'] ?: null]);
+        $s['chat'] = array_merge($s['chat'] ?? [], ['team_als_coach' => (bool) ($data['team_als_coach'] ?? true), 'team_name' => filled($data['team_name'] ?? null) ? trim($data['team_name']) : null]);
         $s['notifications'] = array_merge($s['notifications'] ?? [], [
             'test_only' => (bool) ($data['test_only'] ?? false),
             'test_emails' => array_values(array_unique(array_map(fn ($e) => strtolower(trim($e)), (array) ($data['test_emails'] ?? $s['notifications']['test_emails'] ?? [])))),

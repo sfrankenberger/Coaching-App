@@ -47,6 +47,11 @@ class Note extends Model
         return $this->belongsTo(Program::class);
     }
 
+    public function reactions(): MorphMany
+    {
+        return $this->morphMany(Reaction::class, 'reactable');
+    }
+
     public function comments(): MorphMany
     {
         return $this->morphMany(Comment::class, 'commentable')->oldest();

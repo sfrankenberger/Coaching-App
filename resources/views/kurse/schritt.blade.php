@@ -45,6 +45,14 @@
         @foreach ($aufgaben as $t)
             @include('aufgaben._karte', ['t' => $t])
         @endforeach
+        @if ($rueckstand->isNotEmpty())
+            <details class="mt-2">
+                <summary class="hinweis cursor-pointer"><i class="fa-solid fa-clock-rotate-left"></i> Aus früheren Wochen noch offen: {{ $rueckstand->count() }}</summary>
+                @foreach ($rueckstand as $t)
+                    @include('aufgaben._karte', ['t' => $t, 'ohneKommentare' => true])
+                @endforeach
+            </details>
+        @endif
         @unless ($ich->canManageCurrentTenant())
             <form method="post" action="{{ route('aufgaben.store') }}" class="baustein mt-1">
                 @csrf

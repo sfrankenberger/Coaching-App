@@ -4,9 +4,13 @@
     <p class="unterzeile m-0 mb-3.5">Nimm dir zehn Minuten. Deine Antworten bleiben bei dir; wenn du magst, gehen sie zusätzlich an deine Coachin.</p>
 
     <x-karte>
-        <form method="post" action="{{ route('reflexion.store') }}" class="eingabe">
+        <form id="neu" method="post" action="{{ route('reflexion.store') }}" class="eingabe">
             @csrf
             <input type="hidden" name="refl_id" value="{{ $entwurf?->id }}">
+            @if ($aufgabe ?? null)
+                <input type="hidden" name="aufgabe_id" value="{{ $aufgabe->id }}">
+                <p class="hinweis m-0"><i class="fa-solid fa-list-check"></i> Zur Aufgabe «{{ $aufgabe->title }}». Speichern hakt sie ab.</p>
+            @endif
             <p class="hinweis">{{ $entwurf?->week_label ?? $woche }}</p>
             @foreach ($fragen as $k => [$ico, $frage, $tipp])
                 <div>
@@ -15,7 +19,7 @@
                     <textarea id="refl-{{ $k }}" name="{{ $k }}" rows="4" class="feld" placeholder="Schreib oder diktiere ...">{{ old($k, $entwurf?->$k) }}</textarea>
                 </div>
             @endforeach
-            <x-anhang-wahl :refs="old('refs', $entwurf?->anhangRefs() ?? [])" />
+            <x-anhang-wahl :refs="old('refs', $entwurf?->anhangRefs() ?? (($aufgabe ?? null) ? ['task:'.$aufgabe->id] : []))" />
             <div class="flex flex-wrap gap-2">
                 @if ($kurse->count())
                     <label class="block"><span class="feld-label">Kurs</span><select name="program_id" class="feld"><option value="">Allgemein</option>@foreach ($kurse as $id => $t)<option value="{{ $id }}" @selected((int) old('program_id', $entwurf?->program_id) === $id)>{{ $t }}</option>@endforeach</select></label>
@@ -23,7 +27,7 @@
                 <label class="block"><span class="feld-label">Wer sieht das?</span><select name="visibility" class="feld">
                     <option value="private">Nur ich</option>
                     <option value="coach">Meine Coachin</option>
-                    @if ($gemeinschaft->count())<option value="program">Mein Kurs</option>@endif
+                    @if ($gemeinschaft->count())<option value="program">Mein Kurs</option><option value="all">In der Community</option>@endif
                 </select></label>
             </div>
             @if ($entwurf)

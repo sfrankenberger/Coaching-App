@@ -58,7 +58,12 @@ class Kommentare
 
     public function darf(User $user, Model $item): bool
     {
-        return $item->user_id === $user->id || ($user->canManageCurrentTenant() && $this->geteilt($item));
+        if ($item->user_id === $user->id || ($user->canManageCurrentTenant() && $this->geteilt($item))) {
+            return true;
+        }
+
+        // Kursmitglieder auf Geteiltem aus dem Kurs oder der Community
+        return in_array($item->visibility ?? 'private', ['program', 'all'], true) && app(Geteilt::class)->darfSehen($user, $item);
     }
 
     public function schreiben(User $user, Model $item, string $text): Comment
@@ -84,8 +89,9 @@ class Kommentare
                 ));
             }
         } else {
+            $vomTeam = $this->chat->teamIds()->contains($user->id);
             $this->notifier->send([$item->user_id], new Nachricht(
-                titel: $user->vorname().' hat dir zurückgeschrieben',
+                titel: $user->vorname().($vomTeam ? ' hat dir zurückgeschrieben' : ' hat auf deinen Eintrag geantwortet'),
                 text: Str::limit($kommentar->body, 140),
                 url: $this->urlFuerPerson($item),
                 anlass: 'kommentar',

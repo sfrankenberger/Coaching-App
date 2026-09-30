@@ -2,9 +2,11 @@
 
 namespace App\Http\Controllers;
 
+use App\Coach\Geteilt;
 use App\Models\Note;
 use App\Models\Program;
 use App\Programs\ProgramAccess;
+use App\Programs\Wochenaufgabe;
 use App\Support\Anhaenge;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -13,7 +15,7 @@ use Illuminate\View\View;
 
 class NotizenController extends Controller
 {
-    public function __construct(protected ProgramAccess $access, protected Anhaenge $anhaenge) {}
+    public function __construct(protected ProgramAccess $access, protected Anhaenge $anhaenge, protected Wochenaufgabe $wochenaufgabe) {}
 
     public function index(Request $request): View
     {
@@ -30,13 +32,21 @@ class NotizenController extends Controller
             'gemeinschaft' => $this->access->gemeinschaftFor($user)->pluck('id'),
             'bearbeiten' => $request->query('bearbeiten') ? $notes->firstWhere('id', (int) $request->query('bearbeiten')) : null,
             'suche' => $suche,
+            'aufgabe' => $this->wochenaufgabe->ausAufgabe($request, $user),
         ]);
     }
 
     public function store(Request $request): RedirectResponse
     {
         $note = Note::create($this->validated($request) + ['user_id' => $request->user()->id]);
-        $this->anhaenge->speichern($note, $request->input('refs'), $request->user());
+        $this->anhaenge->speichern($note, $this->wochenaufgabe->refs($request, $request->user(), $request->input('refs')), $request->user());
+        $aufgabe = $this->wochenaufgabe->abhaken($request, $request->user());
+        if ($note->visibility !== 'private') {
+            app(Geteilt::class)->melden($request->user(), $note);
+        }
+        if ($aufgabe) {
+            return redirect()->route('aufgaben.index')->with('meldung', 'Notiz gespeichert und Aufgabe abgehakt.');
+        }
 
         return redirect()->route('notizen.index')->with('meldung', 'Notiz gespeichert.')->withFragment('notiz-'.$note->id);
     }
@@ -44,8 +54,12 @@ class NotizenController extends Controller
     public function update(Request $request, Note $notiz): RedirectResponse
     {
         Gate::authorize('update', $notiz);
+        $vorher = $notiz->visibility;
         $notiz->update($this->validated($request));
         $this->anhaenge->speichern($notiz, $request->input('refs'), $request->user());
+        if ($vorher === 'private' && $notiz->visibility !== 'private') {
+            app(Geteilt::class)->melden($request->user(), $notiz);
+        }
 
         return redirect()->route('notizen.index')->with('meldung', 'Gespeichert.');
     }

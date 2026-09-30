@@ -114,7 +114,7 @@ class Runden
                     continue;
                 }
                 $user->notify(new AppNotification(new Nachricht(
-                    titel: $msg->user->vorname().' hat dir geschrieben',
+                    titel: app(Chat::class)->absenderName($msg, $conv).' hat dir geschrieben',
                     text: $msg->excerpt(40),
                     url: route('gespraech.show', $conv),
                     anlass: 'chat',
@@ -256,7 +256,7 @@ class Runden
             if ($neu->isEmpty()) {
                 continue;
             }
-            $von = $neu->first()->user?->vorname() ?? 'Jemand';
+            $von = app(Chat::class)->absenderName($neu->first(), $c);
             $out->push([
                 'titel' => $c->type === 'direct' ? $von.' hat dir geschrieben' : 'Neu im Austausch: '.($c->title ?: 'Gruppe'),
                 'text' => $neu->count() > 1 ? $neu->count().' Nachrichten' : $neu->first()->excerpt(10),

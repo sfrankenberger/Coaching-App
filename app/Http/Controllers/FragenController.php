@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Chat\Chat;
+use App\Coach\Geteilt;
 use App\Http\Requests\FrageRequest;
 use App\Models\Comment;
 use App\Models\Membership;
@@ -14,6 +15,7 @@ use App\Models\User;
 use App\Notifications\Nachricht;
 use App\Notifications\Notifier;
 use App\Programs\ProgramAccess;
+use App\Programs\Wochenaufgabe;
 use App\Support\Anhaenge;
 use App\Tenancy\Branding;
 use Illuminate\Http\RedirectResponse;
@@ -43,7 +45,7 @@ class FragenController extends Controller
             ->withCount(['answers', 'reactions as call_wuensche' => fn ($r) => $r->where('emoji', Question::CALLWUNSCH)])
             ->with('user:id,name')->latest()->get();
 
-        return view('kurse.fragen', ['program' => $program, 'fragen' => $fragen, 'filter' => $filter, 'coach' => $this->coachName()]);
+        return view('kurse.fragen', ['program' => $program, 'fragen' => $fragen, 'filter' => $filter, 'coach' => $this->coachName(), 'aufgabe' => app(Wochenaufgabe::class)->ausAufgabe($request, $user)]);
     }
 
     /** Community (wie im alten Bereich): alle Fragen aus meinen Kursen an einem Ort. */
@@ -61,7 +63,8 @@ class FragenController extends Controller
             ->withCount(['answers', 'reactions as call_wuensche' => fn ($r) => $r->where('emoji', Question::CALLWUNSCH)])
             ->with(['user:id,name', 'program:id,title,slug,color'])->latest()->limit(100)->get();
 
-        return view('community', ['programme' => $programme, 'alle' => $alle, 'kurs' => $kurs, 'fragen' => $fragen, 'filter' => $filter, 'coach' => $this->coachName()]);
+        return view('community', ['programme' => $programme, 'alle' => $alle, 'kurs' => $kurs, 'fragen' => $fragen, 'filter' => $filter, 'coach' => $this->coachName(),
+            'geteilt' => $filter === '' ? app(Geteilt::class)->stream($user, $kurs) : collect()]);
     }
 
     /** Wer ist dabei: das Team und alle aus meinen Gruppenkursen, die sich sichtbar geschaltet haben. */
@@ -101,7 +104,9 @@ class FragenController extends Controller
         $refs = $data['refs'] ?? null;
         unset($data['refs']);
         $frage = Question::create($data + ['program_id' => $program->id, 'user_id' => $request->user()->id, 'visibility' => $data['visibility'] ?? 'program']);
-        app(Anhaenge::class)->speichern($frage, $refs, $request->user());
+        $wa = app(Wochenaufgabe::class);
+        app(Anhaenge::class)->speichern($frage, $wa->refs($request, $request->user(), $refs), $request->user());
+        $wa->abhaken($request, $request->user());
 
         $this->melden($this->team()->reject(fn ($id) => $id === $request->user()->id), $frage,
             $request->user()->vorname().' hat eine Frage gestellt', $frage->title);

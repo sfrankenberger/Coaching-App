@@ -367,6 +367,8 @@ class BegleitungImport
                 'due_at' => $dueAt,
                 'due_time' => preg_match('~^\d{2}:\d{2}$~', (string) $m('af_zeit')) ? $m('af_zeit') : null,
                 'is_daily' => (bool) $m('af_taeglich'),
+                'kind' => array_key_exists((string) $m('af_art'), Task::KINDS) ? (string) $m('af_art') : 'haken',
+                'weekday' => ($wt = array_search((string) $m('af_tag'), ['mo', 'di', 'mi', 'do', 'fr', 'sa', 'so'], true)) === false ? null : $wt + 1,
                 'visibility' => $this->visibility($sicht),
                 'is_pinned' => (bool) $m('el_pin'),
             ];

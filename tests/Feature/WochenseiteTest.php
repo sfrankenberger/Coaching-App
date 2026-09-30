@@ -6,6 +6,7 @@ use App\Enums\Role;
 use App\Models\Event;
 use App\Models\EventAttendee;
 use App\Models\MediaPosition;
+use App\Models\Note;
 use App\Models\Program;
 use App\Models\ProgramMember;
 use App\Models\Resource;
@@ -112,6 +113,39 @@ class WochenseiteTest extends TestCase
         $this->actingAs($this->anna)->postJson('http://a.test/medien/position', ['key' => 'kaputt-1', 'seconds' => 1])->assertUnprocessable();
         app(CurrentTenant::class)->run($this->b, fn () => $this->assertSame(0, MediaPosition::count()));
         $this->assertSame(2, $this->in(fn () => MediaPosition::count()));
+    }
+
+    public function test_wochenaufgabe_mit_art_und_wochentag_knopf_und_speichern_hakt_ab(): void
+    {
+        [$w1, $w2] = $this->in(function () {
+            $w1 = $this->kurs->steps()->first();
+            $w2 = $this->kurs->steps()->create(['title' => 'Woche 2', 'position' => 2, 'week_number' => 2, 'unlocks_at' => now()->addWeek()]);
+
+            return [$w1, $w2];
+        });
+        $t = $this->in(fn () => Task::create(['user_id' => $this->anna->id, 'program_id' => $this->kurs->id, 'step_id' => $w1->id, 'title' => 'Was hat dich bewegt?', 'kind' => 'notiz', 'weekday' => 3, 'assigned_by' => $this->lea->id, 'source' => 'program', 'visibility' => 'coach']));
+        // Wochentag plus Woche ergibt die Faelligkeit: der Mittwoch der Kurswoche
+        $this->assertSame(now()->subDay()->startOfWeek()->addDays(2)->toDateString(), $t->due_at->toDateString());
+
+        $r = $this->actingAs($this->anna)->get("http://a.test/kurse/hybrid/schritt/{$w1->id}")->assertOk()->assertSee('Notiz schreiben')->assertSee($t->due_at->isToday() ? 'heute dran' : 'Mittwoch');
+        $this->assertStringContainsString("/notizen?aufgabe={$t->id}", $r->getContent());
+
+        // Aus der Aufgabe heraus schreiben: die Aufgabe haengt an der Notiz und ist abgehakt
+        $this->actingAs($this->anna)->get("http://a.test/notizen?aufgabe={$t->id}")->assertOk()->assertSee('Zur Aufgabe');
+        $this->actingAs($this->anna)->post('http://a.test/notizen', ['body' => 'Mich hat bewegt, dass ...', 'aufgabe_id' => $t->id])->assertRedirect('http://a.test/aufgaben');
+        $this->assertNotNull($this->in(fn () => $t->fresh()->done_at));
+        $this->assertSame(['task:'.$t->id], $this->in(fn () => Note::first()->anhangRefs()));
+
+        // Rueckstand: eine offene Aufgabe aus Woche 1 steht auf der Wochenseite von Woche 2, der Fragentag nicht
+        $this->in(function () use ($w1) {
+            Task::create(['user_id' => $this->anna->id, 'program_id' => $this->kurs->id, 'step_id' => $w1->id, 'title' => 'Brief schreiben', 'kind' => 'haken']);
+            Task::create(['user_id' => $this->anna->id, 'program_id' => $this->kurs->id, 'step_id' => $w1->id, 'title' => 'Fragentag nutzen', 'kind' => 'frage']);
+        });
+        $this->actingAs($this->lea)->get("http://a.test/kurse/hybrid/schritt/{$w2->id}")->assertOk();
+        $this->travel(8)->days();
+        $this->actingAs($this->anna)->get("http://a.test/kurse/hybrid/schritt/{$w2->id}")->assertOk()
+            ->assertSee('Aus früheren Wochen noch offen: 1')->assertSee('Brief schreiben')->assertDontSee('Fragentag nutzen');
+        $this->travelBack();
     }
 
     public function test_kursaufgaben_kommen_auch_zu_spaeter_eintretenden(): void

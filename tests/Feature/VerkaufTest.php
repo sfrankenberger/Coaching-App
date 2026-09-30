@@ -8,9 +8,11 @@ use App\Models\Entitlement;
 use App\Models\Membership;
 use App\Models\Offer;
 use App\Models\Program;
+use App\Models\ProgramMember;
 use App\Models\Tenant;
 use App\Models\User;
 use App\Models\Verkauf;
+use App\Programs\ProgramAccess;
 use App\Tenancy\CurrentTenant;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Http;
@@ -153,6 +155,25 @@ class VerkaufTest extends TestCase
         $this->assertSame('bezahlt', $this->in(fn () => Verkauf::first()->status));
         $this->assertTrue($this->in(fn () => Entitlement::where('user_id', $this->anna->id)->first()->isCurrent()));
         $this->actingAs($this->anna)->get('http://a.test/kurse/hybrid')->assertOk();
+    }
+
+    public function test_zugang_laeuft_ab_und_nimmt_den_kurs_wieder_weg(): void
+    {
+        Mail::fake();
+        $this->actingAs($this->lea)->post("http://a.test/coachees/{$this->m->id}/zugang", ['offer_id' => $this->offer->id, 'betrag' => 0, 'tage' => 30])->assertRedirect();
+        $access = app(ProgramAccess::class);
+        $p = $this->in(fn () => Program::where('slug', 'hybrid')->first());
+        $this->assertTrue($this->in(fn () => $access->canView($this->anna, $p)));
+        $this->assertNotNull($this->in(fn () => ProgramMember::where('user_id', $this->anna->id)->first()->entitlement_id));
+
+        $this->travel(31)->days();
+        $this->assertFalse($this->in(fn () => $access->canView($this->anna, $p)), 'Nach Ablauf des Zugangs ist der Kurs zu');
+
+        // Ein neuer Verkauf haengt die Mitgliedschaft an den neuen Zugang
+        $this->actingAs($this->lea)->post("http://a.test/coachees/{$this->m->id}/zugang", ['offer_id' => $this->offer->id, 'betrag' => 0, 'tage' => 10])->assertRedirect();
+        $this->assertTrue($this->in(fn () => $access->canView($this->anna, $p)));
+        $this->assertSame(1, $this->in(fn () => ProgramMember::where('user_id', $this->anna->id)->count()));
+        $this->travelBack();
     }
 
     public function test_kostenlos_und_ohne_rechnung(): void

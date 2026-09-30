@@ -9,13 +9,17 @@
             <span class="t">@if ($t->is_pinned)<i class="fa-solid fa-thumbtack" style="color:var(--c-primary);font-size:12px;margin-right:6px"></i>@endif{{ $t->title }}</span>
             <span class="m">
                 @if ($t->assigned_by && $t->assigner) Von {{ $t->assigner->vorname() }} · @endif
-                @if ($t->due_at) <span @class(['text-danger font-semibold' => $t->isOverdue()])>bis {{ $t->due_at->translatedFormat('j. F') }}{{ $t->due_time ? ', '.$t->due_time.' Uhr' : '' }}</span> · @endif
+                @if ($t->due_at && ! $t->isDone() && $t->due_at->isToday()) <span class="font-semibold" style="color:var(--c-primary)">heute dran{{ $t->due_time ? ', '.$t->due_time.' Uhr' : '' }}</span> ·
+                @elseif ($t->due_at) <span @class(['text-danger font-semibold' => $t->isOverdue()])>{{ $t->weekday ? \App\Models\Task::WEEKDAYS[$t->weekday].', ' : 'bis ' }}{{ $t->due_at->translatedFormat('j. F') }}{{ $t->due_time ? ', '.$t->due_time.' Uhr' : '' }}</span> · @endif
                 @if ($t->program) {{ $t->program->title }} · @endif
                 @if ($t->unit_id && $t->program && $t->unit) <a href="{{ route('kurse.einheit', [$t->program, $t->unit]) }}">zur Übung</a> · @endif
                 {{ \App\Models\Note::VISIBILITIES[$t->visibility] ?? '' }}
             </span>
             @if ($t->body)<p class="lesetext mt-1 whitespace-pre-line text-md">{{ $t->body }}</p>@endif
             <x-anhaenge :item="$t" />
+            @if (($aktion = app(\App\Programs\Wochenaufgabe::class)->aktion($t)) && $t->user_id === auth()->id())
+                <a href="{{ $aktion['url'] }}" class="knopf knopf-klein mt-2"><i class="fa-solid fa-{{ $aktion['icon'] }}"></i>{{ $aktion['text'] }}</a>
+            @endif
             @if ($t->is_daily && ! $t->isDone())
                 <div class="mt-2 flex flex-wrap items-center gap-1" data-tage="{{ route('aufgaben.tag', $t) }}">
                     <span class="hinweis w-full">Diese Woche <b>{{ count($done) }} von 7</b></span>

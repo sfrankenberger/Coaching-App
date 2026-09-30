@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Coach\Geteilt;
 use App\Http\Requests\AufgabeRequest;
 use App\Models\Task;
 use App\Programs\ProgramAccess;
@@ -41,6 +42,9 @@ class AufgabenController extends Controller
         $data = $request->daten();
         $task = Task::create($data + ['user_id' => $request->user()->id, 'source' => $data['unit_id'] ?? null ? 'exercise' : 'manual']);
         app(Anhaenge::class)->speichern($task, $request->input('refs'), $request->user());
+        if ($task->visibility !== 'private') {
+            app(Geteilt::class)->melden($request->user(), $task);
+        }
 
         // Aus der Wochen- oder Einheitsseite angelegt: dorthin zurueck
         $zurueck = (string) $request->input('zurueck', '');
@@ -54,8 +58,12 @@ class AufgabenController extends Controller
     public function update(AufgabeRequest $request, Task $aufgabe): RedirectResponse
     {
         Gate::authorize('update', $aufgabe);
+        $vorher = $aufgabe->visibility;
         $aufgabe->update($request->daten());
         app(Anhaenge::class)->speichern($aufgabe, $request->input('refs'), $request->user());
+        if ($vorher === 'private' && $aufgabe->visibility !== 'private') {
+            app(Geteilt::class)->melden($request->user(), $aufgabe);
+        }
 
         return redirect()->route('aufgaben.index')->with('meldung', 'Gespeichert.');
     }

@@ -12,6 +12,7 @@ use App\Models\Message;
 use App\Models\Program;
 use App\Models\User;
 use App\Programs\ProgramAccess;
+use App\Tenancy\Branding;
 use App\Tenancy\CurrentTenant;
 use Carbon\Carbon;
 use Illuminate\Http\UploadedFile;
@@ -30,6 +31,40 @@ class Chat
     public function teamIds(): Collection
     {
         return Membership::query()->whereIn('role', [Role::Owner->value, Role::Team->value])->where('status', 'active')->pluck('user_id');
+    }
+
+    /**
+     * Im 1:1 schreibt das Team fuer die Coachin: die Nachricht von Andrea steht als Nachricht der Coachin
+     * mit dem Hinweis "Team", die Coachin sieht "geschrieben von Andrea". Einstellung chat.team_als_coach.
+     */
+    public function alsCoach(Message $msg, Conversation $conv): bool
+    {
+        if (! $conv->isDirect() || $msg->user_id === $conv->user_id || $msg->user_id === null) {
+            return false;
+        }
+        $tenant = $this->current->get();
+        if (! (bool) $tenant?->setting('chat.team_als_coach', true)) {
+            return false;
+        }
+        $coach = app(Branding::class)->coach();
+
+        return $coach !== null && $coach->id !== $msg->user_id && $this->teamIds()->contains($msg->user_id);
+    }
+
+    /** Name der Absenderin, wie die Person sie sieht: die Coachin, wenn das Team fuer sie schreibt. */
+    public function absenderName(Message $msg, Conversation $conv): string
+    {
+        if ($this->alsCoach($msg, $conv)) {
+            return app(Branding::class)->coachName();
+        }
+
+        return $msg->user?->vorname() ?? 'Jemand';
+    }
+
+    /** Bezeichnung des Teams fuer den Hinweis an der Nachricht (Einstellung chat.team_name, sonst "Team Lea"). */
+    public function teamName(): string
+    {
+        return (string) ($this->current->get()?->setting('chat.team_name') ?: 'Team '.app(Branding::class)->coachName());
     }
 
     /** Das 1:1-Gespraech einer Person mit der Coachin (wird bei Bedarf angelegt). */

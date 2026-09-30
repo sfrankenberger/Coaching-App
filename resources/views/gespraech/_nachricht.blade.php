@@ -1,15 +1,27 @@
 @php
     $ich = auth()->user();
-    $meine = $m->user_id === $ich->id;
+    $chat = app(\App\Chat\Chat::class);
+    $alsCoach = $chat->alsCoach($m, $conv);
+    $verwaltet = $ich->canManageCurrentTenant();
+    // Im 1:1 steht das ganze Team auf einer Seite: was das Team schreibt, ist fuer Lea "meine" Seite
+    $meine = $m->user_id === $ich->id || ($alsCoach && $verwaltet);
     $gelesen = $meine && isset($gelesenBis) && $gelesenBis && $gelesenBis->gte($m->created_at);
+    $gesicht = $alsCoach ? app(\App\Tenancy\Branding::class)->coach() : $m->user;
 @endphp
 <div id="nachricht-{{ $m->id }}" class="flex items-end gap-2 {{ $meine ? 'justify-end' : 'justify-start' }}" data-nachricht="{{ $m->id }}" data-tag="{{ $m->created_at->toDateString() }}">
     @if (! $meine)
-        <x-avatar :user="$m->user" :size="30" class="blase-avatar" />
+        <x-avatar :user="$gesicht" :size="30" class="blase-avatar" />
     @endif
     <div @class(['blase', 'blase-meine' => $meine])>
         @if (! $meine && ! $conv->isDirect())
             <span class="block text-xs font-semibold opacity-80 mb-0.5">{{ $m->user?->vorname() ?? 'Jemand' }}</span>
+        @endif
+        @if ($alsCoach)
+            @if ($verwaltet)
+                <span class="block text-xs opacity-70 mb-0.5"><i class="fa-solid fa-pen-nib"></i> geschrieben von {{ $m->user?->vorname() }}</span>
+            @else
+                <span class="block text-xs font-semibold opacity-80 mb-0.5">{{ $chat->absenderName($m, $conv) }} <span class="chip" style="font-size:10px;padding:1px 7px;vertical-align:middle">{{ $chat->teamName() }}</span></span>
+            @endif
         @endif
         @if (filled($m->body))
             <div class="lesetext whitespace-pre-line break-words" style="line-height:1.5">{{ $m->body }}</div>

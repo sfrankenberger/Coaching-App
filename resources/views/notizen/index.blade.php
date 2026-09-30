@@ -4,11 +4,15 @@
 
     <div class="baustein">
         <p class="eyebrow m-0 mb-2.5">{{ $bearbeiten ? 'Notiz bearbeiten' : 'Neue Notiz' }}</p>
-        <form method="post" action="{{ $bearbeiten ? route('notizen.update', $bearbeiten) : route('notizen.store') }}" class="eingabe">
+        <form id="neu" method="post" action="{{ $bearbeiten ? route('notizen.update', $bearbeiten) : route('notizen.store') }}" class="eingabe">
             @csrf
+            @if ($aufgabe ?? null)
+                <input type="hidden" name="aufgabe_id" value="{{ $aufgabe->id }}">
+                <p class="hinweis m-0"><i class="fa-solid fa-list-check"></i> Zur Aufgabe «{{ $aufgabe->title }}». Speichern hakt sie ab.</p>
+            @endif
             <input name="title" class="feld" placeholder="Überschrift (optional)" maxlength="160" value="{{ old('title', $bearbeiten?->title) }}">
             <textarea name="body" class="feld" rows="4" placeholder="Was dir gerade durch den Kopf geht ..." required>{{ old('body', $bearbeiten?->body) }}</textarea>
-            <x-anhang-wahl :refs="old('refs', $bearbeiten?->anhangRefs() ?? [])" />
+            <x-anhang-wahl :refs="old('refs', $bearbeiten?->anhangRefs() ?? (($aufgabe ?? null) ? ['task:'.$aufgabe->id] : []))" />
             <div class="flex flex-wrap gap-2">
                 @if ($kurse->count())
                     <label class="block"><span class="feld-label">Kurs</span><select name="program_id" class="feld"><option value="">Allgemein</option>@foreach ($kurse as $id => $t)<option value="{{ $id }}" @selected((int) old('program_id', $bearbeiten?->program_id) === $id)>{{ $t }}</option>@endforeach</select></label>

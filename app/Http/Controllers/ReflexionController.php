@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\Program;
 use App\Models\Reflection;
 use App\Programs\ProgramAccess;
+use App\Programs\Wochenaufgabe;
 use App\Support\Anhaenge;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -23,7 +24,7 @@ class ReflexionController extends Controller
         'focus' => ['🎯', 'Fokus: Wo will ich hin? Meine nächsten Schritte.', 'Ein bis drei konkrete Schritte für die kommende Woche.'],
     ];
 
-    public function __construct(protected ProgramAccess $access) {}
+    public function __construct(protected ProgramAccess $access, protected Wochenaufgabe $wochenaufgabe) {}
 
     public function index(Request $request): View
     {
@@ -39,6 +40,7 @@ class ReflexionController extends Controller
             'kurse' => $this->access->programsFor($user)->pluck('title', 'id'),
             'gemeinschaft' => $this->access->gemeinschaftFor($user)->pluck('id'),
             'woche' => 'Woche '.now()->format('W').' ('.now()->translatedFormat('j. F Y').')',
+            'aufgabe' => $this->wochenaufgabe->ausAufgabe($request, $user),
         ]);
     }
 
@@ -51,7 +53,8 @@ class ReflexionController extends Controller
             'challenges' => ['nullable', 'string', 'max:10000'],
             'focus' => ['nullable', 'string', 'max:10000'],
             'program_id' => ['nullable', 'integer'],
-            'visibility' => ['nullable', 'in:private,coach,program'],
+            'visibility' => ['nullable', 'in:private,coach,program,all'],
+            'aufgabe_id' => ['nullable', 'integer'],
             'refs' => ['nullable', 'array', 'max:12'],
             'refs.*' => ['string', 'max:40'],
         ]);
@@ -82,7 +85,10 @@ class ReflexionController extends Controller
             'visibility' => $visibility,
             'shared_at' => $visibility !== 'private' ? ($reflection->shared_at ?? now()) : null,
         ])->save();
-        app(Anhaenge::class)->speichern($reflection, $data['refs'] ?? null, $user);
+        app(Anhaenge::class)->speichern($reflection, $this->wochenaufgabe->refs($request, $user, $data['refs'] ?? null), $user);
+        if ($this->wochenaufgabe->abhaken($request, $user)) {
+            return redirect()->route('aufgaben.index')->with('meldung', 'Reflexion gespeichert und Aufgabe abgehakt.');
+        }
 
         return redirect()->route('reflexion.index')->with('meldung', $visibility === 'private' ? 'Reflexion gespeichert, nur für dich.' : 'Reflexion gespeichert und geteilt.');
     }

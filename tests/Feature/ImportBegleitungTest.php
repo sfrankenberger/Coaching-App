@@ -146,7 +146,7 @@ class ImportBegleitungTest extends TestCase
 
         // Aufgaben
         $this->wpPost(500, 'aufgabe', 'Buch lesen', 'buch-lesen', 'Kapitel 1', ['el_sicht' => 'privat', 'af_faellig' => '2026-09-20', 'af_zeit' => '08:30', 'af_taeglich' => '1', 'af_erledigt' => (string) gmmktime(12, 0, 0, 9, 18, 2026)], 'publish', 21);
-        $this->wpPost(501, 'aufgabe', 'Werte notieren', 'werte', '', ['el_sicht' => 'kurs', 'af_kurs' => '1849', 'af_faellig' => '2026-09-25'], 'publish', 2);
+        $this->wpPost(501, 'aufgabe', 'Werte notieren', 'werte', '', ['el_sicht' => 'kurs', 'af_kurs' => '1849', 'af_faellig' => '2026-09-25', 'af_art' => 'notiz', 'af_tag' => 'di'], 'publish', 2);
         $this->wpPost(502, 'aufgabe', 'Video schauen', 'video', '', ['el_sicht' => 'privat'], 'publish', 21);
         $this->umeta(22, 'lea_af_fremd_fertig', serialize([501]));
 
@@ -314,6 +314,8 @@ class ImportBegleitungTest extends TestCase
             $this->assertSame($this->hybrid->id, $annaKopie->program_id);
             $this->assertNull($annaKopie->done_at);
             $this->assertNotNull($beaKopie->done_at, 'lea_af_fremd_fertig');
+            $this->assertSame('notiz', $beaKopie->kind, 'af_art');
+            $this->assertSame(2, $beaKopie->weekday, 'af_tag');
 
             $video = Task::where('legacy_id', '502')->first();
             $this->assertSame($this->unit->id, $video->unit_id);

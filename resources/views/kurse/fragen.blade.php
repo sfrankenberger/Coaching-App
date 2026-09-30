@@ -4,10 +4,14 @@
         <h1 class="mb-1">Fragen an {{ $coach }}</h1>
         <p class="unterzeile m-0 mb-3.5">Was dich beschäftigt, hilft oft auch den anderen. {{ $coach }} beantwortet die Fragen hier oder nimmt sie in den nächsten Call.</p>
 
-        <details class="baustein" @if ($errors->any()) open @endif>
+        <details id="neu" class="baustein" @if ($errors->any() || ($aufgabe ?? null)) open @endif>
             <summary class="knopf knopf-anstoss cursor-pointer"><i class="fa-solid fa-circle-question"></i>Frage stellen</summary>
             <form method="post" action="{{ route('kurse.fragen.store', $program) }}" class="eingabe mt-3.5" data-entwurf="frage-{{ $program->id }}">
                 @csrf
+                @if ($aufgabe ?? null)
+                    <input type="hidden" name="aufgabe_id" value="{{ $aufgabe->id }}">
+                    <p class="hinweis m-0"><i class="fa-solid fa-list-check"></i> Zur Aufgabe «{{ $aufgabe->title }}». Abschicken hakt sie ab.</p>
+                @endif
                 <div>
                     <label for="frage-titel" class="feld-label">Deine Frage in einem Satz</label>
                     <input id="frage-titel" name="title" class="feld" maxlength="200" required value="{{ old('title') }}">
@@ -17,7 +21,7 @@
                     <label for="frage-text" class="feld-label">Mehr dazu, freiwillig</label>
                     <textarea id="frage-text" name="body" class="feld" rows="4" placeholder="Was ist passiert, was hast du schon versucht?">{{ old('body') }}</textarea>
                 </div>
-                <x-anhang-wahl :refs="old('refs', [])" />
+                <x-anhang-wahl :refs="old('refs', ($aufgabe ?? null) ? ['task:'.$aufgabe->id] : [])" />
                 <div>
                     <span class="feld-label">Wer sieht die Frage?</span>
                     <label class="flex items-center gap-2 text-md" style="margin:4px 0"><input type="radio" name="visibility" value="program" checked class="accent-primary"> {{ $program->gemeinschaft() ? 'Alle im Kurs' : 'In der Community' }}</label>

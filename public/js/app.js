@@ -639,6 +639,22 @@ document.addEventListener('medien:zeit', function (e) {
     });
 })();
 
+/* ---------- Reaktionen an geteilten Eintraegen ohne Neuladen ---------- */
+(function () {
+    var csrf = document.querySelector('meta[name="csrf-token"]');
+    if (!csrf) return;
+    csrf = csrf.getAttribute('content');
+    document.addEventListener('submit', function (e) {
+        var f = e.target.closest('form[data-reaktion-allgemein]');
+        if (!f) return;
+        e.preventDefault();
+        fetch(f.action, { method: 'POST', credentials: 'same-origin', headers: { 'Accept': 'application/json', 'X-CSRF-TOKEN': csrf }, body: new FormData(f) })
+            .then(function (r) { return r.json(); })
+            .then(function (j) { var box = f.closest('[data-reaktionen-allgemein]'); if (box && j.html) { var t = document.createElement('div'); t.innerHTML = j.html; box.replaceWith(t.firstElementChild); } })
+            .catch(function () {});
+    });
+})();
+
 /* ---------- Etwas anhaengen: Auswahl, Suche, Chips ---------- */
 (function () {
     document.querySelectorAll('[data-anhang-wahl]').forEach(function (box) {

@@ -41,5 +41,13 @@
         @empty
             <p class="hinweis">Noch keine Fragen. Stell die erste, sie hilft oft auch den anderen.</p>
         @endforelse
+
+        @if ($geteilt->isNotEmpty())
+            <h2 class="abschnitt mt-4"><i class="fa-solid fa-share-nodes"></i>Geteilt aus dem Kurs<em>{{ $geteilt->count() }}</em></h2>
+            <p class="hinweis m-0 mb-3">Was andere für den Kurs oder die Community freigeben. Reagier darauf oder schreib etwas dazu.</p>
+            @foreach ($geteilt as $g)
+                <x-geteilt-karte :item="$g" />
+            @endforeach
+        @endif
     @endif
 </x-layouts.app>

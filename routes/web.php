@@ -35,6 +35,7 @@ use App\Http\Controllers\NachschlagenController;
 use App\Http\Controllers\NotizenController;
 use App\Http\Controllers\ProfilController;
 use App\Http\Controllers\PushController;
+use App\Http\Controllers\ReaktionController;
 use App\Http\Controllers\ReflexionController;
 use App\Http\Controllers\SucheController;
 use App\Http\Controllers\TelegramController;
@@ -239,6 +240,7 @@ Route::middleware(['auth', 'membership'])->group(function () {
     Route::post('/fragen/{frage}/call', [FragenController::class, 'call'])->name('fragen.call');
     Route::delete('/fragen/{frage}', [FragenController::class, 'destroy'])->name('fragen.destroy');
     Route::delete('/antworten/{antwort}', [FragenController::class, 'antwortLoeschen'])->name('fragen.antwort.loeschen');
+    Route::post('/reaktion/{typ}/{id}', [ReaktionController::class, 'toggle'])->where('typ', 'note|task|reflection')->middleware('throttle:60,1')->name('reaktion');
     Route::post('/kommentar', [KommentarController::class, 'store'])->middleware('throttle:30,1')->name('kommentar.store');
     Route::delete('/kommentar/{kommentar}', [KommentarController::class, 'destroy'])->name('kommentar.destroy');
 });

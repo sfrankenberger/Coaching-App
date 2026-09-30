@@ -18,7 +18,8 @@
                 <label class="block"><span class="feld-label">Wer sieht das?</span><select name="visibility" class="feld">
                     <option value="private" @selected(old('visibility', $bearbeiten?->visibility) === 'private')>Nur ich</option>
                     <option value="coach" @selected(old('visibility', $bearbeiten?->visibility) === 'coach')>Meine Coachin</option>
-                    @if ($gemeinschaft->count())<option value="program" @selected(old('visibility', $bearbeiten?->visibility) === 'program')>Mein Kurs</option>@endif
+                    @if ($gemeinschaft->count())<option value="program" @selected(old('visibility', $bearbeiten?->visibility) === 'program')>Mein Kurs</option>
+                    <option value="all" @selected(old('visibility', $bearbeiten?->visibility) === 'all')>In der Community</option>@endif
                 </select></label>
             </div>
             <div class="flex flex-wrap gap-4">

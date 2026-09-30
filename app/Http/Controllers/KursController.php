@@ -120,6 +120,9 @@ class KursController extends Controller
             'termine' => $termine,
             'aufgaben' => Task::where('user_id', $user->id)->where('step_id', $schritt->id)
                 ->orderByRaw('CASE WHEN done_at IS NULL THEN 0 ELSE 1 END')->orderBy('due_at')->get(),
+            // Rueckstand: was aus den letzten vier Wochen noch offen ist (den Fragentag traegt man nicht nach)
+            'rueckstand' => Task::where('user_id', $user->id)->whereNull('done_at')->where('kind', '!=', 'frage')
+                ->whereIn('step_id', $steps->slice(max(0, $idx - 4), max(0, $idx))->pluck('id'))->with('step:id,title')->orderBy('step_id')->get(),
             'material' => $material,
             'program' => $program,
             'schritt' => $schritt,

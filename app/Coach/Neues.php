@@ -7,10 +7,12 @@ use App\Models\Event;
 use App\Models\EventAttendee;
 use App\Models\Membership;
 use App\Models\Message;
+use App\Models\Note;
 use App\Models\Reflection;
 use App\Models\Task;
 use Carbon\CarbonInterface;
 use Illuminate\Support\Collection;
+use Illuminate\Support\Str;
 
 /** Was in den letzten Tagen von den Personen kam (geteilt, erledigt, abgesagt, geschrieben), und was ansteht. */
 class Neues
@@ -33,6 +35,12 @@ class Neues
         }
         foreach (Reflection::where('visibility', '!=', 'private')->where('shared_at', '>', $seit)->with('user:id,name')->latest('shared_at')->limit(15)->get() as $r) {
             $zeilen->push(['art' => 'reflexion', 'team' => $teamIds->contains($r->user_id), 'zeit' => $r->shared_at, 'wer' => $r->user?->name, 'was' => 'hat eine Reflexion geteilt', 'detail' => $r->week_label, 'url' => $dossier($r->user_id)]);
+        }
+        foreach (Note::where('visibility', '!=', 'private')->where('updated_at', '>', $seit)->with('user:id,name')->latest('updated_at')->limit(15)->get() as $n) {
+            $zeilen->push(['art' => 'notiz', 'team' => $teamIds->contains($n->user_id), 'zeit' => $n->updated_at, 'wer' => $n->user?->name, 'was' => 'hat eine Notiz geteilt', 'detail' => $n->title ?: Str::limit((string) $n->body, 60), 'url' => $dossier($n->user_id)]);
+        }
+        foreach (Task::whereNull('assigned_by')->where('visibility', '!=', 'private')->where('updated_at', '>', $seit)->with('user:id,name')->latest('updated_at')->limit(15)->get() as $t) {
+            $zeilen->push(['art' => 'aufgabe_geteilt', 'team' => $teamIds->contains($t->user_id), 'zeit' => $t->updated_at, 'wer' => $t->user?->name, 'was' => 'hat eine Aufgabe geteilt', 'detail' => $t->title, 'url' => $dossier($t->user_id)]);
         }
         foreach (Task::whereNotNull('assigned_by')->where('done_at', '>', $seit)->with('user:id,name')->latest('done_at')->limit(15)->get() as $t) {
             $zeilen->push(['art' => 'aufgabe', 'team' => $teamIds->contains($t->user_id), 'zeit' => $t->done_at, 'wer' => $t->user?->name, 'was' => 'hat erledigt', 'detail' => $t->title, 'url' => $dossier($t->user_id)]);

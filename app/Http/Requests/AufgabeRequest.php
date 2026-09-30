@@ -22,7 +22,7 @@ class AufgabeRequest extends FormRequest
             'program_id' => ['nullable', 'integer'],
             'step_id' => ['nullable', 'integer'],
             'unit_id' => ['nullable', 'integer'],
-            'visibility' => ['nullable', 'in:private,coach,program'],
+            'visibility' => ['nullable', 'in:private,coach,program,all'],
             'is_pinned' => ['nullable', 'boolean'],
             'refs' => ['nullable', 'array', 'max:12'],
             'refs.*' => ['string', 'max:40'],
