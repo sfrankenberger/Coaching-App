@@ -72,7 +72,7 @@
                 @elseif ($termin->type === 'reflection_day')
                     <a href="{{ route('reflexion.index') }}" class="knopf knopf-ruhig"><i class="fa-solid fa-pen-to-square"></i>Reflexion schreiben</a>
                 @elseif ($termin->type === 'question_day')
-                    <a href="{{ route('gespraech.index') }}" class="knopf knopf-ruhig"><i class="fa-solid fa-circle-question"></i>Frage stellen</a>
+                    <a href="{{ $termin->program ? route('kurse.fragen', [$termin->program, 'frage' => 1]) : route('community', ['frage' => 1]) }}" class="knopf knopf-ruhig"><i class="fa-solid fa-circle-question"></i>Frage stellen</a>
                 @elseif ($termin->isOneOnOne())
                     <x-termin-aktionen :event="$termin" :klein="true" class="contents" />
                 @else

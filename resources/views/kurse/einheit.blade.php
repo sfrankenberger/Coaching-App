@@ -301,6 +301,9 @@
     </x-karte>
 
     <p class="meldung meldung-gut mt-3" data-erledigt-hinweis hidden><i class="fa-solid fa-circle-check"></i> Video fast fertig geschaut, die Einheit ist als erledigt markiert.</p>
+    @unless (in_array($program->type, ['one_on_one', 'workbook'], true))
+        <p class="mt-3 m-0"><a href="{{ route('kurse.fragen', [$program, 'frage' => 1, 'titel' => 'Frage zu «'.$unit->title.'»', 'ref' => ['unit:'.$unit->id]]) }}" class="knopf knopf-leise knopf-klein"><i class="fa-solid fa-circle-question"></i>Frage dazu stellen</a></p>
+    @endunless
     <div class="mt-4 flex flex-wrap items-center justify-between gap-3">
         <form method="post" action="{{ route('kurse.erledigt', [$program, $unit]) }}" data-erledigt>
             @csrf

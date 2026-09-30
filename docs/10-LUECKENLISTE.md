@@ -127,6 +127,14 @@ Sortiert nach Nutzen fuer Lea und die Teilnehmerinnen. Mehrfach gefundene Punkte
   Wochentag, Team schreibt fuer die Coachin, Zugang laeuft ab, Zeitleiste und Projekte mit den neun Schritten, Meldung ans
   Team bei Geteiltem, Filterleiste und Dreipunkt-Menue, Aufgaben-Erinnerungen mit Mail, Tages-Haken, Team-Kopie und
   "Jetzt dran"). Dazu Schluessel je Mandant unter `/coach/verbindungen` und Transkripte fuer Sprachnachrichten (C19).
+- 30.09.: B9 und B10 umgesetzt. Fragen: Antwort auf Antwort (eine Ebene), Herz an Antworten, Reaktionen an der Frage,
+  "Das ist die Antwort" durch die Coachin, Bearbeiten 15 Minuten (Team immer), Folgen und Stummschalten
+  (`question_states`), @-Erwaehnung mit Vorschlaegen und Meldung (`App\Support\Erwaehnungen`), Links klickbar und
+  Weiterlesen (`App\Support\Textform`), neue Antworten seit dem letzten Besuch markiert und nachladbar, Sortierung der
+  Antworten, abgeschlossene Fragen nehmen nichts mehr an, Liste mit Suche, Sortierung, "Meine" und "Neue Antworten",
+  Avatar, leiser Push an die Gruppe bei neuer Frage (Schalter "Fragen im Kurs" im Profil). Fragentag: Push um 9 Uhr
+  (`Runden::terminErinnerungen`), "Frage stellen" fuehrt zu den Kursfragen, "Frage dazu" aus Lektion, Impuls und Folge,
+  Frage aus der Community mit Kurswahl. Import uebernimmt Antwort-Baum, beste Antwort, Herzen, Reaktionen, Folgen.
 
 ## Was bewusst nicht kommt
 

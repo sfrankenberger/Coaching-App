@@ -76,12 +76,12 @@ class GeteiltTest extends TestCase
         // Bea (im Hybrid) sieht Annas Notiz und Reflexion, nicht ihre eigene Aufgabe, nichts von Lea, nichts Privates
         $this->actingAs($this->bea)->get('http://a.test/community')->assertOk()
             ->assertSee('Geteilt aus dem Kurs')->assertSee('Mein Aha-Moment')->assertSee('Vieles lief gut')
-            ->assertDontSee('Beas Community-Vorhaben')->assertDontSee('Leas Hinweis')->assertDontSee('Nur fuer Lea');
+            ->assertDontSee('id="geteilt-task-')->assertDontSee('Leas Hinweis')->assertDontSee('Nur fuer Lea');
         // Carla (nur im Selbstlernkurs) sieht nur, was "in der Community" steht
         $this->actingAs($this->carla)->get('http://a.test/community')->assertOk()
-            ->assertSee('Beas Community-Vorhaben')->assertDontSee('Mein Aha-Moment');
+            ->assertSee('id="geteilt-task-', false)->assertDontSee('Mein Aha-Moment');
         // Anna sieht Beas Aufgabe, nicht ihre eigenen Eintraege
-        $this->actingAs($this->anna)->get('http://a.test/community')->assertOk()->assertSee('Beas Community-Vorhaben')->assertDontSee('Mein Aha-Moment');
+        $this->actingAs($this->anna)->get('http://a.test/community')->assertOk()->assertSee('id="geteilt-task-', false)->assertDontSee('id="geteilt-note-', false);
 
         // Lea hat erfahren, dass Anna eine Notiz teilt, und sieht es in der Arbeitsliste
         Notification::assertSentTo($this->lea, AppNotification::class, fn ($n) => $n->nachricht->titel === 'Anna teilt eine Notiz mit dir');

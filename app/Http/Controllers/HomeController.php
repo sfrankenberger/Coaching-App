@@ -69,7 +69,7 @@ class HomeController extends Controller
             'rolle' => $user->roleIn(),
             'neues' => $this->runden->neuesFuer($user, $seit, 20),
             'weiter' => $weiter,
-            'termin' => $this->begleitung->eventsQuery($user)->upcoming()->with('program:id,title')->limit(6)->get()->first(fn ($e) => ! $e->isPast()),
+            'termin' => $this->begleitung->eventsQuery($user)->upcoming()->with('program:id,title,slug')->limit(6)->get()->first(fn ($e) => ! $e->isPast()),
             'aufgaben' => Task::where('user_id', $user->id)->open()->orderByRaw('CASE WHEN due_at IS NULL THEN 1 ELSE 0 END')->orderBy('due_at')->limit(4)->get(),
             'offen' => Task::where('user_id', $user->id)->open()->count(),
             'ungelesen' => $this->chat->unreadFor($user),

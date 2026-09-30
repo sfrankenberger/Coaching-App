@@ -14,6 +14,7 @@ use App\Models\Tenant;
 use App\Models\User;
 use App\Observers\EventObserver;
 use App\Programs\Begleitung;
+use App\Tenancy\Branding;
 use App\Tenancy\CurrentTenant;
 use Illuminate\Support\Collection;
 
@@ -66,7 +67,38 @@ class Runden
             }
         }
 
+        // Fragentag: um 9 Uhr ein Anstoss an den Kurs, "Heute ist Fragentag" (wie lea-kursraum)
+        if ($jetzt->hour >= 9) {
+            $fragentage = Event::query()->where('is_published', true)->where('all_day', true)->where('type', 'question_day')->whereNull('reminded_day_at')
+                ->whereBetween('starts_at', [$jetzt->copy()->startOfDay()->utc(), $jetzt->copy()->endOfDay()->utc()])->get();
+            foreach ($fragentage as $event) {
+                $n += $this->fragentag($event);
+                $event->forceFill(['reminded_day_at' => now()])->saveQuietly();
+            }
+        }
+
         return $n;
+    }
+
+    /** "Heute ist Fragentag": Push an alle im Kurs, der Knopf fuehrt zu den Kursfragen. Ohne Mail. */
+    protected function fragentag(Event $event): int
+    {
+        $ids = EventObserver::recipients($event);
+        if ($ids->isEmpty()) {
+            return 0;
+        }
+        $coach = app(Branding::class)->coachName();
+        $report = $this->notifier->send($ids, new Nachricht(
+            titel: 'Heute ist Fragentag',
+            text: 'Was beschäftigt dich gerade? Stell deine Frage, '.$coach.' antwortet oder nimmt sie in den nächsten Call.',
+            url: $event->program ? route('kurse.fragen', $event->program) : route('community'),
+            anlass: 'fragentag',
+            tag: 'fragentag-'.$event->id,
+            mailWennKeinPush: false,
+            knopf: 'Frage stellen',
+        ));
+
+        return count(array_filter($report));
     }
 
     protected function melden(Event $event, string $titel, string $text, string $wann): int

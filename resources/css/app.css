@@ -795,6 +795,27 @@
     .merken.an { color: var(--c-primary); }
     .reaktion { display: inline-flex; align-items: center; gap: 6px; border: 1px solid var(--c-card-border); background: #fff; border-radius: 999px; padding: 5px 11px; font-size: 14px; min-height: 32px; line-height: 1; cursor: pointer; }
     .reaktion.an { background: var(--c-primary-tint); border-color: var(--c-primary); }
+    .reaktion-klein { min-height: 26px; padding: 3px 8px; font-size: 13px; }
+
+    /* ---------- Fragen: Antworten, Erwaehnungen, Weiterlesen ---------- */
+    .antwort.vom-team { background: var(--c-primary-soft); }
+    .antwort.beste { border: 1.5px solid var(--c-success); background: var(--c-success-soft); }
+    .antwort.neu-seit { box-shadow: inset 3px 0 0 var(--c-primary); }
+    .antwort.kind { margin: 8px 0 0 18px; padding: 10px 12px; background: var(--c-ghost); }
+    .antwort-kinder { margin-top: 6px; }
+    .beste-marke { display: inline-block; background: var(--c-success); color: #fff; font-size: 11px; letter-spacing: .08em; text-transform: uppercase; font-weight: 700; border-radius: 999px; padding: 3px 10px; margin-bottom: 8px; }
+    .chip-neu { background: var(--c-primary); color: #fff; }
+    .erwaehnt { background: var(--c-primary-soft); color: var(--c-primary); border-radius: 5px; padding: 1px 5px; font-weight: 600; }
+    .weiterlesen { max-height: 9.5em; overflow: hidden; position: relative; }
+    .weiterlesen::after { content: ""; position: absolute; left: 0; right: 0; bottom: 0; height: 3em; background: linear-gradient(rgba(255, 255, 255, 0), #fff); }
+    .weiterlesen.offen { max-height: none; }
+    .weiterlesen.offen::after { display: none; }
+    .erwaehnen-liste { position: absolute; z-index: 20; background: #fff; border: 1px solid var(--c-card-border); border-radius: 12px; box-shadow: 0 8px 24px rgba(0, 0, 0, .08); padding: 4px; min-width: 180px; max-height: 200px; overflow: auto; }
+    .erwaehnen-liste button { display: block; width: 100%; text-align: left; border: 0; background: none; padding: 7px 10px; border-radius: 8px; font: inherit; font-size: var(--fs-md); cursor: pointer; }
+    .erwaehnen-liste button.an, .erwaehnen-liste button:hover { background: var(--c-primary-soft); }
+    .filterleiste-fragen { display: grid; gap: 8px; margin: 0 0 var(--gap); }
+    .filterleiste-fragen .pillen { margin: 0; }
+    .frage-zeile .avatar { margin-top: 2px; }
 
     /* ---------- Medien ---------- */
     .video { position: relative; aspect-ratio: 16 / 9; border-radius: calc(var(--radius) - 4px); overflow: hidden; background: #000; }

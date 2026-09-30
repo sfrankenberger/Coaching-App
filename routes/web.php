@@ -238,17 +238,22 @@ Route::middleware(['auth', 'membership'])->group(function () {
     // Fragen an die Coachin im Kursraum, Community = alle Fragen aus meinen Kursen
     Route::get('/community', [FragenController::class, 'community'])->name('community');
     Route::get('/community/wer-ist-dabei', [FragenController::class, 'leute'])->name('community.leute');
+    Route::post('/community/fragen', [FragenController::class, 'communityStore'])->middleware('throttle:20,10')->name('community.fragen.store');
     Route::get('/hilfe', [ProfilController::class, 'hilfeSeite'])->name('hilfe');
     Route::get('/kurse/{program:slug}/fragen', [FragenController::class, 'index'])->name('kurse.fragen');
     Route::post('/kurse/{program:slug}/fragen', [FragenController::class, 'store'])->middleware('throttle:20,10')->name('kurse.fragen.store');
     Route::get('/fragen/{frage}', [FragenController::class, 'show'])->name('fragen.show');
     Route::post('/fragen/{frage}/antworten', [FragenController::class, 'antworten'])->middleware('throttle:30,10')->name('fragen.antworten');
+    Route::get('/fragen/{frage}/neu', [FragenController::class, 'neu'])->name('fragen.neu');
+    Route::post('/fragen/{frage}/folgen', [FragenController::class, 'folgen'])->name('fragen.folgen');
     Route::post('/fragen/{frage}/status', [FragenController::class, 'status'])->name('fragen.status');
     Route::post('/fragen/{frage}/call', [FragenController::class, 'call'])->name('fragen.call');
     Route::delete('/fragen/{frage}', [FragenController::class, 'destroy'])->name('fragen.destroy');
     Route::delete('/antworten/{antwort}', [FragenController::class, 'antwortLoeschen'])->name('fragen.antwort.loeschen');
+    Route::patch('/antworten/{antwort}', [FragenController::class, 'antwortAendern'])->name('fragen.antwort.aendern');
+    Route::post('/antworten/{antwort}/beste', [FragenController::class, 'beste'])->name('fragen.antwort.beste');
     Route::post('/element/{typ}/{id}/schnell', [ElementController::class, 'schnell'])->where('typ', 'note|task|reflection')->name('element.schnell');
-    Route::post('/reaktion/{typ}/{id}', [ReaktionController::class, 'toggle'])->where('typ', 'note|task|reflection|projekt')->middleware('throttle:60,1')->name('reaktion');
+    Route::post('/reaktion/{typ}/{id}', [ReaktionController::class, 'toggle'])->where('typ', 'note|task|reflection|projekt|question|comment')->middleware('throttle:60,1')->name('reaktion');
     Route::post('/kommentar', [KommentarController::class, 'store'])->middleware('throttle:30,1')->name('kommentar.store');
     Route::delete('/kommentar/{kommentar}', [KommentarController::class, 'destroy'])->name('kommentar.destroy');
 });

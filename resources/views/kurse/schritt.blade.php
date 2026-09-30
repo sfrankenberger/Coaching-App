@@ -79,7 +79,7 @@
 
         {{-- Reflexions- und Fragentag --}}
         @foreach ($termine->filter(fn ($t) => in_array($t->type, \App\Models\Event::ALL_DAY_TYPES, true)) as $t)
-            <a href="{{ $t->type === 'reflection_day' ? route('reflexion.index') : route('gespraech.index') }}" class="zeile" style="margin-top:12px">
+            <a href="{{ $t->type === 'reflection_day' ? route('reflexion.index') : route('kurse.fragen', [$program, 'frage' => 1]) }}" class="zeile" style="margin-top:12px">
                 <span class="ic"><i class="fa-solid fa-{{ $t->type === 'reflection_day' ? 'pen-to-square' : 'circle-question' }}"></i></span>
                 <span class="tx"><b>{{ $t->type === 'reflection_day' ? 'Reflexion schreiben' : 'Frage stellen' }}</b><span>{{ $t->typeLabel() }} · {{ $t->starts_at->translatedFormat('l, j. F') }}</span></span>
                 <i class="fa-solid fa-chevron-right pf"></i>

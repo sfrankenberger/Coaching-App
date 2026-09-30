@@ -1030,3 +1030,103 @@ document.addEventListener('medien:zeit', function (e) {
         if (d && d.tagName === 'DETAILS') d.open = true;
     }
 })();
+
+/* ---------- Fragen: Weiterlesen, Antwort auf Antwort, @-Erwaehnungen, neue Antworten nachladen ---------- */
+(function () {
+    document.addEventListener('click', function (e) {
+        var k = e.target.closest('[data-weiterlesen-knopf]');
+        if (!k) return;
+        var t = k.previousElementSibling;
+        if (!t || t.dataset.weiterlesen === undefined) return;
+        var offen = t.classList.toggle('offen');
+        k.textContent = offen ? 'Weniger' : 'Weiterlesen';
+    });
+
+    /* Antworten auf eine Antwort: das eine Formular unten bekommt parent_id und springt hoch */
+    var form = document.getElementById('antworten');
+    if (form) {
+        var parent = form.querySelector('[data-parent]'), hinweis = form.querySelector('[data-antwort-auf-hinweis]'), name = form.querySelector('[data-antwort-auf-name]');
+        document.addEventListener('click', function (e) {
+            var b = e.target.closest('[data-antwort-auf]');
+            if (b) {
+                parent.value = b.dataset.antwortAuf; name.textContent = b.dataset.name || ''; hinweis.hidden = false;
+                form.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                var t = form.querySelector('textarea'); if (t) { t.focus(); if (b.dataset.name && !t.value) t.value = '@' + b.dataset.name.replace(/\s+/g, '-') + ' '; }
+            }
+            if (e.target.closest('[data-antwort-auf-weg]')) { parent.value = ''; hinweis.hidden = true; }
+        });
+    }
+
+    /* @-Erwaehnungen: beim Tippen von @ Namen vorschlagen */
+    document.querySelectorAll('textarea[data-erwaehnen]').forEach(function (t) {
+        var namen = [];
+        try { namen = JSON.parse(t.dataset.erwaehnen || '[]'); } catch (e) {}
+        if (!namen.length) return;
+        var liste = null, wahl = 0, treffer = [];
+        function zu() { if (liste) { liste.remove(); liste = null; } }
+        function wort() {
+            var bis = t.selectionStart, vor = t.value.slice(0, bis), m = vor.match(/(?:^|[\s(])@([\p{L}\-]*)$/u);
+            return m ? { start: bis - m[1].length - 1, text: m[1] } : null;
+        }
+        function einsetzen(n) {
+            var w = wort(); if (!w) return;
+            var voll = '@' + n.replace(/\s+/g, '-') + ' ';
+            t.value = t.value.slice(0, w.start) + voll + t.value.slice(t.selectionStart);
+            var pos = w.start + voll.length; t.setSelectionRange(pos, pos); t.focus(); zu();
+            t.dispatchEvent(new Event('input', { bubbles: true }));
+        }
+        function zeichnen() {
+            var w = wort();
+            if (!w) return zu();
+            var such = w.text.toLowerCase();
+            treffer = namen.filter(function (n) { return n.toLowerCase().indexOf(such) === 0 || n.toLowerCase().split(' ')[0].indexOf(such) === 0; }).slice(0, 6);
+            if (!treffer.length) return zu();
+            if (!liste) { liste = document.createElement('div'); liste.className = 'erwaehnen-liste'; t.parentNode.style.position = 'relative'; t.parentNode.appendChild(liste); }
+            wahl = Math.min(wahl, treffer.length - 1);
+            liste.innerHTML = '';
+            treffer.forEach(function (n, i) {
+                var b = document.createElement('button'); b.type = 'button'; b.textContent = n; if (i === wahl) b.classList.add('an');
+                b.addEventListener('mousedown', function (e) { e.preventDefault(); einsetzen(n); });
+                liste.appendChild(b);
+            });
+            liste.style.left = '12px'; liste.style.top = (t.offsetTop + t.offsetHeight - 6) + 'px';
+        }
+        t.addEventListener('input', function () { wahl = 0; zeichnen(); });
+        t.addEventListener('keydown', function (e) {
+            if (!liste) return;
+            if (e.key === 'ArrowDown') { e.preventDefault(); wahl = (wahl + 1) % treffer.length; zeichnen(); }
+            else if (e.key === 'ArrowUp') { e.preventDefault(); wahl = (wahl - 1 + treffer.length) % treffer.length; zeichnen(); }
+            else if (e.key === 'Enter' || e.key === 'Tab') { e.preventDefault(); einsetzen(treffer[wahl]); }
+            else if (e.key === 'Escape') { zu(); }
+        });
+        t.addEventListener('blur', function () { setTimeout(zu, 150); });
+    });
+
+    /* Neue Antworten nachladen: alle 20 Sekunden nachfragen, Knopf "2 neue Antworten anzeigen" */
+    var seite = document.querySelector('[data-frage-neu]');
+    if (seite) {
+        var knopf = seite.querySelector('[data-neue-antworten]'), box = seite.querySelector('[data-antworten]');
+        var letzte = parseInt(seite.dataset.letzte || '0', 10), wartend = null;
+        function nachfragen() {
+            if (document.hidden) return;
+            fetch(seite.dataset.frageNeu + '?seit=' + letzte, { credentials: 'same-origin', headers: { 'Accept': 'application/json' } })
+                .then(function (r) { return r.json(); })
+                .then(function (j) {
+                    if (!j.anzahl) return;
+                    wartend = j; letzte = j.letzte;
+                    knopf.textContent = j.anzahl === 1 ? 'Eine neue Antwort anzeigen' : j.anzahl + ' neue Antworten anzeigen';
+                    knopf.hidden = false;
+                })
+                .catch(function () {});
+        }
+        knopf.addEventListener('click', function () {
+            if (!wartend) return;
+            var t = document.createElement('div'); t.innerHTML = wartend.html;
+            while (t.firstChild) box.appendChild(t.firstChild);
+            wartend = null; knopf.hidden = true;
+            var leer = seite.querySelector('.leer'); if (leer) leer.remove();
+        });
+        setInterval(nachfragen, 20000);
+        document.addEventListener('visibilitychange', function () { if (!document.hidden) nachfragen(); });
+    }
+})();

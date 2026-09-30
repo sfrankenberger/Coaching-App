@@ -14,6 +14,7 @@ class FrageRequest extends FormRequest
             'body' => ['nullable', 'string', 'max:10000'],
             'visibility' => ['nullable', 'in:program,coach'],
             'aufgabe_id' => ['nullable', 'integer'],
+            'program_id' => ['nullable', 'integer'],
             'refs' => ['nullable', 'array', 'max:12'],
             'refs.*' => ['string', 'max:40'],
         ];

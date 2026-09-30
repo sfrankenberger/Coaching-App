@@ -15,6 +15,7 @@ use App\Models\Program;
 use App\Models\ProgramStep;
 use App\Models\Projekt;
 use App\Models\Question;
+use App\Models\QuestionState;
 use App\Models\Reaction;
 use App\Models\Reflection;
 use App\Models\Resource;
@@ -589,6 +590,29 @@ class BegleitungImport
         }
     }
 
+    /** Callwuensche und Reaktionen an der Frage, wer folgt oder stumm ist. */
+    protected function importFrageMeta(int $wpId, int $questionId): void
+    {
+        $emojis = ['ja' => 'ja', 'auchich' => 'auchich', 'call' => Question::CALLWUNSCH, 'danke' => 'herz'];
+        foreach ((array) WordPressSource::unserialize($this->source->meta($wpId, 'lea_kr_reaktionen')) as $key => $users) {
+            if (! isset($emojis[$key])) {
+                continue;
+            }
+            foreach ((array) $users as $wpUid) {
+                if ($uid = $this->userMap[(int) $wpUid] ?? null) {
+                    Reaction::firstOrCreate(['user_id' => $uid, 'reactable_type' => 'question', 'reactable_id' => $questionId, 'emoji' => $emojis[$key]]);
+                }
+            }
+        }
+        foreach (['lea_kr_folgen' => true, 'lea_kr_stumm' => false] as $key => $folgen) {
+            foreach ((array) WordPressSource::unserialize($this->source->meta($wpId, $key)) as $wpUid) {
+                if ($uid = $this->userMap[(int) $wpUid] ?? null) {
+                    QuestionState::updateOrCreate(['question_id' => $questionId, 'user_id' => $uid], ['folgen' => $folgen]);
+                }
+            }
+        }
+    }
+
     protected function importComments(): void
     {
         if ($this->dryRun || ! $this->source->hasTable('comments')) {
@@ -598,8 +622,11 @@ class BegleitungImport
         if ($ids === []) {
             return;
         }
+        $kommentarMap = [];
+        $eltern = [];
         foreach ($this->source->db()->table('comments')->whereIn('comment_post_ID', $ids)->where('comment_approved', '1')->orderBy('comment_ID')->get() as $c) {
             [$type, $elId] = $this->elementMap[(int) $c->comment_post_ID];
+            $eltern[(int) $c->comment_ID] = (int) ($c->comment_parent ?? 0);
             $uid = $this->userMap[(int) $c->user_id] ?? null;
             if (! $uid || ! $elId || trim((string) $c->comment_content) === '') {
                 continue;
@@ -607,10 +634,45 @@ class BegleitungImport
             $comment = Comment::firstOrNew(['legacy_id' => (string) $c->comment_ID]);
             $comment->fill(['user_id' => $uid, 'commentable_type' => $type, 'commentable_id' => $elId, 'body' => trim($c->comment_content)])->save();
             $comment->forceFill(['created_at' => $this->lokal($c->comment_date)])->saveQuietly();
+            $kommentarMap[(int) $c->comment_ID] = $comment;
             $this->stats['kommentare']++;
+        }
+        // Antwort auf Antwort (eine Ebene), beste Antwort und Herzen aus dem alten Kursraum
+        $meta = $this->source->hasTable('commentmeta') ? $this->source->db()->table('commentmeta')->whereIn('comment_id', array_keys($kommentarMap ?? []))->whereIn('meta_key', ['lea_kr_beste', 'lea_kr_herz'])->get()->groupBy('comment_id') : collect();
+        foreach ($kommentarMap ?? [] as $wpCid => $comment) {
+            $parent = (int) ($eltern[$wpCid] ?? 0);
+            $daten = [];
+            if ($parent && isset($kommentarMap[$parent]) && ! $kommentarMap[$parent]->parent_id) {
+                $daten['parent_id'] = $kommentarMap[$parent]->id;
+            }
+            foreach ($meta->get($wpCid, collect()) as $m) {
+                if ($m->meta_key === 'lea_kr_beste' && $m->meta_value) {
+                    $daten['is_best'] = true;
+                }
+                if ($m->meta_key === 'lea_kr_herz') {
+                    foreach ((array) WordPressSource::unserialize($m->meta_value) as $wpUid) {
+                        if ($uid = $this->userMap[(int) $wpUid] ?? null) {
+                            Reaction::firstOrCreate(['user_id' => $uid, 'reactable_type' => 'comment', 'reactable_id' => $comment->id, 'emoji' => 'herz']);
+                        }
+                    }
+                }
+            }
+            if ($daten) {
+                $comment->forceFill($daten)->saveQuietly();
+            }
+        }
+        // Letzte Antwort je Frage, fuer "Neue Antworten"
+        foreach ($ids as $wpId) {
+            [$type, $elId] = $this->elementMap[$wpId];
+            if ($type === 'question' && $elId && ($q = Question::find($elId))) {
+                $q->forceFill(['last_answer_at' => $q->answers()->max('created_at')])->saveQuietly();
+            }
         }
         foreach ($ids as $wpId) {
             [$type, $elId] = $this->elementMap[$wpId];
+            if ($type === 'question' && $elId) {
+                $this->importFrageMeta($wpId, $elId);
+            }
             $reaktionen = WordPressSource::unserialize($this->source->meta($wpId, 'el_reaktionen'));
             if (! is_array($reaktionen) || ! $elId) {
                 continue;
