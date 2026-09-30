@@ -26,6 +26,13 @@ class Werkzeugkasten
         InhalteSuchen::class,
         WissenSuchen::class,
         WissenMerken::class,
+        KontakteSuchen::class,
+        KontaktTaggen::class,
+        NewsletterListe::class,
+        NewsletterAnlegen::class,
+        NewsletterSenden::class,
+        ImpulsAnlegen::class,
+        RundnachrichtSenden::class,
     ];
 
     /** @return Collection<string, Werkzeug> */

@@ -62,6 +62,34 @@ class Anthropic
         return ['text' => $text, 'model' => $j['model'] ?? $model, 'tokens_in' => (int) ($j['usage']['input_tokens'] ?? 0), 'tokens_out' => (int) ($j['usage']['output_tokens'] ?? 0)];
     }
 
+    /**
+     * Gespraech mit Werkzeugen (Tool Use): Nachrichten im API-Format rein, rohe Inhaltsbloecke raus
+     * (text und tool_use), dazu stop_reason. Die Schleife ueber tool_use macht der Aufrufer.
+     */
+    public function chat(array $messages, ?string $system = null, array $tools = [], ?int $maxTokens = null): array
+    {
+        $key = self::keyFor($this->current->get());
+        if (! $key) {
+            throw new RuntimeException('Kein Anthropic-Schlüssel hinterlegt (ANTHROPIC_API_KEY oder settings.ai.anthropic_key).');
+        }
+        $model = $this->model();
+        $r = Http::timeout((int) config('ai.timeout'))
+            ->withHeaders(['x-api-key' => $key, 'anthropic-version' => '2023-06-01'])
+            ->post('https://api.anthropic.com/v1/messages', array_filter([
+                'model' => $model,
+                'max_tokens' => $maxTokens ?? (int) config('ai.max_tokens'),
+                'system' => $system,
+                'messages' => $messages,
+                'tools' => $tools ?: null,
+            ]));
+        if (! $r->successful()) {
+            throw new RuntimeException('Anthropic: HTTP '.$r->status().' '.mb_substr((string) $r->body(), 0, 300));
+        }
+        $j = $r->json();
+
+        return ['content' => (array) ($j['content'] ?? []), 'stop_reason' => $j['stop_reason'] ?? null, 'model' => $j['model'] ?? $model, 'tokens_in' => (int) ($j['usage']['input_tokens'] ?? 0), 'tokens_out' => (int) ($j['usage']['output_tokens'] ?? 0)];
+    }
+
     /** Wie text(), aber die Antwort wird als JSON gelesen (Code-Zaeune werden entfernt). */
     public function json(string $prompt, ?string $system = null, ?int $maxTokens = null): array
     {

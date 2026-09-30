@@ -109,7 +109,29 @@ ueber die bestehenden Dienste (`Zugang`, `Chat`, `Terminvorschlag`, `Lage`, `Ass
 | `inhalte_suchen` | Lektionen, Impulse, Podcast, Material, Werkzeuge |
 | `wissen_suchen`, `wissen_merken` | Second Brain |
 
+| `kontakte_suchen`, `kontakt_taggen` | Newsletter-Kontakte finden, Tags geben oder nehmen, Kontakt anlegen (bestaetigt, ohne Mail), abmelden |
+| `newsletter_liste`, `newsletter_anlegen`, `newsletter_senden` | Newsletter-Entwurf (auch aus einem Impuls per post_id), Test an Adressen, senden nur mit bestaetigt=true |
+| `impuls_anlegen` | Impuls oder Neuigkeit, Entwurf oder veroeffentlicht, mit Bescheid per Push oder Mail |
+| `rundnachricht_senden` | an alle oder ein Programm, senden nur mit bestaetigt=true |
+
 Neues Werkzeug: Klasse anlegen, in `Werkzeugkasten::WERKZEUGE` eintragen, Test in `McpTest`.
+
+## Claude in der App (`App\Ai\Dialog`)
+
+Auf `/assistent` steht oben "Mit mir arbeiten": ein Gespraech mit Claude (Anthropic Tool Use), das dieselben Werkzeuge
+nutzt wie der MCP-Server. Lese-Werkzeuge laufen sofort, jedes Schreib-Werkzeug (`Werkzeug::schreibt`) haelt das
+Gespraech an und zeigt "Soll ich das machen?" mit den Eingaben; erst "Ja, ausfuehren" fuehrt es aus, "Abbrechen"
+meldet Claude den Abbruch. Zustand in der Sitzung (`assistent.chat`: messages, protokoll, offen), hoechstens sechs
+Werkzeugrunden je Nachricht, die letzten 40 Nachrichten laufen mit. Routen `assistent.chat`, `assistent.chat.entscheiden`,
+`assistent.chat.neu` (`AssistentChatController`). Test: `DialogTest`.
+
+## Newsletter von der Website
+
+Das WordPress-Plugin (`resources/wordpress/app-angebote.php`) hat im Beitrags-Editor die Box "Newsletter aus der
+Coaching-App": Modus (nicht, Entwurf, sofort senden) und Tags als Haken (aus `GET /api/v1/newsletter/tags`). Beim
+Veroeffentlichen ruft es `POST /api/v1/newsletter` mit Titel, Auszug, Beitragsbild, Link und Tags auf, hoechstens
+einmal je Beitrag (`_capp_newsletter_id`). Schluessel: Sanctum-Token mit `mcp` unter Einstellungen, Allgemein,
+"Coaching-App Schluessel". Dieselben Werkzeuge stecken dahinter (`NewsletterAnlegen`, `NewsletterSenden`).
 
 ## MCP-Server
 

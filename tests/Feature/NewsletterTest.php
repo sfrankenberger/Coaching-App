@@ -193,6 +193,22 @@ class NewsletterTest extends TestCase
         $this->assertStringContainsString('atmen', $n->text);
     }
 
+    public function test_website_legt_newsletter_ueber_die_api_an(): void
+    {
+        $this->in(fn () => app(Kontakte::class)->anmelden('anna@test.ch', 'Anna', ['newsletter'], [], false));
+        $token = $this->lea->createToken('website', ['lesen', 'mcp'])->plainTextToken;
+        $this->withToken($token)->getJson('http://a.test/api/v1/newsletter/tags')->assertOk()->assertJson(['bestaetigt' => 1, 'tags' => [['tag' => 'newsletter', 'anzahl' => 1]]]);
+        $this->app['auth']->forgetGuards();
+        $r = $this->withToken($token)->postJson('http://a.test/api/v1/newsletter', ['betreff' => 'Neuer Beitrag', 'text' => "Kurz gesagt.\n\nWeiterlesen: https://lea.test/blog/x", 'bild_url' => 'https://lea.test/b.jpg', 'knopf_url' => 'https://lea.test/blog/x', 'tags' => ['newsletter'], 'senden' => true, 'quelle' => 'wordpress:12'])
+            ->assertCreated();
+        $this->assertSame(1, $r->json('gestartet'));
+        $this->assertSame('laeuft', $r->json('status'));
+        // Ohne Team-Rolle oder ohne Faehigkeit mcp: nein
+        $this->app['auth']->forgetGuards();
+        $lese = $this->lea->createToken('nur-lesen', ['lesen'])->plainTextToken;
+        $this->withToken($lese)->getJson('http://a.test/api/v1/newsletter/tags')->assertForbidden();
+    }
+
     public function test_mitglied_wird_kontakt_mit_tag_und_mandanten_sehen_sich_nicht(): void
     {
         $nora = User::factory()->create(['name' => 'Nora', 'email' => 'nora@test.ch']);

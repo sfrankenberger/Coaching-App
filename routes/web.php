@@ -6,6 +6,7 @@ use App\Http\Controllers\AltlinkController;
 use App\Http\Controllers\AngeboteController;
 use App\Http\Controllers\AnhaengeController;
 use App\Http\Controllers\AnsichtController;
+use App\Http\Controllers\AssistentChatController;
 use App\Http\Controllers\AssistentController;
 use App\Http\Controllers\AufgabenController;
 use App\Http\Controllers\Auth\BridgeController;
@@ -208,6 +209,9 @@ Route::middleware(['auth', 'membership'])->group(function () {
     Route::delete('/als', [AlsController::class, 'ende'])->name('als.ende');
     Route::get('/assistent', [AssistentController::class, 'index'])->name('assistent');
     Route::post('/assistent/merken', [AssistentController::class, 'merken'])->name('assistent.merken');
+    Route::post('/assistent/chat', [AssistentChatController::class, 'senden'])->middleware('throttle:30,10')->name('assistent.chat');
+    Route::post('/assistent/chat/entscheiden', [AssistentChatController::class, 'entscheiden'])->name('assistent.chat.entscheiden');
+    Route::post('/assistent/chat/neu', [AssistentChatController::class, 'neu'])->name('assistent.chat.neu');
     Route::delete('/assistent/wissen/{wissen}', [AssistentController::class, 'vergessen'])->name('assistent.vergessen');
     Route::get('/coachees', [CoacheesController::class, 'index'])->name('coachees.index');
     Route::post('/coachees/frage', [CoacheesController::class, 'frage'])->name('coachees.frage');

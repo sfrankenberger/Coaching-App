@@ -2,6 +2,54 @@
     <h1 class="mb-1">Assistent</h1>
     <p class="unterzeile m-0 mb-3.5">Frag nach deinem Betrieb, merk dir Wichtiges, und verbinde Claude oder ChatGPT mit der App.</p>
 
+    {{-- Claude in der App: Gespraech mit Werkzeugen, Rueckfrage vor jedem Schreiben --}}
+    <div id="chat"></div>
+    <section class="karte chat-assistent">
+        <div class="flex items-center justify-between gap-2">
+            <h3 class="m-0" style="font-size:var(--fs-lg)"><i class="fa-solid fa-wand-magic-sparkles"></i> Mit mir arbeiten</h3>
+            @if ($chat['protokoll'])<form method="post" action="{{ route('assistent.chat.neu') }}">@csrf<button type="submit" class="knopf knopf-text knopf-klein">Neues Gespräch</button></form>@endif
+        </div>
+        <p class="hinweis m-0 mb-2">Ich kann nachschlagen und handeln: Personen, Zugänge, Nachrichten, Termine, Kontakte, Newsletter, Impulse, Rundnachrichten. Bevor ich etwas ändere, frage ich nach.</p>
+        @if ($chat['protokoll'])
+            <div class="flex flex-col gap-2 mb-3" data-chat-protokoll>
+                @foreach ($chat['protokoll'] as $z)
+                    @if ($z['rolle'] === 'du')
+                        <div class="flex justify-end"><div class="blase blase-meine"><div class="lesetext whitespace-pre-line text-md">{{ $z['text'] }}</div></div></div>
+                    @elseif ($z['rolle'] === 'ki')
+                        <div class="flex justify-start"><div class="blase"><div class="lesetext whitespace-pre-line text-md">{{ $z['text'] }}</div></div></div>
+                    @else
+                        <details class="hinweis" style="margin-left:6px">
+                            <summary class="cursor-pointer"><i class="fa-solid fa-{{ $z['fehler'] ? 'triangle-exclamation' : 'check' }}"></i> {{ str_replace('_', ' ', $z['name']) }}{{ $z['fehler'] ? ': '.$z['ergebnis'] : '' }}</summary>
+                            <pre class="text-xs whitespace-pre-wrap m-0 mt-1" style="font-family:var(--font-body)">{{ json_encode($z['args'], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES) }}
+{{ $z['ergebnis'] }}</pre>
+                        </details>
+                    @endif
+                @endforeach
+            </div>
+        @endif
+        @if ($chat['offen'])
+            <div class="karte" style="border-color:var(--c-primary-line);background:var(--c-primary-tint)">
+                <span class="eyebrow"><i class="fa-solid fa-hand"></i> Soll ich das machen?</span>
+                @foreach ($chat['offen']['werkzeuge'] as $w)
+                    <p class="text-md m-0 mt-1"><b>{{ $werkzeuge->get($w['name'])?->beschreibung() ? str_replace('_', ' ', $w['name']) : $w['name'] }}</b></p>
+                    <pre class="text-xs whitespace-pre-wrap m-0" style="font-family:var(--font-body)">{{ collect($w['input'])->map(fn ($v, $k) => $k.': '.(is_array($v) ? json_encode($v, JSON_UNESCAPED_UNICODE) : $v))->join("
+") }}</pre>
+                @endforeach
+                <form method="post" action="{{ route('assistent.chat.entscheiden') }}" class="flex gap-2 mt-2">
+                    @csrf
+                    <button type="submit" name="ja" value="1" class="knopf knopf-klein"><i class="fa-solid fa-check"></i>Ja, ausführen</button>
+                    <button type="submit" name="ja" value="0" class="knopf knopf-ruhig knopf-klein">Abbrechen</button>
+                </form>
+            </div>
+        @else
+            <form method="post" action="{{ route('assistent.chat') }}" class="flex gap-2 items-end">
+                @csrf
+                <textarea name="text" rows="2" class="feld flex-1" required maxlength="4000" placeholder="{{ $chat['protokoll'] ? 'Und weiter ...' : 'Zum Beispiel: Leg einen Newsletter aus dem letzten Impuls an, an alle mit Tag newsletter' }}" onkeydown="if((event.metaKey||event.ctrlKey)&&event.key==='Enter'){this.form.requestSubmit()}"></textarea>
+                <button type="submit" class="knopf" @unless ($ki) disabled title="Ohne KI-Schlüssel" @endunless><i class="fa-solid fa-paper-plane"></i></button>
+            </form>
+        @endif
+    </section>
+
     <section class="karte" data-auskunft data-url="{{ route('coachees.frage') }}">
         <h3 class="m-0" style="font-size:var(--fs-lg)">Frag mich etwas</h3>
         <p class="hinweis m-0 mb-2">Buchungen, Termine, Menschen, wo du was findest, und was du dir gemerkt hast.</p>

@@ -5,13 +5,17 @@ namespace Tests\Feature;
 use App\Enums\Role;
 use App\Models\CoachNote;
 use App\Models\Message;
+use App\Models\Newsletter;
 use App\Models\Offer;
+use App\Models\Post;
 use App\Models\Program;
 use App\Models\Tenant;
 use App\Models\User;
 use App\Models\Wissen;
 use App\Tenancy\CurrentTenant;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Mail;
+use Illuminate\Support\Facades\Notification;
 use Tests\TestCase;
 
 /** MCP-Server: Claude oder ChatGPT verbinden sich mit Token und nutzen die Werkzeuge. */
@@ -163,5 +167,49 @@ class McpTest extends TestCase
         $this->assertSame(1, $this->lea->tokens()->count());
         $this->actingAs($this->anna)->get('http://a.test/profil')->assertOk()->assertDontSee('Schlüssel für Verbindungen');
         $this->actingAs($this->anna)->post('http://a.test/profil/schluessel', ['name' => 'x'])->assertForbidden();
+    }
+
+    public function test_werkzeuge_fuer_kontakte_newsletter_impuls_und_rundnachricht(): void
+    {
+        Mail::fake();
+        Notification::fake();
+        $liste = collect($this->rpc('tools/list')->json('result.tools'))->pluck('name');
+        foreach (['kontakte_suchen', 'kontakt_taggen', 'newsletter_liste', 'newsletter_anlegen', 'newsletter_senden', 'impuls_anlegen', 'rundnachricht_senden'] as $n) {
+            $this->assertTrue($liste->contains($n), $n);
+        }
+
+        $k = $this->werkzeug('kontakt_taggen', ['email' => 'nora@test.ch', 'name' => 'Nora', 'tags_dazu' => ['Newsletter', 'club']]);
+        $this->assertTrue($k['neu']);
+        $this->assertSame('bestaetigt', $k['status']);
+        $this->assertSame(['newsletter', 'club'], $k['tags']);
+        Mail::assertNothingSent();
+        $s = $this->werkzeug('kontakte_suchen', ['tag' => 'club']);
+        $this->assertSame(1, $s['anzahl']);
+        $this->assertSame(['club' => 1, 'newsletter' => 1], $s['tags']);
+
+        $n = $this->werkzeug('newsletter_anlegen', ['betreff' => 'Hallo {vorname}', 'text' => 'Neues aus dem Club.', 'tags' => ['club']]);
+        $this->assertSame('entwurf', $n['status']);
+        $this->assertSame(1, $n['empfaenger']);
+        $r = $this->werkzeug('newsletter_senden', ['newsletter_id' => $n['newsletter_id']]);
+        $this->assertArrayNotHasKey('gestartet', $r, 'ohne bestaetigt passiert nichts');
+        $r = $this->werkzeug('newsletter_senden', ['newsletter_id' => $n['newsletter_id'], 'test_an' => ['lea@test.ch']]);
+        $this->assertSame(1, $r['test_geschickt']);
+        $r = $this->werkzeug('newsletter_senden', ['newsletter_id' => $n['newsletter_id'], 'bestaetigt' => true]);
+        $this->assertSame(1, $r['gestartet']);
+        $this->assertSame('laeuft', $r['status']);
+        $this->assertSame('laeuft', $this->werkzeug('newsletter_liste')['newsletter'][0]['status']);
+
+        $p = $this->werkzeug('impuls_anlegen', ['titel' => 'Atem holen', 'text' => "Erster Absatz.\n\nZweiter Absatz.", 'veroeffentlichen' => true, 'bescheid' => ['push']]);
+        $this->assertTrue($p['veroeffentlicht']);
+        $this->assertSame('<p>Erster Absatz.</p><p>Zweiter Absatz.</p>', Post::find($p['post_id'])->body);
+        $n2 = $this->werkzeug('newsletter_anlegen', ['post_id' => $p['post_id']]);
+        $this->assertSame('Atem holen', Newsletter::find($n2['newsletter_id'])->betreff);
+
+        $r = $this->werkzeug('rundnachricht_senden', ['titel' => 'Hallo', 'text' => 'Bis Montag']);
+        $this->assertFalse($r['gesendet']);
+        $this->assertSame(1, $r['empfaenger']);
+        $r = $this->werkzeug('rundnachricht_senden', ['titel' => 'Hallo', 'text' => 'Bis Montag', 'bestaetigt' => true]);
+        $this->assertTrue($r['gesendet']);
+        $this->assertSame(1, $r['empfaenger']);
     }
 }

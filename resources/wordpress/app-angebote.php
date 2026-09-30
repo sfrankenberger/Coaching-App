@@ -125,6 +125,10 @@ add_shortcode('app_angebote', function ($atts) {
 
 /* Einstellung: Adresse der App unter Einstellungen > Allgemein */
 add_action('admin_init', function () {
+    register_setting('general', 'coaching_app_token', ['type' => 'string', 'sanitize_callback' => 'sanitize_text_field']);
+    add_settings_field('coaching_app_token', 'Coaching-App Schlüssel', function () {
+        echo '<input type="password" name="coaching_app_token" value="'.esc_attr(get_option('coaching_app_token', '')).'" class="regular-text" autocomplete="off"> <span class="description">Schlüssel aus dem Profil der Coachin (Schlüssel für Verbindungen). Damit kann die Website beim Veröffentlichen einen Newsletter in der App anlegen.</span>';
+    }, 'general');
     register_setting('general', 'coaching_app_url', ['type' => 'string', 'sanitize_callback' => 'esc_url_raw']);
     add_settings_field('coaching_app_url', 'Coaching-App Adresse', function () {
         echo '<input type="url" name="coaching_app_url" value="'.esc_attr(get_option('coaching_app_url', '')).'" class="regular-text" placeholder="https://app.example.ch">';
@@ -165,3 +169,91 @@ add_shortcode('app_anmelden', function ($atts) {
 
     return $h.'</form>';
 });
+
+/* ---------- Newsletter aus einem Beitrag: Empfaengerinnen beim Veroeffentlichen waehlen ---------- */
+
+function capp_api($pfad, $methode = 'GET', $daten = null)
+{
+    $basis = capp_url();
+    $token = (string) get_option('coaching_app_token', '');
+    if ($basis === '' || $token === '') {
+        return null;
+    }
+    $args = ['timeout' => 15, 'headers' => ['Accept' => 'application/json', 'Authorization' => 'Bearer '.$token, 'Content-Type' => 'application/json'], 'method' => $methode];
+    if ($daten !== null) {
+        $args['body'] = wp_json_encode($daten);
+    }
+    $r = wp_remote_request($basis.'/api/v1'.$pfad, $args);
+    if (is_wp_error($r)) {
+        return ['fehler' => $r->get_error_message()];
+    }
+    $j = json_decode(wp_remote_retrieve_body($r), true);
+    $code = (int) wp_remote_retrieve_response_code($r);
+
+    return is_array($j) ? $j + ['http' => $code] : ['fehler' => 'HTTP '.$code, 'http' => $code];
+}
+
+add_action('add_meta_boxes', function () {
+    if (capp_url() === '' || get_option('coaching_app_token', '') === '') {
+        return;
+    }
+    add_meta_box('capp_newsletter', 'Newsletter aus der Coaching-App', function ($post) {
+        $tags = get_transient('capp_tags');
+        if ($tags === false) {
+            $r = capp_api('/newsletter/tags');
+            $tags = is_array($r) && isset($r['tags']) ? $r : [];
+            set_transient('capp_tags', $tags, 10 * MINUTE_IN_SECONDS);
+        }
+        $gesendet = get_post_meta($post->ID, '_capp_newsletter_id', true);
+        $stand = get_post_meta($post->ID, '_capp_newsletter_stand', true);
+        $wahl = (array) get_post_meta($post->ID, '_capp_newsletter_tags', true);
+        $modus = get_post_meta($post->ID, '_capp_newsletter_modus', true) ?: 'nein';
+        wp_nonce_field('capp_newsletter', 'capp_newsletter_nonce');
+        if ($gesendet) {
+            echo '<p><strong>Newsletter #'.esc_html($gesendet).'</strong> in der App angelegt'.($stand ? ' ('.esc_html($stand).')' : '').'. <a href="'.esc_url(capp_url().'/coach/newsletter/'.$gesendet.'/bearbeiten').'" target="_blank" rel="noopener">In der App öffnen</a></p>';
+        }
+        echo '<p><label><input type="radio" name="capp_modus" value="nein" '.checked($modus, 'nein', false).'> Nicht als Newsletter schicken</label><br>';
+        echo '<label><input type="radio" name="capp_modus" value="entwurf" '.checked($modus, 'entwurf', false).'> Beim Veröffentlichen Entwurf in der App anlegen (dort prüfen und senden)</label><br>';
+        echo '<label><input type="radio" name="capp_modus" value="senden" '.checked($modus, 'senden', false).'> Beim Veröffentlichen sofort senden</label></p>';
+        echo '<p><strong>An wen</strong> (leer: alle '.(int) ($tags['bestaetigt'] ?? 0).' bestätigten Kontakte)</p>';
+        foreach ((array) ($tags['tags'] ?? []) as $t) {
+            echo '<label style="display:block"><input type="checkbox" name="capp_tags[]" value="'.esc_attr($t['tag']).'" '.checked(in_array($t['tag'], $wahl, true), true, false).'> '.esc_html($t['tag']).' <span style="opacity:.6">('.(int) $t['anzahl'].')</span></label>';
+        }
+        if (empty($tags['tags'])) {
+            echo '<p class="description">Keine Tags gefunden. Stimmen Adresse und Schlüssel unter Einstellungen, Allgemein?</p>';
+        }
+        echo '<p class="description">Bild, Titel, Auszug und Link zum Beitrag gehen mit. Gesendet wird höchstens einmal je Beitrag.</p>';
+    }, 'post', 'side', 'high');
+});
+
+add_action('save_post_post', function ($post_id, $post) {
+    if (! isset($_POST['capp_newsletter_nonce']) || ! wp_verify_nonce($_POST['capp_newsletter_nonce'], 'capp_newsletter') || ! current_user_can('edit_post', $post_id)) {
+        return;
+    }
+    $modus = in_array($_POST['capp_modus'] ?? 'nein', ['nein', 'entwurf', 'senden'], true) ? $_POST['capp_modus'] : 'nein';
+    $tags = array_values(array_filter(array_map('sanitize_title', (array) ($_POST['capp_tags'] ?? []))));
+    update_post_meta($post_id, '_capp_newsletter_modus', $modus);
+    update_post_meta($post_id, '_capp_newsletter_tags', $tags);
+    if ($modus === 'nein' || $post->post_status !== 'publish' || get_post_meta($post_id, '_capp_newsletter_id', true)) {
+        return;
+    }
+    $bild = get_the_post_thumbnail_url($post_id, 'large');
+    $r = capp_api('/newsletter', 'POST', [
+        'betreff' => get_the_title($post_id),
+        'titel' => get_the_title($post_id),
+        'text' => wp_strip_all_tags(has_excerpt($post_id) ? get_the_excerpt($post_id) : wp_trim_words(strip_shortcodes($post->post_content), 90, ' ...'))."\n\nWeiterlesen: ".get_permalink($post_id),
+        'vorschautext' => wp_strip_all_tags(get_the_excerpt($post_id)),
+        'bild_url' => $bild ?: null,
+        'knopf_text' => 'Weiterlesen',
+        'knopf_url' => get_permalink($post_id),
+        'tags' => $tags,
+        'senden' => $modus === 'senden',
+        'quelle' => 'wordpress:'.$post_id,
+    ]);
+    if (is_array($r) && ! empty($r['newsletter_id'])) {
+        update_post_meta($post_id, '_capp_newsletter_id', (int) $r['newsletter_id']);
+        update_post_meta($post_id, '_capp_newsletter_stand', $modus === 'senden' ? 'gesendet an '.(int) ($r['empfaenger'] ?? 0) : 'Entwurf');
+    } else {
+        update_post_meta($post_id, '_capp_newsletter_stand', 'Fehler: '.(is_array($r) ? ($r['fehler'] ?? ($r['message'] ?? 'unbekannt')) : 'keine Verbindung'));
+    }
+}, 10, 2);

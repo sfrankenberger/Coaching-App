@@ -4,6 +4,8 @@ namespace App\Http\Controllers;
 
 use App\Ai\Anthropic;
 use App\Ai\Assistent;
+use App\Ai\Dialog;
+use App\Ai\Werkzeuge\Werkzeugkasten;
 use App\Models\Wissen;
 use App\Tenancy\CurrentTenant;
 use Illuminate\Http\RedirectResponse;
@@ -28,6 +30,8 @@ class AssistentController extends Controller
             'wissenAnzahl' => Wissen::count(),
             'q' => $q,
             'mcpUrl' => url('/api/mcp'),
+            'chat' => $request->session()->get(AssistentChatController::SCHLUESSEL, Dialog::leer()),
+            'werkzeuge' => app(Werkzeugkasten::class)->alle(),
         ]);
     }
 

@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\Api\AngeboteController;
 use App\Http\Controllers\Api\McpController;
+use App\Http\Controllers\Api\NewsletterApiController;
 use App\Http\Controllers\Api\V1Controller;
 use App\Http\Controllers\NewsletterController;
 use App\Tenancy\Middleware\IdentifyTenant;
@@ -18,6 +19,9 @@ Route::prefix('v1')->middleware([IdentifyTenant::class, 'auth:sanctum', 'throttl
     Route::get('/termine', [V1Controller::class, 'termine']);
     Route::get('/mitteilungen', [V1Controller::class, 'mitteilungen']);
     Route::get('/aufgaben', [V1Controller::class, 'aufgaben']);
+    // Newsletter von der Website aus (Team, Faehigkeit mcp)
+    Route::get('/newsletter/tags', [NewsletterApiController::class, 'tags'])->name('api.newsletter.tags');
+    Route::post('/newsletter', [NewsletterApiController::class, 'store'])->name('api.newsletter.store');
 });
 
 /*
