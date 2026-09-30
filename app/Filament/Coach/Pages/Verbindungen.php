@@ -48,6 +48,9 @@ class Verbindungen extends Page
         'zoom_client_secret' => ['zoom.client_secret', true],
         'telegram_bot_token' => ['telegram.bot_token', true],
         'google_service_account' => ['google.service_account', true],
+        'stripe_public_key' => ['stripe.public_key', false],
+        'stripe_secret_key' => ['stripe.secret_key', true],
+        'stripe_webhook_secret' => ['stripe.webhook_secret', true],
     ];
 
     public static function canAccess(): bool
@@ -112,6 +115,11 @@ class Verbindungen extends Page
             Section::make('Google-Kalender')->description('Dienstkonto für die Buchung (JSON aus der Google Cloud Console).')->schema([
                 Textarea::make('google_service_account')->label('Dienstkonto (JSON)')->rows(4)->placeholder(fn () => $this->stand('google.service_account')),
             ]),
+            Section::make('Stripe')->description('Kasse mit Karte und Twint (Etappe 10). Schlüssel aus dem Stripe-Dashboard unter Entwickler, API-Schlüssel; das Webhook-Secret kommt beim Anlegen des Webhooks. Die Kasse nutzt sie, sobald sie freigeschaltet ist.')->schema([
+                TextInput::make('stripe_public_key')->label('Publishable Key')->placeholder('pk_live_...')->maxLength(200),
+                $this->geheim('stripe_secret_key', 'Secret Key', 'stripe.secret_key'),
+                $this->geheim('stripe_webhook_secret', 'Webhook-Secret', 'stripe.webhook_secret'),
+            ])->columns(3),
         ])->statePath('data');
     }
 

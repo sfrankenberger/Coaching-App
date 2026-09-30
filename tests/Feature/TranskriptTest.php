@@ -103,7 +103,7 @@ class TranskriptTest extends TestCase
             Livewire::test(Verbindungen::class)
                 ->assertSee('hinterlegt, endet auf 1234')
                 ->assertDontSee('sk-ant-alt1234')
-                ->fillForm(['audio_anbieter' => 'assemblyai', 'assemblyai_key' => 'aai-neu', 'vimeo_token' => '-', 'zoom_account_id' => 'acc-1'])
+                ->fillForm(['audio_anbieter' => 'assemblyai', 'assemblyai_key' => 'aai-neu', 'vimeo_token' => '-', 'zoom_account_id' => 'acc-1', 'stripe_public_key' => 'pk_test_1', 'stripe_secret_key' => 'sk_test_9999'])
                 ->call('speichern')->assertHasNoFormErrors();
         });
         $t = $this->a->fresh();
@@ -112,6 +112,8 @@ class TranskriptTest extends TestCase
         $this->assertSame('assemblyai', $t->setting('audio.anbieter'));
         $this->assertNull($t->setting('vimeo.token'));
         $this->assertSame('acc-1', $t->setting('zoom.account_id'));
+        $this->assertSame('pk_test_1', $t->setting('stripe.public_key'));
+        $this->assertSame('sk_test_9999', $t->setting('stripe.secret_key'));
 
         // Teilnehmerinnen kommen nicht an die Seite
         $this->in(function () {
