@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Coach\Geteilt;
 use App\Models\Note;
 use App\Models\Program;
+use App\Models\Projekt;
 use App\Programs\ProgramAccess;
 use App\Programs\Wochenaufgabe;
 use App\Support\Anhaenge;
@@ -22,13 +23,14 @@ class NotizenController extends Controller
         $user = $request->user();
         $suche = mb_strtolower(trim((string) $request->query('q', '')));
 
-        $notes = Note::where('user_id', $user->id)->with(['program:id,title', 'notable', 'anhaenge.ziel'])
+        $notes = Note::where('user_id', $user->id)->with(['program:id,title', 'notable', 'anhaenge.ziel', 'projekt:id,name,farbe,icon'])
             ->orderByDesc('is_pinned')->orderByDesc('updated_at')->get()
             ->filter(fn (Note $n) => $suche === '' || str_contains(mb_strtolower($n->title.' '.$n->body), $suche));
 
         return view('notizen.index', [
             'notes' => $notes->values(),
             'kurse' => $this->access->programsFor($user)->pluck('title', 'id'),
+            'projekte' => Projekt::where('user_id', $user->id)->orderBy('name')->get(['id', 'name', 'farbe', 'icon']),
             'gemeinschaft' => $this->access->gemeinschaftFor($user)->pluck('id'),
             'bearbeiten' => $request->query('bearbeiten') ? $notes->firstWhere('id', (int) $request->query('bearbeiten')) : null,
             'suche' => $suche,
@@ -78,6 +80,7 @@ class NotizenController extends Controller
             'title' => ['nullable', 'string', 'max:160'],
             'body' => ['required', 'string', 'max:20000'],
             'program_id' => ['nullable', 'integer'],
+            'project_id' => ['nullable', 'integer'],
             'visibility' => ['nullable', 'in:private,coach,program,all'],
             'is_pinned' => ['nullable', 'boolean'],
             'refs' => ['nullable', 'array', 'max:12'],
@@ -85,6 +88,7 @@ class NotizenController extends Controller
         ]);
         unset($data['refs']);
         $data['is_pinned'] = (bool) ($data['is_pinned'] ?? false);
+        $data['project_id'] = Projekt::where('user_id', $request->user()->id)->whereKey((int) ($data['project_id'] ?? 0))->value('id');
         $data['visibility'] ??= 'private';
         if (! empty($data['program_id'])) {
             $program = Program::find($data['program_id']);

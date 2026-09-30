@@ -14,6 +14,7 @@
                 @if ($t->program) {{ $t->program->title }} · @endif
                 @if ($t->unit_id && $t->program && $t->unit) <a href="{{ route('kurse.einheit', [$t->program, $t->unit]) }}">zur Übung</a> · @endif
                 {{ \App\Models\Note::VISIBILITIES[$t->visibility] ?? '' }}
+                @if ($t->project_id && $t->projekt) · <x-projekt-chip :projekt="$t->projekt" /> @endif
             </span>
             @if ($t->body)<p class="lesetext mt-1 whitespace-pre-line text-md">{{ $t->body }}</p>@endif
             <x-anhaenge :item="$t" />

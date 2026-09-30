@@ -8,6 +8,7 @@ use App\Models\Answer;
 use App\Models\Comment;
 use App\Models\Membership;
 use App\Models\Note;
+use App\Models\Projekt;
 use App\Models\Reflection;
 use App\Models\Task;
 use App\Models\User;
@@ -28,6 +29,7 @@ class Kommentare
         'note' => Note::class,
         'task' => Task::class,
         'answer' => Answer::class,
+        'projekt' => Projekt::class,
     ];
 
     public function __construct(protected Notifier $notifier, protected Chat $chat) {}
@@ -52,6 +54,7 @@ class Kommentare
             $item instanceof Note => in_array($item->visibility, ['coach', 'program', 'all'], true),
             $item instanceof Task => $item->visibility !== 'private' || $item->assigned_by !== null,
             $item instanceof Answer => (bool) $item->shared_with_coach,
+            $item instanceof Projekt => $item->visibility !== 'private',
             default => false,
         };
     }
@@ -110,6 +113,7 @@ class Kommentare
             $item instanceof Reflection => route('reflexion.index').'#reflexion-'.$item->id,
             $item instanceof Note => route('notizen.index').'#notiz-'.$item->id,
             $item instanceof Task => route('aufgaben.index').'#aufgabe-'.$item->id,
+            $item instanceof Projekt => route('projekte.index', ['ansicht' => 'liste']).'#projekt-'.$item->id,
             $item instanceof Answer && $item->exercise?->unit?->program => route('kurse.einheit', [$item->exercise->unit->program, $item->exercise->unit]).'#uebung-'.$item->exercise_id,
             default => route('home'),
         };

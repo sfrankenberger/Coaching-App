@@ -25,6 +25,11 @@ class Reflection extends Model
         return ['shared_at' => 'datetime'];
     }
 
+    public function projekt(): BelongsTo
+    {
+        return $this->belongsTo(Projekt::class, 'project_id');
+    }
+
     public function user(): BelongsTo
     {
         return $this->belongsTo(User::class);

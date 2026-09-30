@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Coach\Geteilt;
 use App\Http\Requests\AufgabeRequest;
+use App\Models\Projekt;
 use App\Models\Task;
 use App\Programs\ProgramAccess;
 use App\Support\Anhaenge;
@@ -22,7 +23,7 @@ class AufgabenController extends Controller
         $user = $request->user();
         $suche = mb_strtolower(trim((string) $request->query('q', '')));
 
-        $tasks = Task::where('user_id', $user->id)->with(['assigner:id,name', 'program:id,title', 'anhaenge.ziel'])
+        $tasks = Task::where('user_id', $user->id)->with(['assigner:id,name', 'program:id,title', 'anhaenge.ziel', 'projekt:id,name,farbe,icon'])
             ->orderByRaw('CASE WHEN done_at IS NULL THEN 0 ELSE 1 END')->orderByDesc('is_pinned')->orderBy('due_at')->orderByDesc('created_at')
             ->get()
             ->filter(fn (Task $t) => $suche === '' || str_contains(mb_strtolower($t->title.' '.$t->body), $suche));
@@ -31,6 +32,7 @@ class AufgabenController extends Controller
             'offen' => $tasks->filter(fn (Task $t) => ! $t->isDone())->values(),
             'fertig' => $tasks->filter(fn (Task $t) => $t->isDone())->values(),
             'kurse' => $this->access->programsFor($user)->pluck('title', 'id'),
+            'projekte' => Projekt::where('user_id', $user->id)->orderBy('name')->get(['id', 'name', 'farbe', 'icon']),
             'gemeinschaft' => $this->access->gemeinschaftFor($user)->pluck('id'),
             'bearbeiten' => $request->query('bearbeiten') ? $tasks->firstWhere('id', (int) $request->query('bearbeiten')) : null,
             'suche' => $suche,

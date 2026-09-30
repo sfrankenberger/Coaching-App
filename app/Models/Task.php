@@ -75,6 +75,11 @@ class Task extends Model
         ];
     }
 
+    public function projekt(): BelongsTo
+    {
+        return $this->belongsTo(Projekt::class, 'project_id');
+    }
+
     public function user(): BelongsTo
     {
         return $this->belongsTo(User::class);

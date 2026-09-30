@@ -32,6 +32,11 @@ class Note extends Model
         return ['is_pinned' => 'boolean'];
     }
 
+    public function projekt(): BelongsTo
+    {
+        return $this->belongsTo(Projekt::class, 'project_id');
+    }
+
     public function user(): BelongsTo
     {
         return $this->belongsTo(User::class);

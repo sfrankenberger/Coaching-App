@@ -34,6 +34,7 @@ use App\Http\Controllers\MitteilungenController;
 use App\Http\Controllers\NachschlagenController;
 use App\Http\Controllers\NotizenController;
 use App\Http\Controllers\ProfilController;
+use App\Http\Controllers\ProjekteController;
 use App\Http\Controllers\PushController;
 use App\Http\Controllers\ReaktionController;
 use App\Http\Controllers\ReflexionController;
@@ -200,6 +201,11 @@ Route::middleware(['auth', 'membership'])->group(function () {
 
     // Mein Journal: Aufgaben, Notizen, Reflexion
     Route::get('/journal', [JournalController::class, 'index'])->name('journal.index');
+    Route::get('/projekte', [ProjekteController::class, 'index'])->name('projekte.index');
+    Route::post('/projekte', [ProjekteController::class, 'store'])->name('projekte.store');
+    Route::post('/projekte/{projekt}', [ProjekteController::class, 'update'])->name('projekte.update');
+    Route::post('/projekte/{projekt}/schritt', [ProjekteController::class, 'schritt'])->name('projekte.schritt');
+    Route::delete('/projekte/{projekt}', [ProjekteController::class, 'destroy'])->name('projekte.destroy');
     Route::get('/aufgaben', [AufgabenController::class, 'index'])->name('aufgaben.index');
     Route::post('/aufgaben', [AufgabenController::class, 'store'])->name('aufgaben.store');
     Route::post('/aufgaben/{aufgabe}', [AufgabenController::class, 'update'])->name('aufgaben.update');
@@ -240,7 +246,7 @@ Route::middleware(['auth', 'membership'])->group(function () {
     Route::post('/fragen/{frage}/call', [FragenController::class, 'call'])->name('fragen.call');
     Route::delete('/fragen/{frage}', [FragenController::class, 'destroy'])->name('fragen.destroy');
     Route::delete('/antworten/{antwort}', [FragenController::class, 'antwortLoeschen'])->name('fragen.antwort.loeschen');
-    Route::post('/reaktion/{typ}/{id}', [ReaktionController::class, 'toggle'])->where('typ', 'note|task|reflection')->middleware('throttle:60,1')->name('reaktion');
+    Route::post('/reaktion/{typ}/{id}', [ReaktionController::class, 'toggle'])->where('typ', 'note|task|reflection|projekt')->middleware('throttle:60,1')->name('reaktion');
     Route::post('/kommentar', [KommentarController::class, 'store'])->middleware('throttle:30,1')->name('kommentar.store');
     Route::delete('/kommentar/{kommentar}', [KommentarController::class, 'destroy'])->name('kommentar.destroy');
 });

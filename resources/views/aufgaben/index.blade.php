@@ -9,6 +9,7 @@
             <input name="title" class="feld" placeholder="Was nimmst du dir vor?" maxlength="160" required value="{{ old('title', $bearbeiten?->title) }}">
             <textarea name="body" class="feld" rows="2" placeholder="Notiz dazu (optional)">{{ old('body', $bearbeiten?->body) }}</textarea>
             <x-anhang-wahl :refs="old('refs', $bearbeiten?->anhangRefs() ?? [])" />
+            <x-projekt-wahl :projekte="$projekte" :value="old('project_id', $bearbeiten?->project_id)" />
             <div class="flex flex-wrap gap-2">
                 <label class="block"><span class="feld-label">Bis</span><input type="date" name="due_at" class="feld" value="{{ old('due_at', $bearbeiten?->due_at?->toDateString()) }}"></label>
                 <label class="block"><span class="feld-label">Uhrzeit</span><input type="time" name="due_time" class="feld" value="{{ old('due_time', $bearbeiten?->due_time) }}"></label>

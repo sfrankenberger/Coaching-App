@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\Program;
+use App\Models\Projekt;
 use App\Models\Reflection;
 use App\Programs\ProgramAccess;
 use App\Programs\Wochenaufgabe;
@@ -36,8 +37,9 @@ class ReflexionController extends Controller
         return view('reflexion.index', [
             'fragen' => self::FRAGEN,
             'entwurf' => $entwurf,
-            'meine' => Reflection::where('user_id', $user->id)->with(['program:id,title', 'anhaenge.ziel'])->latest()->limit(30)->get(),
+            'meine' => Reflection::where('user_id', $user->id)->with(['program:id,title', 'anhaenge.ziel', 'projekt:id,name,farbe,icon'])->latest()->limit(30)->get(),
             'kurse' => $this->access->programsFor($user)->pluck('title', 'id'),
+            'projekte' => Projekt::where('user_id', $user->id)->orderBy('name')->get(['id', 'name', 'farbe', 'icon']),
             'gemeinschaft' => $this->access->gemeinschaftFor($user)->pluck('id'),
             'woche' => 'Woche '.now()->format('W').' ('.now()->translatedFormat('j. F Y').')',
             'aufgabe' => $this->wochenaufgabe->ausAufgabe($request, $user),
@@ -53,6 +55,7 @@ class ReflexionController extends Controller
             'challenges' => ['nullable', 'string', 'max:10000'],
             'focus' => ['nullable', 'string', 'max:10000'],
             'program_id' => ['nullable', 'integer'],
+            'project_id' => ['nullable', 'integer'],
             'visibility' => ['nullable', 'in:private,coach,program,all'],
             'aufgabe_id' => ['nullable', 'integer'],
             'refs' => ['nullable', 'array', 'max:12'],
@@ -82,6 +85,7 @@ class ReflexionController extends Controller
             'challenges' => $data['challenges'] ?? null,
             'focus' => $data['focus'] ?? null,
             'program_id' => $programId,
+            'project_id' => Projekt::where('user_id', $user->id)->whereKey((int) ($data['project_id'] ?? 0))->value('id'),
             'visibility' => $visibility,
             'shared_at' => $visibility !== 'private' ? ($reflection->shared_at ?? now()) : null,
         ])->save();

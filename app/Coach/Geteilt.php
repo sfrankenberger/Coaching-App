@@ -89,7 +89,7 @@ class Geteilt
     {
         [$label] = $this->label($item);
         $membership = Membership::where('user_id', $user->id)->first();
-        $text = $item instanceof Reflection ? ($item->week_label ?: 'Reflexion') : ($item->title ?: Str::limit((string) $item->body, 120));
+        $text = $item instanceof Reflection ? ($item->week_label ?: 'Reflexion') : ($item->title ?? $item->name ?? Str::limit((string) $item->body, 120));
         $this->notifier->send($this->chat->teamIds()->reject(fn ($id) => $id === $user->id), new Nachricht(
             titel: $user->vorname().' teilt eine '.$label.' mit dir',
             text: (string) $text,

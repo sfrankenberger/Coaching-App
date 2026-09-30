@@ -17,6 +17,7 @@ use App\Models\Post;
 use App\Models\Program;
 use App\Models\ProgramMember;
 use App\Models\ProgramStep;
+use App\Models\Projekt;
 use App\Models\Question;
 use App\Models\Reflection;
 use App\Models\Resourceable;
@@ -81,6 +82,7 @@ class AppServiceProvider extends ServiceProvider
             'note' => Note::class,
             'reflection' => Reflection::class,
             'journal' => JournalEntry::class,
+            'projekt' => Projekt::class,
             'message' => Message::class,
             'comment' => Comment::class,
             'answer' => Answer::class,

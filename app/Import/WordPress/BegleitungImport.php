@@ -13,6 +13,7 @@ use App\Models\Message;
 use App\Models\Note;
 use App\Models\Program;
 use App\Models\ProgramStep;
+use App\Models\Projekt;
 use App\Models\Question;
 use App\Models\Reaction;
 use App\Models\Reflection;
@@ -50,6 +51,9 @@ class BegleitungImport
     /** WordPress-Post-ID => [typ, id] fuer Verweise (chat_ref, Kommentare) */
     protected array $elementMap = [];
 
+    /** WordPress-User-ID => [alte Projekt-ID => projekte.id] */
+    protected array $projektMap = [];
+
     protected $report = null;
 
     public function __construct(protected Tenant $tenant, protected WordPressSource $source, protected bool $dryRun = false)
@@ -79,6 +83,7 @@ class BegleitungImport
 
         $this->importEvents();
         $this->importResources();
+        $this->importProjekte();
         $this->importTasks();
         $this->importNotes();
         $this->importReflections();
@@ -371,6 +376,7 @@ class BegleitungImport
                 'weekday' => ($wt = array_search((string) $m('af_tag'), ['mo', 'di', 'mi', 'do', 'fr', 'sa', 'so'], true)) === false ? null : $wt + 1,
                 'visibility' => $this->visibility($sicht),
                 'is_pinned' => (bool) $m('el_pin'),
+                'project_id' => $this->projektId($authorWp, (string) $m('el_projekt')),
             ];
 
             $this->stats['aufgaben']++;
@@ -403,6 +409,49 @@ class BegleitungImport
         }
     }
 
+    /* ---------- Projekte (usermeta lea_projekte) ---------- */
+
+    protected function importProjekte(): void
+    {
+        foreach ($this->source->userMetaByKey('lea_projekte') as $wpUid => $roh) {
+            $author = $this->userMap[(int) $wpUid] ?? null;
+            $liste = @unserialize((string) $roh);
+            if (! $author || ! is_array($liste)) {
+                continue;
+            }
+            foreach ($liste as $i => $p) {
+                if (! is_array($p) || blank($p['name'] ?? null) || blank($p['id'] ?? null)) {
+                    continue;
+                }
+                $this->stats['projekte'] = ($this->stats['projekte'] ?? 0) + 1;
+                $this->say("Projekt {$p['name']} von #{$wpUid}");
+                if ($this->dryRun) {
+                    continue;
+                }
+                $sicht = (string) ($p['sicht'] ?? 'privat');
+                $projekt = Projekt::firstOrNew(['legacy_id' => $wpUid.':'.$p['id']]);
+                $projekt->fill([
+                    'user_id' => $author,
+                    'name' => mb_substr((string) $p['name'], 0, 80),
+                    'worum' => filled($p['worum'] ?? null) ? (string) $p['worum'] : null,
+                    'farbe' => preg_match('/^#[0-9a-fA-F]{6}$/', (string) ($p['farbe'] ?? '')) ? $p['farbe'] : Projekt::FARBEN[0],
+                    'icon' => preg_replace('/^fa-/', '', (string) ($p['icon'] ?? 'fa-lightbulb')) ?: 'lightbulb',
+                    'schritt' => array_key_exists((string) ($p['schritt'] ?? ''), Projekt::SCHRITTE) ? $p['schritt'] : null,
+                    'visibility' => $this->visibility($sicht),
+                    'program_id' => $sicht === 'kurs' && ($pr = $this->programMap[(int) ($p['kurs'] ?? 0)] ?? null) ? $pr->id : null,
+                    'position' => (int) $i,
+                ])->save();
+                $this->projektMap[(int) $wpUid][(string) $p['id']] = $projekt->id;
+            }
+        }
+    }
+
+    /** projekte.id zu einer alten Projekt-ID (el_projekt) der Person, oder null. */
+    protected function projektId(int $wpUid, ?string $alt): ?int
+    {
+        return $alt ? ($this->projektMap[$wpUid][$alt] ?? null) : null;
+    }
+
     /* ---------- Notizen ---------- */
 
     protected function importNotes(): void
@@ -430,6 +479,7 @@ class BegleitungImport
                 'visibility' => $this->visibility((string) $m('el_sicht', 'privat')),
                 'program_id' => ($p = $this->programMap[(int) $m('notiz_kurs')] ?? $this->programMap[(int) $m('el_kurs')] ?? null) ? $p->id : null,
                 'is_pinned' => (bool) $m('el_pin'),
+                'project_id' => $this->projektId((int) $post->post_author, (string) $m('el_projekt')),
             ])->save();
             $note->timestamps = false;
             $note->forceFill(['created_at' => $this->lokal($post->post_date), 'updated_at' => $this->lokal($post->post_modified ?: $post->post_date)])->saveQuietly();
@@ -465,6 +515,7 @@ class BegleitungImport
                 'focus' => trim((string) $m('refl_fokus')) ?: null,
                 'visibility' => $visibility,
                 'shared_at' => $visibility !== 'private' ? ($r->shared_at ?? $this->lokal($post->post_modified ?: $post->post_date)) : null,
+                'project_id' => $this->projektId((int) $post->post_author, (string) $m('el_projekt')),
             ])->save();
             $r->forceFill(['created_at' => $this->lokal($post->post_date)])->saveQuietly();
             $this->elementMap[$id] = ['reflection', $r->id];

@@ -16,6 +16,7 @@ use App\Models\Note;
 use App\Models\Program;
 use App\Models\ProgramMember;
 use App\Models\ProgramStep;
+use App\Models\Projekt;
 use App\Models\Question;
 use App\Models\Reaction;
 use App\Models\Reflection;
@@ -151,7 +152,8 @@ class ImportBegleitungTest extends TestCase
         $this->umeta(22, 'lea_af_fremd_fertig', serialize([501]));
 
         // Notizen, Reflexionen, Journal
-        $this->wpPost(600, 'notiz', 'Gedanke', 'gedanke', '<p>Mehr Ruhe am Morgen.</p>', ['el_sicht' => 'lea', 'notiz_url' => 'https://example.com/ruhe', 'notiz_kurs' => '1849', 'el_reaktionen' => serialize(['herz' => [2], 'unbekannt' => [2]])], 'publish', 21);
+        $this->umeta(21, 'lea_projekte', serialize([['id' => 'p1', 'name' => 'Mein Nebenerwerb', 'worum' => 'Erste Kundinnen', 'farbe' => '#6E8B74', 'icon' => 'fa-briefcase', 'schritt' => 'aktion', 'sicht' => 'lea'], ['id' => 'p2', 'name' => 'Gesundheit', 'farbe' => '#B4795F', 'icon' => 'fa-heart', 'schritt' => '']]));
+        $this->wpPost(600, 'notiz', 'Gedanke', 'gedanke', '<p>Mehr Ruhe am Morgen.</p>', ['el_sicht' => 'lea', 'notiz_url' => 'https://example.com/ruhe', 'notiz_kurs' => '1849', 'el_projekt' => 'p1', 'el_reaktionen' => serialize(['herz' => [2], 'unbekannt' => [2]])], 'publish', 21);
         $this->wpPost(700, 'reflexion', 'Woche 1', 'woche-1', '', ['refl_an_lea' => '1', 'refl_gut' => 'Viel geschafft', 'refl_schwer' => 'Wenig Schlaf', 'refl_fokus' => 'Frueher ins Bett', 'el_kurs' => '1849'], 'publish', 21);
         $this->wpPost(701, 'reflexion', 'Woche 1', 'woche-1-bea', '', ['refl_gut' => 'Ruhe'], 'private', 22);
         $this->wpPost(800, 'journal', 'Buchprojekt', 'buchprojekt', 'Exposé schreiben', ['journal_typ' => 'projekt', 'journal_faellig' => '2026-10-01', 'journal_projekt' => 'Buch', 'el_sicht' => 'lea'], 'publish', 21);
@@ -323,6 +325,14 @@ class ImportBegleitungTest extends TestCase
             $this->assertSame('program', $video->source);
 
             $note = Note::where('legacy_id', '600')->first();
+            $projekt = Projekt::where('legacy_id', '21:p1')->first();
+            $this->assertNotNull($projekt, 'lea_projekte');
+            $this->assertSame('Mein Nebenerwerb', $projekt->name);
+            $this->assertSame('aktion', $projekt->schritt);
+            $this->assertSame('briefcase', $projekt->icon);
+            $this->assertSame('coach', $projekt->visibility);
+            $this->assertSame($projekt->id, $note->project_id, 'el_projekt');
+            $this->assertSame(2, Projekt::count());
             $this->assertSame('coach', $note->visibility);
             $this->assertSame("Mehr Ruhe am Morgen.\n\nhttps://example.com/ruhe", $note->body);
             $this->assertSame($this->hybrid->id, $note->program_id);

@@ -20,6 +20,7 @@
                 </div>
             @endforeach
             <x-anhang-wahl :refs="old('refs', $entwurf?->anhangRefs() ?? (($aufgabe ?? null) ? ['task:'.$aufgabe->id] : []))" />
+            <x-projekt-wahl :projekte="$projekte" :value="old('project_id', $entwurf?->project_id)" />
             <div class="flex flex-wrap gap-2">
                 @if ($kurse->count())
                     <label class="block"><span class="feld-label">Kurs</span><select name="program_id" class="feld"><option value="">Allgemein</option>@foreach ($kurse as $id => $t)<option value="{{ $id }}" @selected((int) old('program_id', $entwurf?->program_id) === $id)>{{ $t }}</option>@endforeach</select></label>
@@ -43,7 +44,7 @@
             <article id="reflexion-{{ $r->id }}" class="karte">
                 <div class="flex items-start gap-3">
                     <div class="min-w-0 flex-1">
-                        <span class="hinweis">{{ $r->week_label ?: $r->created_at->translatedFormat('j. F Y') }}@if ($r->program) · {{ $r->program->title }}@endif · {{ $r->isShared() ? 'Geteilt' : 'Nur ich' }}</span>
+                        <span class="hinweis">{{ $r->week_label ?: $r->created_at->translatedFormat('j. F Y') }}@if ($r->program) · {{ $r->program->title }}@endif · {{ $r->isShared() ? 'Geteilt' : 'Nur ich' }}@if ($r->projekt) · <x-projekt-chip :projekt="$r->projekt" />@endif</span>
                         @foreach ($fragen as $k => [$ico, $frage])
                             @if ($r->$k)<p class="mt-2"><b class="block text-md">{{ $ico }} {{ $frage }}</b><span class="lesetext whitespace-pre-line">{{ $r->$k }}</span></p>@endif
                         @endforeach
