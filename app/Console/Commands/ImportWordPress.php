@@ -11,6 +11,7 @@ use App\Import\WordPress\WordPressSource;
 use App\Models\Tenant;
 use App\Tenancy\CurrentTenant;
 use Illuminate\Console\Command;
+use Spatie\Activitylog\Support\ActivityLogStatus;
 
 /**
  * Import aus WordPress (nur lesend auf der Verbindung "wordpress").
@@ -30,6 +31,9 @@ class ImportWordPress extends Command
 
     public function handle(CurrentTenant $current): int
     {
+        // Importe schreiben nichts ins Aenderungsprotokoll (Masse, und die Quelle ist WordPress, nicht eine Person)
+        app(ActivityLogStatus::class)->disable();
+
         $tenant = Tenant::where('slug', $this->argument('tenant'))->first();
         if (! $tenant) {
             $this->error('Mandant nicht gefunden: '.$this->argument('tenant'));

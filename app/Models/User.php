@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use App\Enums\Role;
+use App\Support\Protokoll\Protokolliert;
 use App\Tenancy\CurrentTenant;
 use Filament\Models\Contracts\FilamentUser;
 use Filament\Panel;
@@ -24,6 +25,10 @@ use Laragear\WebAuthn\WebAuthnAuthentication;
 class User extends Authenticatable implements FilamentUser, WebAuthnAuthenticatable
 {
     use HasFactory, \Laravel\Sanctum\HasApiTokens, Notifiable, WebAuthnAuthentication;
+    use Protokolliert;
+
+    /** Inhalt bleibt privat, im Verlauf steht nur, dass sich etwas geaendert hat. */
+    protected static array $protokollSensibel = ['password', 'phone'];
 
     /** Mitteilungen in der App (Glocke), nur im aktuellen Mandanten. */
     public function notifications(): MorphMany

@@ -178,6 +178,18 @@
                     <p class="text-sm text-gray-500">Keine geteilten Notizen.</p>
                 @endforelse
             </x-filament::section>
+
+            <x-filament::section heading="Verlauf" description="Wer hat wann was an den Daten dieser Person geändert.">
+                @forelse ($verlauf as $e)
+                    <div class="py-1.5 border-b border-gray-100 last:border-0 text-sm">
+                        <span class="text-xs text-gray-500">{{ $e->created_at->format('d.m.Y H:i') }}</span>
+                        <span class="text-gray-700">{{ $e->wer() }}:</span> {{ $e->satz() }}
+                    </div>
+                @empty
+                    <p class="text-sm text-gray-500">Noch keine Einträge.</p>
+                @endforelse
+                <p class="mt-2 text-xs"><a href="{{ $verlaufUrl }}" class="text-primary-600 hover:underline">Ganzen Verlauf zeigen</a></p>
+            </x-filament::section>
         </div>
     </div>
 </x-filament-panels::page>

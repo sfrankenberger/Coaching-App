@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use App\Enums\Role;
+use App\Support\Protokoll\Protokolliert;
 use App\Tenancy\Concerns\BelongsToTenant;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\Pivot;
@@ -17,6 +18,7 @@ use Illuminate\Database\Eloquent\Relations\Pivot;
 class Membership extends Pivot
 {
     use BelongsToTenant;
+    use Protokolliert;
 
     protected $table = 'memberships';
 

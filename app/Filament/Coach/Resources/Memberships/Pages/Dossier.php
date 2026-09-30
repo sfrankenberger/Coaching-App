@@ -8,6 +8,7 @@ use App\Chat\Terminvorschlag;
 use App\Coach\Kommentare;
 use App\Coach\Lage;
 use App\Filament\Coach\Resources\Memberships\MembershipResource;
+use App\Filament\Coach\Resources\Protokoll\ProtokollResource;
 use App\Jobs\VorbereitungErstellen;
 use App\Models\AiSummary;
 use App\Models\Answer;
@@ -17,6 +18,7 @@ use App\Models\Event;
 use App\Models\EventAttendee;
 use App\Models\Note;
 use App\Models\ProgramMember;
+use App\Models\Protokoll;
 use App\Models\PushSubscription;
 use App\Models\Reflection;
 use App\Models\Task;
@@ -183,6 +185,9 @@ class Dossier extends Page
             'buchungen' => Booking::where('user_id', $user->id)->get()->keyBy('event_id'),
             'push' => PushSubscription::where('user_id', $user->id)->count(),
             'telegram' => TelegramLink::where('user_id', $user->id)->where('active', true)->exists(),
+            // Aenderungsprotokoll dieser Person: die letzten Eintraege, der ganze Verlauf im Menue
+            'verlauf' => Protokoll::fuerPerson($user)->with('causer')->latest('id')->limit(15)->get(),
+            'verlaufUrl' => ProtokollResource::getUrl('index', ['tableFilters' => ['person_id' => ['value' => $user->id]]]),
         ];
     }
 }

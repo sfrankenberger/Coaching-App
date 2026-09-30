@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Support\Protokoll\Protokolliert;
 use App\Support\Suche;
 use App\Tenancy\Concerns\BelongsToTenant;
 use Illuminate\Database\Eloquent\Builder;
@@ -17,6 +18,10 @@ use Laravel\Scout\Searchable;
 class Wissen extends Model
 {
     use BelongsToTenant, Searchable;
+    use Protokolliert;
+
+    /** Inhalt bleibt privat, im Verlauf steht nur, dass sich etwas geaendert hat. */
+    protected static array $protokollSensibel = ['body'];
 
     protected $table = 'wissen';
 

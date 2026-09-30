@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use App\Enums\Role;
+use App\Support\Protokoll\Protokolliert;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
@@ -12,6 +13,11 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
  */
 class Tenant extends Model
 {
+    use Protokolliert;
+
+    /** Inhalt bleibt privat, im Verlauf steht nur, dass sich etwas geaendert hat. */
+    protected static array $protokollSensibel = ['settings'];
+
     protected $fillable = ['slug', 'name', 'locale', 'timezone', 'currency', 'settings', 'branding', 'is_active'];
 
     protected function casts(): array
