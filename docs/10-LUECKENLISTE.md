@@ -142,6 +142,16 @@ Sortiert nach Nutzen fuer Lea und die Teilnehmerinnen. Mehrfach gefundene Punkte
   ansehen" (`material.gesehen`). Woche: Wochenband zum Wischen mit Haken, Schloss und "Jetzt", Sprung zur aktuellen
   Woche, Reflexionstag mit Stand "geschrieben" und der eigenen Reflexion der Woche, eigene Fragen der Woche, naechster
   Call in der Startseiten-Karte.
+- 30.09.: B13 bis B16 umgesetzt. Gratiskurs-Strecke (`App\Programs\Strecke`, Programm-Schalter "Begleitstrecke"):
+  Anstoss nach 2 Tagen mit frischem Einstiegslink, letzter Anstoss nach 7 Tagen mit Gespraechslink, signierter
+  Stopp-Link, Abschlussmail "Deine Goldnuggets" mit den eigenen Listenantworten, Push ans Team, Hinweis auf der
+  letzten Seite; Lauf `benachrichtigungen:runde strecke` taeglich 10:10. Newsletter-Haken bleibt bei Mailster
+  (Etappe 11). Meine Kurse als Schaufenster: Gliederung nach Zugangsart, naechster Call in der Karte,
+  "Freigeschaltet bis" aus dem Zugang, gesperrte Angebote mit Preis und Kauflink, "Kommt bald" (Programm-Schalter),
+  "Sag mir Bescheid" im leeren Zustand, Kurs ohne Module zeigt die naechsten acht Termine. Neu-Punkte im Menue
+  (`App\Support\Besuche`: Impulse, Ressourcen, Community, Termine seit dem letzten Besuch), "Was ist neu" mit
+  Antworten auf eigene Eintraege und Fragen. Einzelsitzungen auch in Hybrid-Kursen (Feld fuer alle Arten ausser
+  Arbeitsbuch, Kontingent auf Kursseite und im Profil).
 
 ## Was bewusst nicht kommt
 

@@ -4,19 +4,24 @@ namespace App\Notifications;
 
 use App\Chat\Chat;
 use App\Content\Inhalte;
+use App\Models\Comment;
 use App\Models\Conversation;
 use App\Models\Event;
 use App\Models\Membership;
 use App\Models\Message;
+use App\Models\Note;
 use App\Models\Question;
+use App\Models\Reflection;
 use App\Models\Task;
 use App\Models\Tenant;
 use App\Models\User;
 use App\Observers\EventObserver;
 use App\Programs\Begleitung;
+use App\Programs\Strecke;
 use App\Tenancy\Branding;
 use App\Tenancy\CurrentTenant;
 use Illuminate\Support\Collection;
+use Illuminate\Support\Str;
 
 /**
  * Die wiederkehrenden Laeufe je Mandant: Termin-Erinnerungen, Nachfassen bei
@@ -296,6 +301,12 @@ class Runden
      * Sammelmail an Coachin und Team: offene Fragen aus dem Kursraum fuer den naechsten Call.
      * Am Wochentag aus settings.fragen.sammeltag (1 = Montag, Vorgabe 4 = Donnerstag).
      */
+    /** Begleitstrecke der Gratiskurse: Anstoss nach zwei und sieben Tagen (taeglich). */
+    public function strecke(): int
+    {
+        return app(Strecke::class)->lauf();
+    }
+
     public function fragenSammelmail(): int
     {
         $tenant = $this->current->get();
@@ -372,6 +383,28 @@ class Runden
         }
         foreach ($begleitung->resourcesQuery($user)->where('resources.created_at', '>', $seit)->get() as $r) {
             $out->push(['titel' => $r->title, 'text' => $r->typeLabel(), 'herkunft' => 'Material', 'icon' => 'folder-open', 'url' => route('material.index'), 'zeit' => $r->created_at]);
+        }
+        // Antworten auf eigene Eintraege und Fragen (wie lea_st2_von_lea)
+        $eigene = [
+            'note' => Note::where('user_id', $user->id)->pluck('id'), 'task' => Task::where('user_id', $user->id)->pluck('id'),
+            'reflection' => Reflection::where('user_id', $user->id)->pluck('id'), 'question' => Question::where('user_id', $user->id)->pluck('id'),
+        ];
+        $kommentare = Comment::query()->where('user_id', '!=', $user->id)->where('created_at', '>', $seit)
+            ->where(fn ($q) => collect($eigene)->each(fn ($ids, $typ) => $ids->isEmpty() ?: $q->orWhere(fn ($w) => $w->where('commentable_type', $typ)->whereIn('commentable_id', $ids))))
+            ->with(['user:id,name', 'commentable'])->latest()->limit(10)->get();
+        foreach ($kommentare as $c) {
+            if (! $c->commentable) {
+                continue;
+            }
+            $frage = $c->commentable_type === 'question';
+            $out->push([
+                'titel' => $c->user?->vorname().($frage ? ' hat auf deine Frage geantwortet' : ' hat auf deinen Eintrag geantwortet'),
+                'text' => Str::limit($c->body, 80), 'herkunft' => $frage ? 'Frage' : 'Kommentar', 'icon' => 'reply',
+                'url' => $frage ? route('fragen.show', $c->commentable_id).'#antwort-'.$c->id : match ($c->commentable_type) {
+                    'note' => route('notizen.index').'#notiz-'.$c->commentable_id, 'task' => route('aufgaben.index').'#aufgabe-'.$c->commentable_id, default => route('reflexion.index').'#reflexion-'.$c->commentable_id,
+                },
+                'zeit' => $c->created_at,
+            ]);
         }
         foreach (Task::where('user_id', $user->id)->whereNotNull('assigned_by')->where('created_at', '>', $seit)->open()->get() as $t) {
             $out->push(['titel' => $t->title, 'text' => $t->due_at ? 'bis '.$t->due_at->translatedFormat('j. F') : '', 'herkunft' => 'Aufgabe', 'icon' => 'list-check', 'url' => route('aufgaben.index'), 'zeit' => $t->created_at]);

@@ -7,6 +7,7 @@ use App\Models\MediaPosition;
 use App\Models\Program;
 use App\Models\Resource;
 use App\Programs\Begleitung;
+use App\Support\Besuche;
 use App\Support\Medienstand;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
@@ -22,6 +23,7 @@ class MaterialController extends Controller
 
     public function index(Request $request): View
     {
+        app(Besuche::class)->merken($request->user(), 'material');
         $user = $request->user();
         $filter = (string) $request->query('f', '');
         $suche = mb_strtolower(trim((string) $request->query('q', '')));

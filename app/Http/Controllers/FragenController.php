@@ -18,6 +18,7 @@ use App\Notifications\Notifier;
 use App\Programs\ProgramAccess;
 use App\Programs\Wochenaufgabe;
 use App\Support\Anhaenge;
+use App\Support\Besuche;
 use App\Support\Erwaehnungen;
 use App\Tenancy\Branding;
 use Illuminate\Database\Eloquent\Builder;
@@ -57,6 +58,7 @@ class FragenController extends Controller
     /** Community (wie im alten Bereich): alle Fragen aus meinen Kursen an einem Ort. */
     public function community(Request $request): View
     {
+        app(Besuche::class)->merken($request->user(), 'community');
         $user = $request->user();
         $alle = $this->communityProgramme($user);
         $programme = $alle->filter(fn (Program $p) => $p->gemeinschaft())->values();

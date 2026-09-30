@@ -9,6 +9,7 @@ use App\Models\Event;
 use App\Models\Exercise;
 use App\Models\MediaPosition;
 use App\Models\Note;
+use App\Models\Offer;
 use App\Models\Program;
 use App\Models\ProgramMember;
 use App\Models\ProgramStep;
@@ -19,6 +20,7 @@ use App\Models\Unit;
 use App\Programs\Begleitung;
 use App\Programs\ProgramAccess;
 use App\Programs\ProgressTracker;
+use App\Programs\Strecke;
 use App\Tenancy\Branding;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -37,13 +39,30 @@ class KursController extends Controller
     {
         $user = $request->user();
         // 1:1-Begleitungen sind keine Kurse (Sitzungen stehen im Profil und bei den Terminen)
-        $programs = $this->access->programsFor($user)->reject(fn (Program $p) => $p->type === 'one_on_one')->map(function (Program $p) use ($user) {
+        $begleitung = app(Begleitung::class);
+        $programs = $this->access->programsFor($user)->reject(fn (Program $p) => $p->type === 'one_on_one')->map(function (Program $p) use ($user, $begleitung) {
             $p->setAttribute('stand', $this->progress->summary($user, $p));
+            $p->setAttribute('call', $p->isGroup() ? $begleitung->eventsQuery($user)->where('program_id', $p->id)->whereNull('user_id')
+                ->whereNotIn('type', Event::ALL_DAY_TYPES)->where('starts_at', '>=', now()->subHours(2)->utc())->orderBy('starts_at')->first() : null);
 
             return $p;
         });
+        $meine = $programs->pluck('id');
 
-        return view('kurse.index', ['programs' => $programs]);
+        // Zugang bis: aus den laufenden Zugaengen der Person (Woo oder Verkauf)
+        $bis = collect();
+        foreach ($user->entitlements()->current()->whereNotNull('ends_at')->with('offer.programs:id')->get() as $e) {
+            foreach ($e->offer?->programs ?? [] as $p) {
+                $bis[$p->id] = $bis->has($p->id) ? max($bis[$p->id], $e->ends_at) : $e->ends_at;
+            }
+        }
+        // Schaufenster: sichtbare Angebote, deren Kurse noch fehlen, und angekuendigte Kurse
+        $gesperrt = $user->canManageCurrentTenant() ? collect() : Offer::with('programs')->where('is_active', true)->orderBy('title')->get()
+            ->filter(fn (Offer $o) => $o->sichtbar() && $o->kaufbar() && $o->programs->isNotEmpty() && $o->programs->pluck('id')->diff($meine)->isNotEmpty());
+        $bald = Program::where('is_internal', false)->where('settings->kommt_bald', true)->whereNotIn('id', $meine)->orderBy('position')->get()
+            ->reject(fn (Program $p) => $gesperrt->contains(fn (Offer $o) => $o->programs->contains('id', $p->id)));
+
+        return view('kurse.index', ['programs' => $programs, 'bis' => $bis, 'gesperrt' => $gesperrt, 'bald' => $bald, 'coach' => app(Branding::class)->coachName()]);
     }
 
     /** Uebersicht eines Programms: Schritte, Fortschritt, naechste Einheit */
@@ -66,7 +85,8 @@ class KursController extends Controller
                 ->latest('published_at')->limit(3)->get(),
             'fragen' => Question::where('program_id', $program->id)->sichtbarFuer($user)->whereIn('status', ['offen', 'call'])->count(),
             'coach' => app(Branding::class)->coachName(),
-            'kontingent' => $program->type === 'one_on_one' ? app(Lage::class)->kontingent($user) : null,
+            'kontingent' => $program->type === 'one_on_one' || (int) ($program->settings['sitzungen_gesamt'] ?? 0) > 0 ? app(Lage::class)->kontingent($user) : null,
+            'termine' => $program->units->isEmpty() ? $begleitung->eventsQuery($user)->where('program_id', $program->id)->whereNull('user_id')->upcoming()->orderBy('starts_at')->limit(8)->get() : collect(),
             'program' => $program,
             'stand' => $this->progress->summary($user, $program),
             'done' => $done,
@@ -186,7 +206,11 @@ class KursController extends Controller
                 ->filter(fn ($z) => $z['text'] !== '')->values();
         }
 
+        $strecke = app(Strecke::class);
+        $goldnuggets = Strecke::aktiv($program) && $idx === $ordered->count() - 1 && ! $user->canManageCurrentTenant() ? $strecke->goldnuggets($user, $program) : collect();
+
         return view('kurse.einheit', [
+            'goldnuggets' => $goldnuggets,
             'quellen' => $quellen,
             'mitnehmen' => $mitnehmen,
             'material' => $material,

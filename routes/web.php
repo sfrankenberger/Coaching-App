@@ -39,6 +39,7 @@ use App\Http\Controllers\ProjekteController;
 use App\Http\Controllers\PushController;
 use App\Http\Controllers\ReaktionController;
 use App\Http\Controllers\ReflexionController;
+use App\Http\Controllers\StreckeController;
 use App\Http\Controllers\SucheController;
 use App\Http\Controllers\TelegramController;
 use App\Http\Controllers\TermineController;
@@ -74,6 +75,7 @@ Route::get('/buchen/gast/{art}/danke', [GastBuchenController::class, 'danke'])->
 Route::get('/kaufen/{angebot}', [KaufenController::class, 'show'])->name('kaufen');
 Route::post('/kaufen/{angebot}', [KaufenController::class, 'store'])->middleware('throttle:6,10')->name('kaufen.store');
 Route::get('/kaufen/{angebot}/danke', [KaufenController::class, 'danke'])->name('kaufen.danke');
+Route::get('/strecke/{program}/{user}/stopp', [StreckeController::class, 'stopp'])->middleware('signed')->name('strecke.stopp');
 
 // Anmelden
 Route::middleware('guest')->group(function () {

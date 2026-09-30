@@ -10,6 +10,7 @@ use App\Models\EventAttendee;
 use App\Models\MediaPosition;
 use App\Models\Program;
 use App\Programs\Begleitung;
+use App\Support\Besuche;
 use App\Support\Ics;
 use App\Tenancy\CurrentTenant;
 use Illuminate\Http\JsonResponse;
@@ -24,6 +25,7 @@ class TermineController extends Controller
 
     public function index(Request $request): View
     {
+        app(Besuche::class)->merken($request->user(), 'termine');
         $user = $request->user();
         $zeit = in_array($request->query('zeit'), ['kommend', 'vorbei', 'alle'], true) ? $request->query('zeit') : 'kommend';
         $kurs = (int) $request->query('kurs');

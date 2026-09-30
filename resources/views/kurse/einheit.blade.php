@@ -326,6 +326,12 @@
         </form>
     </x-karte>
 
+    @if (($goldnuggets ?? collect())->isNotEmpty() && ! $erledigt)
+        <div class="karte mt-3" style="background:var(--c-success-soft)">
+            <p class="m-0 mb-2"><b>Deine Goldnuggets kommen gleich per Mail.</b> Sobald du diesen Schritt abhakst, bekommst du sie zugeschickt, damit du sie hast, auch wenn du diese Seite nie wieder öffnest.</p>
+            <ul class="m-0 pl-5 lesetext">@foreach ($goldnuggets as $z)<li>{{ $z }}</li>@endforeach</ul>
+        </div>
+    @endif
     <p class="meldung meldung-gut mt-3" data-erledigt-hinweis hidden><i class="fa-solid fa-circle-check"></i> Video fast fertig geschaut, die Einheit ist als erledigt markiert.</p>
     @unless (in_array($program->type, ['one_on_one', 'workbook'], true))
         <p class="mt-3 m-0"><a href="{{ route('kurse.fragen', [$program, 'frage' => 1, 'titel' => 'Frage zu «'.$unit->title.'»', 'ref' => ['unit:'.$unit->id]]) }}" class="knopf knopf-leise knopf-klein"><i class="fa-solid fa-circle-question"></i>Frage dazu stellen</a></p>

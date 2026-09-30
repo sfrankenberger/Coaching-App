@@ -16,6 +16,7 @@ Schedule::command('benachrichtigungen:runde aufgaben --wann=abend')->dailyAt('18
 Schedule::command('benachrichtigungen:runde punkt')->everyFiveMinutes()->withoutOverlapping();   // "Jetzt dran" zur Uhrzeit der Aufgabe
 Schedule::command('benachrichtigungen:runde abendmail')->dailyAt('19:30');
 Schedule::command('benachrichtigungen:runde fragen')->dailyAt('16:50');   // nur am Sammeltag des Mandanten
+Schedule::command('benachrichtigungen:runde strecke')->dailyAt('10:10');  // Gratiskurs: Anstoss nach 2 und 7 Tagen
 
 // Inhalte: Feeds holen, geplante Beitraege melden
 Schedule::command('inhalte:feeds')->hourly()->withoutOverlapping();

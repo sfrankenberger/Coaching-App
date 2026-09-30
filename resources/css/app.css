@@ -831,6 +831,10 @@
     .wb.zu { color: var(--c-muted); background: var(--c-neutral); }
     .stand-balken { display: block; height: 3px; border-radius: 2px; background: var(--c-ghost); margin-top: 5px; overflow: hidden; max-width: 160px; }
     .stand-balken > span { display: block; height: 100%; background: var(--kc, var(--c-primary)); }
+    .kurs-karte.gesperrt { opacity: .92; }
+    .kurs-karte.gesperrt .kurs-bild { position: relative; filter: saturate(.6); }
+    .kurs-karte.gesperrt .kurs-bild .schloss { position: absolute; right: 8px; top: 8px; background: rgba(0, 0, 0, .45); color: #fff; border-radius: 50%; width: 26px; height: 26px; display: grid; place-items: center; font-size: 12px; }
+    .kurs-karte.bald { cursor: default; }
 
     /* ---------- Medien ---------- */
     .video { position: relative; aspect-ratio: 16 / 9; border-radius: calc(var(--radius) - 4px); overflow: hidden; background: #000; }
