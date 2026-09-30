@@ -2,9 +2,11 @@
 
 namespace App\Chat;
 
+use App\Audio\Transkript;
 use App\Enums\Role;
 use App\Events\MessageSent;
 use App\Jobs\ConvertAudio;
+use App\Jobs\TranskribiereSprachnachricht;
 use App\Models\Conversation;
 use App\Models\ConversationParticipant;
 use App\Models\Membership;
@@ -170,6 +172,9 @@ class Chat
         $msg->save();
         if (ConvertAudio::noetig($msg->audio_path) && config('services.ffmpeg.enabled', true)) {
             ConvertAudio::dispatch((int) $msg->tenant_id, $msg->id);
+        }
+        if ($msg->audio_path && blank($msg->transcript) && app(Transkript::class)->konfiguriert()) {
+            TranskribiereSprachnachricht::dispatch((int) $msg->tenant_id, $msg->id);
         }
 
         $conv->forceFill(['last_message_at' => now()])->save();

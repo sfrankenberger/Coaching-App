@@ -96,7 +96,7 @@ class Einstellungen extends Page
                 TextInput::make('shop_url')->label('Wo man deine Angebote kauft')->url()->maxLength(300)->helperText('Dorthin führt im Nachschlagen die Tür bei gesperrten Kursen, wenn der Kurs keine eigene Verkaufsseite hat.'),
                 TextInput::make('ausbildung_url')->label('Seite der Coach-Ausbildung')->url()->maxLength(300)->helperText('Dorthin führt die Tür bei den Werkzeugen.'),
             ])->columns(2),
-            Section::make('KI')->description('Der Schlüssel liegt in der Plattform. Hier, was die KI von dir wissen soll.')->schema([
+            Section::make('KI')->description('Schlüssel unter "Schlüssel und Verbindungen". Hier, was die KI von dir wissen soll.')->schema([
                 Textarea::make('ai_wissen')->label('Was dein Assistent zusätzlich wissen soll')->rows(6)->maxLength(8000)
                     ->helperText('Eigene Regeln, Abläufe, Namen. Der Assistent kennt die App schon, das hier kommt dazu.'),
                 Textarea::make('ai_fundus_hinweis')->label('Hinweis für die Suche im Nachschlagen')->rows(2)->maxLength(500)
@@ -115,7 +115,7 @@ class Einstellungen extends Page
                     TextInput::make('limit')->label('Höchstens')->numeric()->default(20),
                 ])->columns(4)->defaultItems(0)->addActionLabel('Feed hinzufügen'),
             ]),
-            Section::make('Telegram')->description('Der Bot-Token liegt in der Plattform. Hier nur der Name, den die Personen sehen.')->schema([
+            Section::make('Telegram')->description('Der Bot-Token steht unter "Schlüssel und Verbindungen". Hier nur der Name, den die Personen sehen.')->schema([
                 TextInput::make('telegram_bot_username')->label('Bot-Name (ohne @)')->maxLength(60),
             ]),
             Section::make('Chat')->description('Wenn dein Team im 1:1 antwortet, steht die Nachricht in deinem Namen mit dem Hinweis "Team". Du siehst, wer sie geschrieben hat.')->schema([
