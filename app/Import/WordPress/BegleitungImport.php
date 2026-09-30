@@ -481,6 +481,8 @@ class BegleitungImport
                 'program_id' => ($p = $this->programMap[(int) $m('notiz_kurs')] ?? $this->programMap[(int) $m('el_kurs')] ?? null) ? $p->id : null,
                 'is_pinned' => (bool) $m('el_pin'),
                 'project_id' => $this->projektId((int) $post->post_author, (string) $m('el_projekt')),
+                'image_url' => str_starts_with((string) $m('notiz_bild'), 'http') ? (string) $m('notiz_bild') : null,
+                'link_url' => str_starts_with((string) $m('notiz_link'), 'http') ? (string) $m('notiz_link') : null,
             ])->save();
             $note->timestamps = false;
             $note->forceFill(['created_at' => $this->lokal($post->post_date), 'updated_at' => $this->lokal($post->post_modified ?: $post->post_date)])->saveQuietly();

@@ -257,6 +257,7 @@ Route::middleware(['auth', 'membership'])->group(function () {
     Route::patch('/antworten/{antwort}', [FragenController::class, 'antwortAendern'])->name('fragen.antwort.aendern');
     Route::post('/antworten/{antwort}/beste', [FragenController::class, 'beste'])->name('fragen.antwort.beste');
     Route::post('/element/{typ}/{id}/schnell', [ElementController::class, 'schnell'])->where('typ', 'note|task|reflection')->name('element.schnell');
+    Route::get('/notizen/{notiz}/foto', [NotizenController::class, 'foto'])->name('notizen.foto');
     Route::post('/reaktion/{typ}/{id}', [ReaktionController::class, 'toggle'])->where('typ', 'note|task|reflection|projekt|question|comment')->middleware('throttle:60,1')->name('reaktion');
     Route::post('/kommentar', [KommentarController::class, 'store'])->middleware('throttle:30,1')->name('kommentar.store');
     Route::delete('/kommentar/{kommentar}', [KommentarController::class, 'destroy'])->name('kommentar.destroy');

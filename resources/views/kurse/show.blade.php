@@ -31,6 +31,16 @@
             </details>
         @endif
 
+        @if (! $freigabeOffen && $program->isWorkbook() && $program->teilbar() && $member?->share_mode && ! auth()->user()->canManageCurrentTenant())
+            <details class="karte">
+                <summary class="hinweis cursor-pointer"><i class="fa-solid fa-lock-open"></i> Freigabe: {{ $member->share_mode === 'alles' ? 'alles ist mit deiner Coachin geteilt' : 'du entscheidest je Übung' }} · ändern</summary>
+                <form method="post" action="{{ route('kurse.freigabe', $program) }}" class="flex flex-wrap gap-2 mt-2">
+                    @csrf
+                    <button type="submit" name="modus" value="alles" @class(['knopf knopf-klein', 'knopf-ruhig' => $member->share_mode === 'alles'])>Alles teilen</button>
+                    <button type="submit" name="modus" value="einzeln" @class(['knopf knopf-klein', 'knopf-ruhig' => $member->share_mode === 'einzeln'])>Ich entscheide je Übung</button>
+                </form>
+            </details>
+        @endif
         @if ($freigabeOffen)
             <div class="baustein">
                 <p class="eyebrow m-0 mb-2">Bevor du anfängst</p>

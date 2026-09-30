@@ -129,19 +129,44 @@ class Chat
             $q->whereHas('participants', fn ($p) => $p->where('user_id', $user->id));
         }
 
-        return $q->orderByDesc('last_message_at')->orderByDesc('id')->get()
-            ->each(fn (Conversation $c) => $c->setAttribute('ungelesen', $c->unreadCountFor($user)));
+        $team = $this->teamIds();
+        $liste = $q->orderByDesc('last_message_at')->orderByDesc('id')->get()->each(function (Conversation $c) use ($user, $team) {
+            $c->setAttribute('ungelesen', $c->unreadCountFor($user));
+            // Fuer die Team-Liste: letzte Nachricht als Vorschau, "wartet" (die Person hat zuletzt geschrieben), "gelesen" (die Person hat die Antwort gesehen)
+            $letzte = Message::where('conversation_id', $c->id)->latest('id')->first();   // messages() sortiert aufsteigend, darum direkt
+            $c->setAttribute('letzte', $letzte);
+            $vomTeam = $letzte && $team->contains($letzte->user_id);
+            $c->setAttribute('wartet', $c->isDirect() && $letzte && ! $vomTeam);
+            $c->setAttribute('gelesen', $c->isDirect() && $letzte && $vomTeam && $c->user_id && ($stand = $c->participants->firstWhere('user_id', $c->user_id)?->last_read_at) && $stand->gte($letzte->created_at));
+        });
+        if ($user->canManageCurrentTenant()) {
+            $liste = $liste->sortBy(fn (Conversation $c) => [$c->wartet ? 0 : 1, -($c->last_message_at?->getTimestamp() ?? 0)])->values();
+        }
+
+        return $liste;
     }
 
+    /** Zahl am Knopf: fuer die Person die ungelesenen Nachrichten, fuers Team die Menschen, die warten. */
     public function unreadFor(User $user): int
     {
-        return $this->conversationsFor($user)->sum('ungelesen');
+        $liste = $this->conversationsFor($user);
+
+        return $user->canManageCurrentTenant() ? $liste->filter(fn (Conversation $c) => $c->wartet && $c->ungelesen > 0)->count() : $liste->sum('ungelesen');
     }
 
     public function send(Conversation $conv, User $from, array $data): Message
     {
         $tenantId = $this->current->id();
         $dir = "tenants/{$tenantId}/chat/{$conv->id}";
+
+        // Doppelsende-Schutz: derselbe Text derselben Person innerhalb von fuenf Sekunden ist ein Doppelklick
+        if (filled($data['body'] ?? null) && empty($data['file']) && empty($data['audio'])) {
+            $doppelt = Message::where('conversation_id', $conv->id)->where('user_id', $from->id)->where('body', trim($data['body']))
+                ->where('created_at', '>=', now()->subSeconds(5))->latest('id')->first();
+            if ($doppelt) {
+                return $doppelt;
+            }
+        }
 
         $msg = new Message([
             'conversation_id' => $conv->id,

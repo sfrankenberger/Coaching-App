@@ -35,6 +35,11 @@ class Reflection extends Model
         return $this->belongsTo(User::class);
     }
 
+    public function step(): BelongsTo
+    {
+        return $this->belongsTo(ProgramStep::class, 'step_id');
+    }
+
     public function program(): BelongsTo
     {
         return $this->belongsTo(Program::class);

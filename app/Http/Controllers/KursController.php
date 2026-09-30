@@ -152,7 +152,8 @@ class KursController extends Controller
                 'jetzt' => $aktuell?->id === $s->id, 'hier' => $s->id === $schritt->id,
             ]),
             'aktuell' => $aktuell,
-            'reflexion' => $user->canManageCurrentTenant() ? null : Reflection::where('user_id', $user->id)->where(fn ($q) => $q->where('program_id', $program->id)->orWhereNull('program_id'))->where($imFenster)->latest()->first(),
+            'reflexion' => $user->canManageCurrentTenant() ? null : Reflection::where('user_id', $user->id)->where(fn ($q) => $q->where('step_id', $schritt->id)
+                ->orWhere(fn ($w) => $w->whereNull('step_id')->where(fn ($x) => $x->where('program_id', $program->id)->orWhereNull('program_id'))->where($imFenster)))->latest()->first(),
             'fragen' => Question::where('user_id', $user->id)->where('program_id', $program->id)->where($imFenster)->withCount('answers')->latest()->get(),
             'termine' => $termine,
             'aufgaben' => Task::where('user_id', $user->id)->where('step_id', $schritt->id)

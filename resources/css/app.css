@@ -946,6 +946,12 @@
 @layer components {
     .blase { max-width: 85%; border-radius: 18px; padding: 12px 15px 8px; background: #fff; border: 1px solid var(--c-card-border); color: var(--c-text); }
     .blase-meine { background: var(--c-primary-soft); border-color: var(--c-primary-line); }
+    .blase-neu { box-shadow: 0 0 0 2px var(--c-primary-line); }
+    .neu-trenner { display: flex; align-items: center; gap: 10px; margin: 6px 0; color: var(--c-primary); font-size: var(--fs-xs); letter-spacing: .08em; text-transform: uppercase; font-weight: 700; transition: opacity .6s; }
+    .neu-trenner::before, .neu-trenner::after { content: ""; flex: 1; height: 1px; background: var(--c-primary-line); }
+    .neu-trenner.weg { opacity: 0; }
+    .blase-sendet { opacity: .55; }
+    .blase-fehler { border-color: var(--c-danger); }
     .blase .whitespace-pre-line { font-size: 15.5px; line-height: 1.6; }
     .blase-zeit { display: flex; justify-content: flex-end; align-items: center; gap: 6px; margin-top: 4px; font-size: 11px; color: var(--c-muted); }
     .tag-trenner { align-self: center; background: var(--c-neutral); color: var(--c-text-soft); border-radius: 999px; padding: 3px 12px; font-size: var(--fs-sm); margin: 8px 0 !important; }

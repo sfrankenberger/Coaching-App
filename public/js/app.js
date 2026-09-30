@@ -217,11 +217,37 @@
             .then(function (r) { return r.json().then(function (j) { if (!r.ok) throw new Error(j.fehler || 'Senden fehlgeschlagen'); return j; }); })
             .then(function (j) { verlauf.dataset.letzte = j.id; anhaengen(j.html); });
     }
+    /* Trenner "Neu" verblasst nach ein paar Sekunden, die Markierung bleibt */
+    var trenner = verlauf.querySelector('[data-neu-trenner]');
+    if (trenner) { trenner.scrollIntoView({ block: 'center' }); setTimeout(function () { trenner.classList.add('weg'); }, 5000); }
+    /* Nur ein Player gleichzeitig, Hinweis wenn eine Aufnahme nicht abspielbar ist */
+    verlauf.addEventListener('play', function (e) {
+        if (!e.target.matches('audio, video')) return;
+        verlauf.querySelectorAll('audio, video').forEach(function (a) { if (a !== e.target) a.pause(); });
+    }, true);
+    verlauf.addEventListener('error', function (e) {
+        if (!e.target.matches('audio')) return;
+        var h = document.createElement('span'); h.className = 'hinweis block'; h.textContent = 'Diese Aufnahme lässt sich hier nicht abspielen.';
+        e.target.insertAdjacentElement('afterend', h);
+    }, true);
+
+    var sendeKnopf = form.querySelector('button[type="submit"]'), sendet = false;
+    function vorschau(text) {
+        var d = document.createElement('div'); d.className = 'flex items-end gap-2 justify-end'; d.setAttribute('data-vorschau', '1');
+        d.innerHTML = '<div class="blase blase-meine blase-sendet"><div class="lesetext whitespace-pre-line break-words"></div><div class="blase-zeit"><span>wird gesendet ...</span></div></div>';
+        d.querySelector('.lesetext').textContent = text || '📎';
+        verlauf.appendChild(d); nachUnten();
+        return d;
+    }
     form.addEventListener('submit', function (e) {
         e.preventDefault();
+        if (sendet) return;
         var fd = new FormData(form);
         if (!textarea.value.trim() && !hatAnhang()) return;
-        senden(fd).then(aufraeumen).catch(function (err) { alert(err.message); });
+        sendet = true; if (sendeKnopf) sendeKnopf.disabled = true;
+        var v = vorschau(textarea.value.trim());
+        senden(fd).then(function () { v.remove(); aufraeumen(); }).catch(function (err) { v.querySelector('.blase').classList.add('blase-fehler'); v.querySelector('.blase-zeit span').textContent = err.message; setTimeout(function () { v.remove(); }, 4000); })
+            .finally(function () { sendet = false; if (sendeKnopf) sendeKnopf.disabled = false; });
     });
 
     /* Diktieren: Gesprochenes wird zu Text im Feld */

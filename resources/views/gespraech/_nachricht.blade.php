@@ -12,7 +12,7 @@
     @if (! $meine)
         <x-avatar :user="$gesicht" :size="30" class="blase-avatar" />
     @endif
-    <div @class(['blase', 'blase-meine' => $meine])>
+    <div @class(['blase', 'blase-meine' => $meine, 'blase-neu' => ! $meine && ($neu ?? false)])>
         @if (! $meine && ! $conv->isDirect())
             <span class="block text-xs font-semibold opacity-80 mb-0.5">{{ $m->user?->vorname() ?? 'Jemand' }}</span>
         @endif

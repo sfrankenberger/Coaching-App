@@ -160,6 +160,13 @@ Sortiert nach Nutzen fuer Lea und die Teilnehmerinnen. Mehrfach gefundene Punkte
   Dossier der App-Huelle, Herkunft. Kalender: Erinnerung 15 Minuten vorher (VALARM), Reflexionstage als frei,
   abgesagte Termine bleiben als abgesagt im Feed, Feed je Kurs (`kalender.kurs`), Google- und Outlook-Links am
   Termin, Team bekommt die Termin-Erinnerungen mit. Terminliste: Aufgaben mit Datum, Filter "Was", Suche.
+- 30.09.: C22 bis C25 umgesetzt. Chat: Trenner "Neu" und Markierung ungelesener Nachrichten, Sendevorschau mit
+  gesperrtem Knopf, Doppelsende-Schutz auch serverseitig (5 Sekunden), Team-Liste mit Textvorschau, "wartet" und
+  "gelesen", Zahl am Knopf fuers Team = wartende Personen, ein Player gleichzeitig mit Hinweis bei Fehler.
+  Reflexion mit Kurswoche (`reflections.step_id`) und Rueckblick "Was hattest du dir vorgenommen?", Wochencheck
+  zaehlt nach Kurswoche. Notizen mit Foto (Upload, `notizen.foto`) und Link, Import uebernimmt `notiz_bild` und
+  `notiz_link`; Arbeitsbuch-Freigabe laesst sich auf der Kursseite aendern. Auskunft kennt Verkaeufe und
+  Rechnungen aus der Buchhaltung (offene Summen, Faelligkeit). Redirect-URL fuer bexio steht auf /coach/buchhaltung.
 
 ## Was bewusst nicht kommt
 

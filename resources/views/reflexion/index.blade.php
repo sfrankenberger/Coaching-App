@@ -12,6 +12,13 @@
                 <p class="hinweis m-0"><i class="fa-solid fa-list-check"></i> Zur Aufgabe «{{ $aufgabe->title }}». Speichern hakt sie ab.</p>
             @endif
             <p class="hinweis">{{ $entwurf?->week_label ?? $woche }}</p>
+            @if ($vorher)
+                <div class="karte" style="background:var(--c-primary-tint)">
+                    <span class="eyebrow"><i class="fa-solid fa-clock-rotate-left"></i> Rückblick: Was hattest du dir vorgenommen?</span>
+                    <p class="lesetext whitespace-pre-line m-0 mt-1">{{ $vorher->focus }}</p>
+                    <p class="hinweis m-0 mt-1">{{ $vorher->week_label ?: $vorher->created_at->translatedFormat('j. F') }}@if ($vorher->step) · {{ $vorher->step->title }}@endif</p>
+                </div>
+            @endif
             @foreach ($fragen as $k => [$ico, $frage, $tipp])
                 <div>
                     <label for="refl-{{ $k }}" class="block font-heading" style="font-size:var(--fs-xl);line-height:1.3">{{ $ico }} {{ $frage }}</label>
@@ -22,6 +29,11 @@
             <x-anhang-wahl :refs="old('refs', $entwurf?->anhangRefs() ?? (($aufgabe ?? null) ? ['task:'.$aufgabe->id] : []))" />
             <x-projekt-wahl :projekte="$projekte" :value="old('project_id', $entwurf?->project_id)" />
             <div class="flex flex-wrap gap-2">
+                @if ($wochen->isNotEmpty())
+                    <label class="block"><span class="feld-label">Kurswoche</span><select name="step_id" class="feld"><option value="">Keine</option>
+                        @foreach ($wochen as $kursTitel => $schritte)<optgroup label="{{ $kursTitel }}">@foreach ($schritte as $s)<option value="{{ $s->id }}" @selected((int) old('step_id', $entwurf?->step_id) === $s->id)>{{ $s->week_number ? 'Woche '.$s->week_number.': ' : '' }}{{ $s->title }}</option>@endforeach</optgroup>@endforeach
+                    </select></label>
+                @endif
                 @if ($kurse->count())
                     <label class="block"><span class="feld-label">Kurs</span><select name="program_id" class="feld"><option value="">Allgemein</option>@foreach ($kurse as $id => $t)<option value="{{ $id }}" @selected((int) old('program_id', $entwurf?->program_id) === $id)>{{ $t }}</option>@endforeach</select></label>
                 @endif
@@ -46,7 +58,7 @@
             <article id="reflexion-{{ $r->id }}" class="karte">
                 <div class="flex items-start gap-3">
                     <div class="min-w-0 flex-1">
-                        <span class="hinweis">{{ $r->week_label ?: $r->created_at->translatedFormat('j. F Y') }}@if ($r->program) · {{ $r->program->title }}@endif · {{ $r->isShared() ? 'Geteilt' : 'Nur ich' }}@if ($r->projekt) · <x-projekt-chip :projekt="$r->projekt" />@endif</span>
+                        <span class="hinweis">{{ $r->week_label ?: $r->created_at->translatedFormat('j. F Y') }}@if ($r->program) · {{ $r->program->title }}@endif@if ($r->step) · {{ $r->step->title }}@endif · {{ $r->isShared() ? 'Geteilt' : 'Nur ich' }}@if ($r->projekt) · <x-projekt-chip :projekt="$r->projekt" />@endif</span>
                         @foreach ($fragen as $k => [$ico, $frage])
                             @if ($r->$k)<p class="mt-2"><b class="block text-md">{{ $ico }} {{ $frage }}</b><span class="lesetext whitespace-pre-line">{{ $r->$k }}</span></p>@endif
                         @endforeach

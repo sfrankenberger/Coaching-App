@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\Program;
+use App\Models\ProgramStep;
 use App\Models\Projekt;
 use App\Models\Reflection;
 use App\Programs\ProgramAccess;
@@ -46,6 +47,10 @@ class ReflexionController extends Controller
             'gemeinschaft' => $this->access->gemeinschaftFor($user)->pluck('title', 'id'),
             'woche' => 'Woche '.now()->format('W').' ('.now()->translatedFormat('j. F Y').')',
             'aufgabe' => $this->wochenaufgabe->ausAufgabe($request, $user),
+            // Kurswochen zur Auswahl (nur freigeschaltete Wochen getakteter Kurse) und der Rueckblick auf das letzte Vorhaben
+            'wochen' => $this->access->programsFor($user)->filter(fn (Program $p) => $p->pacing === 'weekly')
+                ->mapWithKeys(fn (Program $p) => [$p->title => $p->steps->filter(fn ($s) => $s->isUnlocked($p))->sortByDesc('position')->values()])->filter(fn ($s) => $s->isNotEmpty()),
+            'vorher' => Reflection::where('user_id', $user->id)->when($entwurf, fn ($q) => $q->where('id', '!=', $entwurf->id))->whereNotNull('focus')->where('focus', '!=', '')->latest()->first(),
         ]);
     }
 
@@ -58,6 +63,7 @@ class ReflexionController extends Controller
             'challenges' => ['nullable', 'string', 'max:10000'],
             'focus' => ['nullable', 'string', 'max:10000'],
             'program_id' => ['nullable', 'integer'],
+            'step_id' => ['nullable', 'integer'],
             'project_id' => ['nullable', 'integer'],
             'visibility' => ['nullable', 'in:private,coach,program,all'],
             'aufgabe_id' => ['nullable', 'integer'],
@@ -75,6 +81,12 @@ class ReflexionController extends Controller
         }
 
         $programId = null;
+        $stepId = null;
+        // Eine Kurswoche bringt ihren Kurs mit
+        if (! empty($data['step_id']) && ($s = ProgramStep::with('program')->find((int) $data['step_id'])) && $s->program && $this->access->canView($user, $s->program)) {
+            $stepId = $s->id;
+            $data['program_id'] = $s->program_id;
+        }
         if (! empty($data['program_id']) && ($p = Program::find($data['program_id'])) && $this->access->canView($user, $p)) {
             $programId = $p->id;
         }
@@ -88,6 +100,7 @@ class ReflexionController extends Controller
             'challenges' => $data['challenges'] ?? null,
             'focus' => $data['focus'] ?? null,
             'program_id' => $programId,
+            'step_id' => $programId ? $stepId : null,
             'project_id' => Projekt::where('user_id', $user->id)->whereKey((int) ($data['project_id'] ?? 0))->value('id'),
             'visibility' => $visibility,
             'shared_at' => $visibility !== 'private' ? ($reflection->shared_at ?? now()) : null,
