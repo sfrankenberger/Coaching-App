@@ -8,6 +8,7 @@ use App\Models\Projekt;
 use App\Models\Task;
 use App\Programs\ProgramAccess;
 use App\Support\Anhaenge;
+use App\Support\Filter;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -21,21 +22,21 @@ class AufgabenController extends Controller
     public function index(Request $request): View
     {
         $user = $request->user();
-        $suche = mb_strtolower(trim((string) $request->query('q', '')));
+        $filter = Filter::aus($request);
 
-        $tasks = Task::where('user_id', $user->id)->with(['assigner:id,name', 'program:id,title', 'anhaenge.ziel', 'projekt:id,name,farbe,icon'])
+        $tasks = Task::where('user_id', $user->id)->with(['assigner:id,name', 'program:id,title', 'anhaenge.ziel', 'projekt:id,name,farbe,icon', 'comments'])
             ->orderByRaw('CASE WHEN done_at IS NULL THEN 0 ELSE 1 END')->orderByDesc('is_pinned')->orderBy('due_at')->orderByDesc('created_at')
             ->get()
-            ->filter(fn (Task $t) => $suche === '' || str_contains(mb_strtolower($t->title.' '.$t->body), $suche));
+            ->filter(fn (Task $t) => $filter->passt($t));
 
         return view('aufgaben.index', [
             'offen' => $tasks->filter(fn (Task $t) => ! $t->isDone())->values(),
             'fertig' => $tasks->filter(fn (Task $t) => $t->isDone())->values(),
             'kurse' => $this->access->programsFor($user)->pluck('title', 'id'),
             'projekte' => Projekt::where('user_id', $user->id)->orderBy('name')->get(['id', 'name', 'farbe', 'icon']),
-            'gemeinschaft' => $this->access->gemeinschaftFor($user)->pluck('id'),
-            'bearbeiten' => $request->query('bearbeiten') ? $tasks->firstWhere('id', (int) $request->query('bearbeiten')) : null,
-            'suche' => $suche,
+            'gemeinschaft' => $this->access->gemeinschaftFor($user)->pluck('title', 'id'),
+            'filter' => $filter,
+            'bearbeiten' => $request->query('bearbeiten') ? Task::where('user_id', $user->id)->find((int) $request->query('bearbeiten')) : null,
         ]);
     }
 

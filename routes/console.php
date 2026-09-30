@@ -13,6 +13,7 @@ Schedule::command('benachrichtigungen:runde termine')->everyTenMinutes()->withou
 Schedule::command('benachrichtigungen:runde nachfassen')->everyTenMinutes()->withoutOverlapping();
 Schedule::command('benachrichtigungen:runde aufgaben --wann=morgen')->dailyAt('08:00');
 Schedule::command('benachrichtigungen:runde aufgaben --wann=abend')->dailyAt('18:00');
+Schedule::command('benachrichtigungen:runde punkt')->everyFiveMinutes()->withoutOverlapping();   // "Jetzt dran" zur Uhrzeit der Aufgabe
 Schedule::command('benachrichtigungen:runde abendmail')->dailyAt('19:30');
 Schedule::command('benachrichtigungen:runde fragen')->dailyAt('16:50');   // nur am Sammeltag des Mandanten
 

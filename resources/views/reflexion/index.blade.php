@@ -38,8 +38,10 @@
         </form>
     </x-karte>
 
-    @if ($meine->isNotEmpty())
+    @if ($meine->isNotEmpty() || $filter->aktiv())
         <h2 class="abschnitt"><i class="fa-solid fa-clock-rotate-left"></i>Deine bisherigen Reflexionen<em>{{ $meine->count() }}</em></h2>
+        <x-filterleiste :filter="$filter" :projekte="$projekte" :kurse="$gemeinschaft->all()" :status="['neu' => 'Mit Kommentaren']" platzhalter="In deinen Reflexionen suchen" />
+        @if ($meine->isEmpty())<p class="hinweis">Nichts gefunden.</p>@endif
         @foreach ($meine as $r)
             <article id="reflexion-{{ $r->id }}" class="karte">
                 <div class="flex items-start gap-3">
@@ -63,13 +65,7 @@
                         </div>
                         <x-kommentare :item="$r" />
                     </div>
-                    <details class="relative shrink-0">
-                        <summary class="list-none cursor-pointer knopf-rund grid place-items-center" aria-label="Mehr"><i class="fa-solid fa-ellipsis-vertical"></i></summary>
-                        <div class="menue" style="right:0;top:36px">
-                            @if ($r->isShared())<form method="post" action="{{ route('reflexion.teilen', $r) }}">@csrf<input type="hidden" name="visibility" value="private"><button class="e"><i class="fa-solid fa-lock"></i>Nicht mehr teilen</button></form>@endif
-                            <form method="post" action="{{ route('reflexion.destroy', $r) }}" onsubmit="return confirm('Reflexion löschen?')">@csrf @method('DELETE')<button class="e gefahr"><i class="fa-solid fa-trash"></i>Löschen</button></form>
-                        </div>
-                    </details>
+                    <x-element-menue :item="$r" typ="reflection" :loeschen="route('reflexion.destroy', $r)" frage="Reflexion löschen?" />
                 </div>
             </article>
         @endforeach

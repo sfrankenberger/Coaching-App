@@ -9,6 +9,7 @@ use App\Models\Projekt;
 use App\Programs\ProgramAccess;
 use App\Programs\Wochenaufgabe;
 use App\Support\Anhaenge;
+use App\Support\Filter;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Gate;
@@ -21,19 +22,19 @@ class NotizenController extends Controller
     public function index(Request $request): View
     {
         $user = $request->user();
-        $suche = mb_strtolower(trim((string) $request->query('q', '')));
+        $filter = Filter::aus($request);
 
-        $notes = Note::where('user_id', $user->id)->with(['program:id,title', 'notable', 'anhaenge.ziel', 'projekt:id,name,farbe,icon'])
+        $notes = Note::where('user_id', $user->id)->with(['program:id,title', 'notable', 'anhaenge.ziel', 'projekt:id,name,farbe,icon', 'comments'])
             ->orderByDesc('is_pinned')->orderByDesc('updated_at')->get()
-            ->filter(fn (Note $n) => $suche === '' || str_contains(mb_strtolower($n->title.' '.$n->body), $suche));
+            ->filter(fn (Note $n) => $filter->passt($n));
 
         return view('notizen.index', [
             'notes' => $notes->values(),
             'kurse' => $this->access->programsFor($user)->pluck('title', 'id'),
             'projekte' => Projekt::where('user_id', $user->id)->orderBy('name')->get(['id', 'name', 'farbe', 'icon']),
-            'gemeinschaft' => $this->access->gemeinschaftFor($user)->pluck('id'),
-            'bearbeiten' => $request->query('bearbeiten') ? $notes->firstWhere('id', (int) $request->query('bearbeiten')) : null,
-            'suche' => $suche,
+            'gemeinschaft' => $this->access->gemeinschaftFor($user)->pluck('title', 'id'),
+            'bearbeiten' => $request->query('bearbeiten') ? Note::where('user_id', $user->id)->find((int) $request->query('bearbeiten')) : null,
+            'filter' => $filter,
             'aufgabe' => $this->wochenaufgabe->ausAufgabe($request, $user),
         ]);
     }

@@ -32,7 +32,7 @@
         </form>
     </div>
 
-    <form method="get" class="suche mt-3.5 mb-4"><i class="fa-solid fa-magnifying-glass"></i><input type="search" name="q" value="{{ $suche }}" placeholder="In deinen Notizen suchen" aria-label="In deinen Notizen suchen"></form>
+    <x-filterleiste :filter="$filter" :projekte="$projekte" :kurse="$gemeinschaft->all()" :status="['neu' => 'Mit Kommentaren']" platzhalter="In deinen Notizen suchen" />
 
     @forelse ($notes as $n)
         <article id="notiz-{{ $n->id }}" @class(['karte', 'heute' => $n->is_pinned])>
@@ -50,13 +50,7 @@
                     </span>
                     <x-kommentare :item="$n" />
                 </div>
-                <details class="relative shrink-0">
-                    <summary class="list-none cursor-pointer knopf-rund grid place-items-center" aria-label="Mehr"><i class="fa-solid fa-ellipsis-vertical"></i></summary>
-                    <div class="menue" style="right:0;top:36px">
-                        <a href="{{ route('notizen.index', ['bearbeiten' => $n->id]) }}" class="e"><i class="fa-solid fa-pen"></i>Bearbeiten</a>
-                        <form method="post" action="{{ route('notizen.destroy', $n) }}" onsubmit="return confirm('Notiz löschen?')">@csrf @method('DELETE')<button class="e gefahr"><i class="fa-solid fa-trash"></i>Löschen</button></form>
-                    </div>
-                </details>
+                <x-element-menue :item="$n" typ="note" :bearbeiten="route('notizen.index', ['bearbeiten' => $n->id])" :loeschen="route('notizen.destroy', $n)" frage="Notiz löschen?" />
             </div>
         </article>
     @empty

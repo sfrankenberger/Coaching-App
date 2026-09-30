@@ -16,6 +16,7 @@ use App\Http\Controllers\BuchhaltungController;
 use App\Http\Controllers\CoacheesController;
 use App\Http\Controllers\DossierController;
 use App\Http\Controllers\EinheitController;
+use App\Http\Controllers\ElementController;
 use App\Http\Controllers\FragenController;
 use App\Http\Controllers\GastBuchenController;
 use App\Http\Controllers\GespraechController;
@@ -246,6 +247,7 @@ Route::middleware(['auth', 'membership'])->group(function () {
     Route::post('/fragen/{frage}/call', [FragenController::class, 'call'])->name('fragen.call');
     Route::delete('/fragen/{frage}', [FragenController::class, 'destroy'])->name('fragen.destroy');
     Route::delete('/antworten/{antwort}', [FragenController::class, 'antwortLoeschen'])->name('fragen.antwort.loeschen');
+    Route::post('/element/{typ}/{id}/schnell', [ElementController::class, 'schnell'])->where('typ', 'note|task|reflection')->name('element.schnell');
     Route::post('/reaktion/{typ}/{id}', [ReaktionController::class, 'toggle'])->where('typ', 'note|task|reflection|projekt')->middleware('throttle:60,1')->name('reaktion');
     Route::post('/kommentar', [KommentarController::class, 'store'])->middleware('throttle:30,1')->name('kommentar.store');
     Route::delete('/kommentar/{kommentar}', [KommentarController::class, 'destroy'])->name('kommentar.destroy');

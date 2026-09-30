@@ -128,31 +128,90 @@ class Runden
         return $n;
     }
 
-    /** Morgens und abends ein Hinweis auf offene Aufgaben (nur Push/Telegram, keine Mail). */
+    /**
+     * Morgens und abends ein Hinweis auf offene Aufgaben (wie lea_ap_erinnern): Push oder Telegram, sonst Mail.
+     * "Jeden Tag"-Aufgaben nur, solange der heutige Tag nicht abgehakt ist; Ueberfaelliges wird getrennt genannt.
+     * Auf Wunsch (notifications.aufgaben_kopie) bekommt das Team eine Zusammenfassung zu den Kursaufgaben.
+     */
     public function aufgabenHinweis(string $wann): int
     {
         $n = 0;
-        $tz = $this->current->get()?->timezone ?: config('app.timezone');
-        $heute = now($tz)->toDateString();
+        $tenant = $this->current->get();
+        $tz = $tenant?->timezone ?: config('app.timezone');
+        $heute = now($tz);
+        $tagKuerzel = ['mo', 'di', 'mi', 'do', 'fr', 'sa', 'so'][$heute->dayOfWeekIso - 1];
 
-        $offen = Task::query()->open()->where(fn ($q) => $q->whereDate('due_at', '<=', $heute)->orWhere('is_daily', true))
-            ->get()->groupBy('user_id');
+        $offen = Task::query()->open()->where(fn ($q) => $q->whereDate('due_at', '<=', $heute->toDateString())->orWhere('is_daily', true))
+            ->get()->reject(fn (Task $t) => $t->is_daily && in_array($tagKuerzel, $t->daysDone(), true))->groupBy('user_id');
 
+        $fuersTeam = [];
         foreach ($offen as $userId => $tasks) {
             $user = User::find($userId);
-            if (! $user || ! $this->notifier->hasPushOrTelegram($user)) {
+            if (! $user) {
                 continue;
             }
+            $heutige = $tasks->filter(fn (Task $t) => $t->is_daily || ($t->due_at && $t->due_at->isSameDay($heute)));
+            $ueberfaellig = $tasks->count() - $heutige->count();
             $anzahl = $tasks->count();
             $titel = $wann === 'morgen' ? ($anzahl === 1 ? 'Eine Aufgabe für heute' : "{$anzahl} Aufgaben für heute") : ($anzahl === 1 ? 'Noch eine Aufgabe offen' : "Noch {$anzahl} Aufgaben offen");
+            $text = $tasks->take(3)->pluck('title')->join(', ').($anzahl > 3 ? ' ...' : '').($ueberfaellig > 0 ? " ({$ueberfaellig} überfällig)" : '');
             $report = $this->notifier->send([$user], new Nachricht(
                 titel: $titel,
-                text: $tasks->take(3)->pluck('title')->join(', ').($anzahl > 3 ? ' ...' : ''),
+                text: $text,
                 url: route('aufgaben.index'),
                 anlass: 'aufgabe_erinnerung',
                 tag: 'aufgaben-'.$wann,
+                mailWennKeinPush: true,
+                knopf: 'Zu den Aufgaben',
+            ));
+            $n += count(array_filter($report));
+            if ($tasks->contains(fn (Task $t) => $t->assigned_by !== null)) {
+                $fuersTeam[] = $user->vorname().': '.$tasks->filter(fn (Task $t) => $t->assigned_by !== null)->pluck('title')->join(', ');
+            }
+        }
+
+        // Kopie ans Team: wer hat welche Kursaufgaben noch offen (eine Zusammenfassung, keine Einzelmails)
+        if ($fuersTeam && $wann === 'morgen' && (bool) $tenant?->setting('notifications.aufgaben_kopie', false)) {
+            $team = app(Chat::class)->teamIds();
+            $this->notifier->send($team, new Nachricht(
+                titel: 'Offene Kursaufgaben heute',
+                text: implode("\n", $fuersTeam),
+                url: route('coachees.index'),
+                anlass: 'aufgabe_kopie',
+                tag: 'aufgaben-kopie-'.$heute->toDateString(),
+                inApp: false,
+            ));
+        }
+
+        return $n;
+    }
+
+    /** Punktgenau zur eingetragenen Uhrzeit: "Jetzt dran" als Push (laeuft alle fuenf Minuten, jede Aufgabe einmal). */
+    public function punkt(): int
+    {
+        $n = 0;
+        $tz = $this->current->get()?->timezone ?: config('app.timezone');
+        $jetzt = now($tz);
+        $faellig = Task::query()->open()->whereNull('reminded_at')->whereNotNull('due_time')->whereDate('due_at', $jetzt->toDateString())->get()
+            ->filter(function (Task $t) use ($jetzt) {
+                $zeit = $jetzt->copy()->setTimeFromTimeString($t->due_time);
+
+                return $zeit->lte($jetzt) && $zeit->gt($jetzt->copy()->subMinutes(20));
+            });
+        foreach ($faellig as $t) {
+            $user = $t->user;
+            if (! $user) {
+                continue;
+            }
+            $report = $this->notifier->send([$user], new Nachricht(
+                titel: 'Jetzt dran',
+                text: $t->title,
+                url: route('aufgaben.index').'#aufgabe-'.$t->id,
+                anlass: 'aufgabe_erinnerung',
+                tag: 'aufgabe-punkt-'.$t->id,
                 mailWennKeinPush: false,
             ));
+            $t->forceFill(['reminded_at' => now()])->saveQuietly();
             $n += count(array_filter($report));
         }
 

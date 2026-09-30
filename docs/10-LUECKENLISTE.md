@@ -121,6 +121,13 @@ Sortiert nach Nutzen fuer Lea und die Teilnehmerinnen. Mehrfach gefundene Punkte
 36. **Willkommensmail und Abendmail schlichter**, Mailrahmen ohne Logo und Fusszeile, kein Test-Push und keine
     Bestaetigung vor Rundnachrichten. Zahlen fuer Lea (Umsatz Jahr, Monat, offen, beste Kundinnen) fehlen.
 
+## Stand der Umsetzung
+
+- 30.09.: A1 bis A8 umgesetzt (Geteiltes in der Community mit Reaktionen und Kommentaren, Wochenaufgaben mit Art und
+  Wochentag, Team schreibt fuer die Coachin, Zugang laeuft ab, Zeitleiste und Projekte mit den neun Schritten, Meldung ans
+  Team bei Geteiltem, Filterleiste und Dreipunkt-Menue, Aufgaben-Erinnerungen mit Mail, Tages-Haken, Team-Kopie und
+  "Jetzt dran"). Dazu Schluessel je Mandant unter `/coach/verbindungen` und Transkripte fuer Sprachnachrichten (C19).
+
 ## Was bewusst nicht kommt
 
 Website-Anteile (Blog-Stile, Elementor, Menue-Ordnung von WordPress, Woo-Checkout-Design, Altlinks) bleiben bei

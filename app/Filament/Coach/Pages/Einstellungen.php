@@ -70,6 +70,7 @@ class Einstellungen extends Page
             'team_als_coach' => (bool) ($s['chat']['team_als_coach'] ?? true),
             'team_name' => $s['chat']['team_name'] ?? null,
             'test_only' => (bool) ($s['notifications']['test_only'] ?? false),
+            'aufgaben_kopie' => (bool) ($s['notifications']['aufgaben_kopie'] ?? false),
             'test_emails' => array_values((array) ($s['notifications']['test_emails'] ?? [])),
         ]);
     }
@@ -118,6 +119,9 @@ class Einstellungen extends Page
             Section::make('Telegram')->description('Der Bot-Token steht unter "Schlüssel und Verbindungen". Hier nur der Name, den die Personen sehen.')->schema([
                 TextInput::make('telegram_bot_username')->label('Bot-Name (ohne @)')->maxLength(60),
             ]),
+            Section::make('Aufgaben')->description('Erinnerungen an offene Aufgaben gehen morgens und abends an die Personen, zur eingetragenen Uhrzeit als "Jetzt dran".')->schema([
+                Toggle::make('aufgaben_kopie')->label('Morgens eine Zusammenfassung ans Team, wer welche Kursaufgaben noch offen hat'),
+            ]),
             Section::make('Chat')->description('Wenn dein Team im 1:1 antwortet, steht die Nachricht in deinem Namen mit dem Hinweis "Team". Du siehst, wer sie geschrieben hat.')->schema([
                 Toggle::make('team_als_coach')->label('Team schreibt in meinem Namen')->default(true),
                 TextInput::make('team_name')->label('Hinweis an der Nachricht')->placeholder('Team '.app(Branding::class)->coachName())->maxLength(40),
@@ -145,6 +149,7 @@ class Einstellungen extends Page
         $s['chat'] = array_merge($s['chat'] ?? [], ['team_als_coach' => (bool) ($data['team_als_coach'] ?? true), 'team_name' => filled($data['team_name'] ?? null) ? trim($data['team_name']) : null]);
         $s['notifications'] = array_merge($s['notifications'] ?? [], [
             'test_only' => (bool) ($data['test_only'] ?? false),
+            'aufgaben_kopie' => (bool) ($data['aufgaben_kopie'] ?? false),
             'test_emails' => array_values(array_unique(array_map(fn ($e) => strtolower(trim($e)), (array) ($data['test_emails'] ?? $s['notifications']['test_emails'] ?? [])))),
         ]);
         $tenant->forceFill(['branding' => $b, 'settings' => $s])->save();

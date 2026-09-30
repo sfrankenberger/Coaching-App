@@ -31,12 +31,6 @@
             @endif
             @unless (($ohneKommentare ?? false))<x-kommentare :item="$t" />@endunless
         </div>
-        <details class="relative shrink-0">
-            <summary class="list-none cursor-pointer knopf-rund grid place-items-center" aria-label="Mehr"><i class="fa-solid fa-ellipsis-vertical"></i></summary>
-            <div class="menue" style="right:0;top:36px">
-                <a href="{{ route('aufgaben.index', ['bearbeiten' => $t->id]) }}" class="e"><i class="fa-solid fa-pen"></i>Bearbeiten</a>
-                <form method="post" action="{{ route('aufgaben.destroy', $t) }}" onsubmit="return confirm('Aufgabe löschen?')">@csrf @method('DELETE')<button class="e gefahr"><i class="fa-solid fa-trash"></i>Löschen</button></form>
-            </div>
-        </details>
+        <x-element-menue :item="$t" typ="task" :bearbeiten="route('aufgaben.index', ['bearbeiten' => $t->id])" :loeschen="route('aufgaben.destroy', $t)" frage="Aufgabe löschen?" />
     </div>
 </article>

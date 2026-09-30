@@ -34,7 +34,7 @@
         </form>
     </div>
 
-    <form method="get" class="suche mt-3.5 mb-4"><i class="fa-solid fa-magnifying-glass"></i><input type="search" name="q" value="{{ $suche }}" placeholder="In deinen Aufgaben suchen" aria-label="In deinen Aufgaben suchen"></form>
+    <x-filterleiste :filter="$filter" :projekte="$projekte" :kurse="$gemeinschaft->all()" platzhalter="In deinen Aufgaben suchen" />
 
     @forelse ($offen as $t)
         @include('aufgaben._karte', ['t' => $t])
