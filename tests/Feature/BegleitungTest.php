@@ -3,6 +3,7 @@
 namespace Tests\Feature;
 
 use App\Enums\Role;
+use App\Filament\Coach\Resources\Events\Pages\EditEvent;
 use App\Models\Bookmark;
 use App\Models\Event;
 use App\Models\EventAttendee;
@@ -14,8 +15,12 @@ use App\Models\Resource;
 use App\Models\Task;
 use App\Models\Tenant;
 use App\Models\User;
+use App\Observers\EventObserver;
+use App\Recordings\Freigabe;
+use App\Support\Ics;
 use App\Tenancy\CurrentTenant;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Livewire\Livewire;
 use Tests\TestCase;
 
 class BegleitungTest extends TestCase
@@ -141,5 +146,36 @@ class BegleitungTest extends TestCase
         $this->assertSame('Noch was', $r->fresh()->addendum);
 
         $this->actingAs($this->anna)->get('http://a.test/journal')->assertOk()->assertSee('Aufgaben')->assertSee('Reflexion')->assertSee('Projekte')->assertSee('Viel');
+    }
+
+    public function test_weitere_person_am_termin_sieht_termin_kalender_und_aufzeichnung(): void
+    {
+        $lea = User::factory()->create(['name' => 'Lea Coach']);
+        $this->a->users()->attach($lea, ['role' => Role::Owner->value, 'status' => 'active']);
+        $paar = $this->in(fn () => Event::create(['title' => 'Paar-Coaching', 'type' => 'one_on_one', 'user_id' => $this->fremd->id, 'starts_at' => now()->addDays(2), 'recording_url' => 'https://vimeo.com/123456']));
+
+        // Ohne Einladung: Anna sieht die Sitzung von Fremd nicht
+        $this->actingAs($this->anna)->get('http://a.test/termine')->assertOk()->assertDontSee('Paar-Coaching');
+        $this->actingAs($this->anna)->get('http://a.test/termine/'.$paar->id)->assertForbidden();
+
+        // Das Team haengt Anna an (wie im Coach-Bereich unter "Weitere Personen")
+        $this->in(fn () => Livewire::actingAs($lea)->test(EditEvent::class, ['record' => $paar->id])
+            ->fillForm(['gaeste' => [$this->anna->id]])->call('save')->assertHasNoFormErrors());
+        $this->assertSame([$this->anna->id], $this->in(fn () => $paar->fresh()->gaeste()->pluck('user_id')->all()));
+
+        $this->actingAs($this->anna)->get('http://a.test/termine')->assertOk()->assertSee('Paar-Coaching')->assertSee('2 Personen');
+        $this->actingAs($this->anna)->get('http://a.test/termine/'.$paar->id)->assertOk()->assertSee('Dabei:')->assertSee('vimeo.com');
+        $this->actingAs($this->fremd)->get('http://a.test/termine/'.$paar->id)->assertOk()->assertSee('Dabei:');
+
+        // Kalender-Abo und Empfaenger (Erinnerungen, Freigabe der Aufzeichnung)
+        $token = $this->in(fn () => Ics::tokenFor($this->anna->membershipIn($this->a)));
+        $this->get("http://a.test/kalender/{$token}.ics")->assertOk()->assertSee('Paar-Coaching');
+        $this->assertEqualsCanonicalizing([$this->fremd->id, $this->anna->id], $this->in(fn () => EventObserver::recipients($paar->fresh())->all()));
+        $this->assertEqualsCanonicalizing([$this->fremd->id, $this->anna->id], $this->in(fn () => app(Freigabe::class)->empfaenger($paar->fresh())->all()));
+
+        // Wieder entfernt: weg aus Terminen und Kalender
+        $this->in(fn () => $paar->fresh()->gaesteSetzen([]));
+        $this->actingAs($this->anna)->get('http://a.test/termine')->assertOk()->assertDontSee('Paar-Coaching');
+        $this->get("http://a.test/kalender/{$token}.ics")->assertOk()->assertDontSee('Paar-Coaching');
     }
 }

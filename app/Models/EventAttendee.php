@@ -17,7 +17,7 @@ class EventAttendee extends Model
 
     protected function casts(): array
     {
-        return ['attended_at' => 'datetime'];
+        return ['attended_at' => 'datetime', 'invited_at' => 'datetime'];
     }
 
     public function event(): BelongsTo

@@ -8,4 +8,9 @@ use Filament\Resources\Pages\CreateRecord;
 class CreateEvent extends CreateRecord
 {
     protected static string $resource = EventResource::class;
+
+    protected function afterCreate(): void
+    {
+        $this->record->gaesteSetzen((array) ($this->data['gaeste'] ?? []));
+    }
 }

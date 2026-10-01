@@ -34,7 +34,7 @@ class TermineController extends Controller
         $was = in_array($request->query('was'), ['termine', 'aufgaben'], true) ? $request->query('was') : 'alles';
         $suche = trim((string) $request->query('q', ''));
 
-        $q = $this->begleitung->eventsQuery($user)->with(['program:id,title,color', 'attendees' => fn ($a) => $a->where('user_id', $user->id)]);
+        $q = $this->begleitung->eventsQuery($user)->with(['program:id,title,color', 'attendees' => fn ($a) => $a->where('user_id', $user->id)])->withCount('gaeste');
         match ($zeit) {
             'kommend' => $q->where('starts_at', '>=', now()->startOfDay())->orderBy('starts_at'),
             'vorbei' => $q->where('starts_at', '<', now()->startOfDay())->orderByDesc('starts_at'),
@@ -80,13 +80,14 @@ class TermineController extends Controller
     {
         $user = $request->user();
         Gate::authorize('view', $termin);
-        $termin->load(['program', 'resources', 'attendees.user:id,name']);
+        $termin->load(['program', 'resources', 'attendees.user:id,name', 'user:id,name']);
 
         return view('termine.show', [
             'position' => MediaPosition::where('user_id', $user->id)->where('key', 'event-'.$termin->id)->value('seconds'),
             'event' => $termin,
             'mein' => $termin->attendees->firstWhere('user_id', $user->id),
             'absagen' => $termin->attendees->where('status', 'declined'),
+            'dabei' => $termin->attendees->whereNotNull('invited_at')->map(fn ($a) => $a->user)->filter()->when($termin->user, fn ($c) => $c->prepend($termin->user))->unique('id')->values(),
             'vorschlaege' => $termin->user_id === $user->id ? AiSummary::where('summarizable_type', 'event')->where('summarizable_id', $termin->id)->where('status', 'done')->first() : null,
         ]);
     }

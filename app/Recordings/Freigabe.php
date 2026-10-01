@@ -20,11 +20,12 @@ class Freigabe
 
     public function empfaenger(Event $event): Collection
     {
+        $gaeste = $event->gaeste()->pluck('user_id');
         if ($event->user_id) {
-            return collect([$event->user_id]);
+            return collect([$event->user_id])->concat($gaeste)->unique()->values();
         }
 
-        return $event->program_id ? ProgramMember::where('program_id', $event->program_id)->where('role_in_program', '!=', 'coach')->pluck('user_id') : collect();
+        return ($event->program_id ? ProgramMember::where('program_id', $event->program_id)->where('role_in_program', '!=', 'coach')->pluck('user_id') : collect())->concat($gaeste)->unique()->values();
     }
 
     /** @param  array<int, string>  $wege  mail, push */

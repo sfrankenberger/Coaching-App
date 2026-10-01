@@ -64,6 +64,7 @@
                 <span class="m">
                     {{ $event->all_day ? 'ganzer Tag' : $event->starts_at->format('H:i').' Uhr' }}
                     @if ($event->isOneOnOne()) · 1:1 @elseif ($event->program) · {{ $event->program->title }} @endif
+                    @if ($event->gaeste_count ?? 0) · {{ ($event->gaeste_count + ($event->user_id ? 1 : 0)) }} Personen @endif
                     @if ($ab) · Du bist nicht dabei @endif
                 </span>
                 @if ($live || $event->hasRecording() || ($mein && $mein->attended_at))

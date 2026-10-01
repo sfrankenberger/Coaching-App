@@ -207,3 +207,12 @@ Mandant aus der Domain, Policies wie ueberall.
 `ArbeitsplatzTest` (Sichten, Umschalter, Menue, Nachschlagen-Reiter, Assistent-Seite, Wissen je Mandant),
 `DossierAppTest` (Dossier, Nachricht, Notiz, Aufgabe, Termin in Ortszeit, Vorschlag, Verkaufen, Neue Person, Isolation),
 `McpTest` (Handschlag, Werkzeugliste, Rechte, Werkzeuge im Mandanten, Fehler als isError, Isolation).
+
+## Weitere Personen am Termin
+
+Ein Termin (meist 1:1) kann "Weitere Personen" haben (Paar-Coaching, Gast im Call): im Coach-Bereich unter Termine
+als Mehrfachauswahl, gespeichert in `event_attendees.invited_at` (`Event::gaeste()`, `gaesteSetzen()`). Sie sehen den
+Termin unter Termine und im Kalender-Abo (`Begleitung::eventsQuery`), die Aufzeichnung auf der Terminseite, bekommen
+Erinnerungen und die Freigabe der Aufzeichnung (`EventObserver::recipients`, `Freigabe::empfaenger`). Auf der
+Terminseite steht "Dabei: du, Martha", in der Liste "2 Personen". Im Dossier erscheint der Termin bei jeder Person.
+

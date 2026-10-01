@@ -45,14 +45,15 @@ class EventObserver
     /** Wer zu einem Termin gehoert: 1:1 die Person, sonst alle im Programm (ohne Abgesagte). */
     public static function recipients(Event $event): Collection
     {
+        $gaeste = $event->gaeste()->pluck('user_id');
         if ($event->user_id) {
-            return collect([$event->user_id]);
+            return collect([$event->user_id])->concat($gaeste)->unique()->values();
         }
         if (! $event->program_id) {
-            return collect();
+            return $gaeste->values();
         }
         $declined = $event->attendees()->where('status', 'declined')->pluck('user_id');
 
-        return ProgramMember::where('program_id', $event->program_id)->pluck('user_id')->diff($declined)->values();
+        return ProgramMember::where('program_id', $event->program_id)->pluck('user_id')->concat($gaeste)->unique()->diff($declined)->values();
     }
 }

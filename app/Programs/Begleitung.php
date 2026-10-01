@@ -27,7 +27,8 @@ class Begleitung
         return Event::query()
             ->where('is_published', true)
             ->where(function (Builder $q) use ($programIds, $user, $manages) {
-                $q->where('user_id', $user->id);
+                $q->where('user_id', $user->id)
+                    ->orWhereHas('gaeste', fn (Builder $g) => $g->where('user_id', $user->id));
                 if ($manages) {
                     $q->orWhereNotNull('id');
                 } else {

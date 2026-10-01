@@ -10,6 +10,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\MorphToMany;
+use Illuminate\Support\Collection;
 use Laravel\Scout\Searchable;
 
 /**
@@ -79,6 +80,28 @@ class Event extends Model
     public function attendees(): HasMany
     {
         return $this->hasMany(EventAttendee::class);
+    }
+
+    /** Weitere Personen, die das Team an den Termin gehaengt hat (Paar-Coaching, Gast im Call): sehen Termin, Kalender und Aufzeichnung. */
+    public function gaeste(): HasMany
+    {
+        return $this->hasMany(EventAttendee::class)->whereNotNull('invited_at');
+    }
+
+    /** Alle, die zum Termin gehoeren: Hauptperson (1:1) plus Gaeste. */
+    public function personenIds(): Collection
+    {
+        return collect(array_filter([$this->user_id]))->concat($this->gaeste()->pluck('user_id'))->unique()->values();
+    }
+
+    /** Gaeste setzen (Team): fehlende einladen, entfernte wieder auf normale Teilnahme setzen. */
+    public function gaesteSetzen(array $userIds): void
+    {
+        $userIds = array_values(array_unique(array_filter(array_map('intval', $userIds), fn ($id) => $id && $id !== (int) $this->user_id)));
+        $this->attendees()->whereNotNull('invited_at')->whereNotIn('user_id', $userIds)->update(['invited_at' => null]);
+        foreach ($userIds as $id) {
+            EventAttendee::firstOrNew(['event_id' => $this->id, 'user_id' => $id])->forceFill(['invited_at' => now()])->save();
+        }
     }
 
     public function resources(): MorphToMany

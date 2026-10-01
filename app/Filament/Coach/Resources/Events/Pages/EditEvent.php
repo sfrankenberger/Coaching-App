@@ -24,6 +24,18 @@ class EditEvent extends EditRecord
 {
     protected static string $resource = EventResource::class;
 
+    protected function mutateFormDataBeforeFill(array $data): array
+    {
+        $data['gaeste'] = $this->record->gaeste()->pluck('user_id')->all();
+
+        return $data;
+    }
+
+    protected function afterSave(): void
+    {
+        $this->record->gaesteSetzen((array) ($this->data['gaeste'] ?? []));
+    }
+
     protected function getHeaderActions(): array
     {
         $tenant = app(CurrentTenant::class)->get();

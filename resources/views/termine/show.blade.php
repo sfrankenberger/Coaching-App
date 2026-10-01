@@ -10,6 +10,9 @@
             {{ $event->starts_at->translatedFormat('l, j. F Y') }}@if (! $event->all_day), {{ $event->starts_at->format('H:i') }}@if ($event->ends_at) bis {{ $event->ends_at->format('H:i') }}@endif Uhr @else, ganzer Tag @endif
             @if ($event->location) · {{ $event->location }} @endif
         </p>
+        @if (($dabei ?? collect())->count() > 1 || (($dabei ?? collect())->count() === 1 && $dabei->first()->id !== auth()->id()))
+            <p class="hinweis m-0 mt-1.5"><i class="fa-solid fa-user-group text-[11px]"></i> Dabei: {{ $dabei->map(fn ($u) => $u->id === auth()->id() ? 'du' : $u->vorname())->join(', ') }}</p>
+        @endif
         @if ($event->description)
             <div class="prose-app mt-3">{!! $event->description !!}</div>
         @endif

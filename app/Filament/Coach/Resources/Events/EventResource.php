@@ -58,6 +58,9 @@ class EventResource extends Resource
                 Select::make('user_id')->label('Person (bei 1:1)')->searchable()->native(false)
                     ->options(fn () => Membership::query()->with('user')->get()->mapWithKeys(fn (Membership $m) => [$m->user_id => $m->user->name])->all())
                     ->visible(fn ($get) => $get('type') === 'one_on_one'),
+                Select::make('gaeste')->label('Weitere Personen')->multiple()->searchable()->native(false)->dehydrated(false)
+                    ->options(fn () => Membership::query()->with('user')->get()->mapWithKeys(fn (Membership $m) => [$m->user_id => $m->user->name])->all())
+                    ->helperText('Z. B. Paar-Coaching oder ein Gast im Call: sehen diesen Termin, den Kalendereintrag und die Aufzeichnung, bekommen Erinnerungen.')->columnSpanFull(),
                 DateTimePicker::make('starts_at')->label('Beginn')->required()->native(false)->displayFormat('d.m.Y H:i')->seconds(false),
                 DateTimePicker::make('ends_at')->label('Ende')->native(false)->displayFormat('d.m.Y H:i')->seconds(false),
                 Toggle::make('all_day')->label('Ganzer Tag'),
