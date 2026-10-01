@@ -94,6 +94,7 @@
             @auth
                 @if ($arbeitsplatz)
                     <div class="kopf-rechts">
+                        @if ($kannVerwalten)<a href="/coach" aria-label="Verwaltung" title="Verwaltung"><i class="fa-solid fa-sliders"></i></a>@endif
                         <a href="{{ route('mitteilungen') }}" aria-label="Mitteilungen"><i class="fa-{{ $mitteilungen ? 'solid' : 'regular' }} fa-bell"></i>@if ($mitteilungen)<span class="zahl">{{ $mitteilungen }}</span>@endif</a>
                         <a href="{{ route('gespraech.index') }}" aria-label="Gespräch"><i class="fa-solid fa-comments"></i>@if ($ungelesen)<span class="zahl">{{ $ungelesen }}</span>@endif</a>
                     </div>
@@ -164,7 +165,7 @@
                                 </form>
                             </li>
                         @endif
-                        @if ($person?->is_platform_admin && ! $kannVerwalten)
+                        @if ($kannVerwalten || $person?->is_platform_admin)
                             <li><a href="/coach"><i class="fa-solid fa-sliders"></i>Verwaltung</a></li>
                         @endif
                         <li><a href="{{ route('home') }}" @class(['aktiv' => $ist('home')])><i class="fa-solid fa-house"></i>Übersicht</a></li>
