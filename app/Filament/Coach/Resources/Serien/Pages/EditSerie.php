@@ -14,4 +14,14 @@ class EditSerie extends EditRecord
     {
         return [DeleteAction::make()];
     }
+
+    protected function mutateFormDataBeforeFill(array $data): array
+    {
+        return SerieResource::altZuBausteinen($data);
+    }
+
+    protected function mutateFormDataBeforeSave(array $data): array
+    {
+        return SerieResource::ausBausteinen($data);
+    }
 }

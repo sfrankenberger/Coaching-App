@@ -60,7 +60,7 @@ class Serien
 
             return false;
         }
-        $mail = new Newsletter(['betreff' => $schritt['betreff'] ?? $serie->titel, 'vorschautext' => $schritt['vorschautext'] ?? null, 'titel' => $schritt['titel'] ?? null, 'text' => $schritt['text'] ?? '', 'bild_url' => $schritt['bild_url'] ?? null, 'knopf_text' => $schritt['knopf_text'] ?? null, 'knopf_url' => $schritt['knopf_url'] ?? null]);
+        $mail = new Newsletter(['betreff' => $schritt['betreff'] ?? $serie->titel, 'vorschautext' => $schritt['vorschautext'] ?? null, 'titel' => $schritt['titel'] ?? null, 'text' => $schritt['text'] ?? '', 'bild_url' => $schritt['bild_url'] ?? null, 'knopf_text' => $schritt['knopf_text'] ?? null, 'knopf_url' => $schritt['knopf_url'] ?? null, 'bloecke' => $schritt['bloecke'] ?? null]);
         try {
             Mail::to($k->email, $k->name)->send(new NewsletterMail($mail, $k, null));
         } catch (\Throwable $e) {

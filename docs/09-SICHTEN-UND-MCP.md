@@ -125,6 +125,24 @@ meldet Claude den Abbruch. Zustand in der Sitzung (`assistent.chat`: messages, p
 Werkzeugrunden je Nachricht, die letzten 40 Nachrichten laufen mit. Routen `assistent.chat`, `assistent.chat.entscheiden`,
 `assistent.chat.neu` (`AssistentChatController`). Test: `DialogTest`.
 
+## Newsletter-Baukasten
+
+Newsletter und Serienmails bestehen aus Bausteinen (`App\Newsletter\Bausteine`, Spalte `newsletter.bloecke`, in Serien je
+Schritt `schritte[*].bloecke`): Ueberschrift, Text (Editor mit fett, kursiv, Listen, Links), Bild (Upload nach
+`tenants/{id}/newsletter`, ausgeliefert ueber `/n/bild/{datei}`, oder Adresse), Knopf (gefuellt oder Rahmen, mittig oder
+links), Trenner, Zitat, Kasten, Angebot (Karte mit Preis und Kaufknopf aus `offers`). Im Coach-Bereich liegt rechts
+neben dem Baukasten eine Live-Vorschau der fertigen Mail (`NewsletterResource::vorschau`, iframe mit srcdoc), dazu
+"Vorschau im Browser" (`/coach-vorschau/newsletter/{id}`, je Serienschritt `/coach-vorschau/serie/{id}/{schritt}`) und
+unter Einstellungen das Grundlayout mit Musterinhalt (`/coach-vorschau/layout`). Aus den Bausteinen werden beim Speichern
+Klartext (`text`) und Headline (`titel`) abgeleitet; Entwuerfe ohne Bausteine (aeltere, aus den KI-Werkzeugen oder von
+der Website) werden beim Oeffnen in Bausteine umgewandelt (`Bausteine::ausAlt`). `Vorlage::rich` laesst nur erlaubte
+Tags durch, setzt Inline-Styles und fuehrt Links ueber die Klickzaehlung. Fusszeile (`mail.fusszeile`) und Social-Links
+(`newsletter.social`) stehen unter Einstellungen, Grundlayout.
+
+Serien: die Seite erklaert je Tag, wie ein Kontakt ihn bekommt (Shortcode `[app_anmelden tag="..."]` fuer Landingpages,
+Elementor-Formular ueber die Bruecke, Link `/newsletter/anmelden?tag=...`, von Hand unter Kontakte, Kauf ueber den
+Angebots-Slug). Jeder Schritt hat denselben Baukasten.
+
 ## Newsletter von der Website
 
 Das WordPress-Plugin (`resources/wordpress/app-angebote.php`) hat im Beitrags-Editor die Box "Newsletter aus der

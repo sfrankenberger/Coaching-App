@@ -3,7 +3,10 @@
 namespace Tests\Feature;
 
 use App\Enums\Role;
+use App\Filament\Coach\Pages\Einstellungen;
+use App\Filament\Coach\Resources\Newsletter\Pages\EditNewsletter;
 use App\Filament\Coach\Resources\Posts\Pages\EditPost;
+use App\Filament\Coach\Resources\Serien\Pages\EditSerie;
 use App\Mail\AbmeldeLinkMail;
 use App\Mail\KontaktBestaetigenMail;
 use App\Mail\NewsletterMail;
@@ -16,6 +19,7 @@ use App\Models\Serie;
 use App\Models\SerienLauf;
 use App\Models\Tenant;
 use App\Models\User;
+use App\Newsletter\Bausteine;
 use App\Newsletter\Kontakte;
 use App\Newsletter\Serien;
 use App\Newsletter\Versand;
@@ -23,6 +27,7 @@ use App\Shop\Zugang;
 use App\Tenancy\CurrentTenant;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Mail;
+use Illuminate\Support\Facades\Storage;
 use Livewire\Livewire;
 use Tests\TestCase;
 
@@ -242,5 +247,75 @@ class NewsletterTest extends TestCase
         // Unbekannte Adresse: gleiche Antwort, keine Mail
         $this->post('http://a.test/n/abmelden', ['email' => 'niemand@example.com'])->assertOk()->assertSee('hast du gleich Post');
         Mail::assertSent(AbmeldeLinkMail::class, 1);
+    }
+
+    public function test_baukasten_rendert_bausteine_vorschau_und_formulare(): void
+    {
+        $this->lea->membershipIn($this->a)->forceFill(['settings' => ['onboarding_seen_at' => now()->toDateTimeString()]])->save();
+        $this->a->forceFill(['settings' => array_merge($this->a->settings, ['newsletter' => ['social' => ['instagram' => 'https://instagram.com/lea']], 'mail' => ['fusszeile' => 'Musterstrasse 1']])])->save();
+        $offer = $this->in(fn () => Offer::create(['slug' => 'club', 'title' => 'Clubzugang', 'type' => 'club', 'is_active' => true, 'settings' => ['sichtbar' => true, 'preis_chf' => 49, 'teaser' => 'Jeden Monat dabei.']]));
+        $bloecke = [
+            ['type' => 'ueberschrift', 'data' => ['text' => 'Hallo {vorname}', 'groesse' => 'gross']],
+            ['type' => 'text', 'data' => ['html' => '<p>Ein <strong>Absatz</strong> mit <a href="https://lea.test/blog">Link</a><script>alert(1)</script></p><ul><li>Punkt</li></ul>']],
+            ['type' => 'bild', 'data' => ['datei' => 'tenants/1/newsletter/abc.jpg', 'alt' => 'Lea', 'breite' => 'klein', 'link' => 'https://lea.test']],
+            ['type' => 'knopf', 'data' => ['text' => 'Jetzt buchen', 'url' => 'https://lea.test/buchen', 'stil' => 'leise', 'ausrichtung' => 'links']],
+            ['type' => 'trenner', 'data' => ['art' => 'linie']],
+            ['type' => 'zitat', 'data' => ['text' => 'Weniger ist mehr.', 'von' => 'Lea']],
+            ['type' => 'kasten', 'data' => ['titel' => 'Termin', 'html' => '<p>Freitag, 20 Uhr</p>']],
+            ['type' => 'angebot', 'data' => ['offer_id' => $offer->id, 'knopf_text' => 'Dabei sein']],
+        ];
+        $n = $this->in(fn () => Newsletter::create(['betreff' => 'Baukasten', 'text' => ' ', 'bloecke' => $bloecke, 'created_by' => $this->lea->id]));
+        $anna = $this->in(fn () => app(Kontakte::class)->anmelden('anna@example.com', 'Anna', ['newsletter'], [], false));
+
+        $html = $this->in(fn () => (new NewsletterMail($n, $anna, null))->render());
+        $this->assertStringContainsString('Hallo Anna', $html);
+        $this->assertStringContainsString('<strong>Absatz</strong>', $html);
+        $this->assertStringNotContainsString('<script', $html);
+        $this->assertStringContainsString('/n/bild/abc.jpg', $html);
+        $this->assertStringContainsString('max-width:280px', $html);
+        $this->assertStringContainsString('Jetzt buchen', $html);
+        $this->assertStringContainsString('text-align:left', $html);
+        $this->assertStringContainsString('Weniger ist mehr.', $html);
+        $this->assertStringContainsString('Freitag, 20 Uhr', $html);
+        $this->assertStringContainsString('Clubzugang', $html);
+        $this->assertStringContainsString('49.00 CHF', $html);
+        $this->assertStringContainsString('/kaufen/club', $html);
+        $this->assertStringContainsString('Instagram', $html);
+        $this->assertStringContainsString('Musterstrasse 1', $html);
+        $this->assertStringContainsString('/n/abmelden/'.$anna->token, $html);
+
+        // Mit Versand laufen Links ueber die Klickzaehlung
+        $v = $this->in(fn () => NewsletterVersand::create(['newsletter_id' => $n->id, 'kontakt_id' => $anna->id, 'token' => str_repeat('k', 40)]));
+        $html2 = $this->in(fn () => (new NewsletterMail($n, $anna, $v))->render());
+        $this->assertStringContainsString('/n/k/'.$v->token, $html2);
+
+        // Klartext und Headline aus den Bausteinen, alte Felder werden Bausteine
+        $this->assertSame('Hallo {vorname}', Bausteine::titel($bloecke));
+        $this->assertStringContainsString('Punkt', Bausteine::text($bloecke));
+        $alt = Bausteine::ausAlt('https://lea.test/b.jpg', 'Titel', "Absatz eins\n\n[Mehr](https://lea.test)", 'Los', 'https://lea.test/los');
+        $this->assertSame(['bild', 'ueberschrift', 'text', 'knopf'], array_column($alt, 'type'));
+        $this->assertStringContainsString('<a href="https://lea.test">Mehr</a>', $alt[2]['data']['html']);
+
+        // Vorschauen fuer das Team, Bild-Route
+        Storage::fake('local');
+        Storage::disk('local')->put('tenants/'.$this->a->id.'/newsletter/abc.jpg', 'bild');
+        $this->actingAs($this->lea)->get('http://a.test/coach-vorschau/newsletter/'.$n->id)->assertOk()->assertSee('Hallo Lea');
+        $this->actingAs($this->lea)->get('http://a.test/coach-vorschau/layout')->assertOk()->assertSee('Grundlayout');
+        $this->get('http://a.test/n/bild/abc.jpg')->assertOk();
+        $this->get('http://a.test/n/bild/../x.jpg')->assertNotFound();
+        $serie = $this->in(fn () => Serie::create(['titel' => 'Willkommen', 'tag' => 'newsletter', 'aktiv' => true, 'schritte' => [['tage' => 0, 'betreff' => 'Hallo', 'bloecke' => [['type' => 'ueberschrift', 'data' => ['text' => 'Willkommen, {vorname}']]]]]]));
+        $this->actingAs($this->lea)->get('http://a.test/coach-vorschau/serie/'.$serie->id.'/0')->assertOk()->assertSee('Willkommen, Lea');
+        $bea = User::factory()->create();
+        $this->a->users()->attach($bea, ['role' => Role::Member->value, 'status' => 'active']);
+        $this->actingAs($bea)->get('http://a.test/coach-vorschau/newsletter/'.$n->id)->assertForbidden();
+
+        // Serienmail mit Bausteinen
+        $this->in(fn () => app(Serien::class)->ausloesen($anna, 'newsletter'));
+        Mail::assertSent(NewsletterMail::class, fn ($m) => str_contains($m->render(), 'Willkommen, Anna'));
+
+        // Formulare im Coach-Bereich laden mit dem Baukasten
+        $this->in(fn () => Livewire::actingAs($this->lea)->test(EditNewsletter::class, ['record' => $n->id])->assertOk()->assertSee('Baustein hinzufügen'));
+        $this->in(fn () => Livewire::actingAs($this->lea)->test(EditSerie::class, ['record' => $serie->id])->assertOk()->assertSee('app_anmelden tag=', false)->assertSee('So bekommt jemand den Tag'));
+        $this->in(fn () => Livewire::actingAs($this->lea)->test(Einstellungen::class)->assertOk()->assertSee('Grundlayout'));
     }
 }

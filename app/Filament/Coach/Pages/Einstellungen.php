@@ -8,6 +8,7 @@ use App\Tenancy\CurrentTenant;
 use BackedEnum;
 use Filament\Forms\Components\ColorPicker;
 use Filament\Forms\Components\FileUpload;
+use Filament\Forms\Components\Placeholder;
 use Filament\Forms\Components\Repeater;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\TagsInput;
@@ -19,6 +20,7 @@ use Filament\Pages\Page;
 use Filament\Schemas\Components\Section;
 use Filament\Schemas\Schema;
 use Filament\Support\Icons\Heroicon;
+use Illuminate\Support\HtmlString;
 
 /**
  * Einstellungen des Mandanten, die die Coachin selbst pflegt: Aussehen, Absender,
@@ -69,6 +71,11 @@ class Einstellungen extends Page
             'link_datenschutz' => $s['links']['datenschutz'] ?? null,
             'link_widerruf' => $s['links']['widerruf'] ?? null,
             'link_impressum' => $s['links']['impressum'] ?? null,
+            'mail_fusszeile' => $s['mail']['fusszeile'] ?? null,
+            'social_instagram' => $s['newsletter']['social']['instagram'] ?? null,
+            'social_facebook' => $s['newsletter']['social']['facebook'] ?? null,
+            'social_linkedin' => $s['newsletter']['social']['linkedin'] ?? null,
+            'social_website' => $s['newsletter']['social']['website'] ?? null,
             'from_name' => $s['mail']['from_name'] ?? null,
             'from_address' => $s['mail']['from_address'] ?? null,
             'reply_to' => $s['mail']['reply_to'] ?? null,
@@ -130,6 +137,14 @@ class Einstellungen extends Page
                 TextInput::make('from_address')->label('Absenderadresse')->email()->maxLength(190)->helperText('Muss zur Mail-Domain passen, die der Server verschicken darf.'),
                 TextInput::make('reply_to')->label('Antworten an')->email()->maxLength(190),
             ])->columns(3),
+            Section::make('Grundlayout der Mails und Newsletter')->description('Logo und Farben kommen aus "Aussehen". Hier die Fusszeile (Adresse, Impressum) und die Links unter jedem Newsletter.')->schema([
+                TextInput::make('mail_fusszeile')->label('Fusszeile')->maxLength(200)->placeholder('z. B. Musterstrasse 1, 8000 Zürich')->columnSpanFull(),
+                TextInput::make('social_instagram')->label('Instagram')->url()->maxLength(300),
+                TextInput::make('social_facebook')->label('Facebook')->url()->maxLength(300),
+                TextInput::make('social_linkedin')->label('LinkedIn')->url()->maxLength(300),
+                TextInput::make('social_website')->label('Website')->url()->maxLength(300),
+                Placeholder::make('layout_vorschau')->label('')->columnSpanFull()->content(new HtmlString('<a href="'.route('newsletter.vorschau.layout').'" target="_blank" class="fi-link" style="text-decoration:underline;">Grundlayout mit Musterinhalt ansehen</a> (nach dem Speichern)')),
+            ])->columns(2),
             Section::make('Impulse und Podcast per Feed')->description('Wird stündlich geholt.')->schema([
                 Repeater::make('feeds')->label('')->schema([
                     Select::make('type')->label('Art')->options(['post' => 'Beiträge', 'podcast' => 'Podcast'])->required()->native(false),
@@ -177,7 +192,8 @@ class Einstellungen extends Page
         $s['ausbildung_url'] = filled($data['ausbildung_url'] ?? null) ? $data['ausbildung_url'] : null;
         $s['ai'] = array_merge($s['ai'] ?? [], ['wissen' => filled($data['ai_wissen'] ?? null) ? $data['ai_wissen'] : null, 'fundus_hinweis' => filled($data['ai_fundus_hinweis'] ?? null) ? $data['ai_fundus_hinweis'] : null]);
         $s['links'] = array_merge($s['links'] ?? [], ['agb' => $data['link_agb'] ?: null, 'datenschutz' => $data['link_datenschutz'] ?: null, 'widerruf' => $data['link_widerruf'] ?: null, 'impressum' => $data['link_impressum'] ?: null]);
-        $s['mail'] = array_merge($s['mail'] ?? [], ['from_name' => $data['from_name'] ?: null, 'from_address' => $data['from_address'] ?: null, 'reply_to' => $data['reply_to'] ?: null]);
+        $s['mail'] = array_merge($s['mail'] ?? [], ['from_name' => $data['from_name'] ?: null, 'from_address' => $data['from_address'] ?: null, 'reply_to' => $data['reply_to'] ?: null, 'fusszeile' => filled($data['mail_fusszeile'] ?? null) ? trim($data['mail_fusszeile']) : null]);
+        $s['newsletter'] = array_merge($s['newsletter'] ?? [], ['social' => array_filter(['instagram' => $data['social_instagram'] ?? null, 'facebook' => $data['social_facebook'] ?? null, 'linkedin' => $data['social_linkedin'] ?? null, 'website' => $data['social_website'] ?? null])]);
         $s['feeds'] = array_values(array_map(fn ($f) => array_filter(['type' => $f['type'] ?? 'post', 'url' => $f['url'] ?? null, 'show' => $f['show'] ?? null, 'limit' => (int) ($f['limit'] ?? 0) ?: null]), $data['feeds'] ?? []));
         $s['telegram'] = array_merge($s['telegram'] ?? [], ['bot_username' => $data['telegram_bot_username'] ?: null]);
         $s['chat'] = array_merge($s['chat'] ?? [], ['team_als_coach' => (bool) ($data['team_als_coach'] ?? true), 'team_name' => filled($data['team_name'] ?? null) ? trim($data['team_name']) : null]);

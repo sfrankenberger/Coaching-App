@@ -32,6 +32,25 @@ class Vorlage
         return implode('', $out);
     }
 
+    /** HTML aus dem Editor: nur erlaubte Tags, Inline-Styles fuer Mailprogramme, Links ueber die Klickzaehlung. */
+    public static function rich(string $html, ?NewsletterVersand $v = null, string $absatz = '0 0 14px'): string
+    {
+        $html = strip_tags($html, '<p><br><strong><b><em><i><u><a><ul><ol><li><h2><h3><s>');
+        $html = preg_replace('~\s(on\w+|style|class)="[^"]*"~i', '', $html);
+        $html = preg_replace_callback('~<a\b[^>]*href="([^"]+)"[^>]*>~i', fn ($m) => '<a href="'.self::link($m[1], $v).'" style="color:inherit;font-weight:600;">', $html);
+        $html = preg_replace('~<a\b(?![^>]*href)[^>]*>~i', '<a>', $html);
+        $html = str_replace(['<p>', '<h2>', '<h3>', '<ul>', '<ol>', '<li>'], [
+            '<p style="margin:'.$absatz.';font-size:16px;line-height:1.6;">',
+            '<h2 style="margin:18px 0 10px;font-size:19px;line-height:1.3;font-weight:600;">',
+            '<h3 style="margin:16px 0 8px;font-size:17px;line-height:1.3;font-weight:600;">',
+            '<ul style="margin:0 0 14px;padding-left:22px;font-size:16px;line-height:1.6;">',
+            '<ol style="margin:0 0 14px;padding-left:22px;font-size:16px;line-height:1.6;">',
+            '<li style="margin:0 0 4px;">',
+        ], $html);
+
+        return str_replace('<p style="margin:'.$absatz.';font-size:16px;line-height:1.6;"></p>', '', $html);
+    }
+
     /** Link ueber die Klickzaehlung fuehren (nur mit Versand, in Test und Webversion direkt). */
     public static function link(string $url, ?NewsletterVersand $v): string
     {

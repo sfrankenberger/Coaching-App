@@ -1,10 +1,12 @@
-@props(['profil' => false, 'fuss' => null])
+@props(['profil' => false, 'fuss' => null, 'newsletter' => false])
 @inject('branding', App\Tenancy\Branding::class)
 @php
     $tenant = $branding->tenant();
     $logo = $branding->get('logo_url');
     $logo = $logo ? (str_starts_with($logo, 'http') ? $logo : url($logo)) : null;
     $fusszeile = $tenant?->setting('mail.fusszeile');
+    $social = $newsletter ? array_filter((array) ($tenant?->setting('newsletter.social') ?? [])) : [];
+    $socialNamen = ['instagram' => 'Instagram', 'facebook' => 'Facebook', 'linkedin' => 'LinkedIn', 'website' => 'Website', 'youtube' => 'YouTube', 'tiktok' => 'TikTok'];
     $knopf = 'display:inline-block;background:'.$branding->get('primary').';color:'.$branding->get('primary_contrast').';text-decoration:none;font-weight:600;font-size:16px;padding:13px 26px;border-radius:999px;';
     $knopfLeise = 'display:inline-block;border:1px solid '.$branding->get('primary').';color:'.$branding->get('primary').';text-decoration:none;font-weight:600;font-size:16px;padding:12px 26px;border-radius:999px;';
 @endphp
@@ -28,6 +30,7 @@
             {{ $slot }}
         </td></tr>
         <tr><td style="padding:16px 8px 0;font-size:12px;line-height:1.6;color:{{ $branding->get('muted') }};text-align:center;">
+            @if ($social)<div style="margin:0 0 10px;">@foreach ($social as $name => $url)<a href="{{ $url }}" style="color:{{ $branding->get('text') }};text-decoration:none;font-weight:600;margin:0 7px;">{{ $socialNamen[$name] ?? ucfirst($name) }}</a>@endforeach</div>@endif
             @if ($fuss){{ $fuss }}<br>@endif
             {{ $branding->coachName() }}{{ $fusszeile ? ' · '.$fusszeile : '' }}
             @if ($profil)<br><a href="{{ route('profil') }}#benachrichtigungen" style="color:{{ $branding->get('muted') }};">Was dich erreicht, stellst du in deinem Profil ein.</a>@endif

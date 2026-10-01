@@ -4,6 +4,7 @@ namespace App\Filament\Coach\Resources\Newsletter\Pages;
 
 use App\Filament\Coach\Resources\Newsletter\NewsletterResource;
 use App\Models\Kontakt;
+use App\Newsletter\Bausteine;
 use App\Newsletter\Versand;
 use Filament\Actions\Action;
 use Filament\Actions\DeleteAction;
@@ -35,8 +36,19 @@ class EditNewsletter extends EditRecord
                     Notification::make()->title($n ? "Versand läuft: $n Empfängerinnen" : 'Keine Empfängerinnen, nichts gesendet')->status($n ? 'success' : 'warning')->send();
                     $this->redirect(NewsletterResource::getUrl('index'));
                 }),
+            Action::make('vorschau')->label('Vorschau im Browser')->icon('heroicon-o-eye')->color('gray')->url(fn () => route('newsletter.vorschau', $this->record), shouldOpenInNewTab: true),
             DeleteAction::make()->visible(fn () => $this->record->istEntwurf()),
         ];
+    }
+
+    /** Entwuerfe aus der Zeit vor dem Baukasten (und aus den KI-Werkzeugen): Bild, Headline, Text, Knopf werden Bausteine. */
+    protected function mutateFormDataBeforeFill(array $data): array
+    {
+        if (empty($data['bloecke'])) {
+            $data['bloecke'] = Bausteine::ausAlt($data['bild_url'] ?? null, $data['titel'] ?? null, $data['text'] ?? null, $data['knopf_text'] ?? null, $data['knopf_url'] ?? null);
+        }
+
+        return $data;
     }
 
     protected function mutateFormDataBeforeSave(array $data): array
@@ -44,6 +56,7 @@ class EditNewsletter extends EditRecord
         if (! $this->record->istEntwurf()) {
             return [];   // gesendet: nichts mehr aendern
         }
+        $data = NewsletterResource::ausBausteinen($data);
         $data['tags'] = array_values(array_unique(array_map([Kontakt::class, 'tagSauber'], (array) ($data['tags'] ?? []))));
         $data['status'] = filled($data['geplant_at'] ?? null) ? 'geplant' : 'entwurf';
 

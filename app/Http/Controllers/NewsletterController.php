@@ -7,7 +7,6 @@ use App\Models\Kontakt;
 use App\Models\NewsletterVersand;
 use App\Newsletter\Kontakte;
 use App\Newsletter\Versand;
-use App\Newsletter\Vorlage;
 use App\Tenancy\CurrentTenant;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
@@ -128,7 +127,7 @@ class NewsletterController extends Controller
     {
         $v = NewsletterVersand::where('token', $token)->with(['newsletter', 'kontakt'])->firstOrFail();
 
-        return view('newsletter.web', ['n' => $v->newsletter, 'k' => $v->kontakt, 'html' => Vorlage::html(Vorlage::platzhalter((string) $v->newsletter->text, $v->kontakt), null)]);
+        return view('newsletter.web', ['n' => $v->newsletter, 'k' => $v->kontakt]);
     }
 
     /** Nur zurueck auf eine Website des Mandanten (oder dieselbe Domain), nie irgendwohin. */

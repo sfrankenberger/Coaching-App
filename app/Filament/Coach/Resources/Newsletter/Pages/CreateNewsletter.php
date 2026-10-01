@@ -13,6 +13,7 @@ class CreateNewsletter extends CreateRecord
     protected function mutateFormDataBeforeCreate(array $data): array
     {
         $data['created_by'] = auth()->id();
+        $data = NewsletterResource::ausBausteinen($data);
         $data['tags'] = array_values(array_unique(array_map([Kontakt::class, 'tagSauber'], (array) ($data['tags'] ?? []))));
         $data['status'] = filled($data['geplant_at'] ?? null) ? 'geplant' : 'entwurf';
 

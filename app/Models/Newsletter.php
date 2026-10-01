@@ -22,7 +22,7 @@ class Newsletter extends Model
 
     protected function casts(): array
     {
-        return ['tags' => 'array', 'settings' => 'array', 'geplant_at' => 'datetime', 'gestartet_at' => 'datetime', 'gesendet_at' => 'datetime'];
+        return ['tags' => 'array', 'bloecke' => 'array', 'settings' => 'array', 'geplant_at' => 'datetime', 'gestartet_at' => 'datetime', 'gesendet_at' => 'datetime'];
     }
 
     public function versand(): HasMany
