@@ -21,6 +21,7 @@ Lies vor jeder grösseren Arbeit: `docs/01-ENTSCHEIDUNG.md`, `docs/02-ARCHITEKTU
 - Composer: `/opt/plesk/php/8.4/bin/php /opt/psa/var/modules/composer/composer.phar`
 - **Kein Node auf dem Server.** Tailwind über die Standalone-CLI (`bin/tailwindcss`), Filament und Livewire bringen fertige Assets mit. Wenn doch Vite nötig ist: lokal bauen und `public/build` committen.
 - Redis läuft lokal (`redis-cli ping` = PONG). Prefix `REDIS_PREFIX=lea_app_` setzen, der Server hat mehrere Seiten.
+- Plesk-Cron-Aufgaben der Subscription laufen in der Shell des Systembenutzers. Steht die auf `/bin/false`, laufen sie chrooted (Root ist `/var/www/vhosts/leawernli.ch`, kein php, kein git) und `cd /var/www/...` scheitert still. Der Laravel-Scheduler (`artisan schedule:run` jede Minute) braucht darum den Systembenutzer mit `/bin/bash`. Pruefen: Plesk, Abonnement, Hosting-Einstellungen, SSH-Zugang.
 - Last kann hoch sein (Load > 7). Lange Läufe (composer, Importe) mit `nohup nice -n 10 ... &` und Log lesen.
 - WordPress-Datenbank ist als zweite, **nur lesende** Verbindung `wordpress` konfiguriert (Tabellenpräfix `sWmOBXK94_`). Niemals in die WordPress-DB schreiben.
 
