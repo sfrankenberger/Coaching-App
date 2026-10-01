@@ -53,20 +53,20 @@ class NewsletterResource extends Resource
             Section::make('Betreff')->schema([
                 TextInput::make('betreff')->label('Betreff')->required()->maxLength(150)->live(onBlur: true),
                 TextInput::make('vorschautext')->label('Vorschautext (steht im Postfach unter dem Betreff)')->maxLength(150),
-            ])->columns(2)->disabled($gesperrt),
-            Grid::make(5)->schema([
+            ])->columns(2)->columnSpanFull()->disabled($gesperrt),
+            Grid::make(['default' => 1, 'xl' => 2])->columnSpanFull()->schema([
                 Section::make('Inhalt')->description('Bausteine hinzufügen, mit den Pfeilen verschieben, zuklappen zum Sortieren. Platzhalter {vorname} und {name}.')->schema([
                     Bausteine::feld('bloecke'),
-                ])->columnSpan(3)->disabled($gesperrt),
+                ])->columnSpan(1)->disabled($gesperrt),
                 Section::make('Vorschau')->description('So kommt die Mail an. Logo, Farben und Fusszeile stellst du unter Einstellungen ein.')->schema([
                     Placeholder::make('vorschau')->label('')->content(fn (Get $get) => self::vorschau($get('bloecke'), $get('betreff'))),
-                ])->columnSpan(2),
+                ])->columnSpan(1),
             ]),
             Section::make('An wen und wann')->schema([
                 TagsInput::make('tags')->label('An Kontakte mit Tag')->suggestions(fn () => array_keys(app(Kontakte::class)->alleTags()))->helperText('Leer: alle bestätigten Kontakte. Mehrere Tags: wer mindestens einen hat.'),
                 DateTimePicker::make('geplant_at')->label('Geplant für')->native(false)->displayFormat('d.m.Y H:i')->seconds(false)->helperText('Leer: nur von Hand senden. Mit Zeit: geht dann von selbst raus (Status "geplant").'),
                 Placeholder::make('empfaenger_stand')->label('Empfängerinnen')->content(fn (?Newsletter $record) => $record ? $record->empfaengerQuery()->count().' bestätigte Kontakte passen gerade' : 'nach dem Speichern')->columnSpanFull(),
-            ])->columns(2)->disabled($gesperrt),
+            ])->columns(2)->columnSpanFull()->disabled($gesperrt),
         ]);
     }
 
@@ -80,7 +80,7 @@ class NewsletterResource extends Resource
         $html = view('newsletter.vorschau', ['n' => $n, 'k' => $k])->render();
 
         return new HtmlString('<div style="font-size:13px;color:#777;margin:0 0 6px;">Betreff: <strong style="color:#222;">'.e($betreff ?: '(ohne Betreff)').'</strong></div>'
-            .'<iframe title="Vorschau" srcdoc="'.e($html).'" style="width:100%;height:760px;border:1px solid #e5e5e0;border-radius:12px;background:#fff;"></iframe>');
+            .'<iframe title="Vorschau" srcdoc="'.e($html).'" style="width:100%;height:820px;border:1px solid #e5e5e0;border-radius:12px;background:#fff;"></iframe>');
     }
 
     public static function table(Table $table): Table

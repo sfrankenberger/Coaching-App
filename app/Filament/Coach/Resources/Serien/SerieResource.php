@@ -55,7 +55,7 @@ class SerieResource extends Resource
                     ->helperText('Bestehenden Tag wählen oder einen neuen schreiben (klein, ohne Leerzeichen).'),
                 Toggle::make('aktiv')->label('Aktiv')->default(true)->inline(false),
                 Placeholder::make('anleitung')->label('So bekommt jemand den Tag')->columnSpanFull()->content(fn (Get $get) => new HtmlString(self::anleitung(Kontakt::tagSauber((string) ($get('tag') ?: 'mein-tag'))))),
-            ])->columns(3),
+            ])->columns(3)->columnSpanFull(),
             Section::make('Die Mails')->description('Schritt mit 0 Tagen geht sofort raus. Jede Mail hat denselben Baukasten wie ein Newsletter. Zum Prüfen: speichern, dann "Vorschau" am Schritt.')->schema([
                 Repeater::make('schritte')->label('')->schema([
                     Grid::make(4)->schema([
@@ -71,7 +71,7 @@ class SerieResource extends Resource
                             ->url(fn (array $arguments, Repeater $component, ?Serie $record) => $record ? route('newsletter.vorschau.serie', ['serie' => $record, 'schritt' => array_search($arguments['item'], array_keys($component->getState() ?? []), true)]) : null, shouldOpenInNewTab: true)
                             ->visible(fn (?Serie $record) => (bool) $record),
                     ]),
-            ]),
+            ])->columnSpanFull(),
         ]);
     }
 
