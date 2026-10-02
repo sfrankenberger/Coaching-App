@@ -43,6 +43,12 @@ class ProfilFotoTest extends TestCase
         $this->assertSame($breite, $hoehe);
         $this->assertSame(400, $breite);
 
+        // Neues Foto: die Bild-URL bekommt eine neue Versionsnummer, sonst bleibt das alte im Browser-Cache
+        $v1 = $anna->fresh()->avatarUrl();
+        $this->travel(5)->seconds();
+        $this->actingAs($anna)->post('http://a.test/profil/foto', ['foto' => UploadedFile::fake()->image('neu.png', 600, 600)])->assertRedirect('http://a.test/profil#foto');
+        $this->assertNotSame($v1, $anna->fresh()->avatarUrl());
+
         // Sichtbar fuer Leute im selben Mandanten, nicht im fremden
         $this->actingAs($anna)->get('http://a.test/profil')->assertOk()->assertSee('/avatar/'.$anna->id);
         $this->actingAs($mia)->get("http://a.test/avatar/{$anna->id}")->assertOk()->assertHeader('Content-Type', 'image/jpeg');

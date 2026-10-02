@@ -117,7 +117,9 @@ class User extends Authenticatable implements FilamentUser, WebAuthnAuthenticata
     {
         $pfad = 'tenants/'.app(CurrentTenant::class)->getOrFail()->id.'/avatars/'.$this->id.'.jpg';
         Storage::put($pfad, $jpeg);
-        $this->forceFill(['avatar_path' => $pfad])->save();
+        // updated_at immer anheben: der Pfad bleibt gleich, aber die Bild-URL traegt ihn als Versionsnummer,
+        // sonst zeigt der Browser nach einem neuen Foto einen Tag lang das alte aus dem Cache
+        $this->forceFill(['avatar_path' => $pfad, 'updated_at' => now()])->save();
     }
 
     public function avatarLoeschen(): void
