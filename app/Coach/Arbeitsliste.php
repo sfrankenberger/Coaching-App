@@ -33,7 +33,7 @@ class Arbeitsliste
         $istTest = fn ($user) => $user && $test->contains(mb_strtolower($user->email));
 
         $wartende = $this->wartende($team)->reject(fn ($z) => $istTest($z['user']));
-        $geteilt = $this->neues->zeilen(7, 8)->filter(fn ($z) => in_array($z['art'], ['antwort', 'reflexion', 'aufgabe', 'notiz', 'aufgabe_geteilt'], true))->values();
+        $geteilt = $this->geteilt();
         $fragen = $this->fragen($team)->reject(fn ($f) => $istTest($f->user))->take(6)->values();
         $still = $this->still()->reject(fn ($z) => $istTest($z['user']))->take(4)->values();
         $neu = $this->neuDabei()->reject(fn (Membership $m) => $istTest($m->user))->take(4)->values();
@@ -74,6 +74,49 @@ class Arbeitsliste
             'offen' => $wartende->count() + $geteilt->count() + $fragen->count(),
             'ruhig' => $satz,
         ];
+    }
+
+    /**
+     * Mit dir geteilt, eine Zeile je Person: Antworten ueber alle Einheiten gebuendelt
+     * ("hat 39 Antworten in 5 Einheiten geteilt"), dazu Reflexionen, Notizen, Aufgaben.
+     * Sonst steht dieselbe Person sechsmal untereinander.
+     */
+    public function geteilt(int $max = 8): Collection
+    {
+        $zeilen = $this->neues->zeilen(7, 60)->filter(fn ($z) => in_array($z['art'], ['antwort', 'reflexion', 'aufgabe', 'notiz', 'aufgabe_geteilt'], true));
+
+        return $zeilen->groupBy(fn ($z) => $z['wer'].'|'.$z['url'])->map(function (Collection $g) {
+            $erste = $g->sortByDesc('zeit')->first();
+            $antworten = $g->where('art', 'antwort');
+            $teile = [];
+            if ($antworten->isNotEmpty()) {
+                $n = (int) $antworten->sum('anzahl');
+                $e = $antworten->count();
+                $teile[] = ($n === 1 ? 'eine Antwort' : "{$n} Antworten").($e > 1 ? " in {$e} Einheiten" : '');
+            }
+            foreach (['reflexion' => ['eine Reflexion', 'Reflexionen'], 'notiz' => ['eine Notiz', 'Notizen'], 'aufgabe_geteilt' => ['eine Aufgabe', 'Aufgaben']] as $art => [$eins, $viele]) {
+                $n = $g->where('art', $art)->count();
+                if ($n) {
+                    $teile[] = $n === 1 ? $eins : "{$n} {$viele}";
+                }
+            }
+            $erledigt = $g->where('art', 'aufgabe')->count();
+            $was = $teile ? 'hat '.Str::of(implode(', ', $teile))->replaceLast(', ', ' und ').' geteilt' : '';
+            if ($erledigt) {
+                $was .= ($was ? ' und ' : 'hat ').($erledigt === 1 ? 'eine Aufgabe erledigt' : "{$erledigt} Aufgaben erledigt");
+            }
+            $details = $g->sortByDesc('zeit')->pluck('detail')->filter()->unique()->values();
+
+            return [
+                'art' => $erste['art'],
+                'zeit' => $erste['zeit'],
+                'wer' => $erste['wer'],
+                'was' => $was,
+                'detail' => $details->take(3)->implode(', ').($details->count() > 3 ? ' …' : ''),
+                'url' => $erste['url'],
+                'anzahl' => $g->count(),
+            ];
+        })->sortByDesc('zeit')->take($max)->values();
     }
 
     /** Von wem die Coachin lange nichts gehoert hat (Ampel gelb oder rot wegen Stille, Calls oder Aufgaben), ohne die, die ohnehin auf Antwort warten. */

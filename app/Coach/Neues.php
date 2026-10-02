@@ -31,7 +31,7 @@ class Neues
         foreach ($antworten as $gruppe) {
             $a = $gruppe->first();
             $n = $gruppe->count();
-            $zeilen->push(['art' => 'antwort', 'team' => $teamIds->contains($a->user_id), 'zeit' => $a->updated_at, 'wer' => $a->user?->name, 'was' => $n === 1 ? 'hat eine Antwort geteilt' : "hat {$n} Antworten geteilt", 'detail' => $a->exercise?->unit?->title, 'url' => $dossier($a->user_id)]);
+            $zeilen->push(['art' => 'antwort', 'team' => $teamIds->contains($a->user_id), 'zeit' => $a->updated_at, 'wer' => $a->user?->name, 'was' => $n === 1 ? 'hat eine Antwort geteilt' : "hat {$n} Antworten geteilt", 'detail' => $a->exercise?->unit?->title, 'url' => $dossier($a->user_id), 'anzahl' => $n]);
         }
         foreach (Reflection::where('visibility', '!=', 'private')->where('shared_at', '>', $seit)->with('user:id,name')->latest('shared_at')->limit(15)->get() as $r) {
             $zeilen->push(['art' => 'reflexion', 'team' => $teamIds->contains($r->user_id), 'zeit' => $r->shared_at, 'wer' => $r->user?->name, 'was' => 'hat eine Reflexion geteilt', 'detail' => $r->week_label, 'url' => $dossier($r->user_id)]);

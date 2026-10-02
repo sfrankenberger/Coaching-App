@@ -6,13 +6,17 @@ use App\Ai\Assistent;
 use App\Chat\Chat;
 use App\Coach\Ansicht;
 use App\Enums\Role;
+use App\Models\Answer;
 use App\Models\Event;
+use App\Models\Exercise;
 use App\Models\Membership;
 use App\Models\Message;
 use App\Models\Program;
 use App\Models\ProgramMember;
 use App\Models\Question;
+use App\Models\Reflection;
 use App\Models\Tenant;
+use App\Models\Unit;
 use App\Models\User;
 use App\Models\Wissen;
 use App\Tenancy\CurrentTenant;
@@ -55,6 +59,16 @@ class ArbeitsplatzTest extends TestCase
             Message::create(['conversation_id' => $conv->id, 'user_id' => $this->anna->id, 'body' => 'Kannst du mir helfen?']);
             $conv->forceFill(['last_message_at' => now()])->save();
             Question::create(['program_id' => $p->id, 'user_id' => $this->anna->id, 'title' => 'Wie geht Woche 2?']);
+            // Anna teilt Antworten in zwei Einheiten und eine Reflexion: auf der Liste eine Zeile
+            $u1 = Unit::create(['program_id' => $p->id, 'title' => 'Dein Lebensrad', 'position' => 1, 'is_published' => true]);
+            $u2 = Unit::create(['program_id' => $p->id, 'title' => 'Dein Umfeld', 'position' => 2, 'is_published' => true]);
+            foreach ([[$u1, 3], [$u2, 2]] as [$u, $n]) {
+                for ($i = 0; $i < $n; $i++) {
+                    $ex = Exercise::create(['unit_id' => $u->id, 'type' => 'text', 'prompt' => "Frage {$i}", 'position' => $i]);
+                    Answer::create(['user_id' => $this->anna->id, 'exercise_id' => $ex->id, 'value' => ['v' => 'Antwort'], 'shared_with_coach' => true]);
+                }
+            }
+            Reflection::create(['user_id' => $this->anna->id, 'week_label' => 'Woche 40', 'went_well' => 'Gut', 'program_id' => $p->id, 'visibility' => 'program', 'shared_at' => now()]);
             Event::create(['title' => 'Call morgen', 'type' => 'group_call', 'program_id' => $p->id, 'starts_at' => now()->addDay(), 'ends_at' => now()->addDay()->addHour(), 'is_published' => true]);
         });
         // Bea ist seit zwei Wochen nicht mehr da, Carla seit gestern neu dabei
@@ -64,7 +78,8 @@ class ArbeitsplatzTest extends TestCase
         $this->a->users()->attach($carla, ['role' => Role::Client->value, 'status' => 'active', 'joined_at' => now()->subDay()]);
 
         $r = $this->actingAs($this->lea)->get('http://a.test/')->assertOk();
-        $r->assertSee('Guten Tag, Lea')->assertSee('2 Dinge warten')
+        $r->assertSee('Guten Tag, Lea')->assertSee('3 Dinge warten')
+            ->assertSee('Mit dir geteilt')->assertSee('Anna Muster hat 5 Antworten in 2 Einheiten und eine Reflexion geteilt')->assertSee('Dein Lebensrad, Dein Umfeld, Woche 40')
             ->assertSee('Wartet auf deine Antwort')->assertSee('Kannst du mir helfen?')
             ->assertSee('Fragen ohne Antwort')->assertSee('Wie geht Woche 2?')
             ->assertDontSee('Wartet auf Freigabe')
@@ -80,7 +95,7 @@ class ArbeitsplatzTest extends TestCase
         // Als gelesen: Anna wartet nicht mehr
         $m = $this->in(fn () => Membership::where('user_id', $this->anna->id)->first());
         $this->actingAs($this->lea)->post("http://a.test/coachees/{$m->id}/gelesen")->assertRedirect();
-        $this->actingAs($this->lea)->get('http://a.test/')->assertOk()->assertDontSee('Wartet auf deine Antwort')->assertSee('eine Sache wartet');
+        $this->actingAs($this->lea)->get('http://a.test/')->assertOk()->assertDontSee('Wartet auf deine Antwort')->assertSee('2 Dinge warten');
 
         // Umschalten: wie eine Teilnehmerin, dann zurueck
         $this->actingAs($this->lea)->post('http://a.test/ansicht', ['ansicht' => 'teilnehmer'])->assertRedirect('http://a.test');

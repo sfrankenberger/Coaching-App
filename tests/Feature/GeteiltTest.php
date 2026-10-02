@@ -85,7 +85,7 @@ class GeteiltTest extends TestCase
 
         // Lea hat erfahren, dass Anna eine Notiz teilt, und sieht es in der Arbeitsliste
         Notification::assertSentTo($this->lea, AppNotification::class, fn ($n) => $n->nachricht->titel === 'Anna teilt eine Notiz mit dir');
-        $this->actingAs($this->lea)->get('http://a.test/')->assertOk()->assertSee('Anna Muster hat eine Notiz geteilt');
+        $this->actingAs($this->lea)->get('http://a.test/')->assertOk()->assertSee('Anna Muster hat eine Reflexion und 2 Notizen geteilt');
     }
 
     public function test_reaktion_und_kommentar_der_gruppe(): void
