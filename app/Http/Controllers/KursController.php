@@ -18,6 +18,7 @@ use App\Models\Reflection;
 use App\Models\Task;
 use App\Models\Unit;
 use App\Programs\Begleitung;
+use App\Programs\Wochenaufgabe;
 use App\Programs\ProgramAccess;
 use App\Programs\ProgressTracker;
 use App\Programs\Strecke;
@@ -145,6 +146,16 @@ class KursController extends Controller
         $imFenster = fn ($q) => $von ? $q->where('created_at', '>=', $von->utc())->where('created_at', '<', $bis->utc()) : $q->whereRaw('1 = 0');
         $unitsJeSchritt = $program->units->where('is_published', true)->groupBy('step_id');
         $aktuell = $program->pacing === 'weekly' ? $steps->filter(fn (ProgramStep $s) => $s->isUnlocked($program))->sortByDesc('position')->first() : null;
+        // Reflexions- und Fragentag als abhakbare Aufgaben der Woche; was schon geschrieben ist, gilt als erledigt
+        $wa = app(Wochenaufgabe::class);
+        $wa->sicherstellen($user, $program, $schritt);
+        $reflexion = $user->canManageCurrentTenant() ? null : Reflection::where('user_id', $user->id)->where(fn ($q) => $q->where('step_id', $schritt->id)
+            ->orWhere(fn ($w) => $w->whereNull('step_id')->where(fn ($x) => $x->where('program_id', $program->id)->orWhereNull('program_id'))->where($imFenster)))->latest()->first();
+        $fragen = Question::where('user_id', $user->id)->where('program_id', $program->id)->where($imFenster)->withCount('answers')->latest()->get();
+        if (! $user->canManageCurrentTenant()) {
+            $reflexion && $wa->abhakenArt($user, 'reflexion', $schritt->id);
+            $fragen->isNotEmpty() && $wa->abhakenArt($user, 'frage', $schritt->id);
+        }
 
         return view('kurse.schritt', [
             'band' => $steps->map(fn (ProgramStep $s, $i) => [
@@ -153,9 +164,8 @@ class KursController extends Controller
                 'jetzt' => $aktuell?->id === $s->id, 'hier' => $s->id === $schritt->id,
             ]),
             'aktuell' => $aktuell,
-            'reflexion' => $user->canManageCurrentTenant() ? null : Reflection::where('user_id', $user->id)->where(fn ($q) => $q->where('step_id', $schritt->id)
-                ->orWhere(fn ($w) => $w->whereNull('step_id')->where(fn ($x) => $x->where('program_id', $program->id)->orWhereNull('program_id'))->where($imFenster)))->latest()->first(),
-            'fragen' => Question::where('user_id', $user->id)->where('program_id', $program->id)->where($imFenster)->withCount('answers')->latest()->get(),
+            'reflexion' => $reflexion,
+            'fragen' => $fragen,
             'termine' => $termine,
             'aufgaben' => Task::where('user_id', $user->id)->where('step_id', $schritt->id)
                 ->orderByRaw('CASE WHEN done_at IS NULL THEN 0 ELSE 1 END')->orderBy('due_at')->get(),

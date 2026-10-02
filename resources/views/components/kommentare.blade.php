@@ -28,13 +28,13 @@
             @else
                 <details @if ($liste->isNotEmpty()) open @endif>
                     <summary class="hinweis cursor-pointer"><i class="fa-regular fa-comment"></i> {{ $liste->isEmpty() ? 'Kommentieren' : 'Antworten' }}</summary>
-                    <form method="post" action="{{ route('kommentar.store') }}" class="kommentar-form">
+                    <form method="post" action="{{ route('kommentar.store') }}" class="kommentar-form kommentar-zeile">
                         @csrf
                         <input type="hidden" name="typ" value="{{ $typ }}">
                         <input type="hidden" name="id" value="{{ $item->getKey() }}">
-                        <textarea name="body" rows="1" class="feld" required maxlength="5000" placeholder="Schreib etwas dazu ..."></textarea>
+                        <textarea name="body" rows="1" class="feld" required maxlength="5000" placeholder="Kommentar" aria-label="Kommentar" data-ohne-diktat></textarea>
+                        <x-anhang-wahl :refs="[]" :lazy="true" :knapp="true" />
                         <button type="submit" class="knopf kommentar-senden" aria-label="Senden"><i class="fa-solid fa-paper-plane"></i></button>
-                        <div class="w-full"><x-anhang-wahl :refs="[]" :lazy="true" /></div>
                     </form>
                 </details>
             @endif

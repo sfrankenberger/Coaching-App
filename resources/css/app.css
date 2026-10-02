@@ -291,6 +291,10 @@
     .woche .lab { font-size: var(--fs-xs); letter-spacing: .14em; text-transform: uppercase; font-weight: 600; color: rgba(255, 255, 255, .82); padding-right: 54px; }
     .woche .t { font-family: var(--font-heading); font-size: 23px; line-height: 1.25; padding-right: 54px; }
     .woche .k { font-size: var(--fs-md); color: rgba(255, 255, 255, .78); }
+    .woche .punkte { display: grid; gap: 4px; margin-top: 10px; }
+    .woche .punkt { display: flex; align-items: center; gap: 8px; font-size: var(--fs-md); color: rgba(255, 255, 255, .92); }
+    .woche .punkt i { width: 16px; text-align: center; font-size: 13px; opacity: .9; }
+    .woche .punkt.erledigt { color: rgba(255, 255, 255, .6); text-decoration: line-through; }
     .woche .reihe { display: flex; align-items: center; gap: 10px; margin-top: 8px; }
     .woche .balken { background: rgba(255, 255, 255, .18); }
     .woche .balken span { background: #fff; }
@@ -858,6 +862,8 @@
     .wochenband::-webkit-scrollbar { display: none; }
     .wb { flex: 0 0 auto; scroll-snap-align: start; display: flex; align-items: center; gap: 7px; border: 1px solid var(--c-card-border); background: var(--c-card); border-radius: 999px; padding: 5px 12px 5px 6px; text-decoration: none; color: var(--c-text); font-size: var(--fs-sm); line-height: 1.2; }
     .wb .n { width: 24px; height: 24px; border-radius: 50%; background: var(--c-ghost); color: var(--c-text); display: grid; place-items: center; font-size: 12px; font-weight: 600; flex: none; }
+    .wb .t small { display: block; font-size: 11px; color: var(--c-muted); line-height: 1.1; }
+    .wb.hier .t small { color: rgba(255, 255, 255, .8); }
     .wb .j { font-size: 10px; letter-spacing: .06em; text-transform: uppercase; color: var(--c-primary); font-weight: 700; }
     .wb.fertig .n { background: var(--c-success-soft); color: var(--c-success); }
     .wb.jetzt { border-color: var(--c-primary-line); }
@@ -1057,6 +1063,14 @@
 .kommentar-form { display: flex; gap: 8px; margin-top: 8px; }
 .kommentar-form .feld { flex: 1; }
 .kommentar-senden { flex: none; width: 44px; padding: 0; }
+/* Kommentar unter einer Karte: eine Zeile mit Feld, Bueroklammer und Senden; die Anhang-Auswahl klappt darunter auf */
+.kommentar-zeile { flex-wrap: wrap; align-items: flex-end; }
+.kommentar-zeile .feld { min-height: 44px; padding: 10px 14px; resize: none; }
+.kommentar-zeile .anhang-wahl { display: contents; }
+.kommentar-zeile .anhang-zeile { flex: none; }
+.kommentar-zeile .anhang-zeile .knopf-quadrat { width: 44px; height: 44px; padding: 0; justify-content: center; }
+.kommentar-zeile .anhang-gewaehlt, .kommentar-zeile .anhang-panel { flex-basis: 100%; }
+.kommentar-zeile .kommentar-senden { height: 44px; }
 .kommentare { margin-top: 12px; padding-top: 10px; border-top: 1px solid var(--c-line-soft); display: grid; gap: 8px; }
 .kommentar { position: relative; padding: 8px 32px 8px 12px; border-radius: 12px; background: var(--c-ghost); font-size: var(--fs-md); line-height: 1.5; }
 .kommentar.vom-team { background: var(--c-primary-soft); }

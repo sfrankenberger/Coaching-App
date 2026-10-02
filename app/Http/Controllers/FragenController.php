@@ -171,7 +171,7 @@ class FragenController extends Controller
         $frage = Question::create($data + ['program_id' => $program->id, 'user_id' => $user->id, 'visibility' => $data['visibility'] ?? 'program']);
         $wa = app(Wochenaufgabe::class);
         app(Anhaenge::class)->speichern($frage, $wa->refs($request, $user, $refs), $user);
-        $wa->abhaken($request, $user);
+        $wa->abhaken($request, $user) ?? $wa->abhakenArt($user, 'frage', null, $program->id);
 
         // Das Team bekommt jede Frage, der Kurs die sichtbaren (leise, ohne Mail), Erwaehnte ausdruecklich
         $this->melden($this->team()->reject(fn ($id) => $id === $user->id), $frage, $user->vorname().' hat eine Frage gestellt', $frage->title);

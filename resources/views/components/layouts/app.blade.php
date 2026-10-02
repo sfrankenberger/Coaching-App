@@ -129,10 +129,6 @@
                         <li><a href="{{ route('assistent') }}" @class(['aktiv' => $ist('assistent')])><i class="fa-solid fa-wand-magic-sparkles"></i>Assistent</a></li>
                         <li><a href="{{ route('kurse.index') }}" @class(['aktiv' => $ist('kurse.*')])><i class="fa-solid fa-graduation-cap"></i>Kurse</a></li>
                         <li><a href="/coach"><i class="fa-solid fa-sliders"></i>Verwaltung</a></li>
-                        <li class="unter"><a href="/coach/programs"><i class="fa-solid fa-layer-group"></i>Kurse einrichten</a></li>
-                        <li class="unter"><a href="/coach/events"><i class="fa-solid fa-calendar-plus"></i>Termine planen</a></li>
-                        <li class="unter"><a href="/coach/offers"><i class="fa-solid fa-tags"></i>Angebote</a></li>
-                        <li class="unter"><a href="/coach/einstellungen"><i class="fa-solid fa-gear"></i>Einstellungen</a></li>
                         <li><a href="{{ route('profil') }}" @class(['aktiv' => $ist('profil*')])><i class="fa-solid fa-user"></i>Profil</a></li>
                         <li>
                             <form method="post" action="{{ route('ansicht') }}">

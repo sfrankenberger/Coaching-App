@@ -1,5 +1,5 @@
 {{-- Etwas anhaengen: Aufgabe, Notiz, Reflexion, Termin, Aufzeichnung, Material, Lektion. Schickt refs[] als "art:nummer". --}}
-@props(['refs' => [], 'mehrfach' => true, 'name' => 'refs', 'lazy' => false])
+@props(['refs' => [], 'mehrfach' => true, 'name' => 'refs', 'lazy' => false, 'knapp' => false])
 @php
     $a = app(\App\Support\Anhaenge::class);
     $ich = auth()->user();
@@ -8,7 +8,11 @@
 {{-- lazy: die Auswahl kommt erst beim Oeffnen vom Server (fuer Seiten mit vielen Formularen, z. B. Kommentare) --}}
 <div class="anhang-wahl" data-anhang-wahl data-suche="{{ route('anhaenge.suche') }}" data-name="{{ $name }}" data-mehrfach="{{ $mehrfach ? '1' : '0' }}" @if ($lazy) data-lazy="1" @else data-auswahl='@json($a->auswahl($ich))' @endif>
     <div class="anhang-zeile">
-        <button type="button" class="knopf knopf-leise knopf-klein" data-anhang-auf><i class="fa-solid fa-paperclip"></i>Etwas anhängen</button>
+        @if ($knapp)
+            <button type="button" class="knopf knopf-leise knopf-klein knopf-quadrat" data-anhang-auf aria-label="Etwas anhängen" title="Etwas anhängen"><i class="fa-solid fa-paperclip"></i></button>
+        @else
+            <button type="button" class="knopf knopf-leise knopf-klein" data-anhang-auf><i class="fa-solid fa-paperclip"></i>Etwas anhängen</button>
+        @endif
         {{ $slot }}
     </div>
     <div class="anhang-gewaehlt" data-anhang-gewaehlt @if ($gewaehlt->isEmpty()) hidden @endif>

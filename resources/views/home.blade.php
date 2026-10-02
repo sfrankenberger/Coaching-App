@@ -1,28 +1,34 @@
 <x-layouts.app title="Start" :schmal="true">
     <h1 style="margin:6px 0 12px">Hallo {{ $person->vorname() }}</h1>
 
-    {{-- Diese Woche / weiter im Kurs, in der Kursfarbe --}}
-    {{-- Wie im alten Bereich: nur Kurse mit laufender Woche, nicht jeder Kurs --}}
-    @foreach ($weiter->filter(fn ($w) => $w['step']) as $w)
-        @php $p = $w['program']; $stand = $w['stand']; $step = $w['step']; @endphp
+    {{-- Diese Woche im Kurs, in der Kursfarbe (wie lea-start2: Woche, Titel, Kurs, Stand der Wochenaufgaben, naechste Aufgabe) --}}
+    @if ($weiter->isNotEmpty())
         <h2 class="abschnitt"><i class="fa-solid fa-graduation-cap"></i>Diese Woche im Kurs</h2>
-        <a href="{{ $step ? route('kurse.schritt', [$p, $step]) : ($stand['next'] ? route('kurse.einheit', [$p, $stand['next']]) : route('kurse.show', $p)) }}" class="woche" style="--kc: {{ $p->color ?: '#7C8C9A' }}">
-            <span class="bild">
-                @if ($p->cover_url)<img src="{{ $p->cover_url }}" alt="">@else<i class="fa-solid fa-{{ $p->icon ?: 'seedling' }}"></i>@endif
-            </span>
-            <span class="lab">{{ $p->title }}</span>
-            <span class="t">{{ $step ? $step->title : ($stand['next']?->title ?? $p->title) }}</span>
-            @if ($step && $w['woche'])<span class="k">Woche {{ $w['woche'] }} von {{ $w['wochen'] }}@if ($w['call'] ?? null) · <i class="fa-solid fa-video"></i> {{ $w['call']->isLive() ? 'Call läuft gerade' : 'Call '.$w['call']->starts_at->translatedFormat('D, j. M, H:i').' Uhr' }}@endif</span>@endif
-            @if ($stand['total'])
-                <span class="reihe">
-                    <span class="balken"><span style="width: {{ $stand['percent'] }}%"></span></span>
-                    <span class="z">{{ $stand['done'] }} von {{ $stand['total'] }} erledigt</span>
+        @foreach ($weiter as $w)
+            @php $p = $w['program']; $step = $w['step']; @endphp
+            <a href="{{ route('kurse.schritt', [$p, $step]) }}" class="woche" style="--kc: {{ $p->color ?: '#7C8C9A' }}">
+                <span class="bild">
+                    @if ($p->cover_url)<img src="{{ $p->cover_url }}" alt="">@else<i class="fa-solid fa-{{ $p->icon ?: 'seedling' }}"></i>@endif
                 </span>
-            @endif
-            @if ($step && $stand['next'])<span class="als">Als Nächstes: {{ $stand['next']->title }}</span>@endif
-            <span class="cta">{{ $step ? 'Zur Woche' : ($stand['done'] ? 'Weitermachen' : 'Los geht es') }} &rarr;</span>
-        </a>
-    @endforeach
+                <span class="lab">Woche {{ $w['woche'] }} von {{ $w['wochen'] }}</span>
+                <span class="t">{{ $step->title }}</span>
+                <span class="k">{{ $p->title }}</span>
+                @if ($w['punkte']->isNotEmpty())
+                    <span class="punkte">
+                        @foreach ($w['punkte']->take(5) as $pt)
+                            <span @class(['punkt', 'erledigt' => $pt['erledigt']])><i class="fa-solid fa-{{ $pt['erledigt'] ? 'circle-check' : $pt['icon'] }}"></i>{{ $pt['titel'] }}</span>
+                        @endforeach
+                        @if ($w['punkte']->count() > 5)<span class="punkt"><i class="fa-solid fa-ellipsis"></i>{{ $w['punkte']->count() - 5 }} weitere</span>@endif
+                    </span>
+                    <span class="reihe">
+                        <span class="balken"><span style="width: {{ (int) round($w['erledigt'] / $w['aufgaben'] * 100) }}%"></span></span>
+                        <span class="z">{{ $w['erledigt'] }} von {{ $w['aufgaben'] }} erledigt</span>
+                    </span>
+                @endif
+                <span class="cta">Zur Woche &rarr;</span>
+            </a>
+        @endforeach
+    @endif
 
     {{-- Was ist neu: drei Zeilen, der Rest aufklappbar --}}
     @if ($neues->isNotEmpty())
@@ -94,7 +100,7 @@
         @endforeach
     @endif
 
-    @if ($neues->isEmpty() && ! $termin && $weiter->filter(fn ($w) => $w['step'])->isEmpty() && $aufgaben->isEmpty())
+    @if ($neues->isEmpty() && ! $termin && $weiter->isEmpty() && $aufgaben->isEmpty())
         <p class="hinweis">Gerade ist nichts offen. Schau in deine Sachen, wenn du zurückblicken magst.</p>
     @endif
 

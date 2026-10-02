@@ -110,6 +110,7 @@ class ReflexionController extends Controller
         if ($this->wochenaufgabe->abhaken($request, $user)) {
             return redirect()->route('aufgaben.index')->with('meldung', 'Reflexion gespeichert und Aufgabe abgehakt.');
         }
+        $this->wochenaufgabe->abhakenArt($user, 'reflexion', $stepId, $programId);
 
         return redirect()->route('reflexion.index')->with('meldung', $visibility === 'private' ? 'Reflexion gespeichert, nur für dich.' : 'Reflexion gespeichert und geteilt.');
     }

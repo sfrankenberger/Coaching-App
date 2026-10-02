@@ -78,7 +78,7 @@ class StartseiteTest extends TestCase
         });
 
         $r = $this->actingAs($this->anna)->get('http://a.test/');
-        $r->assertOk()->assertSee('Diese Woche')->assertSee('Woche 2: Rad')->assertDontSee('Woche 3')->assertSee('Als Nächstes: Willkommen')
+        $r->assertOk()->assertSee('Diese Woche im Kurs')->assertSee('Woche 2: Rad')->assertDontSee('Woche 3')->assertSee('Woche 2 von')->assertSee('Das Rad')->assertSee('Zur Woche')
             ->assertSee('Nächster Termin')->assertSee('Call morgen')->assertDontSee('Call gestern')
             ->assertSee('Buch lesen')->assertDontSee('Schon fertig')->assertSee('Offene Aufgaben')
             ->assertSee('Der neue Impuls')->assertSee('Was ist neu')->assertSee('Neuer Termin: Call morgen')->assertSee('Alles gesehen');

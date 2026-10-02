@@ -22,11 +22,11 @@
                     @if ($b['offen'])
                         <a href="{{ route('kurse.schritt', [$program, $b['step']]) }}" @class(['wb', 'hier' => $b['hier'], 'jetzt' => $b['jetzt'], 'fertig' => $b['fertig']]) @if ($b['hier']) aria-current="page" @endif>
                             <span class="n">@if ($b['fertig'])<i class="fa-solid fa-check"></i>@else{{ $b['nummer'] }}@endif</span>
-                            <span class="t">{{ \Illuminate\Support\Str::limit($b['step']->title, 22) }}</span>
+                            <span class="t">{{ $program->pacing === 'weekly' ? 'Woche '.$b['nummer'] : \Illuminate\Support\Str::limit($b['step']->title, 22) }}@if ($program->pacing === 'weekly' && $b['step']->unlocks_at) <small>{{ $b['step']->unlocks_at->translatedFormat('j.n.') }}</small>@endif</span>
                             @if ($b['jetzt'])<span class="j">Jetzt</span>@endif
                         </a>
                     @else
-                        <span class="wb zu"><span class="n"><i class="fa-solid fa-lock"></i></span><span class="t">{{ \Illuminate\Support\Str::limit($b['step']->title, 22) }}</span></span>
+                        <span class="wb zu"><span class="n"><i class="fa-solid fa-lock"></i></span><span class="t">{{ $program->pacing === 'weekly' ? 'Woche '.$b['nummer'] : \Illuminate\Support\Str::limit($b['step']->title, 22) }}@if ($program->pacing === 'weekly' && $b['step']->unlocks_at) <small>{{ $b['step']->unlocks_at->translatedFormat('j.n.') }}</small>@endif</span></span>
                     @endif
                 @endforeach
             </div>
@@ -49,15 +49,17 @@
             <x-termin-karte class="mt-3" :termin="$t" />
         @endforeach
 
-        <h2 class="abschnitt"><i class="fa-solid fa-circle-play"></i>{{ $program->pacing === 'weekly' ? 'Diese Woche' : 'Lektionen' }}<em>{{ $units->count() }}</em></h2>
-        @if ($units->isEmpty())
-            <div class="leer"><i class="fa-regular fa-hourglass"></i>Hier kommt noch etwas. Schau bald wieder rein.</div>
-        @else
+        {{-- Lektionen der Woche: nur wenn es welche gibt, nicht jede Woche hat Material zum Anschauen --}}
+        @if ($units->isNotEmpty())
+            <h2 class="abschnitt"><i class="fa-solid fa-circle-play"></i>{{ $program->pacing === 'weekly' ? 'Diese Woche' : 'Lektionen' }}<em>{{ $units->count() }}</em></h2>
             <div class="modul einzeln">
                 @foreach ($units as $unit)
                     @include('kurse._einheit-zeile', ['unit' => $unit, 'erledigt' => $done->contains($unit->id)])
                 @endforeach
             </div>
+        @elseif ($program->pacing !== 'weekly')
+            <h2 class="abschnitt"><i class="fa-solid fa-circle-play"></i>Lektionen</h2>
+            <div class="leer"><i class="fa-regular fa-hourglass"></i>Hier kommt noch etwas. Schau bald wieder rein.</div>
         @endif
 
         {{-- Aufgaben der Woche: von der Coachin und eigene --}}
@@ -97,8 +99,8 @@
             @endforeach
         @endif
 
-        {{-- Reflexions- und Fragentag, mit Stand: Reflexion geschrieben, Fragen gestellt --}}
-        @foreach ($termine->filter(fn ($t) => in_array($t->type, \App\Models\Event::ALL_DAY_TYPES, true)) as $t)
+        {{-- Reflexions- und Fragentag: Teilnehmerinnen haben sie als Aufgaben oben, das Team sieht die Tage hier --}}
+        @foreach ($ich->canManageCurrentTenant() ? $termine->filter(fn ($t) => in_array($t->type, \App\Models\Event::ALL_DAY_TYPES, true)) : collect() as $t)
             @php $refl = $t->type === 'reflection_day'; $geschrieben = $refl && $reflexion; $gefragt = ! $refl && $fragen->isNotEmpty(); @endphp
             <a href="{{ $refl ? ($geschrieben ? route('reflexion.index').'#reflexion-'.$reflexion->id : route('reflexion.index')) : route('kurse.fragen', [$program, 'frage' => 1]) }}" class="zeile" style="margin-top:12px">
                 <span class="ic" @if ($geschrieben || $gefragt) style="background:var(--c-success-soft);color:var(--c-success)" @endif><i class="fa-solid fa-{{ $geschrieben || $gefragt ? 'circle-check' : ($refl ? 'pen-to-square' : 'circle-question') }}"></i></span>

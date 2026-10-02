@@ -146,7 +146,7 @@ class WochenseiteTest extends TestCase
         $this->actingAs($this->lea)->get("http://a.test/kurse/hybrid/schritt/{$w2->id}")->assertOk();
         $this->travel(8)->days();
         $this->actingAs($this->anna)->get("http://a.test/kurse/hybrid/schritt/{$w2->id}")->assertOk()
-            ->assertSee('Aus früheren Wochen noch offen: 1')->assertSee('Brief schreiben')->assertDontSee('Fragentag nutzen');
+            ->assertSee('Aus früheren Wochen noch offen: 2')->assertSee('Brief schreiben')->assertSee('Deine Wochenreflexion')->assertDontSee('Fragentag nutzen');
         $this->travelBack();
     }
 
@@ -183,8 +183,10 @@ class WochenseiteTest extends TestCase
             Question::create(['user_id' => $this->anna->id, 'program_id' => $this->kurs->id, 'title' => 'Wann atme ich?']);
         });
         $this->actingAs($this->anna)->get("http://a.test/kurse/hybrid/schritt/{$w1->id}")->assertOk()
-            ->assertSee('Reflexion geschrieben')->assertSee('Deine Reflexion dieser Woche')->assertSee('Der Morgen am Fenster')
+            ->assertSee('Deine Wochenreflexion')->assertSee('Deine Reflexion dieser Woche')->assertSee('Der Morgen am Fenster')
             ->assertSee('Deine Fragen diese Woche')->assertSee('Wann atme ich?');
+        // Reflexion und Frage da: die Aufgaben dazu sind abgehakt
+        $this->in(fn () => $this->assertSame(1, Task::where('user_id', $this->anna->id)->where('step_id', $w1->id)->where('kind', 'reflexion')->whereNotNull('done_at')->count(), 'Reflexionstag als erledigte Aufgabe'));
 
         // Lea sieht Woche 2 schon, mit Sprung zur aktuellen Woche
         $this->actingAs($this->lea)->get("http://a.test/kurse/hybrid/schritt/{$w2->id}")->assertOk()->assertSee('Zur aktuellen Woche');
