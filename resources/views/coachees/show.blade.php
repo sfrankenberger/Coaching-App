@@ -23,9 +23,7 @@
     </section>
 
     {{-- Pakete und Verkaufen --}}
-    <h2 class="abschnitt"><i class="fa-solid fa-box-open"></i>Pakete<em>{{ $pakete->count() }}</em>
-        <span class="rechts"><a href="#verkaufen" data-aufklappen="verkaufen">Etwas verkaufen</a></span>
-    </h2>
+    <h2 class="abschnitt"><i class="fa-solid fa-box-open"></i>Pakete<em>{{ $pakete->count() }}</em></h2>
     @forelse ($pakete as $e)
         <div class="zeile">
             <span class="ic"><i class="fa-solid fa-{{ $e->isCurrent() ? 'circle-check' : 'circle-pause' }}"></i></span>

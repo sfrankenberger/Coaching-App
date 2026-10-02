@@ -6,10 +6,10 @@
     <div id="chat"></div>
     <section class="karte chat-assistent">
         <div class="flex items-center justify-between gap-2">
-            <h3 class="m-0" style="font-size:var(--fs-lg)"><i class="fa-solid fa-wand-magic-sparkles"></i> Mit mir arbeiten</h3>
+            <h3 class="m-0" style="font-size:var(--fs-lg)"><i class="fa-solid fa-wand-magic-sparkles"></i> Frag mich oder gib mir etwas zu tun</h3>
             @if ($chat['protokoll'])<form method="post" action="{{ route('assistent.chat.neu') }}">@csrf<button type="submit" class="knopf knopf-text knopf-klein">Neues Gespräch</button></form>@endif
         </div>
-        <p class="hinweis m-0 mb-2">Ich kann nachschlagen und handeln: Personen, Zugänge, Nachrichten, Termine, Kontakte, Newsletter, Impulse, Rundnachrichten. Bevor ich etwas ändere, frage ich nach.</p>
+        <p class="hinweis m-0 mb-2">Ich kenne deinen Betrieb und kann handeln: Personen, Zugänge, Nachrichten, Termine, Kontakte, Newsletter, Impulse, Rundnachrichten. Bevor ich etwas ändere, frage ich nach.</p>
         @if ($chat['protokoll'])
             <div class="flex flex-col gap-2 mb-3" data-chat-protokoll>
                 @foreach ($chat['protokoll'] as $z)
@@ -47,23 +47,15 @@
                 <textarea name="text" rows="2" class="feld flex-1" required maxlength="4000" placeholder="{{ $chat['protokoll'] ? 'Und weiter ...' : 'Zum Beispiel: Leg einen Newsletter aus dem letzten Impuls an, an alle mit Tag newsletter' }}" onkeydown="if((event.metaKey||event.ctrlKey)&&event.key==='Enter'){this.form.requestSubmit()}"></textarea>
                 <button type="submit" class="knopf" @unless ($ki) disabled title="Ohne KI-Schlüssel" @endunless><i class="fa-solid fa-paper-plane"></i></button>
             </form>
+            @unless ($chat['protokoll'])
+                <p class="hinweis mt-2 mb-0 flex flex-wrap gap-1.5 items-center">Zum Beispiel:
+                    @foreach ($beispiele as $b)<button type="button" class="pille" style="min-height:30px;padding:4px 11px;font-size:var(--fs-xs)" data-dialog-beispiel>{{ $b }}</button>@endforeach
+                </p>
+            @endunless
+            @unless ($ki)<p class="hinweis mt-2 mb-0">Dafür braucht es den KI-Schlüssel, den trägst du unter Einstellungen ein.</p>@endunless
         @endif
     </section>
 
-    <section class="karte" data-auskunft data-url="{{ route('coachees.frage') }}">
-        <h3 class="m-0" style="font-size:var(--fs-lg)">Frag mich etwas</h3>
-        <p class="hinweis m-0 mb-2">Buchungen, Termine, Menschen, wo du was findest, und was du dir gemerkt hast.</p>
-        <form class="suche m-0" data-auskunft-form>
-            <i class="fa-solid fa-wand-magic-sparkles"></i>
-            <input type="search" name="frage" placeholder="Frag mich: was hat Nicole gebucht, wo trage ich Zeiten ein" aria-label="Frage" autocomplete="off">
-            <button type="submit" class="knopf knopf-klein" data-auskunft-los>Fragen</button>
-        </form>
-        <p class="hinweis mt-2 mb-0 flex flex-wrap gap-1.5 items-center">Zum Beispiel:
-            @foreach ($beispiele as $b)<button type="button" class="pille" style="min-height:30px;padding:4px 11px;font-size:var(--fs-xs)" data-auskunft-beispiel>{{ $b }}</button>@endforeach
-        </p>
-        <div class="mt-3" data-auskunft-antwort aria-live="polite"></div>
-        @unless ($ki)<p class="hinweis mt-2 mb-0">Ohne KI-Schlüssel antworte ich nur mit Fakten aus der App (Menschen, Orte, Inhalte). Den Schlüssel trägst du unter Einstellungen ein.</p>@endunless
-    </section>
 
     {{-- Second Brain --}}
     <h2 class="abschnitt"><i class="fa-solid fa-brain"></i>Mein Wissen<em>{{ $wissenAnzahl }}</em></h2>

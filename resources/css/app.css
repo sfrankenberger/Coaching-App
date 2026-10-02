@@ -435,6 +435,10 @@
     .filterleiste-fragen .pillen { flex-wrap: nowrap; overflow-x: auto; scrollbar-width: none; margin-bottom: 8px; padding-bottom: 2px; }
     .filterleiste-fragen .pillen::-webkit-scrollbar { display: none; }
     .filterleiste-fragen .pille { white-space: nowrap; }
+    /* Themen als Wolke */
+    .themen-wolke { display: flex; flex-wrap: wrap; gap: 8px; }
+    .themen-wolke .pille { text-decoration: none; }
+    .themen-wolke .pille em { font-style: normal; font-size: var(--fs-xs); color: var(--c-muted); margin-left: 6px; }
     /* Eingeklapptes Formular (Neue Aufgabe, Neue Notiz) */
     .aufklapp-formular { margin: 0 0 14px; }
     .aufklapp-formular > summary { list-style: none; display: inline-flex; width: auto; }

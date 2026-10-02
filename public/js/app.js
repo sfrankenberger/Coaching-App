@@ -1061,6 +1061,19 @@ document.addEventListener('medien:zeit', function (e) {
     box.querySelectorAll('[data-auskunft-beispiel]').forEach(function (b) { b.addEventListener('click', function () { feld.value = b.textContent; fragen(); }); });
 })();
 
+/* ---------- Assistent: Beispiel tippen, dann steht es im Feld und geht ab ---------- */
+(function () {
+    document.querySelectorAll('[data-dialog-beispiel]').forEach(function (b) {
+        b.addEventListener('click', function () {
+            var form = b.closest('section').querySelector('textarea[name=text]');
+            if (!form) return;
+            form.value = b.textContent.trim();
+            form.focus();
+            if (!form.form.querySelector('button[type=submit]').disabled) form.form.requestSubmit();
+        });
+    });
+})();
+
 // Ein Link mit data-aufklappen="id" oeffnet das <details> mit dieser id und springt hin
 (function () {
     document.querySelectorAll('[data-aufklappen]').forEach(function (a) {

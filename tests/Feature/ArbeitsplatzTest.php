@@ -152,7 +152,7 @@ class ArbeitsplatzTest extends TestCase
     public function test_assistent_seite_mit_wissen(): void
     {
         $this->actingAs($this->anna)->get('http://a.test/assistent')->assertForbidden();
-        $this->actingAs($this->lea)->get('http://a.test/assistent')->assertOk()->assertSee('Frag mich etwas')->assertSee('Mein Wissen')->assertSee('/api/mcp');
+        $this->actingAs($this->lea)->get('http://a.test/assistent')->assertOk()->assertSee('Frag mich oder gib mir etwas zu tun')->assertDontSee('data-auskunft')->assertSee('Mein Wissen')->assertSee('/api/mcp');
         $this->actingAs($this->lea)->post('http://a.test/assistent/merken', ['body' => 'Erstgespräche dauern 30 Minuten und sind gratis.', 'tags' => 'preise, ablauf'])->assertRedirect('http://a.test/assistent');
         $this->actingAs($this->lea)->get('http://a.test/assistent')->assertOk()->assertSee('Erstgespräche dauern 30 Minuten')->assertSee('preise');
         $this->actingAs($this->lea)->get('http://a.test/assistent?wissen=gratis')->assertOk()->assertSee('Erstgespräche dauern');

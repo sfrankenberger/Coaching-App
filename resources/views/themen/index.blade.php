@@ -9,15 +9,10 @@
     @if ($themen->isEmpty())
         <div class="leer"><i class="fa-regular fa-bookmark"></i>Noch keine Themen. Sie entstehen, sobald Inhalte zugeordnet sind.</div>
     @else
-        <div class="grid grid-cols-1 sm:grid-cols-2 gap-2">
-            @foreach ($themen as $t)
-                <a href="{{ route('themen.show', $t) }}" class="karte !mb-0 no-underline flex items-center justify-between gap-3">
-                    <span>
-                        <span class="t">{{ $t->name }}</span>
-                        @if ($t->description)<span class="hinweis block">{{ \Illuminate\Support\Str::limit($t->description, 90) }}</span>@endif
-                    </span>
-                    <span class="chip shrink-0">{{ $t->taggables_count }}</span>
-                </a>
+        {{-- Als Wolke, die grossen Themen zuerst: 50 Karten untereinander liest niemand --}}
+        <div class="themen-wolke">
+            @foreach ($themen->sortByDesc('taggables_count') as $t)
+                <a href="{{ route('themen.show', $t) }}" class="pille" title="{{ $t->description }}">{{ $t->name }}<em>{{ $t->taggables_count }}</em></a>
             @endforeach
         </div>
     @endif
