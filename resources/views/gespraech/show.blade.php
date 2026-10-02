@@ -53,7 +53,6 @@
     <form method="post" action="{{ route('gespraech.senden', $conv) }}" enctype="multipart/form-data" class="chat-eingabe" data-senden>
         @csrf
         <div class="chat-eingabe-in">
-            <textarea name="body" rows="1" class="feld" placeholder="Nachricht an {{ $gegenueber }}" aria-label="Nachricht" style="min-height:48px;max-height:160px">{{ \Illuminate\Support\Str::limit((string) request()->query('entwurf'), 500, '') }}</textarea>
             <div class="hinweis flex items-center gap-2" data-datei-name hidden></div>
             <div class="flex items-center gap-3" data-aufnahme hidden>
                 <span class="size-3 rounded-full bg-danger animate-pulse"></span>
@@ -73,11 +72,11 @@
                     <label class="knopf knopf-leise knopf-klein" style="cursor:pointer"><i class="fa-solid fa-camera"></i>Foto oder Datei<input type="file" name="file" class="hidden" accept="image/*,application/pdf,audio/*"></label>
                 </x-anhang-wahl>
             </div>
-            <div class="chat-knoepfe">
+            <div class="chat-zeile">
                 <button type="button" class="chat-rund" data-anhang-plus title="Foto, Datei oder etwas aus der App anhängen" aria-label="Anhängen"><i class="fa-solid fa-plus"></i></button>
-                <button type="button" class="chat-rund" data-diktat title="Diktieren: Gesprochenes wird zu Text" aria-label="Diktieren"><i class="fa-solid fa-microphone"></i></button>
+                <textarea name="body" rows="1" class="feld" placeholder="Nachricht an {{ $gegenueber }}" aria-label="Nachricht" style="min-height:44px;max-height:160px">{{ \Illuminate\Support\Str::limit((string) request()->query('entwurf'), 500, '') }}</textarea>
                 <button type="button" class="chat-rund" data-sprache title="Sprachnachricht aufnehmen" aria-label="Sprachnachricht aufnehmen"><span class="punkt"></span></button>
-                <span class="flex-1"></span>
+                <button type="button" class="chat-rund" data-diktat title="Diktieren: Gesprochenes wird zu Text" aria-label="Diktieren"><i class="fa-solid fa-microphone"></i></button>
                 <button type="submit" class="chat-senden" title="Senden" aria-label="Senden"><i class="fa-solid fa-paper-plane"></i></button>
             </div>
         </div>

@@ -956,17 +956,19 @@
     @media (min-width: 900px) { .chat-seite .inhalt { height: calc(100dvh - 64px - env(safe-area-inset-top)); } }
     .chat-kopf { flex: none; }
     .chat-seite #verlauf { flex: 1; min-height: 0; overflow-y: auto; overscroll-behavior: contain; -webkit-overflow-scrolling: touch; padding: 4px 2px 18px; scroll-padding-bottom: 18px; }
-    .chat-eingabe { flex: none; margin: 0 -14px; background: var(--c-bar); border-top: 1px solid var(--c-card-border); padding: 10px 14px calc(10px + env(safe-area-inset-bottom)); }
+    .chat-eingabe { flex: none; margin: 0 -14px; background: var(--c-bar); border-top: 1px solid var(--c-card-border); padding: 8px 12px calc(8px + env(safe-area-inset-bottom)); }
     @media (min-width: 761px) { .chat-eingabe { margin: 0 -18px; padding-inline: 18px; } }
     .chat-eingabe-in { max-width: var(--page-width); margin: 0 auto; display: flex; flex-direction: column; gap: 8px; }
-    .chat-eingabe textarea { border-radius: 24px; padding: 12px 18px; resize: none; }
-    .chat-knoepfe { display: flex; align-items: center; gap: 8px; }
-    .chat-rund { width: 44px; height: 44px; border-radius: 50%; display: grid; place-items: center; background: var(--c-neutral); color: var(--c-text-soft); border: 0; cursor: pointer; font-size: 16px; }
+    .chat-eingabe textarea { border-radius: 22px; padding: 11px 16px; resize: none; }
+    /* Eine Zeile: Anhaengen, Feld, Sprachnachricht, Diktat, Senden */
+    .chat-zeile { display: flex; align-items: flex-end; gap: 6px; }
+    .chat-zeile textarea { flex: 1; min-width: 0; }
+    .chat-rund { width: 40px; height: 40px; flex: none; border-radius: 50%; display: grid; place-items: center; background: var(--c-neutral); color: var(--c-text-soft); border: 0; cursor: pointer; font-size: 15px; margin-bottom: 2px; }
     .chat-rund:hover { color: var(--c-primary); }
     .chat-rund.text-danger { color: var(--c-danger); background: color-mix(in srgb, var(--c-danger) 12%, #fff); }
     .chat-rund .punkt { width: 12px; height: 12px; border-radius: 50%; background: var(--c-danger); display: block; }
     .chat-rund.text-danger .punkt { animation: pulse 1s infinite; }
-    .chat-senden { width: 48px; height: 48px; border-radius: 50%; display: grid; place-items: center; background: var(--c-primary); color: #fff; border: 0; cursor: pointer; font-size: 17px; }
+    .chat-senden { width: 44px; height: 44px; flex: none; border-radius: 50%; display: grid; place-items: center; background: var(--c-primary); color: #fff; border: 0; cursor: pointer; font-size: 16px; }
     .chat-senden:hover { background: var(--c-primary-hover); }
     .chat-senden:disabled { opacity: .5; }
 }
@@ -1170,6 +1172,7 @@ details.karte[open] > summary::after { content: '\2013'; }
 .drawer li.gruppe + li.unter a { border-top: 0; }
 .ohne-leiste .leiste { display: none; }
 .ohne-leiste .inhalt { padding-bottom: calc(96px + env(safe-area-inset-bottom)); }
+.ohne-leiste.chat-seite .inhalt { padding-bottom: 0; }   /* im Gespraech ist die Eingabe unten, kein Platz fuer den Chatknopf noetig */
 
 /* Ansehen als (Plattform-Admin): Balken ueber allem */
 .als-balken { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; padding: 8px 14px; background: #2E2D29; color: #fff; font-size: var(--fs-sm); }
