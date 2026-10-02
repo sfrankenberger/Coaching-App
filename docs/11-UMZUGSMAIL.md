@@ -20,7 +20,7 @@ Deine App zieht um: neue Adresse app.leawernli.ch
 
 ## Text
 
-Hoi {Vorname}
+(Die Anrede «Hallo Vorname» kommt aus der Mailvorlage, nicht in den Text schreiben.)
 
 Kurz und ehrlich: Ich musste den Mitgliederbereich technisch auf neue Beine stellen. Darum hast du ihn in den
 letzten Tagen vielleicht nicht erreicht oder keine Nachrichten bekommen. Das tut mir leid.

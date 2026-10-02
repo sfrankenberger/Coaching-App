@@ -98,6 +98,19 @@ class BenachrichtigungenTest extends TestCase
         $this->assertStringContainsString('Hallo Anna, wie geht es dir?', $mail->getHtmlBody());
     }
 
+    public function test_mail_aus_der_queue_kennt_den_mandanten(): void
+    {
+        // In der Queue ist kein Mandant gesetzt; die Mail muss trotzdem im Rahmen des Mandanten gerendert werden (Logo, Fusszeile)
+        $this->a->forceFill(['settings' => array_merge($this->a->settings ?? [], ['mail' => array_merge($this->a->settings['mail'] ?? [], ['fusszeile' => 'Musterstrasse 9, Testhausen'])])])->save();
+        app(\App\Tenancy\CurrentTenant::class)->set(null);
+        $n = new \App\Notifications\AppNotification(new \App\Notifications\Nachricht(titel: 'Hallo', text: "Erster Absatz.\n\nZweiter Absatz."), ['mail'], $this->a->id);
+        $html = (string) $n->toMail($this->anna)->render();
+        $this->assertStringContainsString('Musterstrasse 9, Testhausen', $html, 'Fusszeile des Mandanten');
+        $this->assertStringNotContainsString('Coaching-App', $html, 'kein Standardname');
+        $this->assertStringContainsString('Erster Absatz.<br />', $html);
+        $this->assertStringNotContainsString('white-space:pre-line', $html, 'keine doppelten Leerzeilen');
+    }
+
     public function test_termin_erinnerung_tag_und_stunde_ohne_doppelte(): void
     {
         Notification::fake();

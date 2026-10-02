@@ -25,7 +25,10 @@ class AppNotification extends Notification implements ShouldQueue
         return $this->channels;
     }
 
-    /** In der Queue: Mandant setzen, bevor ein Kanal etwas liest. */
+    /**
+     * In der Queue: Mandant setzen, bevor ein Kanal etwas liest. Der Mandant bleibt fuer den Rest des Jobs gesetzt,
+     * weil die Mail erst nach toMail() gerendert wird (Rahmen mit Logo, Fusszeile, Farben braucht ihn dann noch).
+     */
     public function withTenant(callable $fn): mixed
     {
         $current = app(CurrentTenant::class);
@@ -33,8 +36,11 @@ class AppNotification extends Notification implements ShouldQueue
             return $fn($current->get());
         }
         $tenant = Tenant::find($this->tenantId);
+        if ($tenant) {
+            $current->set($tenant);
+        }
 
-        return $tenant ? $current->run($tenant, fn () => $fn($tenant)) : $fn(null);
+        return $fn($tenant);
     }
 
     public function toMail(object $notifiable): MailMessage
