@@ -73,7 +73,7 @@ class SchaufensterTest extends TestCase
         });
 
         $seite = $this->actingAs($this->anna)->get('http://a.test/kurse')->assertOk();
-        $seite->assertSee('Dein Programm')->assertSee('Nächster Call:')->assertSee('Freigeschaltet bis '.now()->addDays(30)->translatedFormat('j. F Y'))
+        $seite->assertSee('Dein Programm')->assertSee('Nächster Call:')->assertSee('Freigeschaltet bis '.now($this->a->fresh()->timezone)->addDays(30)->translatedFormat('j. F Y'))
             ->assertSee('Was es noch gibt')->assertSee('Clubzugang')->assertSee('49.00 CHF')->assertSee('/kaufen/club')
             ->assertSee('Der neue Kurs')->assertSee('Kommt bald')->assertDontSee('Willkommen im Club');
 

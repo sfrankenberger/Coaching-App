@@ -66,6 +66,7 @@ class AboTest extends TestCase
             'api.stripe.com/v1/subscriptions' => Http::response(['id' => 'sub_neu', 'status' => 'trialing', 'current_period_end' => $periodeEnde]),
             'api.stripe.com/v1/billing_portal/sessions' => Http::response(['url' => 'https://billing.stripe.com/p/session/1']),
             'api.bexio.com/2.0/contact/search*' => Http::response([]),
+            'api.bexio.com/2.0/kb_invoice/search*' => Http::response([]),
             'api.bexio.com/2.0/contact' => Http::response(['id' => 88]),
             'api.bexio.com/2.0/kb_invoice/701/*' => Http::response(['success' => true]),
             'api.bexio.com/2.0/kb_invoice/701' => Http::response(['id' => 701, 'document_nr' => 'RE-0701', 'network_link' => 'https://office.bexio.com/pay/701', 'kb_item_status_id' => 9]),
