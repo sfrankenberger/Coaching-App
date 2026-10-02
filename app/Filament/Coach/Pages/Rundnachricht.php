@@ -115,10 +115,18 @@ class Rundnachricht extends Page
     /** Testmail an die eigene Adresse, genau so, wie sie bei den Empfaengerinnen ankommt. */
     public function testAction(): Action
     {
-        return Action::make('test')->label('Testmail an mich')->icon('heroicon-o-envelope')->color('gray')
-            ->action(function () {
+        return Action::make('test')->label('Testmail')->icon('heroicon-o-envelope')->color('gray')
+            ->modalHeading('Testmail schicken')
+            ->modalDescription('Die Mail geht genau so raus wie an die Empfängerinnen, mit [Test] im Betreff. Nur an dich oder jemanden aus dem Team.')
+            ->modalSubmitActionLabel('Schicken')
+            ->form([
+                Select::make('an')->label('An')->options(fn () => Membership::whereIn('role', ['owner', 'team'])->where('status', 'active')->with('user:id,name,email')->get()->filter->user->mapWithKeys(fn ($m) => [$m->user_id => $m->user->name.' ('.$m->user->email.')'])->all())
+                    ->default(fn () => auth()->id())->required()->native(false),
+            ])
+            ->action(function (array $arguments, array $data) {
+                $an = (int) ($data['an'] ?? auth()->id());
                 $data = $this->form->getState();
-                $user = auth()->user();
+                $user = Membership::whereIn('role', ['owner', 'team'])->where('user_id', $an)->first()?->user ?? auth()->user();
                 $text = str_replace(['{vorname}', '{name}'], [$user->vorname(), $user->name], trim($data['text']));
                 app(Notifier::class)->send([$user->id], new Nachricht(
                     titel: '[Test] '.(trim((string) ($data['titel'] ?? '')) ?: mb_substr($text, 0, 60)),
@@ -130,7 +138,7 @@ class Rundnachricht extends Page
                     inApp: false,
                     knopf: 'Zur App',
                 ));
-                Notification::make()->title('Testmail unterwegs')->body('An '.$user->email.($data['persoenlich'] ?? false ? '. Persönliche Nachrichten gehen als Chat, die Testmail zeigt nur den Text.' : '.'))->success()->send();
+                Notification::make()->title('Testmail unterwegs')->body('An '.$user->name.', '.$user->email.($data['persoenlich'] ?? false ? '. Persönliche Nachrichten gehen als Chat, die Testmail zeigt nur den Text.' : '.'))->success()->send();
             });
     }
 

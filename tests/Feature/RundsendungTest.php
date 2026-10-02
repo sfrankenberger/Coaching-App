@@ -99,8 +99,14 @@ class RundsendungTest extends TestCase
             $neu = Rundnachricht::where('titel', 'Entwurf eins')->first();
 
             // Testmail: nur an mich, immer per Mail, nicht in die Glocke
-            Livewire::test(RundnachrichtSeite::class)->call('laden', $neu->id)->assertFormSet(['titel' => 'Entwurf eins'])->callAction('test')->assertNotified('Testmail unterwegs');
+            Livewire::test(RundnachrichtSeite::class)->call('laden', $neu->id)->assertFormSet(['titel' => 'Entwurf eins'])->callAction('test', ['an' => $this->lea->id])->assertNotified('Testmail unterwegs');
             Notification::assertSentTo($this->lea, AppNotification::class, fn (AppNotification $n) => str_starts_with($n->nachricht->titel, '[Test] Entwurf eins') && $n->nachricht->mailImmer && $n->nachricht->text === 'Hallo Lea');
+            // An eine Person aus dem Team, nicht an eine Teilnehmerin
+            $andrea = User::factory()->create(['name' => 'Andrea Team', 'email' => 'andrea@test.ch']);
+            $this->a->users()->attach($andrea, ['role' => Role::Team->value, 'status' => 'active']);
+            Livewire::test(RundnachrichtSeite::class)->call('laden', $neu->id)->callAction('test', ['an' => $andrea->id])->assertNotified('Testmail unterwegs');
+            Notification::assertSentTo($andrea, AppNotification::class, fn (AppNotification $n) => $n->nachricht->text === 'Hallo Andrea');
+            Livewire::test(RundnachrichtSeite::class)->call('laden', $neu->id)->callAction('test', ['an' => $this->anna->id]);
             Notification::assertNotSentTo($this->anna, AppNotification::class);
 
             // Senden: Entwurf wird zum Protokolleintrag

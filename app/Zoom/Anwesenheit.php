@@ -50,7 +50,9 @@ class Anwesenheit
     public function kandidaten(Event $e): Collection
     {
         $team = Membership::whereIn('role', ['owner', 'team'])->pluck('user_id');
-        $ids = $e->user_id ? collect([$e->user_id]) : ($e->program_id ? ProgramMember::where('program_id', $e->program_id)->pluck('user_id') : collect());
+        // Hauptperson plus Gaeste (Paar- oder Gruppencoaching), sonst alle im Programm
+        $ids = $e->user_id ? $e->personenIds() : ($e->program_id ? ProgramMember::where('program_id', $e->program_id)->pluck('user_id') : collect());
+        $ids = $ids->merge($e->gaeste()->pluck('user_id'))->unique();
 
         return User::whereIn('id', $ids->diff($team))->get();
     }
