@@ -32,7 +32,8 @@
         <tr><td style="padding:16px 8px 0;font-size:12px;line-height:1.6;color:{{ $branding->get('muted') }};text-align:center;">
             @if ($social)<div style="margin:0 0 12px;">@foreach ($social as $name => $url)<a href="{{ $url }}" title="{{ $socialNamen[$name] ?? ucfirst($name) }}" style="display:inline-block;margin:0 8px;text-decoration:none;color:{{ $branding->get('text') }};font-weight:600;">@if (file_exists(public_path('img/social/'.$name.'.png')))<img src="{{ url('/img/social/'.$name.'.png') }}" width="22" height="22" alt="{{ $socialNamen[$name] ?? ucfirst($name) }}" style="display:inline-block;width:22px;height:22px;border:0;vertical-align:middle;">@else{{ $socialNamen[$name] ?? ucfirst($name) }}@endif</a>@endforeach</div>@endif
             @if ($fuss){{ $fuss }}<br>@endif
-            {{ $branding->coachName() }}{{ $fusszeile ? ' · '.$fusszeile : '' }}
+            @php $coach = $branding->coachName(); @endphp
+            {{ $fusszeile ? (mb_stripos($fusszeile, $coach) !== false ? $fusszeile : $coach.' · '.$fusszeile) : $coach }}
             @if ($profil)<br><a href="{{ route('profil') }}#benachrichtigungen" style="color:{{ $branding->get('muted') }};">Was dich erreicht, stellst du in deinem Profil ein.</a>@endif
         </td></tr>
     </table>
