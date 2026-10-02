@@ -71,6 +71,13 @@ class RundsendungTest extends TestCase
         $this->in(fn () => $this->assertSame(1, Message::where('user_id', $this->lea->id)->where('body', 'like', 'Nur Kurs%')->count()));
     }
 
+    public function test_mail_an_alle_auch_mit_push(): void
+    {
+        $this->in(fn () => PushSubscription::create(['user_id' => $this->anna->id, 'endpoint' => 'https://push.test/anna', 'endpoint_hash' => sha1('https://push.test/anna'), 'p256dh' => 'a', 'auth' => 'b']));
+        $this->in(fn () => app(Rundsendung::class)->send(['an' => 'alle', 'titel' => 'Umzug', 'text' => 'Neue Adresse.', 'kanaele' => ['push', 'mail'], 'mail_alle' => true], $this->lea));
+        Notification::assertSentTo($this->anna, AppNotification::class, fn (AppNotification $n) => $n->nachricht->titel === 'Umzug' && $n->nachricht->mailImmer && in_array('mail', $n->channels, true) && in_array(\App\Notifications\WebPushChannel::class, $n->channels, true));
+    }
+
     public function test_an_einzelne_persoenlich_ins_1_zu_1(): void
     {
         $andrea = User::factory()->create(['name' => 'Andrea Team']);

@@ -6,6 +6,7 @@ use App\Models\Membership;
 use App\Models\Program;
 use App\Notifications\Notifier;
 use App\Notifications\Rundsendung;
+use App\Tenancy\CurrentTenant;
 use BackedEnum;
 use Filament\Actions\Action;
 use Filament\Forms\Components\CheckboxList;
@@ -36,7 +37,27 @@ class Rundnachricht extends Page
 
     public function mount(): void
     {
-        $this->form->fill(['an' => 'alle', 'kanaele' => ['push', 'mail'], 'chat' => false, 'persoenlich' => false]);
+        $this->form->fill(array_merge(
+            ['an' => 'alle', 'kanaele' => ['push', 'mail'], 'chat' => false, 'persoenlich' => false, 'mail_alle' => false],
+            $this->entwurf(),
+        ));
+    }
+
+    /** Vorbereiteter Entwurf (tenants.settings.rundnachricht.entwurf), z. B. von Sebastian angelegt, zum Pruefen und Abschicken. */
+    protected function entwurf(): array
+    {
+        $e = app(CurrentTenant::class)->get()?->setting('rundnachricht.entwurf');
+
+        return is_array($e) ? array_intersect_key($e, array_flip(['an', 'user_ids', 'program_id', 'titel', 'text', 'url', 'kanaele', 'chat', 'persoenlich', 'mail_alle'])) : [];
+    }
+
+    protected function entwurfLoeschen(): void
+    {
+        if (($tenant = app(CurrentTenant::class)->get()) && $tenant->setting('rundnachricht.entwurf') !== null) {
+            $s = $tenant->settings;
+            unset($s['rundnachricht']['entwurf']);
+            $tenant->forceFill(['settings' => $s])->save();
+        }
     }
 
     public function form(Schema $schema): Schema
@@ -59,6 +80,8 @@ class Rundnachricht extends Page
                 TextInput::make('url')->label('Link (optional)')->url()->maxLength(500)->helperText('Sonst führt der Knopf auf die Startseite.'),
                 CheckboxList::make('kanaele')->label('Kanäle')->options(['push' => 'Push und Telegram (wer es hat)', 'mail' => 'Mail (wer kein Push hat)'])
                     ->required(fn ($get) => ! $get('persoenlich'))->visible(fn ($get) => ! $get('persoenlich')),
+                Toggle::make('mail_alle')->label('Mail an alle, auch an wer Push hat')->visible(fn ($get) => ! $get('persoenlich'))
+                    ->helperText('Für Ankündigungen, die in den Posteingang gehören. Sonst bekommt eine Person mit Push nur den Push.'),
             ]),
         ])->statePath('data');
     }
@@ -82,7 +105,7 @@ class Rundnachricht extends Page
         $n = $ids->count();
         $wohin = ($data['persoenlich'] ?? false)
             ? 'als persönliche Nachricht ins 1:1-Gespräch'
-            : 'per '.collect($data['kanaele'] ?? [])->map(fn ($k) => $k === 'push' ? 'Push/Telegram' : 'Mail')->join(' und ').(($data['chat'] ?? false) ? ', dazu ins Gruppengespräch' : '');
+            : 'per '.collect($data['kanaele'] ?? [])->map(fn ($k) => $k === 'push' ? 'Push/Telegram' : 'Mail')->join(' und ').(($data['mail_alle'] ?? false) ? ', Mail an alle' : '').(($data['chat'] ?? false) ? ', dazu ins Gruppengespräch' : '');
         $titel = trim((string) ($data['titel'] ?? '')) ?: mb_substr(trim((string) ($data['text'] ?? '')), 0, 60);
 
         return "Geht an $n Person".($n === 1 ? '' : 'en').", $wohin. «{$titel}». Das lässt sich nicht rückgängig machen."
@@ -93,12 +116,13 @@ class Rundnachricht extends Page
     {
         $data = $this->form->getState();
         $r = app(Rundsendung::class)->send($data, auth()->user());
+        $this->entwurfLoeschen();
 
         Notification::make()
             ->title("An {$r['empfaenger']} Person".($r['empfaenger'] === 1 ? '' : 'en').' geschickt')
             ->body($r['persoenlich'] ? 'Die Nachricht steht jetzt im persönlichen Gespräch jeder Person.' : $r['erreicht'].' davon direkt erreicht (Push, Telegram oder Mail)'.($r['chat'] ? ', dazu im Gruppengespräch' : '').'. Wer keinen Kanal hat, sieht es in der App.'
                 .(app(Notifier::class)->testMode() ? ' Testbetrieb ist an: nur freigegebene Adressen bekommen etwas.' : ''))
             ->success()->send();
-        $this->form->fill(['an' => $data['an'], 'program_id' => $data['program_id'] ?? null, 'user_ids' => $data['user_ids'] ?? [], 'kanaele' => $data['kanaele'] ?? ['push', 'mail'], 'chat' => false, 'persoenlich' => false]);
+        $this->form->fill(['an' => $data['an'], 'program_id' => $data['program_id'] ?? null, 'user_ids' => $data['user_ids'] ?? [], 'kanaele' => $data['kanaele'] ?? ['push', 'mail'], 'chat' => false, 'persoenlich' => false, 'mail_alle' => false]);
     }
 }

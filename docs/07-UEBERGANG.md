@@ -82,8 +82,20 @@ Beide Aufgaben brauchen den Systembenutzer mit Shell `/bin/bash` (siehe CLAUDE.m
   Module bleiben, bis WooCommerce weg ist (Punkt 7), dann nach 30 Tagen aufraeumen. Wache 117 und WP-Cron 97 bleiben
   solange (Abschnitt 3a).
 
-Offen: Punkt 7 (WooCommerce) bei Tag, danach die restlichen Sandbox-Module, Wache 117 und die Weiterleitung von
-`/produkt/...`. Mail an die Teilnehmerinnen: `docs/11-UMZUGSMAIL.md`.
+**3.10.2026, 01:10: WooCommerce aus** (Entscheid Sebastian: es gab keinen Verkauf, die Kurse sind mit Lea nicht
+besprochen, Lea verkauft im Gespraech, die Website soll immer beim Klarheitsgespraech enden). Gemacht: die 6 Woo-Plugins
+deaktiviert (woocommerce, -subscriptions, -gateway-stripe, -order-status-control, woo-update-manager,
+email-customizer-for-woocommerce; Daten bleiben, nach 30 Tagen loeschen), 25 Woo-abhaengige Sandbox-Module aus
+(51 Marker insgesamt), neues Sandbox-Modul `lea-verkauf-pause.php`: die Shortcodes `[lea_direktkauf]` und
+`[lea_kurse_oeffentlich]` (Seiten hybrid-coaching, kurse) zeigen einen Knopf zum Klarheitsgespraech, `[lea_preis]`
+nichts. `.htaccess`: `/shop/`, `/warenkorb/`, `/kasse/`, `/danke/` auf `/mit-mir-arbeiten/`, `/mein-account/` auf
+`/anmelden` der App; `/produkt/...` ordnet weiter `lea-altlinks-301.php` zu. Woo-Webhook in der App
+(`shop.webhook_secret`) bleibt stehen, es kommt nichts mehr an. Wenn die App verkauft: `lea-verkauf-pause.php`
+abschalten, `[app_kaufen slug="..."]` auf die Seiten, Angebote mit Preisen und Sichtbarkeit.
+
+Offen: restliche Sandbox-Module (Website-Funktionen: Mailgun, Formular-Bruecke, Gratiskurs-Tuer, Altlinks, Blog,
+Podcast, Themen, Angebote-Shortcodes) bleiben, bis die Website neu gebaut ist; Wache 117 und WP-Cron 97 bleiben
+solange. Mail an die Teilnehmerinnen: `docs/11-UMZUGSMAIL.md`, als Entwurf in der Rundnachricht hinterlegt.
 
 
 1. Schreibstopp im alten Mitgliederbereich (Hinweis an alle, Knopf "Zur neuen App" für alle: in `lea_neueapp_darf()` den Kursfilter entfernen)

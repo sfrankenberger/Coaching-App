@@ -32,7 +32,7 @@ class Rundsendung
     }
 
     /**
-     * @param  array{an: string, program_id?: int|null, user_ids?: array, titel: string, text: string, url?: string|null, kanaele?: array, chat?: bool, persoenlich?: bool}  $data
+     * @param  array{an: string, program_id?: int|null, user_ids?: array, titel: string, text: string, url?: string|null, kanaele?: array, chat?: bool, persoenlich?: bool, mail_alle?: bool}  $data
      * @return array{empfaenger: int, erreicht: int, chat: bool, persoenlich: int}
      */
     public function send(array $data, User $von): array
@@ -60,6 +60,7 @@ class Rundsendung
             anlass: 'system',
             tag: 'rundnachricht-'.now()->timestamp,
             mailWennKeinPush: in_array('mail', $kanaele, true),
+            mailImmer: ! empty($data['mail_alle']),
             knopf: 'Zur App',
         )) : [];
 

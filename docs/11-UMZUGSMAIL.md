@@ -5,12 +5,14 @@ oder von Hand aus Leas Postfach.
 
 ## Empfaengerinnen
 
-Hybrid-Coaching "Vom Kopf und Herz in die Welt": Simone, Nadia, M. Steinegger, Valerie (alle schon in der App
-unterwegs, zuletzt am 2.10.).
+Hybrid-Coaching "Vom Kopf und Herz in die Welt": Simone, Nadia, Madeleine, Valerie (alle schon in der App
+unterwegs, zuletzt am 2.10.). Dazu Martha (1:1) und Lea selbst als Kopie.
 
-1:1 Begleitung: Martha (zuletzt 28.9. in der App), Nicole (26.9.), Anke (noch nie in der App).
+Nicht dabei (Entscheid Sebastian, 3.10.): Nicole und Anke, die zwei Neuen im 1:1, haben vom alten Bereich und der App
+noch nichts gehoert und bekommen ihren Einstieg direkt von Lea. Andrea weiss Bescheid.
 
-Andrea bekommt die Mail nicht, sie weiss Bescheid.
+Hinterlegt als Entwurf in der Rundnachricht (`/coach/rundnachricht`): Empfaenger, Titel, Text, Link, Mail an alle.
+Lea oder Sebastian oeffnen die Seite, lesen gegen, drücken Senden. Nach dem Senden ist der Entwurf weg.
 
 ## Betreff
 
