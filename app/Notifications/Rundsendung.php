@@ -5,6 +5,7 @@ namespace App\Notifications;
 use App\Chat\Chat;
 use App\Models\Membership;
 use App\Models\Program;
+use App\Models\Rundnachricht;
 use App\Models\ProgramMember;
 use App\Models\User;
 use Illuminate\Support\Collection;
@@ -35,7 +36,7 @@ class Rundsendung
      * @param  array{an: string, program_id?: int|null, user_ids?: array, titel: string, text: string, url?: string|null, kanaele?: array, chat?: bool, persoenlich?: bool, mail_alle?: bool}  $data
      * @return array{empfaenger: int, erreicht: int, chat: bool, persoenlich: int}
      */
-    public function send(array $data, User $von): array
+    public function send(array $data, User $von, ?Rundnachricht $eintrag = null): array
     {
         $ids = $this->recipients($data['an'] ?? 'alle', $data['program_id'] ?? null, $von, (array) ($data['user_ids'] ?? []));
         $kanaele = (array) ($data['kanaele'] ?? ['push', 'mail']);
@@ -50,7 +51,7 @@ class Rundsendung
                 $n++;
             }
 
-            return ['empfaenger' => $ids->count(), 'erreicht' => $n, 'chat' => false, 'persoenlich' => $n];
+            return $this->protokoll($data, $von, $eintrag, ['empfaenger' => $ids->count(), 'erreicht' => $n, 'chat' => false, 'persoenlich' => $n]);
         }
 
         $report = $ids->isNotEmpty() ? $this->notifier->send($ids, new Nachricht(
@@ -71,6 +72,16 @@ class Rundsendung
             $chat = true;
         }
 
-        return ['empfaenger' => $ids->count(), 'erreicht' => count(array_filter($report)), 'chat' => $chat, 'persoenlich' => 0];
+        return $this->protokoll($data, $von, $eintrag, ['empfaenger' => $ids->count(), 'erreicht' => count(array_filter($report)), 'chat' => $chat, 'persoenlich' => 0]);
+    }
+
+    /** Verschicktes festhalten: aus dem Entwurf wird der Eintrag, sonst ein neuer. */
+    protected function protokoll(array $data, User $von, ?Rundnachricht $eintrag, array $r): array
+    {
+        $eintrag ??= new Rundnachricht;
+        $eintrag->fill(Rundnachricht::ausFormular($data) + ['user_id' => $eintrag->user_id ?? $von->id]);
+        $eintrag->forceFill(['status' => 'gesendet', 'empfaenger' => $r['empfaenger'], 'erreicht' => $r['erreicht'], 'sent_at' => now()])->save();
+
+        return $r + ['id' => $eintrag->id];
     }
 }

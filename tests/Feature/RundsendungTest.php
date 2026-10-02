@@ -14,6 +14,9 @@ use App\Notifications\Rundsendung;
 use App\Tenancy\CurrentTenant;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Notification;
+use App\Filament\Coach\Pages\Rundnachricht as RundnachrichtSeite;
+use App\Models\Rundnachricht;
+use Livewire\Livewire;
 use Tests\TestCase;
 
 class RundsendungTest extends TestCase
@@ -76,6 +79,43 @@ class RundsendungTest extends TestCase
         $this->in(fn () => PushSubscription::create(['user_id' => $this->anna->id, 'endpoint' => 'https://push.test/anna', 'endpoint_hash' => sha1('https://push.test/anna'), 'p256dh' => 'a', 'auth' => 'b']));
         $this->in(fn () => app(Rundsendung::class)->send(['an' => 'alle', 'titel' => 'Umzug', 'text' => 'Neue Adresse.', 'kanaele' => ['push', 'mail'], 'mail_alle' => true], $this->lea));
         Notification::assertSentTo($this->anna, AppNotification::class, fn (AppNotification $n) => $n->nachricht->titel === 'Umzug' && $n->nachricht->mailImmer && in_array('mail', $n->channels, true) && in_array(\App\Notifications\WebPushChannel::class, $n->channels, true));
+    }
+
+    public function test_seite_entwurf_testmail_protokoll_und_uebergang_aus_einstellungen(): void
+    {
+        $this->actingAs($this->lea);
+        // Uebergang: Entwurf aus den Einstellungen wird beim Oeffnen zum Eintrag
+        $this->a->forceFill(['settings' => array_merge($this->a->settings ?? [], ['rundnachricht' => ['entwurf' => ['an' => 'alle', 'titel' => 'Aus Einstellungen', 'text' => 'Alter Entwurf', 'kanaele' => ['mail'], 'mail_alle' => true]]])])->save();
+        $this->in(function () {
+            Livewire::test(RundnachrichtSeite::class)->assertFormSet(['titel' => 'Aus Einstellungen', 'mail_alle' => true]);
+            $this->assertSame(1, Rundnachricht::where('status', 'entwurf')->count());
+            $this->assertNull($this->a->fresh()->setting('rundnachricht.entwurf'));
+
+            // Neuer Entwurf speichern
+            Livewire::test(RundnachrichtSeite::class)->call('neu')
+                ->fillForm(['an' => 'alle', 'titel' => 'Entwurf eins', 'text' => 'Hallo {vorname}', 'kanaele' => ['push', 'mail']])
+                ->callAction('entwurf')->assertNotified('Entwurf gespeichert');
+            $this->assertSame(2, Rundnachricht::where('status', 'entwurf')->count());
+            $neu = Rundnachricht::where('titel', 'Entwurf eins')->first();
+
+            // Testmail: nur an mich, immer per Mail, nicht in die Glocke
+            Livewire::test(RundnachrichtSeite::class)->call('laden', $neu->id)->assertFormSet(['titel' => 'Entwurf eins'])->callAction('test')->assertNotified('Testmail unterwegs');
+            Notification::assertSentTo($this->lea, AppNotification::class, fn (AppNotification $n) => str_starts_with($n->nachricht->titel, '[Test] Entwurf eins') && $n->nachricht->mailImmer && $n->nachricht->text === 'Hallo Lea');
+            Notification::assertNotSentTo($this->anna, AppNotification::class);
+
+            // Senden: Entwurf wird zum Protokolleintrag
+            Livewire::test(RundnachrichtSeite::class)->call('laden', $neu->id)->callAction('senden')->assertNotified();
+            $this->assertSame(1, Rundnachricht::where('status', 'entwurf')->count(), 'der andere Entwurf bleibt');
+            $g = Rundnachricht::where('status', 'gesendet')->first();
+            $this->assertSame($neu->id, $g->id);
+            $this->assertSame(2, $g->empfaenger);
+            $this->assertNotNull($g->sent_at);
+            $this->assertSame($this->lea->id, $g->user_id);
+
+            // Protokoll auf der Seite, Entwurf loeschen
+            Livewire::test(RundnachrichtSeite::class)->assertSee('Entwurf eins')->assertSee('2 von 2')->call('loeschen', Rundnachricht::where('status', 'entwurf')->value('id'));
+            $this->assertSame(0, Rundnachricht::where('status', 'entwurf')->count());
+        });
     }
 
     public function test_an_einzelne_persoenlich_ins_1_zu_1(): void

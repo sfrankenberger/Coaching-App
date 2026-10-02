@@ -4,6 +4,8 @@ namespace App\Filament\Coach\Pages;
 
 use App\Models\Membership;
 use App\Models\Program;
+use App\Models\Rundnachricht as Eintrag;
+use App\Notifications\Nachricht;
 use App\Notifications\Notifier;
 use App\Notifications\Rundsendung;
 use App\Tenancy\CurrentTenant;
@@ -19,8 +21,13 @@ use Filament\Pages\Page;
 use Filament\Schemas\Components\Section;
 use Filament\Schemas\Schema;
 use Filament\Support\Icons\Heroicon;
+use Illuminate\Support\Collection;
 
-/** Eine Nachricht an alle oder an ein Programm: Push, Mail, auf Wunsch ins Gruppengespraech. */
+/**
+ * Eine Nachricht an alle oder an ein Programm: Push, Mail, auf Wunsch ins Gruppengespraech.
+ * Entwuerfe lassen sich speichern und spaeter laden, eine Testmail geht an die eigene Adresse,
+ * verschickte Rundnachrichten stehen unten im Protokoll.
+ */
 class Rundnachricht extends Page
 {
     protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedMegaphone;
@@ -35,29 +42,30 @@ class Rundnachricht extends Page
 
     public ?array $data = [];
 
+    /** Geladener Entwurf, wird beim Speichern aktualisiert und beim Senden zum Protokolleintrag. */
+    public ?int $entwurfId = null;
+
+    public const LEER = ['an' => 'alle', 'program_id' => null, 'user_ids' => [], 'titel' => null, 'text' => null, 'url' => null, 'kanaele' => ['push', 'mail'], 'chat' => false, 'persoenlich' => false, 'mail_alle' => false];
+
     public function mount(): void
     {
-        $this->form->fill(array_merge(
-            ['an' => 'alle', 'kanaele' => ['push', 'mail'], 'chat' => false, 'persoenlich' => false, 'mail_alle' => false],
-            $this->entwurf(),
-        ));
+        $this->entwurfAusEinstellungen();
+        $neuester = Eintrag::where('status', 'entwurf')->latest('updated_at')->first();
+        $neuester ? $this->laden($neuester->id) : $this->form->fill(self::LEER);
     }
 
-    /** Vorbereiteter Entwurf (tenants.settings.rundnachricht.entwurf), z. B. von Sebastian angelegt, zum Pruefen und Abschicken. */
-    protected function entwurf(): array
+    /** Uebergang: ein Entwurf aus tenants.settings.rundnachricht.entwurf wird einmalig zum Eintrag. */
+    protected function entwurfAusEinstellungen(): void
     {
-        $e = app(CurrentTenant::class)->get()?->setting('rundnachricht.entwurf');
-
-        return is_array($e) ? array_intersect_key($e, array_flip(['an', 'user_ids', 'program_id', 'titel', 'text', 'url', 'kanaele', 'chat', 'persoenlich', 'mail_alle'])) : [];
-    }
-
-    protected function entwurfLoeschen(): void
-    {
-        if (($tenant = app(CurrentTenant::class)->get()) && $tenant->setting('rundnachricht.entwurf') !== null) {
-            $s = $tenant->settings;
-            unset($s['rundnachricht']['entwurf']);
-            $tenant->forceFill(['settings' => $s])->save();
+        $tenant = app(CurrentTenant::class)->get();
+        $e = $tenant?->setting('rundnachricht.entwurf');
+        if (! is_array($e)) {
+            return;
         }
+        Eintrag::create(Eintrag::ausFormular($e) + ['user_id' => auth()->id(), 'status' => 'entwurf']);
+        $s = $tenant->settings;
+        unset($s['rundnachricht']['entwurf']);
+        $tenant->forceFill(['settings' => $s])->save();
     }
 
     public function form(Schema $schema): Schema
@@ -76,7 +84,7 @@ class Rundnachricht extends Page
             ])->columns(2),
             Section::make('Was')->schema([
                 TextInput::make('titel')->label('Titel')->required(fn ($get) => ! $get('persoenlich'))->visible(fn ($get) => ! $get('persoenlich'))->maxLength(120),
-                Textarea::make('text')->label('Text')->required()->rows(5)->maxLength(2000)->helperText('Kurz und warm. Der Text erscheint in Push und Mail.'),
+                Textarea::make('text')->label('Text')->required()->rows(8)->maxLength(2000)->helperText('Kurz und warm. Der Text erscheint in Push und Mail.'),
                 TextInput::make('url')->label('Link (optional)')->url()->maxLength(500)->helperText('Sonst führt der Knopf auf die Startseite.'),
                 CheckboxList::make('kanaele')->label('Kanäle')->options(['push' => 'Push und Telegram (wer es hat)', 'mail' => 'Mail (wer kein Push hat)'])
                     ->required(fn ($get) => ! $get('persoenlich'))->visible(fn ($get) => ! $get('persoenlich')),
@@ -84,6 +92,46 @@ class Rundnachricht extends Page
                     ->helperText('Für Ankündigungen, die in den Posteingang gehören. Sonst bekommt eine Person mit Push nur den Push.'),
             ]),
         ])->statePath('data');
+    }
+
+    /** Entwurf speichern, ohne zu pruefen, ob alles ausgefuellt ist. */
+    public function entwurfAction(): Action
+    {
+        return Action::make('entwurf')->label('Als Entwurf speichern')->icon('heroicon-o-document')->color('gray')
+            ->action(function () {
+                $data = $this->form->getRawState();
+                if (blank($data['text'] ?? null) && blank($data['titel'] ?? null)) {
+                    Notification::make()->title('Nichts zu speichern')->body('Schreib zuerst einen Titel oder einen Text.')->warning()->send();
+
+                    return;
+                }
+                $e = ($this->entwurfId ? Eintrag::where('status', 'entwurf')->find($this->entwurfId) : null) ?? new Eintrag(['user_id' => auth()->id(), 'status' => 'entwurf']);
+                $e->fill(Eintrag::ausFormular($data))->save();
+                $this->entwurfId = $e->id;
+                Notification::make()->title('Entwurf gespeichert')->body('Er wird beim nächsten Öffnen wieder geladen.')->success()->send();
+            });
+    }
+
+    /** Testmail an die eigene Adresse, genau so, wie sie bei den Empfaengerinnen ankommt. */
+    public function testAction(): Action
+    {
+        return Action::make('test')->label('Testmail an mich')->icon('heroicon-o-envelope')->color('gray')
+            ->action(function () {
+                $data = $this->form->getState();
+                $user = auth()->user();
+                $text = str_replace(['{vorname}', '{name}'], [$user->vorname(), $user->name], trim($data['text']));
+                app(Notifier::class)->send([$user->id], new Nachricht(
+                    titel: '[Test] '.(trim((string) ($data['titel'] ?? '')) ?: mb_substr($text, 0, 60)),
+                    text: $text,
+                    url: filled($data['url'] ?? null) ? $data['url'] : route('home'),
+                    anlass: 'system',
+                    tag: 'rundnachricht-test',
+                    mailImmer: true,
+                    inApp: false,
+                    knopf: 'Zur App',
+                ));
+                Notification::make()->title('Testmail unterwegs')->body('An '.$user->email.($data['persoenlich'] ?? false ? '. Persönliche Nachrichten gehen als Chat, die Testmail zeigt nur den Text.' : '.'))->success()->send();
+            });
     }
 
     /** Rueckfrage vor dem Senden (wie im alten Testversand): an wen, wie viele, nicht rueckgaengig. */
@@ -115,14 +163,50 @@ class Rundnachricht extends Page
     public function senden(): void
     {
         $data = $this->form->getState();
-        $r = app(Rundsendung::class)->send($data, auth()->user());
-        $this->entwurfLoeschen();
+        $eintrag = $this->entwurfId ? Eintrag::where('status', 'entwurf')->find($this->entwurfId) : null;
+        $r = app(Rundsendung::class)->send($data, auth()->user(), $eintrag);
 
         Notification::make()
             ->title("An {$r['empfaenger']} Person".($r['empfaenger'] === 1 ? '' : 'en').' geschickt')
             ->body($r['persoenlich'] ? 'Die Nachricht steht jetzt im persönlichen Gespräch jeder Person.' : $r['erreicht'].' davon direkt erreicht (Push, Telegram oder Mail)'.($r['chat'] ? ', dazu im Gruppengespräch' : '').'. Wer keinen Kanal hat, sieht es in der App.'
                 .(app(Notifier::class)->testMode() ? ' Testbetrieb ist an: nur freigegebene Adressen bekommen etwas.' : ''))
             ->success()->send();
-        $this->form->fill(['an' => $data['an'], 'program_id' => $data['program_id'] ?? null, 'user_ids' => $data['user_ids'] ?? [], 'kanaele' => $data['kanaele'] ?? ['push', 'mail'], 'chat' => false, 'persoenlich' => false, 'mail_alle' => false]);
+        $this->entwurfId = null;
+        $this->form->fill(array_merge(self::LEER, ['an' => $data['an'], 'program_id' => $data['program_id'] ?? null, 'user_ids' => $data['user_ids'] ?? [], 'kanaele' => $data['kanaele'] ?? ['push', 'mail']]));
+    }
+
+    /** Entwurf oder verschickte Nachricht ins Formular laden (verschickte als Vorlage, ohne Verknuepfung). */
+    public function laden(int $id): void
+    {
+        $e = Eintrag::find($id);
+        if (! $e) {
+            return;
+        }
+        $this->entwurfId = $e->status === 'entwurf' ? $e->id : null;
+        $this->form->fill(array_merge(self::LEER, $e->formular()));
+    }
+
+    public function loeschen(int $id): void
+    {
+        Eintrag::where('status', 'entwurf')->where('id', $id)->delete();
+        if ($this->entwurfId === $id) {
+            $this->entwurfId = null;
+        }
+    }
+
+    public function neu(): void
+    {
+        $this->entwurfId = null;
+        $this->form->fill(self::LEER);
+    }
+
+    public function getEntwuerfeProperty(): Collection
+    {
+        return Eintrag::with('user:id,name', 'program:id,title')->where('status', 'entwurf')->latest('updated_at')->get();
+    }
+
+    public function getVerschickteProperty(): Collection
+    {
+        return Eintrag::with('user:id,name', 'program:id,title')->where('status', 'gesendet')->latest('sent_at')->limit(30)->get();
     }
 }
