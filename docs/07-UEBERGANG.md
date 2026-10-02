@@ -52,6 +52,15 @@ Solange beide Systeme laufen, ist in der App der Testbetrieb an (Coach-Bereich, 
 
 Der Import ist wiederholbar (legacy_id) und überschreibt Inhaltsfelder aus WordPress, nicht aber, was Personen in der App selbst gemacht haben (Antworten, Fortschritt, Merkliste, Lesestand). Für den Testkurs gilt: Import 2 und 3 nur noch mit Bedacht.
 
+## 3a. Alter Bereich am Leben halten (bis zum Umschalten)
+
+Zwei Fallen, die den alten Mitgliederbereich still abschalten (Stand 2.10.2026):
+
+- **Novamira-Sandbox im Schonmodus.** Der Sandbox-Loader (`wp-content/plugins/novamira/includes/sandbox-loader.php`) schreibt eine Datei `.crashed` in `wp-content/novamira-sandbox/`, sobald sein Shutdown-Handler laeuft, auch wenn LiteSpeed einen Request nur abgebrochen hat (Inhalt `"type":0`, kein echter Fehler). Liegt die Datei, laedt keine Sandbox-Datei mehr: kein Login-Formular, keine Reflexionsmails, kein Push. Das passierte am 22.9., 23.9. (zweimal), 25.9. und 2.10. Abhilfe: Plesk-Aufgabe 117 (alle zwei Minuten) verschiebt eine `.crashed` mit `"type":0` nach `crashed-log-<datum>-wache.txt` und leert den LiteSpeed-Cache. Echte Abstuerze (anderer Typ) bleiben liegen. Richtig waere ein Fix im Plugin: `.crashed` nur schreiben, wenn `error_get_last()` einen Fatal liefert.
+- **WP-Cron.** Die Plesk-Aufgabe 97 laeuft mit `/opt/plesk/php/8.4/bin/php -d memory_limit=512M /usr/local/bin/wp ... cron event run --due-now`. Das nackte `wp` nimmt PHP 8.5 und bricht in novamira-pro mit Speicherfehler ab, dann laufen Erinnerungen und Nachfassen nicht.
+
+Beide Aufgaben brauchen den Systembenutzer mit Shell `/bin/bash` (siehe CLAUDE.md, Server). Nach dem Umschalten koennen beide weg.
+
 ## 4. Umschalten (nach Leas Freigabe)
 
 1. Schreibstopp im alten Mitgliederbereich (Hinweis an alle, Knopf "Zur neuen App" für alle: in `lea_neueapp_darf()` den Kursfilter entfernen)
