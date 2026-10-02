@@ -88,7 +88,9 @@ class ArbeitsplatzTest extends TestCase
             ->assertSee('Als Nächstes')->assertSee('Call morgen')
             ->assertSee('Letzte sieben Tage')->assertSee('neue Person')
             ->assertDontSee('fa-sliders"></i></a>', false)   // Verwaltung nicht im Kopf, nur im Menue
-            ->assertDontSee('chat-knopf')
+            ->assertDontSee('aria-label="Gespräch"><i class="fa-solid fa-comments"', false)   // kein Chat-Icon im Kopf
+            ->assertDontSee('aria-label="Mitteilungen"', false)   // Glocke nur mit Ungelesenem
+            ->assertSee('chat-knopf')
             ->assertSee('Heute')->assertSee('Coachees')->assertSee('Wie eine Teilnehmerin')->assertSee('modus-team', false)
             ->assertDontSee('Mein Journal');
 

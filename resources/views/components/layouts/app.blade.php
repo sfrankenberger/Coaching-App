@@ -92,12 +92,8 @@
                 </form>
             @endif
             @auth
-                @if ($arbeitsplatz)
-                    <div class="kopf-rechts">
-                        <a href="{{ route('mitteilungen') }}" aria-label="Mitteilungen"><i class="fa-{{ $mitteilungen ? 'solid' : 'regular' }} fa-bell"></i>@if ($mitteilungen)<span class="zahl">{{ $mitteilungen }}</span>@endif</a>
-                        <a href="{{ route('gespraech.index') }}" aria-label="Gespräch"><i class="fa-solid fa-comments"></i>@if ($ungelesen)<span class="zahl">{{ $ungelesen }}</span>@endif</a>
-                    </div>
-                @elseif ($mitteilungen)
+                {{-- Oben rechts nur die Glocke, und nur wenn etwas Ungelesenes da ist; Gespraeche ueber den schwebenden Knopf und die Leiste --}}
+                @if ($mitteilungen)
                     <div class="kopf-rechts">
                         <a href="{{ route('mitteilungen') }}" aria-label="Mitteilungen"><i class="fa-solid fa-bell"></i><span class="zahl">{{ $mitteilungen }}</span></a>
                     </div>
@@ -228,8 +224,7 @@
     </main>
 
     @auth
-        {{-- Schwebender Chat-Knopf nur fuer Teilnehmerinnen: im Arbeitsplatz gibt es Gespraeche im Kopf und in der Leiste --}}
-        @unless (request()->routeIs('gespraech.*') || $arbeitsplatz)
+        @unless (request()->routeIs('gespraech.*'))
             <a href="{{ route('gespraech.index') }}" class="chat-knopf" aria-label="Gespräch">
                 <i class="fa-solid fa-comment-dots"></i>
                 @if ($ungelesen)<span class="zahl">{{ $ungelesen }}</span>@endif
