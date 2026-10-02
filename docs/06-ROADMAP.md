@@ -129,6 +129,8 @@ Nach dem Umzug der App: eine einfache Website mit Statamic nachbauen (gleicher S
 
 ## Umschalten (nach Leas Freigabe)
 
+Mitgliederbereich am 3.10.2026 umgeschaltet (Stand in docs/07, Punkt 4). Offen: WooCommerce (docs/07, Punkt 7).
+
 1. Schreibstopp im alten Mitgliederbereich (Hinweis an Teilnehmerinnen)
 2. Letzter Import (idempotent, nur Änderungen)
 3. `/mitgliederbereich/*` auf leawernli.ch per 301 auf `app.leawernli.ch` umleiten

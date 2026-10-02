@@ -63,6 +63,29 @@ Beide Aufgaben brauchen den Systembenutzer mit Shell `/bin/bash` (siehe CLAUDE.m
 
 ## 4. Umschalten (nach Leas Freigabe)
 
+**Stand 3.10.2026, 00:45: Mitgliederbereich umgeschaltet.** Gemacht:
+
+- Letzter Import (`--only=alles`, dazu Video-Position, Kurzbiografie, Website, Kontakte), Zahlen gegen die
+  WordPress-Datenbank geprueft, alles da (Chats, Notizen, Reflexionen, Aufgaben, Fragen, Termine, Material,
+  Workbook-Antworten, erledigte Einheiten, Teilnahmen). Nicht uebernommen: Midnight Kitchen Club (60 Beitraege,
+  15 Mitgliedschaften ohne Login, Club pausiert; bei Neustart mit `club_visibility_slug` nachholen), Mailstrecken-
+  Beitraege, Nachschlagen-Verlauf, Leas KI-Analysen (die App erzeugt die Vorbereitung neu).
+- Testbetrieb aus (`notifications.test_only = false`).
+- `.htaccess` auf leawernli.ch (Block `LEA-APP-UMZUG`, Sicherung in `novamira-sandbox/lea-tmp-htaccess-vor-umzug-*.bak`):
+  `/mitgliederbereich/*` 301 auf `app.leawernli.ch/mitgliederbereich/...` (Pfad und Query bleiben), `/app/` auf die
+  App, `/login/` auf `/anmelden`, `/lea-manifest.json` 410.
+- Push nicht uebernommen (Entscheidung 3.10.): nur drei Frauen hatten alte Abos, sie schalten Push in der neuen App
+  einmal neu ein. `/lea-sw.js` ist jetzt eine statische Datei, die den alten Service Worker abmeldet und den Cache leert.
+- Sandbox-Module aus (Marker `.<datei>.disabled`): lea-app, lea-abendmail, lea-termin-erinnerung, lea-aufgaben-plus,
+  lea-dabei, lea-push, lea-chat, lea-telegram-anschluss, lea-kursraum, lea-kurs-automatik, lea-coachees, lea-zoom,
+  lea-anfang-strecke, lea-anfang-abschluss. Also alles, was von sich aus Mails oder Push schickt. Die uebrigen
+  Module bleiben, bis WooCommerce weg ist (Punkt 7), dann nach 30 Tagen aufraeumen. Wache 117 und WP-Cron 97 bleiben
+  solange (Abschnitt 3a).
+
+Offen: Punkt 7 (WooCommerce) bei Tag, danach die restlichen Sandbox-Module, Wache 117 und die Weiterleitung von
+`/produkt/...`. Mail an die Teilnehmerinnen: `docs/11-UMZUGSMAIL.md`.
+
+
 1. Schreibstopp im alten Mitgliederbereich (Hinweis an alle, Knopf "Zur neuen App" für alle: in `lea_neueapp_darf()` den Kursfilter entfernen)
 2. Letzter Import: `import:wordpress lea --only=alles`
 3. `/mitgliederbereich/*` auf leawernli.ch per 301 auf `https://app.leawernli.ch/mitgliederbereich/...` umleiten,

@@ -1,7 +1,6 @@
 # 11 Umzugsmail an die Teilnehmerinnen
 
-Entwurf fuer Lea (Stand 3.10.2026). Geht raus, sobald der Mitgliederbereich umgeschaltet ist (docs/07, Punkt 4),
-nicht vorher. Absender Lea, Ton Du, kurz. Verschicken ueber die Rundnachricht im Coach-Bereich (Einzelne waehlen)
+Entwurf fuer Lea. Der Mitgliederbereich ist seit 3.10.2026 umgeschaltet (docs/07, Punkt 4), die Mail kann raus. Absender Lea, Ton Du, kurz. Verschicken ueber die Rundnachricht im Coach-Bereich (Einzelne waehlen)
 oder von Hand aus Leas Postfach.
 
 ## Empfaengerinnen
