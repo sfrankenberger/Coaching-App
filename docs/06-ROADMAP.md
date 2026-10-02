@@ -133,6 +133,7 @@ Mitgliederbereich und WooCommerce am 3.10.2026 umgeschaltet (Stand in docs/07, P
 
 - [ ] Freebie-Strecke neu denken (Sebastian, 3.10.): Willkommensmail passt nicht, wenn jemand ein Klarheitsgespraech bucht oder den ersten Minikurs probiert; kein Nachfassen nach ein paar Tagen. Auf der Website war das anders. Neu aufsetzen, wenn der Umzug durch ist.
 - [ ] Google-Anmeldung: Client-ID ist aus dem alten Bereich uebernommen, das Client-Secret fehlt (der alte Bereich nutzte Google Identity Services ohne Secret). In der Google Cloud Console beim OAuth-Client das Secret holen und `https://app.leawernli.ch/anmelden/dienst/google/zurueck` als Redirect-URI eintragen, dann in den Einstellungen (oauth.google.client_secret) hinterlegen. Apple ist komplett (Services-ID, Team, Key, .p8), Return-URL `https://app.leawernli.ch/anmelden/dienst/apple/zurueck` bei Apple pruefen.
+- [x] MCP per OAuth fuer Claude.ai und ChatGPT (3.10., docs/09): Registrierung, Freigabe in der App, PKCE, Erneuerung.
 - [ ] Rundnachricht: Entwurf aus `tenants.settings.rundnachricht.entwurf` wird beim Oeffnen vorbefuellt (3.10.), dazu Schalter "Mail an alle". Spaeter: Entwuerfe in der Oberflaeche speichern.
 
 1. Schreibstopp im alten Mitgliederbereich (Hinweis an Teilnehmerinnen)

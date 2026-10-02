@@ -24,7 +24,7 @@ return Application::configure(basePath: dirname(__DIR__))
         $middleware->alias(['membership' => EnsureMembership::class]);
         $middleware->redirectGuestsTo(fn (Request $request) => route('anmelden', ['weiter' => $request->getRequestUri()]));
         $middleware->redirectUsersTo(fn () => route('home'));
-        $middleware->validateCsrfTokens(except: ['hooks/*', 'newsletter/anmelden', 'n/abmelden/*', 'n/dabei/*']);
+        $middleware->validateCsrfTokens(except: ['hooks/*', 'newsletter/anmelden', 'n/abmelden/*', 'n/dabei/*', 'oauth/token', 'oauth/register']);
         $middleware->trustProxies(at: '*');
     })
     ->withExceptions(function (Exceptions $exceptions): void {

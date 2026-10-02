@@ -166,26 +166,40 @@ JSON-RPC-2.0-Aufruf (auch als Stapel), Antwort sofort als JSON, kein SSE-Strom (
 `tools/call`, leere `resources/list` und `prompts/list`. Fachliche Fehler (niemand gefunden, mehrdeutig) kommen als
 `isError` im Ergebnis, damit der Assistent nachfragen kann; Protokollfehler als JSON-RPC-Fehler.
 
-Zugang: Sanctum-Token mit Faehigkeit `mcp`, nur fuer `owner` und `team`. Die Person erzeugt ihn selbst im Profil
-unter "Schluessel fuer Verbindungen" (einmal sichtbar) oder Sebastian per `php84 artisan api:token <email> --mcp`.
+Zugang: Sanctum-Token mit Faehigkeit `mcp`, nur fuer `owner` und `team`. Zwei Wege zum Token:
+
+1. **OAuth (seit 3.10.2026, der normale Weg fuer Claude.ai und ChatGPT).** Die App ist ein kleiner OAuth-2.1-Server
+   (`App\Http\Controllers\Auth\OAuthController`): Beschreibung unter `/.well-known/oauth-authorization-server` und
+   `/.well-known/oauth-protected-resource` (auch mit Suffix `/api/mcp`), Registrierung `POST /oauth/register`
+   (RFC 7591, oeffentlicher Client ohne Geheimnis), Freigabe `GET /oauth/authorize` (Anmeldung in der App, dann
+   Seite «Claude moechte mit der App arbeiten», nur Inhaberin und Team sehen «Erlauben»), Token `POST /oauth/token`
+   mit PKCE S256 (`authorization_code`) und Erneuerung (`refresh_token`). Das Zugangs-Token ist ein Sanctum-Token
+   mit `lesen` und `mcp`, 7 Tage gueltig, der Erneuerungs-Token 90 Tage; beim Erneuern wird das alte Zugangs-Token
+   geloescht. Ohne Token antwortet `/api/mcp` mit 401 und `WWW-Authenticate: Bearer resource_metadata=...`
+   (Middleware `McpBearer`), so finden die Assistenten den Weg. Tabellen `oauth_clients`, `oauth_codes`,
+   `oauth_refresh_tokens`, alle mit `tenant_id`. Loeschen: Profil, «Schluessel fuer Verbindungen» (das Zugangs-Token
+   heisst «<Assistent> (OAuth)»).
+2. **Schluessel von Hand** fuer Claude Code und eigene Skripte: im Profil unter «Schluessel fuer Verbindungen»
+   (einmal sichtbar) oder `php84 artisan api:token <email> --mcp`.
+
 Der Mandant kommt wie immer aus der Domain (`IdentifyTenant`), also `https://app.leawernli.ch/api/mcp`.
 
 ### Claude verbinden
 
-Claude (Web, Desktop, Mobile): Einstellungen, Connectors, "Custom connector" hinzufuegen. URL
-`https://app.leawernli.ch/api/mcp`, unter "Advanced" den Schluessel als Bearer-Token (OAuth leer lassen).
-Dann im Chat die Werkzeuge freigeben und fragen: "Wer wartet auf meine Antwort?", "Leg Anna Muster an,
-anna@..., und gib ihr den Jahreskurs", "Schlag Nicole drei Zeiten naechste Woche vor".
+Claude (Web, Desktop, Mobile): Einstellungen, Connectors, «Custom connector» hinzufuegen. Name frei, URL
+`https://app.leawernli.ch/api/mcp`, OAuth-Felder leer lassen. Claude registriert sich selbst, oeffnet die
+Anmeldung der App (Link per Mail, Passkey oder Google/Apple), danach «Erlauben». Fertig. Dann im Chat die Werkzeuge
+freigeben und fragen: «Wer wartet auf meine Antwort?», «Leg Anna Muster an, anna@..., und gib ihr den Jahreskurs»,
+«Schlag Nicole drei Zeiten naechste Woche vor». Geht mit jedem Modell.
 
-Claude Code: `claude mcp add --transport http lea https://app.leawernli.ch/api/mcp --header "Authorization: Bearer <token>"`.
+Claude Code: `claude mcp add --transport http lea https://app.leawernli.ch/api/mcp` (OAuth laeuft im Browser) oder mit
+Schluessel: `--header "Authorization: Bearer <token>"`.
 
 ### ChatGPT verbinden
 
-ChatGPT (Developer Mode unter Einstellungen, Connectors) nimmt bei eigenen MCP-Servern nur OAuth oder "keine
-Authentifizierung". Bearer-Token direkt geht dort noch nicht. Zwei Wege:
-1. OAuth-Anbieter in der App (Laravel Passport oder ein kleiner eigener Authorization-Code-Flow mit PKCE und Dynamic
-   Client Registration, wie es MCP vorsieht). Offen in der Roadmap.
-2. Uebergangsweise ein Proxy (z. B. Cloudflare Worker), der das Token anhaengt. Nur fuer Tests.
+ChatGPT (Developer Mode unter Einstellungen, Connectors): eigenen MCP-Server mit URL `https://app.leawernli.ch/api/mcp`
+und Authentifizierung OAuth anlegen, Client-ID und Secret leer (dynamische Registrierung). Anmeldung und Freigabe wie
+bei Claude.
 
 ### Sicherheit
 

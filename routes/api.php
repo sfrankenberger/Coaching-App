@@ -5,6 +5,7 @@ use App\Http\Controllers\Api\McpController;
 use App\Http\Controllers\Api\NewsletterApiController;
 use App\Http\Controllers\Api\V1Controller;
 use App\Http\Controllers\NewsletterController;
+use App\Http\Middleware\McpBearer;
 use App\Tenancy\Middleware\IdentifyTenant;
 use Illuminate\Support\Facades\Route;
 
@@ -29,7 +30,7 @@ Route::prefix('v1')->middleware([IdentifyTenant::class, 'auth:sanctum', 'throttl
 | verbindet sich mit der App und nutzt die Werkzeuge aus App\Ai\Werkzeuge. Token mit Faehigkeit "mcp"
 | (Profil, Schluessel fuer Verbindungen), nur fuer das Team.
 */
-Route::match(['get', 'post', 'delete'], '/mcp', McpController::class)->middleware([IdentifyTenant::class, 'auth:sanctum', 'throttle:240,1'])->name('mcp');
+Route::match(['get', 'post', 'delete'], '/mcp', McpController::class)->middleware([IdentifyTenant::class, McpBearer::class, 'throttle:240,1'])->name('mcp');
 
 /*
 | Oeffentliche Angebote fuer die Website (Shortcodes, Kaufknoepfe): ohne Anmeldung, gecacht.

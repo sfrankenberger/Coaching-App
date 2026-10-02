@@ -12,6 +12,7 @@ use App\Http\Controllers\AssistentController;
 use App\Http\Controllers\AufgabenController;
 use App\Http\Controllers\Auth\BridgeController;
 use App\Http\Controllers\Auth\LoginController;
+use App\Http\Controllers\Auth\OAuthController;
 use App\Http\Controllers\Auth\PasskeyController;
 use App\Http\Controllers\Auth\SocialController;
 use App\Http\Controllers\AvatarController;
@@ -89,6 +90,15 @@ Route::get('/mitgliederbereich/{pfad?}', AltlinkController::class)->where('pfad'
 
 // Logo und App-Icon aus den Einstellungen (ohne Anmeldung, gecacht)
 Route::get('/branding/{datei}', BrandingController::class)->name('branding.datei');
+
+// OAuth fuer den MCP-Server: Beschreibung, Registrierung, Freigabe, Token (App\Http\Controllers\Auth\OAuthController)
+Route::get('/.well-known/oauth-authorization-server', [OAuthController::class, 'server'])->name('oauth.server');
+Route::get('/.well-known/oauth-protected-resource', [OAuthController::class, 'resource'])->name('oauth.resource');
+Route::get('/.well-known/oauth-protected-resource/api/mcp', [OAuthController::class, 'resource']);
+Route::post('/oauth/register', [OAuthController::class, 'register'])->middleware('throttle:20,10')->name('oauth.register');
+Route::post('/oauth/token', [OAuthController::class, 'token'])->middleware('throttle:60,1')->name('oauth.token');
+Route::get('/oauth/authorize', [OAuthController::class, 'authorize'])->middleware('auth')->name('oauth.authorize');
+Route::post('/oauth/authorize', [OAuthController::class, 'approve'])->middleware('auth')->name('oauth.approve');
 // Kalender-Abo (ohne Anmeldung, Schluessel je Person)
 Route::get('/kalender/{token}.ics', [KalenderController::class, 'abo'])->name('kalender.abo')->where('token', '[A-Za-z0-9]{32,64}');
 Route::get('/kalender/{token}/{program:slug}.ics', [KalenderController::class, 'abo'])->name('kalender.kurs')->where('token', '[A-Za-z0-9]{32,64}');
