@@ -54,6 +54,15 @@
             $ab = $mein?->status === 'declined';
             $live = $event->isLive();
         @endphp
+        @if ($event->all_day && ! $event->hasRecording())
+            {{-- Tagestermine aus dem Kursrhythmus (Fragentag, Reflexionsfragen) als schmale Zeile --}}
+            <a href="{{ route('termine.show', $event) }}" class="zeile zeile-tag" style="--kc: {{ $event->program?->color ?: 'var(--c-primary)' }}">
+                <span class="ic"><b>{{ $event->starts_at->format('j') }}</b><small>{{ $event->starts_at->translatedFormat('D') }}</small></span>
+                <span class="tx"><b>{{ $event->title }}</b><span>ganzer Tag{{ $event->program ? ' · '.$event->program->title : '' }}</span></span>
+                <i class="fa-solid fa-chevron-right pf"></i>
+            </a>
+            @continue
+        @endif
         <article @class(['karte flex flex-wrap items-start gap-3', 'heute' => $live, 'fertig' => $ab]) style="--kc: {{ $event->program?->color ?: 'var(--c-primary)' }}">
             <a href="{{ route('termine.show', $event) }}" class="w-11 shrink-0 text-center no-underline text-ink" style="padding-top:2px">
                 <span class="block font-heading text-2xl leading-none">{{ $event->starts_at->format('j') }}</span>
@@ -92,4 +101,7 @@
     @empty
         <x-leer icon="calendar" :knopf="$zeit === 'kommend' ? 'Vergangene Termine' : null" :href="route('termine.index', ['zeit' => 'vorbei'])">{{ $zeit === 'kommend' ? 'Gerade steht nichts an. Sobald ein Termin eingetragen ist, bekommst du Bescheid.' : 'Hier steht gerade nichts.' }}</x-leer>
     @endforelse
+    @if ($mehr)
+        <p class="text-center mt-3"><a href="{{ route('termine.index', array_filter(['zeit' => 'kommend', 'kurs' => $kurs ?: null, 'was' => $was !== 'alles' ? $was : null, 'q' => $suche ?: null, 'weit' => 1])) }}" class="knopf knopf-ruhig knopf-klein"><i class="fa-solid fa-angles-down"></i>Alle kommenden Termine anzeigen</a></p>
+    @endif
 </x-layouts.app>

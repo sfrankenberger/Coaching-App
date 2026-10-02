@@ -90,7 +90,25 @@ class Post extends Model
         $html = (string) ($this->body ?: nl2br(e((string) $this->excerpt)));
         $ersatz = ['{firstname}' => e($user?->vorname() ?? ''), '{lastname}' => '', '{fullname}' => e($user?->name ?? ''), '{emailaddress}' => e($user?->email ?? ''), '{login_link}' => e(url('/')), '{}' => ''];
 
-        return preg_replace('~\{[a-z_]+\}~', '', strtr($html, $ersatz));
+        $html = strtr($html, $ersatz);
+        // Shortcodes aus WordPress: [lea_button text="..." link="..."] wird ein Knopf, alle anderen fallen weg
+        $basis = rtrim((string) app(\App\Tenancy\CurrentTenant::class)->get()?->setting('links.website', ''), '/');
+        $html = preg_replace_callback('~\[(?:lea_)?button\s+([^\]]*)\]~i', function ($m) use ($basis) {
+            preg_match('~text="([^"]*)"~', $m[1], $t);
+            preg_match('~(?:link|url|href)="([^"]*)"~', $m[1], $l);
+            $link = html_entity_decode($l[1] ?? '');
+            if ($link === '' || ($t[1] ?? '') === '') {
+                return '';
+            }
+            if (! preg_match('~^https?://~', $link)) {
+                $link = $basis ? $basis.'/'.ltrim($link, '/') : '';
+            }
+
+            return $link ? '<p><a class="knopf" href="'.e($link).'" target="_blank" rel="noopener">'.e($t[1]).'</a></p>' : '';
+        }, $html);
+        $html = preg_replace('~\[/?[a-z_]+(?:\s[^\]]*)?\]~i', '', $html);
+
+        return preg_replace('~\{[a-z_]+\}~', '', $html);
     }
 
     public function excerptText(int $limit = 200): string

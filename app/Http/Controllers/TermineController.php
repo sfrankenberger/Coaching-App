@@ -35,6 +35,16 @@ class TermineController extends Controller
         $suche = trim((string) $request->query('q', ''));
 
         $q = $this->begleitung->eventsQuery($user)->with(['program:id,title,color', 'attendees' => fn ($a) => $a->where('user_id', $user->id)])->withCount('gaeste');
+        // Kommende: erst mal acht Wochen, sonst steht der ganze Kursrhythmus bis ins naechste Jahr da
+        $weit = (bool) $request->query('weit');
+        $bis = now()->startOfDay()->addWeeks(8);
+        $mehr = false;
+        if ($zeit === 'kommend' && ! $weit && $was !== 'aufgaben') {
+            $mehr = (clone $q)->where('starts_at', '>=', $bis)->when($kurs, fn ($x) => $x->where('program_id', $kurs))->exists();
+            if ($mehr) {
+                $q->where('starts_at', '<', $bis);
+            }
+        }
         match ($zeit) {
             'kommend' => $q->where('starts_at', '>=', now()->startOfDay())->orderBy('starts_at'),
             'vorbei' => $q->where('starts_at', '<', now()->startOfDay())->orderByDesc('starts_at'),
@@ -69,7 +79,7 @@ class TermineController extends Controller
         $m = $user->membershipIn();
 
         return view('termine.index', [
-            'events' => $events, 'eintraege' => $eintraege, 'zeit' => $zeit, 'kurs' => $kurs, 'kurse' => $kurse, 'was' => $was, 'suche' => $suche,
+            'events' => $events, 'eintraege' => $eintraege, 'zeit' => $zeit, 'kurs' => $kurs, 'kurse' => $kurse, 'was' => $was, 'suche' => $suche, 'mehr' => $mehr,
             'kalenderUrl' => $m ? route('kalender.abo', ['token' => Ics::tokenFor($m)]) : null,
             // Eigene Buchung, wenn der Kalender angebunden ist, sonst ein Link nach aussen
             'buchenUrl' => app(GoogleCalendar::class)->aktiv() ? route('buchen.index') : data_get($this->current->get()?->settings, 'links.buchung'),

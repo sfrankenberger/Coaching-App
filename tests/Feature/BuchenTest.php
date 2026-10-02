@@ -220,6 +220,6 @@ class BuchenTest extends TestCase
     {
         $this->arten();
         $r = $this->actingAs($this->anna)->get('http://a.test/gespraech');
-        $this->followRedirects($r)->assertOk()->assertSee('Deine Sitzungen')->assertSee('von 3 noch offen')->assertSee('Sitzung buchen');
+        $this->followRedirects($r)->assertOk()->assertSee('von 3</b> Sitzungen offen', false)->assertSee('Buchen');
     }
 }

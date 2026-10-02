@@ -2,8 +2,9 @@
     @if (App\Support\Funktionen::an('zeitleiste'))<p class="m-0 mb-2"><a href="{{ route('journal.index') }}" class="hinweis no-underline"><i class="fa-solid fa-chevron-left text-[11px]"></i> Mein Journal</a></p>@endif
     <h1>Meine Aufgaben</h1>
 
-    <div class="baustein">
-        <p class="eyebrow m-0 mb-2.5">{{ $bearbeiten ? 'Aufgabe bearbeiten' : 'Neue Aufgabe' }}</p>
+    <details class="aufklapp-formular" @if ($bearbeiten || $errors->any() || request()->query('neu')) open @endif>
+        <summary class="knopf m-0"><i class="fa-solid fa-plus"></i>{{ $bearbeiten ? 'Aufgabe bearbeiten' : 'Neue Aufgabe' }}</summary>
+    <div class="baustein mt-2.5">
         <form method="post" action="{{ $bearbeiten ? route('aufgaben.update', $bearbeiten) : route('aufgaben.store') }}" class="eingabe">
             @csrf
             <input name="title" class="feld" placeholder="Was nimmst du dir vor?" maxlength="160" required value="{{ old('title', $bearbeiten?->title) }}">
@@ -33,6 +34,7 @@
             </div>
         </form>
     </div>
+    </details>
 
     <x-filterleiste :filter="$filter" :projekte="$projekte" :kurse="$gemeinschaft->all()" platzhalter="In deinen Aufgaben suchen" />
 

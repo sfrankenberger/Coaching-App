@@ -137,6 +137,13 @@ XML;
         $r->assertOk()->assertSee('Für alle')->assertSee('Folge eins')->assertDontSee('Nur Kurs')->assertDontSee('Später')->assertDontSee('Team');
 
         $this->actingAs($this->anna)->get('http://a.test/impulse/fur-alle')->assertOk()->assertSee('Text für alle');
+
+        // WordPress-Shortcodes: der Knopf wird ein Link auf die Website, der Rest faellt weg
+        $this->a->forceFill(['settings' => array_merge($this->a->settings ?? [], ['links' => ['website' => 'https://web.test']])])->save();
+        $this->in(fn () => Post::create(['title' => 'Mit Knopf', 'body' => '<p>Hallo</p>[lea_button text="Gespräch buchen" link="/klarheit/"][caption id="x"]Bild[/caption]', 'published_at' => now()->subDay()]));
+        $this->actingAs($this->anna)->get('http://a.test/impulse/mit-knopf')->assertOk()
+            ->assertSee('href="https://web.test/klarheit/"', false)->assertSee('Gespräch buchen')->assertSee('Bild')
+            ->assertDontSee('[lea_button')->assertDontSee('[caption');
         $this->actingAs($this->anna)->get('http://a.test/impulse/nur-kurs')->assertNotFound();
         $this->in(fn () => ProgramMember::create(['program_id' => Program::first()->id, 'user_id' => $this->anna->id]));
         $this->actingAs($this->anna)->get('http://a.test/impulse/nur-kurs')->assertOk();

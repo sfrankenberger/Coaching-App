@@ -39,6 +39,11 @@ class Begleitung
 
     public function canViewEvent(User $user, Event $event): bool
     {
+        // Die eigene (auch abgesagte) 1:1-Sitzung und Termine als Gast bleiben erreichbar, z. B. aus einem Chat-Anhang
+        if ($event->user_id === $user->id || $event->gaeste()->where('user_id', $user->id)->exists()) {
+            return true;
+        }
+
         return $this->eventsQuery($user)->whereKey($event->id)->exists();
     }
 

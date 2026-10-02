@@ -6,6 +6,7 @@
         <span class="eyebrow">{{ $event->typeLabel() }}@if ($event->program) · {{ $event->program->title }}@endif</span>
         <h1 class="m-0 mt-1">{{ $event->title }}</h1>
         @if ($live)<span class="badge badge-live mt-2"><i class="fa-solid fa-circle" style="font-size:7px"></i>Läuft gerade</span>@endif
+        @if ($event->cancelled_at || ! $event->is_published)<span class="badge mt-2"><i class="fa-solid fa-calendar-xmark"></i>Abgesagt</span>@endif
         <p class="x m-0 mt-1.5">
             {{ $event->starts_at->translatedFormat('l, j. F Y') }}@if (! $event->all_day), {{ $event->starts_at->format('H:i') }}@if ($event->ends_at) bis {{ $event->ends_at->format('H:i') }}@endif Uhr @else, ganzer Tag @endif
             @if ($event->location) · {{ $event->location }} @endif
@@ -19,10 +20,10 @@
         <div class="mt-4 flex flex-wrap gap-2">
             <x-merken art="event" :id="$event->id" :an="\App\Models\Bookmark::where('user_id', auth()->id())->where('bookmarkable_type', 'event')->where('bookmarkable_id', $event->id)->exists()" :text="true" />
             <x-termin-aktionen :event="$event" class="contents" />
-            @if (! $event->isPast() && ! $event->isOneOnOne())
+            @if (! $event->isPast() && ! $event->isOneOnOne() && ! $event->all_day)
                 <form method="post" action="{{ route('termine.dabei', $event) }}">@csrf<button class="knopf knopf-leise">{{ $ab ? 'Doch dabei' : 'Nicht dabei' }}</button></form>
             @endif
-            @if ($event->isPast() && ! $event->isOneOnOne() && $mein?->status !== 'attended')
+            @if ($event->isPast() && ! $event->isOneOnOne() && ! $event->all_day && $mein?->status !== 'attended')
                 <form method="post" action="{{ route('termine.gesehen', $event) }}">@csrf<input type="hidden" name="status" value="attended"><button class="knopf knopf-leise">Ich war live dabei</button></form>
             @endif
         </div>

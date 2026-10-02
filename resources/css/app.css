@@ -431,6 +431,23 @@
         margin: 0 -14px 16px;
     }
     .filterstreifen .pillen { margin: 0; flex-wrap: nowrap; overflow-x: auto; scrollbar-width: none; }
+    /* Fragen-Filter: eine Zeile zum Wischen statt drei Zeilen Knoepfe */
+    .filterleiste-fragen .pillen { flex-wrap: nowrap; overflow-x: auto; scrollbar-width: none; margin-bottom: 8px; padding-bottom: 2px; }
+    .filterleiste-fragen .pillen::-webkit-scrollbar { display: none; }
+    .filterleiste-fragen .pille { white-space: nowrap; }
+    /* Eingeklapptes Formular (Neue Aufgabe, Neue Notiz) */
+    .aufklapp-formular { margin: 0 0 14px; }
+    .aufklapp-formular > summary { list-style: none; display: inline-flex; width: auto; }
+    .aufklapp-formular > summary::-webkit-details-marker { display: none; }
+    .aufklapp-formular[open] > summary { display: none; }
+    /* Tagestermine in der Terminliste: schmale Zeile mit Datum links */
+    .zeile.zeile-tag { padding: 8px 12px; }
+    .zeile.zeile-tag .ic { flex-direction: column; line-height: 1; gap: 1px; background: transparent; color: var(--kc, var(--c-primary)); }
+    .zeile.zeile-tag .ic b { font-family: var(--font-heading); font-size: 17px; font-weight: 400; }
+    .zeile.zeile-tag .ic small { font-size: 9px; text-transform: uppercase; letter-spacing: .06em; }
+    /* Sitzungen im Gespraech: eine Zeile */
+    .sitzungen-zeile { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; padding: 10px 14px; }
+    .sitzungen-zeile .x { flex: 1; min-width: 160px; margin: 0; }
     .filterstreifen .pillen::-webkit-scrollbar { display: none; }
     @media (min-width: 761px) { .filterstreifen { top: 64px; margin-inline: -18px; padding-inline: 18px; } }
 

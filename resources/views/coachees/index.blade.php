@@ -18,7 +18,6 @@
 
     <div class="flex flex-wrap gap-2 mb-3">
         <a href="{{ $rundnachricht }}" class="knopf knopf-dunkel knopf-klein"><i class="fa-solid fa-bullhorn"></i>Nachricht an mehrere</a>
-        <a href="#neu" class="knopf knopf-leise knopf-klein" data-aufklappen="neu"><i class="fa-solid fa-user-plus"></i>Neue Person anlegen</a>
     </div>
 
     <details id="neu" class="karte" @if ($errors->any()) open @endif>

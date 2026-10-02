@@ -2,9 +2,10 @@
     @if (App\Support\Funktionen::an('zeitleiste'))<p class="m-0 mb-2"><a href="{{ route('journal.index') }}" class="hinweis no-underline"><i class="fa-solid fa-chevron-left text-[11px]"></i> Mein Journal</a></p>@endif
     <h1>Meine Notizen</h1>
 
-    <div class="baustein">
-        <p class="eyebrow m-0 mb-2.5">{{ $bearbeiten ? 'Notiz bearbeiten' : 'Neue Notiz' }}</p>
-        <form id="neu" method="post" action="{{ $bearbeiten ? route('notizen.update', $bearbeiten) : route('notizen.store') }}" class="eingabe" enctype="multipart/form-data">
+    <details class="aufklapp-formular" id="neu" @if ($bearbeiten || $errors->any() || ($aufgabe ?? null) || request()->query('neu') || request()->query('refs')) open @endif>
+        <summary class="knopf m-0"><i class="fa-solid fa-plus"></i>{{ $bearbeiten ? 'Notiz bearbeiten' : 'Neue Notiz' }}</summary>
+    <div class="baustein mt-2.5">
+        <form id="neu-formular" method="post" action="{{ $bearbeiten ? route('notizen.update', $bearbeiten) : route('notizen.store') }}" class="eingabe" enctype="multipart/form-data">
             @csrf
             @if ($aufgabe ?? null)
                 <input type="hidden" name="aufgabe_id" value="{{ $aufgabe->id }}">
@@ -37,6 +38,7 @@
             </div>
         </form>
     </div>
+    </details>
 
     <x-filterleiste :filter="$filter" :projekte="$projekte" :kurse="$gemeinschaft->all()" :status="['neu' => 'Mit Kommentaren']" platzhalter="In deinen Notizen suchen" />
 

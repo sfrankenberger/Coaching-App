@@ -61,7 +61,7 @@ class CoacheesController extends Controller
                 'nachfragen' => route('gespraech.show', ['gespraech' => $this->chat->directFor($z['user']), 'entwurf' => Lage::entwurf($z['entwurf'], $z['user']->vorname())]),
                 'dossier' => route('coachees.show', $z['membership']),
             ]),
-            'neues' => $this->neues->zeilen(7, 8),
+            'neues' => app(\App\Coach\Arbeitsliste::class)->geteilt(8),
             'begleitet' => $karten->where('begleitet', true)->values(),
             'kontakte' => $karten->where('begleitet', false)->values(),
             'wartend' => $alle->whereNotNull('wartet')->count(),

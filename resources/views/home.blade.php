@@ -13,10 +13,12 @@
             <span class="lab">{{ $p->title }}</span>
             <span class="t">{{ $step ? $step->title : ($stand['next']?->title ?? $p->title) }}</span>
             @if ($step && $w['woche'])<span class="k">Woche {{ $w['woche'] }} von {{ $w['wochen'] }}@if ($w['call'] ?? null) · <i class="fa-solid fa-video"></i> {{ $w['call']->isLive() ? 'Call läuft gerade' : 'Call '.$w['call']->starts_at->translatedFormat('D, j. M, H:i').' Uhr' }}@endif</span>@endif
-            <span class="reihe">
-                <span class="balken"><span style="width: {{ $stand['percent'] }}%"></span></span>
-                <span class="z">{{ $stand['done'] }} von {{ $stand['total'] }} erledigt</span>
-            </span>
+            @if ($stand['total'])
+                <span class="reihe">
+                    <span class="balken"><span style="width: {{ $stand['percent'] }}%"></span></span>
+                    <span class="z">{{ $stand['done'] }} von {{ $stand['total'] }} erledigt</span>
+                </span>
+            @endif
             @if ($step && $stand['next'])<span class="als">Als Nächstes: {{ $stand['next']->title }}</span>@endif
             <span class="cta">{{ $step ? 'Zur Woche' : ($stand['done'] ? 'Weitermachen' : 'Los geht es') }} &rarr;</span>
         </a>

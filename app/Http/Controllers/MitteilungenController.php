@@ -12,7 +12,8 @@ class MitteilungenController extends Controller
     public function index(Request $request): View
     {
         $user = $request->user();
-        $liste = $user->notifications()->limit(60)->get();
+        // Dieselbe Meldung (gleicher Titel und Text) nur einmal, die neueste; sonst steht die Tages-Erinnerung neunmal da
+        $liste = $user->notifications()->limit(120)->get()->unique(fn ($m) => $m->titel().'|'.$m->text())->take(60)->values();
         $neu = $liste->whereNull('read_at')->pluck('id');
         $user->notifications()->whereNull('read_at')->update(['read_at' => now()]);
 

@@ -67,6 +67,7 @@ class Einstellungen extends Page
             'ausbildung_url' => $s['ausbildung_url'] ?? null,
             'ai_wissen' => $s['ai']['wissen'] ?? null,
             'ai_fundus_hinweis' => $s['ai']['fundus_hinweis'] ?? null,
+            'link_website' => $s['links']['website'] ?? null,
             'link_agb' => $s['links']['agb'] ?? null,
             'link_datenschutz' => $s['links']['datenschutz'] ?? null,
             'link_widerruf' => $s['links']['widerruf'] ?? null,
@@ -127,6 +128,7 @@ class Einstellungen extends Page
                     ->helperText('Ein Satz über deinen Ansatz, zum Beispiel mit welcher Methode du arbeitest. Hilft der KI beim Auswählen.'),
             ]),
             Section::make('Rechtliches')->description('Diese Seiten verlinkt die Kasse beim Kauf (AGB, Datenschutz, Widerruf) und die App im Fuss (Impressum, Datenschutz).')->schema([
+                TextInput::make('link_website')->label('Website')->url()->maxLength(300)->helperText('Für Links aus Impulsen, die auf die Website zeigen.'),
                 TextInput::make('link_agb')->label('AGB')->url()->maxLength(300),
                 TextInput::make('link_datenschutz')->label('Datenschutzerklärung')->url()->maxLength(300),
                 TextInput::make('link_widerruf')->label('Widerrufsbelehrung')->url()->maxLength(300),
@@ -191,7 +193,7 @@ class Einstellungen extends Page
         $s['shop'] = array_merge($s['shop'] ?? [], ['url' => filled($data['shop_url'] ?? null) ? $data['shop_url'] : null]);
         $s['ausbildung_url'] = filled($data['ausbildung_url'] ?? null) ? $data['ausbildung_url'] : null;
         $s['ai'] = array_merge($s['ai'] ?? [], ['wissen' => filled($data['ai_wissen'] ?? null) ? $data['ai_wissen'] : null, 'fundus_hinweis' => filled($data['ai_fundus_hinweis'] ?? null) ? $data['ai_fundus_hinweis'] : null]);
-        $s['links'] = array_merge($s['links'] ?? [], ['agb' => $data['link_agb'] ?: null, 'datenschutz' => $data['link_datenschutz'] ?: null, 'widerruf' => $data['link_widerruf'] ?: null, 'impressum' => $data['link_impressum'] ?: null]);
+        $s['links'] = array_merge($s['links'] ?? [], ['website' => $data['link_website'] ?: null, 'agb' => $data['link_agb'] ?: null, 'datenschutz' => $data['link_datenschutz'] ?: null, 'widerruf' => $data['link_widerruf'] ?: null, 'impressum' => $data['link_impressum'] ?: null]);
         $s['mail'] = array_merge($s['mail'] ?? [], ['from_name' => $data['from_name'] ?: null, 'from_address' => $data['from_address'] ?: null, 'reply_to' => $data['reply_to'] ?: null, 'fusszeile' => filled($data['mail_fusszeile'] ?? null) ? trim($data['mail_fusszeile']) : null]);
         $s['newsletter'] = array_merge($s['newsletter'] ?? [], ['social' => array_filter(['instagram' => $data['social_instagram'] ?? null, 'facebook' => $data['social_facebook'] ?? null, 'linkedin' => $data['social_linkedin'] ?? null, 'website' => $data['social_website'] ?? null])]);
         $s['feeds'] = array_values(array_map(fn ($f) => array_filter(['type' => $f['type'] ?? 'post', 'url' => $f['url'] ?? null, 'show' => $f['show'] ?? null, 'limit' => (int) ($f['limit'] ?? 0) ?: null]), $data['feeds'] ?? []));

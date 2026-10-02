@@ -178,4 +178,27 @@ class BegleitungTest extends TestCase
         $this->actingAs($this->anna)->get('http://a.test/termine')->assertOk()->assertDontSee('Paar-Coaching');
         $this->get("http://a.test/kalender/{$token}.ics")->assertOk()->assertDontSee('Paar-Coaching');
     }
+
+    public function test_terminliste_zeigt_acht_wochen_und_tagestermine_schmal(): void
+    {
+        $this->in(function () {
+            Event::create(['program_id' => $this->program->id, 'title' => 'Fragentag', 'type' => 'question_day', 'all_day' => true, 'starts_at' => now()->addDays(2)->startOfDay()]);
+            Event::create(['program_id' => $this->program->id, 'title' => 'Call bald', 'starts_at' => now()->addDays(3)]);
+            Event::create(['program_id' => $this->program->id, 'title' => 'Call in ferner Zukunft', 'starts_at' => now()->addWeeks(12)]);
+            // Abgesagte eigene Sitzung bleibt aufrufbar (z. B. aus einem Chat-Anhang), die Seite sagt es
+            Event::create(['user_id' => $this->anna->id, 'title' => 'Abgesagte Sitzung', 'type' => 'one_on_one', 'starts_at' => now()->subDays(5), 'is_published' => false, 'cancelled_at' => now()->subDays(6)]);
+        });
+
+        $r = $this->actingAs($this->anna)->get('http://a.test/termine')->assertOk();
+        $r->assertSee('Fragentag')->assertSee('zeile-tag')->assertSee('Call bald')->assertDontSee('Call in ferner Zukunft')->assertSee('Alle kommenden Termine anzeigen');
+        $this->actingAs($this->anna)->get('http://a.test/termine?weit=1')->assertOk()->assertSee('Call in ferner Zukunft')->assertDontSee('Alle kommenden Termine anzeigen');
+
+        $abgesagt = $this->in(fn () => Event::where('title', 'Abgesagte Sitzung')->first());
+        $this->actingAs($this->anna)->get("http://a.test/termine/{$abgesagt->id}")->assertOk()->assertSee('Abgesagt');
+        $this->actingAs($this->fremd)->get("http://a.test/termine/{$abgesagt->id}")->assertForbidden();
+
+        // Tagestermin: kein "Nicht dabei" und kein "Ich war live dabei"
+        $tag = $this->in(fn () => Event::where('title', 'Fragentag')->first());
+        $this->actingAs($this->anna)->get("http://a.test/termine/{$tag->id}")->assertOk()->assertDontSee('Nicht dabei')->assertDontSee('live dabei');
+    }
 }

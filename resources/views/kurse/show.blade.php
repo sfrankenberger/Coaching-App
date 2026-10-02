@@ -10,6 +10,16 @@
             </div>
         </div>
 
+        @if ($program->pacing === 'weekly' && $aktuellerSchritt)
+            {{-- Wochenkurs: die laufende Woche steht oben, nicht erst unter allen Terminen --}}
+            <a href="{{ route('kurse.schritt', [$program, $aktuellerSchritt]) }}" class="woche">
+                <span class="lab">Jetzt dran · Woche {{ $aktuellerSchritt->week_number ?? ($program->steps->sortBy('position')->values()->search(fn ($s) => $s->id === $aktuellerSchritt->id) + 1) }} von {{ $program->steps->count() }}</span>
+                <span class="t">{{ $aktuellerSchritt->title }}</span>
+                @if ($naechsterCall)<span class="k"><i class="fa-solid fa-video"></i> {{ $naechsterCall->isLive() ? 'Call läuft gerade' : 'Nächster Call '.$naechsterCall->starts_at->translatedFormat('D, j. M, H:i').' Uhr' }}</span>@endif
+                <span class="cta">Zur Woche &rarr;</span>
+            </a>
+        @endif
+
         @if ($stand['total'])
             <div class="karte">
                 <div class="flex items-center gap-3">
@@ -79,8 +89,10 @@
         @endif
         @if ($termine->count() > 1)
             {{-- Kurs ohne Module (z. B. Coffee und Coaching): die naechsten Termine --}}
-            <h2 class="abschnitt"><i class="fa-solid fa-calendar"></i>Nächste Termine<em>{{ $termine->count() }}</em></h2>
-            @foreach ($termine as $t)
+            <h2 class="abschnitt"><i class="fa-solid fa-calendar"></i>Nächste Termine<em>{{ $termine->count() }}</em>
+                <span class="rechts"><a href="{{ route('termine.index', ['kurs' => $program->id]) }}">Alle Termine</a></span>
+            </h2>
+            @foreach ($termine->take(4) as $t)
                 <a href="{{ route('termine.show', $t) }}" class="zeile">
                     <span class="ic"><i class="fa-solid fa-{{ $t->isLive() ? 'video' : 'calendar' }}"></i></span>
                     <span class="tx"><b>{{ $t->title }}</b><span>{{ $t->starts_at->translatedFormat('l, j. F') }}@unless ($t->all_day) · {{ $t->starts_at->format('H:i') }} Uhr @endunless</span></span>
