@@ -36,7 +36,7 @@ class McpTest extends TestCase
         parent::setUp();
         $this->a = Tenant::create(['slug' => 'a', 'name' => 'A', 'timezone' => 'Europe/Zurich']);
         $this->a->domains()->create(['domain' => 'a.test', 'is_primary' => true]);
-        $this->lea = User::factory()->create(['name' => 'Lea Coach']);
+        $this->lea = User::factory()->create(['name' => 'Lea Coach', 'email' => 'lea@test.ch']);
         $this->a->users()->attach($this->lea, ['role' => Role::Owner->value, 'status' => 'active']);
         $this->anna = User::factory()->create(['name' => 'Anna Muster', 'email' => 'anna@test.ch']);
         $this->a->users()->attach($this->anna, ['role' => Role::Member->value, 'status' => 'active']);
