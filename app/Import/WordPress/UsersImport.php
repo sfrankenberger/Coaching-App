@@ -51,6 +51,8 @@ class UsersImport
                 'task_reminders_off' => null,
                 'onboarding_seen' => null,
                 'access' => null,
+                'bio' => null,             // usermeta mit ein paar Worten zur Person -> settings.ueber_mich
+                'website' => null,         // usermeta mit der Website -> settings.website
             ],
         ], (array) $tenant->setting('import.wordpress', []));
     }
@@ -217,6 +219,15 @@ class UsersImport
             $seen = (int) $meta[$key];
             $settings['onboarding_seen_at'] = $seen > 1 ? date('c', $seen) : now()->toIso8601String();
         }
+        // Ein paar Worte zur Person und Website: nur uebernehmen, was in der App noch leer ist
+        $profil = [];
+        if (($key = $m['bio'] ?? null) && filled($meta[$key] ?? null)) {
+            $profil['ueber_mich'] = Str::limit(trim(strip_tags((string) $meta[$key])), 300, '');
+        }
+        if (($key = $m['website'] ?? null) && filled($meta[$key] ?? null)) {
+            $url = trim((string) $meta[$key]);
+            $profil['website'] = preg_match('~^https?://~i', $url) ? $url : 'https://'.$url;
+        }
 
         $membership = Membership::withoutGlobalScopes()
             ->where('tenant_id', $this->tenant->id)
@@ -243,7 +254,7 @@ class UsersImport
             'role' => $membership->exists && ($membership->settings['rolle_fest'] ?? false) ? $membership->role : $role,
             'status' => $membership->exists ? $membership->status : 'active',
             'joined_at' => $membership->joined_at ?? ($wpUser->user_registered ?: now()),
-            'settings' => array_replace_recursive($membership->settings ?? [], $settings),
+            'settings' => array_replace_recursive($membership->settings ?? [], $settings, array_diff_key($profil, array_filter($membership->settings ?? [], fn ($v) => filled($v)))),
         ])->save();
 
         return $membership;

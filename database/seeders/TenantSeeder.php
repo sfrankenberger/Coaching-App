@@ -70,6 +70,8 @@ class TenantSeeder extends Seeder
                     'topic_taxonomies' => ['thema', 'podcast_thema'],
                     'meta' => [
                         'phone' => 'lea_telefon',
+                        'bio' => 'lea_bio',
+                        'website' => 'lea_website',
                         'reminders_off' => 'lea_te_aus',
                         'evening_mail_off' => 'lea_am_aus',
                         'task_reminders_off' => 'lea_ap_erinnerung_aus',

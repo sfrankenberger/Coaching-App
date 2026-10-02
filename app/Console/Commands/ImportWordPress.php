@@ -122,8 +122,8 @@ class ImportWordPress extends Command
         $import = new BegleitungImport($tenant, new WordPressSource, (bool) $this->option('dry-run'));
         $stats = $import->run(fn (string $line) => $this->line('  '.$line, verbosity: 'v'));
 
-        $this->table(['Termine', 'Teilnahmen', 'Material', 'Zuordnungen', 'Aufgaben', 'Notizen', 'Reflexionen', 'Journal', 'Kommentare', 'Gespraeche', 'Nachrichten', 'Wochen'], [[
-            $stats['termine'], $stats['teilnahmen'], $stats['material'], $stats['zuordnungen'], $stats['aufgaben'], $stats['notizen'], $stats['reflexionen'], $stats['journal'], $stats['kommentare'], $stats['gespraeche'], $stats['nachrichten'], $stats['wochen'],
+        $this->table(['Termine', 'Teilnahmen', 'Material', 'Zuordnungen', 'Aufgaben', 'Notizen', 'Reflexionen', 'Journal', 'Kommentare', 'Gespraeche', 'Nachrichten', 'Wochen', 'Positionen'], [[
+            $stats['termine'], $stats['teilnahmen'], $stats['material'], $stats['zuordnungen'], $stats['aufgaben'], $stats['notizen'], $stats['reflexionen'], $stats['journal'], $stats['kommentare'], $stats['gespraeche'], $stats['nachrichten'], $stats['wochen'], $stats['positionen'],
         ]]);
         foreach ($stats['hinweise'] as $h) {
             $this->warn('  '.$h);

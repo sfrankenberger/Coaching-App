@@ -51,7 +51,7 @@ class ImportUsersTest extends TestCase
             'team_roles' => ['administrator', 'lea_redaktion'],
             'course_relation_id' => 13,
             'meta' => ['phone' => 'lea_telefon', 'reminders_off' => 'lea_te_aus', 'evening_mail_off' => 'lea_am_aus',
-                'task_reminders_off' => 'lea_ap_erinnerung_aus', 'onboarding_seen' => 'lea_willkommen_gesehen', 'access' => 'lea_zugaenge'],
+                'task_reminders_off' => 'lea_ap_erinnerung_aus', 'onboarding_seen' => 'lea_willkommen_gesehen', 'access' => 'lea_zugaenge', 'bio' => 'lea_bio', 'website' => 'lea_website'],
         ]]]]);
 
         $this->wpUser(1, 'sebastian@example.com', 'Sebastian', ['administrator']);
@@ -61,6 +61,7 @@ class ImportUsersTest extends TestCase
             'lea_telefon' => '079 111 22 33', 'lea_am_aus' => '1', 'lea_willkommen_gesehen' => '1758700000',
             'lea_zuletzt_da' => (string) (time() - 3 * 86400), 'wc_last_active' => (string) (time() - 86400), 'lea_last_login' => '2020-01-01 10:00:00',
             'lea_zugaenge' => serialize([1234 => ['bis' => 0, 'quelle' => 'kauf']]),
+            'lea_bio' => 'Ich bin Anna und <b>coache</b> Mütter.', 'lea_website' => 'www.anna.ch',
         ]);
         $this->wpUser(5, 'bea@example.com', 'Bea', ['subscriber']);
         $wp->table('jet_rel_default')->insert(['rel_id' => '13', 'parent_object_id' => 5, 'child_object_id' => 999]);
@@ -122,13 +123,16 @@ class ImportUsersTest extends TestCase
         $this->assertSame('4', $m->legacy_id);
         $this->assertSame(['termine' => true, 'abendmail' => false, 'aufgaben' => true], $m->setting('notifications'));
         $this->assertNotNull($m->setting('onboarding_seen_at'));
+        $this->assertSame('Ich bin Anna und coache Mütter.', $m->setting('ueber_mich'));
+        $this->assertSame('https://www.anna.ch', $m->setting('website'));
         $this->assertSame('2025-01-04', $m->joined_at->toDateString());
         $this->assertEqualsWithDelta(time() - 86400, $m->last_seen_at->getTimestamp(), 2, 'juengste Aktivitaet aus WordPress');
 
         // Wer in der App da war, wird nicht zurueckgesetzt
-        $m->forceFill(['last_seen_at' => now()])->save();
+        $m->forceFill(['last_seen_at' => now(), 'settings' => array_merge($m->settings, ['ueber_mich' => 'Eigener Text'])])->save();
         $this->import();
         $this->assertTrue($anna->membershipIn($this->lea)->last_seen_at->gt(now()->subMinute()));
+        $this->assertSame('Eigener Text', $anna->membershipIn($this->lea)->setting('ueber_mich'), 'in der App Gepflegtes bleibt');
     }
 
     public function test_import_ist_wiederholbar_und_ueberschreibt_eigene_aenderungen_nicht(): void

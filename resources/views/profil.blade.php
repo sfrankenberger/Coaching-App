@@ -105,6 +105,10 @@
                 <label for="ueber_mich" class="feld-label">Ein paar Worte zu dir, freiwillig</label>
                 <textarea id="ueber_mich" name="ueber_mich" class="feld" rows="2" maxlength="300" data-ohne-diktat placeholder="Was du machst, was dich hergeführt hat">{{ old('ueber_mich', $mitgliedschaft?->setting('ueber_mich')) }}</textarea>
             </div>
+            <div>
+                <label for="website" class="feld-label">Deine Website, freiwillig</label>
+                <input id="website" name="website" type="text" inputmode="url" class="feld" maxlength="190" placeholder="www.deine-seite.ch" value="{{ old('website', $mitgliedschaft?->setting('website')) }}">
+            </div>
             <div class="eingabe-knoepfe">
                 <button type="submit" class="knopf">Speichern</button>
             </div>

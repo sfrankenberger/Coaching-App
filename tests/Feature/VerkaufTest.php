@@ -97,7 +97,7 @@ class VerkaufTest extends TestCase
         $this->assertSame('701', $v->rechnung_id);
         $this->assertSame('RE-0701', $v->rechnung_nr);
         $this->assertSame('https://office.bexio.com/pay/701', $v->rechnung_link);
-        $this->assertSame(now()->addDays(30)->toDateString(), $v->faellig_am->toDateString());
+        $this->assertSame(now($this->a->fresh()->timezone)->addDays(30)->toDateString(), $v->faellig_am->toDateString(), 'Frist in Ortszeit');
         $this->assertSame(88, $this->in(fn () => $this->m->fresh()->setting('buchhaltung.kontakt_id')));
         $this->assertSame('member', $this->in(fn () => $this->m->fresh()->role->value), 'Gast wird Mitglied');
         $this->assertTrue($this->in(fn () => Entitlement::where('user_id', $this->anna->id)->first()->isCurrent()), 'Zugang sofort (Vorgabe)');
@@ -125,7 +125,7 @@ class VerkaufTest extends TestCase
         $this->assertNotNull($v->bezahlt_am);
         $this->assertNull($v->faellig_am);
         Http::assertSent(fn ($r) => str_ends_with($r->url(), '/701/payment') && $r['value'] === '90.50' && $r['bank_account_id'] === 5);
-        Http::assertSent(fn ($r) => str_ends_with($r->url(), '/2.0/kb_invoice') && $r['currency_id'] === 2 && $r['is_valid_to'] === now()->toDateString());
+        Http::assertSent(fn ($r) => str_ends_with($r->url(), '/2.0/kb_invoice') && $r['currency_id'] === 2 && $r['is_valid_to'] === now($this->a->fresh()->timezone)->toDateString());
         Http::assertNotSent(fn ($r) => str_ends_with($r->url(), '/701/send'));
         Mail::assertSent(RechnungMail::class, fn (RechnungMail $m) => str_contains($m->envelope()->subject, 'Deine Quittung'));
     }

@@ -117,7 +117,12 @@ class ProfilController extends Controller
             'phone' => ['nullable', 'string', 'max:40'],
             'community_sichtbar' => ['nullable', 'boolean'],
             'ueber_mich' => ['nullable', 'string', 'max:300'],
+            'website' => ['nullable', 'string', 'max:190'],
         ]);
+        $website = filled($data['website'] ?? null) ? trim($data['website']) : null;
+        if ($website && ! preg_match('~^https?://~i', $website)) {
+            $website = 'https://'.$website;
+        }
 
         $request->user()->forceFill([
             'name' => trim($data['name']),
@@ -127,6 +132,7 @@ class ProfilController extends Controller
             $m->forceFill(['settings' => array_merge(is_array($m->settings) ? $m->settings : [], [
                 'community_sichtbar' => (bool) ($data['community_sichtbar'] ?? false),
                 'ueber_mich' => filled($data['ueber_mich'] ?? null) ? trim($data['ueber_mich']) : null,
+                'website' => $website,
             ])])->save();
         }
 

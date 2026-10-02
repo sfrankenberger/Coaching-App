@@ -98,6 +98,7 @@ class FragenController extends Controller
                 'coach' => $m->role->canManage(),
                 'kurse' => $m->role->canManage() ? collect() : $programme->whereIn('id', $mitglieder->get($m->user_id, collect())->pluck('program_id'))->pluck('title'),
                 'ueber' => (string) $m->setting('ueber_mich', ''),
+                'website' => (string) $m->setting('website', ''),
                 'ich' => $m->user_id === $user->id,
             ]);
 

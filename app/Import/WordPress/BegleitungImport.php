@@ -9,6 +9,7 @@ use App\Models\Event;
 use App\Models\EventAttendee;
 use App\Models\JournalEntry;
 use App\Models\Membership;
+use App\Models\MediaPosition;
 use App\Models\Message;
 use App\Models\Note;
 use App\Models\Program;
@@ -37,7 +38,7 @@ use Illuminate\Support\Str;
  */
 class BegleitungImport
 {
-    public array $stats = ['termine' => 0, 'teilnahmen' => 0, 'material' => 0, 'zuordnungen' => 0, 'aufgaben' => 0, 'notizen' => 0, 'reflexionen' => 0, 'journal' => 0, 'kommentare' => 0, 'fragen' => 0, 'gespraeche' => 0, 'nachrichten' => 0, 'wochen' => 0, 'hinweise' => []];
+    public array $stats = ['termine' => 0, 'teilnahmen' => 0, 'material' => 0, 'zuordnungen' => 0, 'aufgaben' => 0, 'notizen' => 0, 'reflexionen' => 0, 'journal' => 0, 'kommentare' => 0, 'fragen' => 0, 'gespraeche' => 0, 'nachrichten' => 0, 'wochen' => 0, 'positionen' => 0, 'hinweise' => []];
 
     protected array $config;
 
@@ -66,7 +67,7 @@ class BegleitungImport
             'uploads_dir' => null,          // Ordner wp-content/uploads auf dem Server (Dateien kopieren)
             'uploads_url' => null,          // Basis-URL der Uploads
             'event_timestamps_are_local' => true,
-            'meta' => ['attended' => 'lea_live_dabei', 'watched' => 'lea_angeschaut', 'foreign_tasks_done' => 'lea_af_fremd_fertig', 'chat_seen' => 'lea_ch_gesehen_'],
+            'meta' => ['attended' => 'lea_live_dabei', 'watched' => 'lea_angeschaut', 'foreign_tasks_done' => 'lea_af_fremd_fertig', 'chat_seen' => 'lea_ch_gesehen_', 'media_position' => 'lea_stand'],
         ], (array) $this->tenant->setting('import.wordpress', []));
     }
 
@@ -83,6 +84,8 @@ class BegleitungImport
         }
 
         $this->importEvents();
+
+        $this->importMediaPositions();
         $this->importResources();
         $this->importProjekte();
         $this->importTasks();
@@ -254,6 +257,50 @@ class BegleitungImport
         }
 
         return $out;
+    }
+
+    /**
+     * Wo jemand in einer Aufzeichnung stehen geblieben ist (usermeta lea_stand:
+     * ['termin-123' => ['sek' => 978, 'dauer' => 5248, 'ts' => ...]]). Was die App schon weiss, bleibt.
+     */
+    protected function importMediaPositions(): void
+    {
+        $key = $this->config['meta']['media_position'] ?? null;
+        if (! $key || $this->dryRun) {
+            return;
+        }
+        $arten = ['termin' => ['event', Event::class], 'lektion' => ['unit', Unit::class], 'ressource' => ['resource', Resource::class]];
+        foreach ($this->source->userMetaByKey($key) as $wpUid => $raw) {
+            $uid = $this->userMap[(int) $wpUid] ?? null;
+            $liste = WordPressSource::unserialize($raw);
+            if (! $uid || ! is_array($liste)) {
+                continue;
+            }
+            foreach ($liste as $k => $stand) {
+                [$art, $wpId] = array_pad(explode('-', (string) $k, 2), 2, null);
+                $sek = (int) ($stand['sek'] ?? 0);
+                if (! isset($arten[$art]) || ! ctype_digit((string) $wpId) || $sek <= 0) {
+                    continue;
+                }
+                [$prefix, $model] = $arten[$art];
+                $ziel = $model::query()->where('legacy_id', (string) $wpId)->first();
+                if (! $ziel) {
+                    continue;
+                }
+                $pos = MediaPosition::firstOrNew(['user_id' => $uid, 'key' => $prefix.'-'.$ziel->id]);
+                if ($pos->exists && $pos->seconds > 0) {
+                    continue;
+                }
+                $pos->seconds = $sek;
+                $pos->duration = ($d = (int) ($stand['dauer'] ?? 0)) > 0 ? $d : $pos->duration;
+                $pos->timestamps = false;
+                $wann = ($ts = (int) ($stand['ts'] ?? 0)) > 0 ? Carbon::createFromTimestampUTC($ts) : now();
+                $pos->created_at ??= $wann;
+                $pos->updated_at = $wann;
+                $pos->save();
+                $this->stats['positionen']++;
+            }
+        }
     }
 
     /* ---------- Material ---------- */

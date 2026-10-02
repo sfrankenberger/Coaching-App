@@ -20,6 +20,7 @@ use App\Models\Projekt;
 use App\Models\Question;
 use App\Models\Reaction;
 use App\Models\Reflection;
+use App\Models\MediaPosition;
 use App\Models\Resource;
 use App\Models\Task;
 use App\Models\Tenant;
@@ -139,6 +140,7 @@ class ImportBegleitungTest extends TestCase
         $this->wpPost(304, 'termin', 'Call mit Unbekannt', 'call-x', '', ['termin_start' => (string) gmmktime(10, 0, 0, 9, 11, 2026), 'termin_art' => 'call', 'nvc_person' => '99']);
         $this->umeta(21, 'lea_live_dabei', serialize([300]));
         $this->umeta(22, 'lea_angeschaut', serialize([301]));
+        $this->umeta(22, 'lea_stand', serialize(['termin-301' => ['sek' => 978, 'dauer' => 5248, 'ts' => gmmktime(20, 0, 0, 9, 17, 2026)], 'termin-304' => ['sek' => 5, 'dauer' => 10, 'ts' => 1], 'lektion-200' => ['sek' => 0, 'dauer' => 60, 'ts' => 1]]));
 
         // Material
         $this->wpPost(400, 'ressource', 'Handout Boden', 'handout', '', ['ressource_typ' => 'pdf', 'ressource_url' => 'https://leawernli.ch/wp-content/uploads/2025/handout.pdf', 'ressource_beschreibung' => 'Zum Ausdrucken']);
@@ -247,6 +249,12 @@ class ImportBegleitungTest extends TestCase
             $this->assertSame('https://vimeo.com/2/xyz', $rad->recording_url);
             $this->assertNotNull($rad->recording_notified_at);
             $this->assertSame('watched', EventAttendee::where('event_id', $rad->id)->where('user_id', $this->bea->id)->value('status'));
+            $pos = MediaPosition::where('user_id', $this->bea->id)->where('key', 'event-'.$rad->id)->first();
+            $this->assertSame(978, $pos->seconds, 'Video-Position aus lea_stand');
+            $this->assertSame(5248, $pos->duration);
+            $this->assertSame('2026-09-17 20:00:00', $pos->updated_at->utc()->toDateTimeString());
+            $this->assertSame(1, MediaPosition::count(), 'unbekannter Termin und Position 0 nicht');
+            $this->assertSame(1, $stats['positionen']);
 
             $einzel = Event::where('legacy_id', '302')->first();
             $this->assertSame('one_on_one', $einzel->type);

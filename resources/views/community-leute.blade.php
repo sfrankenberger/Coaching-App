@@ -17,6 +17,7 @@
             <span class="min-w-0 flex-1">
                 <b class="t">{{ $l['coach'] ? $l['user']->vorname() : $l['user']->name }}@if ($l['coach']) <span class="badge badge-rec">Coach</span>@endif @if ($l['ich']) <span class="badge badge-rec">du</span>@endif</b>
                 @if ($l['ueber'])<span class="lesetext block text-md mt-1 whitespace-pre-line">{{ $l['ueber'] }}</span>@endif
+                @if ($l['website'])<a href="{{ $l['website'] }}" target="_blank" rel="noopener" class="hinweis block mt-1"><i class="fa-solid fa-arrow-up-right-from-square"></i> {{ preg_replace('~^https?://(www\.)?~i', '', rtrim($l['website'], '/')) }}</a>@endif
                 @if ($l['kurse']->isNotEmpty() && ! $kurs)<span class="hinweis block mt-1">{{ $l['kurse']->join(' · ') }}</span>@endif
                 @if ($l['coach'] && ! $l['ich'])<a href="{{ route('gespraech.index') }}" class="hinweis block mt-1 no-underline"><i class="fa-regular fa-envelope"></i> Schreiben</a>@endif
             </span>
