@@ -68,7 +68,7 @@
     <h2 class="abschnitt"><i class="fa-solid fa-share-nodes"></i>Für dich freigegeben<em>{{ $neues->count() }}</em></h2>
     @forelse ($neues as $n)
         <a href="{{ $n['url'] ?? '#' }}" class="zeile">
-            <span class="ic"><i class="fa-solid fa-{{ ['antwort' => 'pen-to-square', 'reflexion' => 'pen-to-square', 'aufgabe' => 'list-check', 'absage' => 'calendar-xmark', 'nachricht' => 'comment'][$n['art']] ?? 'circle' }}"></i></span>
+            <span class="ic"><i class="fa-solid fa-{{ ['antwort' => 'pen-to-square', 'reflexion' => 'pen-to-square', 'aufgabe' => 'list-check', 'aufgabe_geteilt' => 'list-check', 'notiz' => 'feather', 'absage' => 'calendar-xmark', 'nachricht' => 'comment'][$n['art']] ?? 'share-nodes' }}"></i></span>
             <span class="tx"><b>{{ $n['wer'] }} {{ $n['was'] }}</b><span>{{ $n['detail'] }} · {{ \App\Support\Zeit::relativ($n['zeit']) }}</span></span>
             <i class="fa-solid fa-chevron-right pf"></i>
         </a>
