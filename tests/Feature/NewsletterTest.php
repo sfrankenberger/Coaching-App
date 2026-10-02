@@ -281,6 +281,7 @@ class NewsletterTest extends TestCase
         $this->assertStringContainsString('49.00 CHF', $html);
         $this->assertStringContainsString('/kaufen/club', $html);
         $this->assertStringContainsString('Instagram', $html);
+        $this->assertStringContainsString('/img/social/instagram.png', $html, 'Social-Icon im Fuss');
         $this->assertStringContainsString('Musterstrasse 1', $html);
         $this->assertStringContainsString('/n/abmelden/'.$anna->token, $html);
 
