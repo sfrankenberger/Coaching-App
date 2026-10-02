@@ -112,7 +112,7 @@ class AboTest extends TestCase
 
         // Profil: Abo verwalten fuehrt ins Kundenportal
         $nora->membershipIn($this->a)->forceFill(['settings' => array_merge($nora->membershipIn($this->a)->settings, ['onboarding_seen_at' => now()->toDateTimeString()])])->save();
-        $this->actingAs($nora)->get('http://a.test/profil')->assertOk()->assertSee('Abo, monatlich')->assertSee('bezahlt bis '.$ende->translatedFormat('j. F Y'))->assertSee(route('abo.portal'));
+        $this->actingAs($nora)->get('http://a.test/profil')->assertOk()->assertSee('Abo, monatlich')->assertSee('bezahlt bis '.$ende->copy()->setTimezone($this->a->fresh()->timezone)->translatedFormat('j. F Y'))->assertSee(route('abo.portal'));
         $this->actingAs($nora)->get('http://a.test/abo/portal')->assertRedirect('https://billing.stripe.com/p/session/1');
         Http::assertSent(fn ($r) => str_ends_with($r->url(), '/v1/billing_portal/sessions') && $r['customer'] === 'cus_1');
 
