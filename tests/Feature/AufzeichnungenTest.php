@@ -71,7 +71,7 @@ class AufzeichnungenTest extends TestCase
         $this->assertSame("[00:01] Hallo zusammen. \n[02:05] Jetzt die Übung.", Vimeo::vttZuText($vtt));
     }
 
-    public function test_wache_findet_video_holt_abschrift_und_zusammenfassung_und_meldet_der_coachin(): void
+    public function test_wache_findet_video_holt_abschrift_und_zusammenfassung_und_verschickt_sie(): void
     {
         // Call Montag 20:00 bis 21:00 Zuerich = 18:00 bis 19:00 UTC, Abgleich um 22:30
         $call = $this->in(fn () => Event::withoutEvents(fn () => Event::create(['tenant_id' => $this->a->id, 'program_id' => $this->kurs->id, 'title' => 'Gruppencall', 'type' => 'group_call',
@@ -101,12 +101,50 @@ class AufzeichnungenTest extends TestCase
         $this->assertSame('1 Std. 2 Min.', $call->recording_duration);
         $this->assertStringContainsString('[00:05] Willkommen im Call.', $call->transcript);
         $this->assertStringContainsString('(ab 00:05)', $call->summary);
-        $this->assertSame('bereit', $call->recording_status);
-        $this->assertNull($call->recording_notified_at, 'Freigabe bleibt bei der Coachin');
+        // Geht von selbst raus, die Coachin muss nichts freigeben
+        $this->assertSame(1, $b['freigegeben']);
+        $this->assertSame('freigegeben', $call->recording_status);
+        $this->assertNotNull($call->recording_notified_at);
+        Notification::assertSentTo($this->anna, AppNotification::class, fn (AppNotification $n) => str_starts_with($n->nachricht->titel, 'Neue Aufzeichnung'));
+        Notification::assertNotSentTo($this->lea, AppNotification::class);
+
+        // Zweiter Lauf: nichts mehr zu tun
+        $b2 = $this->in(fn () => app(Wache::class)->lauf());
+        $this->assertSame(0, $b2['freigegeben'] + $b2['gemeldet']);
+    }
+
+    public function test_ohne_abschrift_geht_die_aufzeichnung_trotzdem_raus(): void
+    {
+        $call = $this->in(fn () => Event::withoutEvents(fn () => Event::create(['tenant_id' => $this->a->id, 'program_id' => $this->kurs->id, 'title' => 'Call', 'type' => 'group_call',
+            'starts_at' => '2026-09-21 18:00:00', 'ends_at' => '2026-09-21 19:00:00', 'is_published' => true,
+            'recording_url' => 'https://vimeo.com/333', 'vimeo_id' => '333', 'recording_status' => 'gefunden', 'recording_tries' => 11])));
+        Http::fake(['api.vimeo.com/videos/333/texttracks' => Http::response(['data' => []])]);
+
+        $b = $this->in(fn () => app(Wache::class)->lauf());
+
+        $this->assertSame(1, $b['freigegeben']);
+        $this->assertSame('freigegeben', $call->fresh()->recording_status);
+        Notification::assertSentTo($this->anna, AppNotification::class);
+        Notification::assertNotSentTo($this->lea, AppNotification::class);
+    }
+
+    public function test_wer_selbst_freigeben_will_bekommt_eine_meldung(): void
+    {
+        $this->a->forceFill(['settings' => array_merge($this->a->settings, ['recordings' => ['auto_release_group' => false]])])->save();
+        $call = $this->in(fn () => Event::withoutEvents(fn () => Event::create(['tenant_id' => $this->a->id, 'program_id' => $this->kurs->id, 'title' => 'Call', 'type' => 'group_call',
+            'starts_at' => '2026-09-21 18:00:00', 'ends_at' => '2026-09-21 19:00:00', 'is_published' => true,
+            'recording_url' => 'https://vimeo.com/333', 'vimeo_id' => '333', 'transcript' => '[00:01] Hallo.', 'summary' => '<p>Kurz.</p>', 'recording_status' => 'abschrift'])));
+
+        $b = $this->in(fn () => app(Wache::class)->lauf());
+
+        $this->assertSame(0, $b['freigegeben']);
+        $this->assertSame(1, $b['gemeldet']);
+        $this->assertSame('bereit', $call->fresh()->recording_status);
+        $this->assertNull($call->fresh()->recording_notified_at);
         Notification::assertSentTo($this->lea, AppNotification::class, fn (AppNotification $n) => str_starts_with($n->nachricht->titel, 'Aufzeichnung bereit'));
         Notification::assertNotSentTo($this->anna, AppNotification::class);
 
-        // Zweiter Lauf: nichts mehr zu tun
+        // Zweiter Lauf: keine zweite Meldung
         $this->assertSame(0, $this->in(fn () => app(Wache::class)->lauf())['gemeldet']);
     }
 

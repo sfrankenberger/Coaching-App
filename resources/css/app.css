@@ -224,6 +224,12 @@
     /* Kacheln (Profil, Uebersichten) */
     .kacheln { display: grid; grid-template-columns: 1fr; gap: 10px; }
     @media (min-width: 520px) { .kacheln-2 { grid-template-columns: 1fr 1fr; } }
+    /* Zahlen der Woche auf der Arbeitsliste: zwei nebeneinander, breit vier */
+    .zahlen-kacheln { grid-template-columns: 1fr 1fr; }
+    @media (min-width: 520px) { .zahlen-kacheln { grid-template-columns: repeat(4, 1fr); } }
+    .zahlen-kacheln .kachel { flex-direction: column; align-items: flex-start; gap: 2px; padding: 12px 14px; }
+    .zahlen-kacheln .kachel b { font-family: var(--font-heading); font-size: 24px; font-weight: 400; color: var(--c-primary); line-height: 1.1; }
+    .zahlen-kacheln .kachel small { margin-top: 0; font-size: var(--fs-sm); }
     .kachel {
         display: flex;
         align-items: center;

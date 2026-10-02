@@ -15,17 +15,21 @@ use Illuminate\Support\Collection;
 
 /**
  * Wache nach jedem Termin (wie novamira-aufzeichnungen): Aufzeichnung auf Vimeo finden,
- * Abschrift aus der Textspur holen, Zusammenfassung schreiben lassen, dann der Coachin
- * melden oder, wenn eingestellt, gleich freigeben. Laeuft alle 15 Minuten je Mandant.
+ * Abschrift aus der Textspur holen, Zusammenfassung schreiben lassen und die Aufzeichnung
+ * von selbst an die Teilnehmerinnen schicken (Freigabe). Die Coachin muss nichts freigeben;
+ * nur wer das je Mandant abschaltet (auto_release_group oder auto_release_one_on_one auf
+ * false), bekommt stattdessen eine Meldung und gibt am Termin frei. Kommt keine Abschrift
+ * oder keine Zusammenfassung zustande, geht die Aufzeichnung trotzdem raus, dann ohne
+ * Zusammenfassung. Laeuft alle 15 Minuten je Mandant.
  *
  * Einstellungen in tenants.settings.recordings: wait_minutes (20), max_tries (24),
- * transcript_tries (12), auto_release_group, auto_release_one_on_one, notify_coach (true).
+ * transcript_tries (12), auto_release_group (true), auto_release_one_on_one (true), notify_coach (true).
  */
 class Wache
 {
     use HoltAbschrift;
 
-    public const OFFEN = [null, 'wartet', 'gefunden', 'abschrift'];
+    public const OFFEN = [null, 'wartet', 'gefunden', 'abschrift', 'ohne_abschrift', 'bereit'];
 
     protected ?array $videos = null;
 
@@ -83,42 +87,53 @@ class Wache
 
         foreach ($kandidaten->filter(fn (Event $e) => $e->hasRecording()) as $e) {
             $e->refresh();
-            // 2. Abschrift
-            if (blank($e->transcript)) {
-                $id = self::vimeoNummer($e->vimeo_id, $e->recording_url);
-                $text = $this->abschriftHolen($id);
-                if ($text) {
-                    $e->forceFill(['transcript' => $text, 'recording_status' => 'abschrift', 'recording_tries' => 0])->saveQuietly();
-                    $bericht['abschriften']++;
-                } else {
-                    $versuche = $e->recording_tries + 1;
-                    if (! $id || $versuche >= (int) $this->opt('transcript_tries', 12)) {
-                        $e->forceFill(['recording_status' => 'ohne_abschrift', 'recording_tries' => $versuche])->saveQuietly();
-                        $bericht['gemeldet'] += $this->melden($e, 'Aufzeichnung ohne Abschrift: '.$e->title, 'Die Aufzeichnung ist am Termin, aber Vimeo liefert keine Abschrift. Schreib eine kurze Zusammenfassung selbst oder gib sie so frei.');
+            $auto = $e->user_id ? $this->opt('auto_release_one_on_one', true) : $this->opt('auto_release_group', true);
+            // Schon aufgegeben (keine Abschrift, keine Zusammenfassung): nur noch verschicken, sonst warten
+            $aufgegeben = in_array($e->recording_status, ['ohne_abschrift', 'bereit'], true);
+            if ($aufgegeben && ! $auto) {
+                continue;   // schon gemeldet, die Coachin gibt am Termin frei
+            }
+            if (! $aufgegeben) {
+                // 2. Abschrift
+                if (blank($e->transcript)) {
+                    $id = self::vimeoNummer($e->vimeo_id, $e->recording_url);
+                    $text = $this->abschriftHolen($id);
+                    if ($text) {
+                        $e->forceFill(['transcript' => $text, 'recording_status' => 'abschrift', 'recording_tries' => 0])->saveQuietly();
+                        $bericht['abschriften']++;
                     } else {
-                        $e->forceFill(['recording_status' => 'gefunden', 'recording_tries' => $versuche])->saveQuietly();
-                    }
+                        $versuche = $e->recording_tries + 1;
+                        if (! $id || $versuche >= (int) $this->opt('transcript_tries', 12)) {
+                            $e->forceFill(['recording_status' => 'ohne_abschrift', 'recording_tries' => $versuche])->saveQuietly();
+                            if (! $auto) {
+                                $bericht['gemeldet'] += $this->melden($e, 'Aufzeichnung ohne Abschrift: '.$e->title, 'Die Aufzeichnung ist am Termin, aber Vimeo liefert keine Abschrift. Schreib eine kurze Zusammenfassung selbst oder gib sie so frei.');
 
-                    continue;
-                }
-            }
-            // 3. Zusammenfassung
-            if (blank($e->summary) && Anthropic::configured($this->current->get())) {
-                $s = $this->summarizer->event($e);
-                $e->refresh();
-                if (! $s->isDone()) {
-                    $versuche = $e->recording_tries + 1;
-                    $e->forceFill(['recording_tries' => $versuche, 'recording_status' => $versuche >= 3 ? 'bereit' : 'abschrift'])->saveQuietly();
-                    if ($versuche < 3) {
-                        continue;
+                                continue;
+                            }
+                        } else {
+                            $e->forceFill(['recording_status' => 'gefunden', 'recording_tries' => $versuche])->saveQuietly();
+
+                            continue;
+                        }
                     }
-                } else {
-                    $bericht['zusammenfassungen']++;
+                }
+                // 3. Zusammenfassung
+                if (filled($e->transcript) && blank($e->summary) && Anthropic::configured($this->current->get())) {
+                    $s = $this->summarizer->event($e);
+                    $e->refresh();
+                    if (! $s->isDone()) {
+                        $versuche = $e->recording_tries + 1;
+                        $e->forceFill(['recording_tries' => $versuche, 'recording_status' => $versuche >= 3 ? 'bereit' : 'abschrift'])->saveQuietly();
+                        if ($versuche < 3) {
+                            continue;
+                        }
+                    } else {
+                        $bericht['zusammenfassungen']++;
+                    }
                 }
             }
-            // 4. Bereit: freigeben oder melden
+            // 4. Bereit: verschicken, oder melden, wenn der Mandant selbst freigeben will
             $e->forceFill(['recording_status' => 'bereit'])->saveQuietly();
-            $auto = $e->user_id ? $this->opt('auto_release_one_on_one', false) : $this->opt('auto_release_group', false);
             if ($auto) {
                 $this->freigabe->freigeben($e, (array) $this->opt('default_channels', ['mail', 'push']));
                 $bericht['freigegeben']++;

@@ -26,7 +26,7 @@ Programmen verknuepfen, Zoom-Link in die Einstellungen), bleibt in Filament.
 
 ### Arbeitsplatz: Seiten
 
-- **Heute** (`/`, `HomeController` verzweigt auf `arbeitsplatz.heute`, Daten aus `App\Coach\Arbeitsliste`): Wartet auf deine Antwort (mit "Antworten" und "Gelesen"), Mit dir geteilt, Fragen ohne Antwort, Wartet auf Freigabe (Aufzeichnung mit Zusammenfassung, noch nicht verschickt), Als Naechstes (Termin gross mit Zoom und "Vorbereiten"), Schnell hin. Testkonten (Testbetrieb) bleiben draussen. Ist nichts offen, steht "Alles ruhig: ...".
+- **Heute** (`/`, `HomeController` verzweigt auf `arbeitsplatz.heute`, Daten aus `App\Coach\Arbeitsliste`): laeuft ein Call oder beginnt er in drei Stunden, steht er ganz oben (Zoom, Vorbereiten); dann Wartet auf deine Antwort (1:1-Gespraeche, mit "Antworten" und "Gelesen"), Fragen ohne Antwort, Mit dir geteilt, Lange nichts gehoert (Ampel gelb oder rot, "Nachfragen" oeffnet das Gespraech mit Entwurf), Neu dabei (letzte sieben Tage), Als Naechstes (Termin gross mit Zoom und "Vorbereiten"), Letzte sieben Tage (neue Personen, Verkaeufe, Newsletter-Anmeldungen, Termine), Schnell hin. Aufzeichnungen gehen von selbst raus (`Wache`), es gibt keine Freigabe mehr auf der Liste. Testkonten (Testbetrieb) bleiben draussen. Ist nichts offen, steht "Alles ruhig: ...".
 - **Coachees** (`/coachees`): Auskunft ("Frag mich etwas zu deinem Betrieb"), Nachricht an mehrere, **Neue Person anlegen** (Vorname, Nachname, E-Mail, Telefon, Teilnehmerin oder 1:1-Kundin, Notiz, Willkommensmail), Ampel, Fuer dich freigegeben, Personenkarten mit Suche und Sortierung. Die Karten fuehren ins App-Dossier.
 - **Dossier** (`/coachees/{membership}`, `DossierController`): Kopf (Avatar, Name, Kontakt, Zuletzt hier, Lage, Knoepfe Mail, WhatsApp, Anrufen, Einladung, Bearbeiten), **Pakete** mit "seit" und Sitzungskontingent, **Etwas verkaufen** (Angebot, Preis als Notiz, Laufzeit, zusaetzliche 1:1-Sitzungen, Notiz, Willkommensmail; legt Zugang an, betritt die Programme, schreibt eine Coach-Notiz), **Kennzahlen** (Naechster Termin, Wochenaufgaben, Bei den Calls, Sie schreibt), dann Reiter:
   - Gespraech: die letzten 40 Nachrichten, kurze Antwort, "Als gelesen", Link ins volle Gespraech (Sprache, Datei)
@@ -93,7 +93,7 @@ ueber die bestehenden Dienste (`Zugang`, `Chat`, `Terminvorschlag`, `Lage`, `Ass
 
 | Werkzeug | Tut |
 |---|---|
-| `heute` | Arbeitsliste (wartet, geteilt, Fragen, Freigaben, naechste Termine) |
+| `heute` | Arbeitsliste (wartet, Fragen, geteilt, lange nichts gehoert, neu dabei, naechste Termine, Zahlen der Woche) |
 | `personen_suchen` | Menschen nach Name oder Mail, mit `membership_id` |
 | `person_fakten` | Alles zu einer Person (wie die Auskunft) |
 | `person_anlegen` | Neue Person, ohne Duplikat, optional Willkommensmail |

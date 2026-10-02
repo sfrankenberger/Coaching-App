@@ -4,9 +4,11 @@ namespace App\Coach;
 
 use App\Chat\Chat;
 use App\Models\Event;
+use App\Models\Kontakt;
 use App\Models\Membership;
 use App\Models\Message;
 use App\Models\Question;
+use App\Models\Verkauf;
 use App\Notifications\Notifier;
 use App\Support\Zeit;
 use App\Tenancy\CurrentTenant;
@@ -15,9 +17,10 @@ use Illuminate\Support\Str;
 
 /**
  * Die Startseite der Coachin als Arbeitsliste (wie lea-start-lea): kein Neuigkeitenstrom,
- * sondern was auf sie wartet. Wer wartet auf Antwort, was wurde mit ihr geteilt, welche Fragen
- * sind ohne Antwort, welche Aufzeichnung wartet auf Freigabe, was steht als Naechstes an.
- * Testkonten bleiben draussen. Ist alles leer, steht das in einem Satz.
+ * sondern was auf sie wartet. Wer wartet auf Antwort, welche Fragen sind ohne Antwort, was wurde
+ * mit ihr geteilt, von wem sie lange nichts gehoert hat, wer neu dabei ist, was als Naechstes
+ * ansteht, dazu die Zahlen der Woche. Aufzeichnungen gehen von selbst raus (Wache), darum gibt
+ * es hier keine Freigabe. Testkonten bleiben draussen. Ist alles leer, steht das in einem Satz.
  */
 class Arbeitsliste
 {
@@ -32,27 +35,29 @@ class Arbeitsliste
         $wartende = $this->wartende($team)->reject(fn ($z) => $istTest($z['user']));
         $geteilt = $this->neues->zeilen(7, 8)->filter(fn ($z) => in_array($z['art'], ['antwort', 'reflexion', 'aufgabe', 'notiz', 'aufgabe_geteilt'], true))->values();
         $fragen = $this->fragen($team)->reject(fn ($f) => $istTest($f->user))->take(6)->values();
-        $freigaben = Event::query()->where('is_published', true)->whereNotNull('recording_url')->whereNotNull('summary')
-            ->whereNull('recording_notified_at')->orderByDesc('starts_at')->limit(4)->get();
+        $still = $this->still()->reject(fn ($z) => $istTest($z['user']))->take(4)->values();
+        $neu = $this->neuDabei()->reject(fn (Membership $m) => $istTest($m->user))->take(4)->values();
         $termine = Event::query()->where('is_published', true)->whereNotIn('type', Event::ALL_DAY_TYPES)
             ->where('starts_at', '>=', now()->subMinutes(45))->where('starts_at', '<', now()->addDays(8))
             ->with(['program:id,title', 'user:id,name'])->orderBy('starts_at')->limit(5)->get();
+        // Laeuft gerade ein Call oder faengt er in den naechsten drei Stunden an, steht er ganz oben
+        $gleich = $termine->first(fn (Event $e) => $e->isLive() || $e->starts_at->lt(now()->addHours(3)));
 
         $ruhig = [];
         if ($wartende->isEmpty()) {
             $ruhig[] = 'niemand wartet auf eine Antwort';
         }
-        if ($geteilt->isEmpty()) {
-            $ruhig[] = 'nichts Neues geteilt';
-        }
         if ($fragen->isEmpty()) {
             $ruhig[] = 'alle Fragen sind beantwortet';
+        }
+        if ($geteilt->isEmpty()) {
+            $ruhig[] = 'nichts Neues geteilt';
         }
         if ($termine->isEmpty()) {
             $ruhig[] = 'diese Woche nichts geplant';
         }
         $satz = null;
-        if ($ruhig && $wartende->isEmpty() && $fragen->isEmpty() && $freigaben->isEmpty()) {
+        if ($ruhig && $wartende->isEmpty() && $fragen->isEmpty()) {
             $letztes = array_pop($ruhig);
             $satz = 'Alles ruhig: '.($ruhig ? implode(', ', $ruhig).' und '.$letztes : $letztes).'.';
         }
@@ -61,10 +66,45 @@ class Arbeitsliste
             'wartende' => $wartende,
             'geteilt' => $geteilt,
             'fragen' => $fragen,
-            'freigaben' => $freigaben,
+            'still' => $still,
+            'neu' => $neu,
             'termine' => $termine,
-            'offen' => $wartende->count() + $geteilt->count() + $fragen->count() + $freigaben->count(),
+            'gleich' => $gleich,
+            'woche' => $this->woche(),
+            'offen' => $wartende->count() + $geteilt->count() + $fragen->count(),
             'ruhig' => $satz,
+        ];
+    }
+
+    /** Von wem die Coachin lange nichts gehoert hat (Ampel gelb oder rot wegen Stille, Calls oder Aufgaben), ohne die, die ohnehin auf Antwort warten. */
+    public function still(): Collection
+    {
+        return $this->lage->alle()->filter(fn ($z) => $z['stufe'] > 1 && ! $z['wartet'] && $z['entwurf'])
+            ->map(fn ($z) => $z + ['nachfragen' => route('gespraech.show', ['gespraech' => $this->chat->directFor($z['user']), 'entwurf' => Lage::entwurf($z['entwurf'], $z['user']->vorname())])])
+            ->values();
+    }
+
+    /** Wer in den letzten sieben Tagen dazugekommen ist. */
+    public function neuDabei(): Collection
+    {
+        return Membership::query()->where('status', 'active')->whereIn('role', ['member', 'client', 'guest'])
+            ->where(fn ($q) => $q->where('joined_at', '>=', now()->subDays(7))->orWhere(fn ($w) => $w->whereNull('joined_at')->where('created_at', '>=', now()->subDays(7))))
+            ->with('user')->latest('created_at')->get()->filter(fn (Membership $m) => $m->user)->values();
+    }
+
+    /** Zahlen der letzten sieben Tage: neue Personen, Verkaeufe, Newsletter-Anmeldungen, Calls. */
+    public function woche(): array
+    {
+        $seit = now()->subDays(7);
+        $verkaeufe = Verkauf::where('created_at', '>=', $seit)->get();
+
+        return [
+            'personen' => Membership::where('status', 'active')->whereIn('role', ['member', 'client', 'guest'])->where('created_at', '>=', $seit)->count(),
+            'verkaeufe' => $verkaeufe->count(),
+            'umsatz' => (float) $verkaeufe->sum('betrag'),
+            'waehrung' => $verkaeufe->first()?->waehrung ?? 'CHF',
+            'kontakte' => Kontakt::whereNotNull('bestaetigt_at')->where('bestaetigt_at', '>=', $seit)->count(),
+            'calls' => Event::where('is_published', true)->whereNotIn('type', Event::ALL_DAY_TYPES)->whereBetween('starts_at', [$seit, now()])->count(),
         ];
     }
 

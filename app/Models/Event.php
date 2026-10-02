@@ -37,8 +37,8 @@ class Event extends Model
         'wartet' => 'Wird gesucht',
         'gefunden' => 'Gefunden, Abschrift folgt',
         'abschrift' => 'Abschrift da, Zusammenfassung folgt',
-        'bereit' => 'Bereit zur Freigabe',
-        'freigegeben' => 'Freigegeben',
+        'bereit' => 'Bereit, geht raus',
+        'freigegeben' => 'Verschickt',
         'nicht_gefunden' => 'Nicht gefunden',
         'ohne_abschrift' => 'Ohne Abschrift',
     ];

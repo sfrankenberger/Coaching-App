@@ -53,8 +53,9 @@ class ProfilController extends Controller
             'telegramBot' => $tenant?->setting('telegram.bot_username'),
             'passkeys' => $request->user()->webAuthnCredentials()->orderBy('created_at')->get(),
             'kalenderUrl' => ($m = $request->user()->membershipIn()) ? route('kalender.abo', ['token' => Ics::tokenFor($m)]) : null,
-            'zugaenge' => $this->zugaenge($request->user()),
-            'kontingent' => app(Lage::class)->kontingent($request->user()),
+            // Das Team bucht nichts bei sich selbst: keine "Meine Buchungen"
+            'zugaenge' => $request->user()->canManageCurrentTenant() ? collect() : $this->zugaenge($request->user()),
+            'kontingent' => $request->user()->canManageCurrentTenant() ? null : app(Lage::class)->kontingent($request->user()),
             'buchen' => app(GoogleCalendar::class)->aktiv(),
             'aboUrl' => $tenant?->setting('shop.account_url'),
             'verbindungen' => $request->user()->canManageCurrentTenant() ? $request->user()->tokens()->orderBy('created_at')->get() : collect(),

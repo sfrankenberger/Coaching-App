@@ -56,22 +56,31 @@ class ArbeitsplatzTest extends TestCase
             $conv->forceFill(['last_message_at' => now()])->save();
             Question::create(['program_id' => $p->id, 'user_id' => $this->anna->id, 'title' => 'Wie geht Woche 2?']);
             Event::create(['title' => 'Call morgen', 'type' => 'group_call', 'program_id' => $p->id, 'starts_at' => now()->addDay(), 'ends_at' => now()->addDay()->addHour(), 'is_published' => true]);
-            Event::create(['title' => 'Alte Aufzeichnung', 'type' => 'group_call', 'program_id' => $p->id, 'starts_at' => now()->subDay(), 'ends_at' => now()->subDay()->addHour(), 'is_published' => true, 'recording_url' => 'https://vimeo.com/1', 'summary' => 'Zusammenfassung']);
         });
+        // Bea ist seit zwei Wochen nicht mehr da, Carla seit gestern neu dabei
+        $bea = User::factory()->create(['name' => 'Bea Still']);
+        $this->a->users()->attach($bea, ['role' => Role::Member->value, 'status' => 'active', 'joined_at' => now()->subMonth(), 'last_seen_at' => now()->subDays(15)]);
+        $carla = User::factory()->create(['name' => 'Carla Neu']);
+        $this->a->users()->attach($carla, ['role' => Role::Client->value, 'status' => 'active', 'joined_at' => now()->subDay()]);
 
         $r = $this->actingAs($this->lea)->get('http://a.test/')->assertOk();
-        $r->assertSee('Guten Tag, Lea')->assertSee('3 Dinge warten')
+        $r->assertSee('Guten Tag, Lea')->assertSee('2 Dinge warten')
             ->assertSee('Wartet auf deine Antwort')->assertSee('Kannst du mir helfen?')
             ->assertSee('Fragen ohne Antwort')->assertSee('Wie geht Woche 2?')
-            ->assertSee('Wartet auf Freigabe')->assertSee('Alte Aufzeichnung')
+            ->assertDontSee('Wartet auf Freigabe')
+            ->assertSee('Lange nichts gehört')->assertSee('Bea Still')->assertSee('seit 15 Tagen nicht da')->assertSee('Nachfragen')
+            ->assertSee('Neu dabei')->assertSee('Carla Neu')
             ->assertSee('Als Nächstes')->assertSee('Call morgen')
+            ->assertSee('Letzte sieben Tage')->assertSee('neue Person')
+            ->assertDontSee('fa-sliders"></i></a>', false)   // Verwaltung nicht im Kopf, nur im Menue
+            ->assertDontSee('chat-knopf')
             ->assertSee('Heute')->assertSee('Coachees')->assertSee('Wie eine Teilnehmerin')->assertSee('modus-team', false)
             ->assertDontSee('Mein Journal');
 
         // Als gelesen: Anna wartet nicht mehr
         $m = $this->in(fn () => Membership::where('user_id', $this->anna->id)->first());
         $this->actingAs($this->lea)->post("http://a.test/coachees/{$m->id}/gelesen")->assertRedirect();
-        $this->actingAs($this->lea)->get('http://a.test/')->assertOk()->assertDontSee('Wartet auf deine Antwort')->assertSee('2 Dinge warten');
+        $this->actingAs($this->lea)->get('http://a.test/')->assertOk()->assertDontSee('Wartet auf deine Antwort')->assertSee('eine Sache wartet');
 
         // Umschalten: wie eine Teilnehmerin, dann zurueck
         $this->actingAs($this->lea)->post('http://a.test/ansicht', ['ansicht' => 'teilnehmer'])->assertRedirect('http://a.test');

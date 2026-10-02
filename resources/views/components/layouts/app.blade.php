@@ -94,7 +94,6 @@
             @auth
                 @if ($arbeitsplatz)
                     <div class="kopf-rechts">
-                        @if ($kannVerwalten)<a href="/coach" aria-label="Verwaltung" title="Verwaltung"><i class="fa-solid fa-sliders"></i></a>@endif
                         <a href="{{ route('mitteilungen') }}" aria-label="Mitteilungen"><i class="fa-{{ $mitteilungen ? 'solid' : 'regular' }} fa-bell"></i>@if ($mitteilungen)<span class="zahl">{{ $mitteilungen }}</span>@endif</a>
                         <a href="{{ route('gespraech.index') }}" aria-label="Gespräch"><i class="fa-solid fa-comments"></i>@if ($ungelesen)<span class="zahl">{{ $ungelesen }}</span>@endif</a>
                     </div>
@@ -229,7 +228,8 @@
     </main>
 
     @auth
-        @unless (request()->routeIs('gespraech.*'))
+        {{-- Schwebender Chat-Knopf nur fuer Teilnehmerinnen: im Arbeitsplatz gibt es Gespraeche im Kopf und in der Leiste --}}
+        @unless (request()->routeIs('gespraech.*') || $arbeitsplatz)
             <a href="{{ route('gespraech.index') }}" class="chat-knopf" aria-label="Gespräch">
                 <i class="fa-solid fa-comment-dots"></i>
                 @if ($ungelesen)<span class="zahl">{{ $ungelesen }}</span>@endif

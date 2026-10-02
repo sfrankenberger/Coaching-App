@@ -43,5 +43,14 @@ class ProfilBuchungenTest extends TestCase
             ->assertSee('Meine Buchungen')->assertSee('Sitzungen: 5 von 5 offen')
             ->assertSee('Club')->assertSee('Zugang bis')->assertSee('Wochenkurs: Woche 2 von 3')
             ->assertSee('https://shop.test/konto/abos')->assertSee('Alter Kurs')->assertSee('Beendet');
+
+        // Die Coachin bucht nichts bei sich selbst: keine "Meine Buchungen" im eigenen Profil
+        $lea = User::factory()->create(['name' => 'Lea Coach']);
+        $a->users()->attach($lea, ['role' => Role::Owner->value, 'status' => 'active']);
+        app(CurrentTenant::class)->run($a, function () use ($lea) {
+            ProgramMember::create(['program_id' => Program::where('slug', 'einzel')->first()->id, 'user_id' => $lea->id, 'role_in_program' => 'coach']);
+            Entitlement::create(['user_id' => $lea->id, 'offer_id' => Offer::where('title', 'Club')->first()->id, 'starts_at' => now()]);
+        });
+        $this->actingAs($lea)->get('http://a.test/profil')->assertOk()->assertDontSee('Meine Buchungen')->assertDontSee('Sitzungen:');
     }
 }
