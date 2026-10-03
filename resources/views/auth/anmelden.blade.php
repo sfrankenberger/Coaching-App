@@ -2,7 +2,7 @@
 <x-layouts.auth title="Anmelden">
     <x-karte>
         <h1 style="margin:0 0 6px;font-size:26px">Schön, dass du da bist</h1>
-        <p class="x m-0 mb-4">Gib deine E-Mail-Adresse ein. Du bekommst einen Link, mit dem du direkt drin bist. Kein Passwort nötig.</p>
+        <p class="x m-0 mb-4">Gib deine E-Mail-Adresse ein. Du bekommst einen Code per Mail, den tippst du hier ein und bist drin. Kein Passwort nötig.</p>
 
         <form method="post" action="{{ route('anmelden.link') }}" class="eingabe">
             @csrf
@@ -13,7 +13,7 @@
                 @error('email') <p class="fehler mt-1">{{ $message }}</p> @enderror
             </div>
             <div class="eingabe-knoepfe">
-                <button type="submit" class="knopf knopf-breit knopf-gross"><i class="fa-solid fa-envelope"></i>Link schicken</button>
+                <button type="submit" class="knopf knopf-breit knopf-gross"><i class="fa-solid fa-envelope"></i>Code schicken</button>
             </div>
         </form>
 
@@ -34,7 +34,28 @@
             </div>
         @endif
 
-        <details class="mt-5">
+        @php $codeOffen = old('code_offen') || $errors->has('code') || session('anmelden.email'); @endphp
+        <details class="mt-5" @if ($codeOffen) open @endif>
+            <summary class="hinweis cursor-pointer">Ich habe schon einen Code aus der Mail</summary>
+            <form method="post" action="{{ route('anmelden.code') }}" class="eingabe mt-3">
+                @csrf
+                <input type="hidden" name="weiter" value="{{ $weiter ?? '' }}">
+                <div>
+                    <label for="code-email" class="feld-label">E-Mail-Adresse</label>
+                    <input id="code-email" name="email" type="email" class="feld" required autocomplete="email" inputmode="email" value="{{ old('email', session('anmelden.email')) }}">
+                </div>
+                <div>
+                    <label for="code" class="feld-label">Code</label>
+                    <input id="code" name="code" type="text" class="feld" inputmode="numeric" autocomplete="one-time-code" pattern="[0-9 ]{6,7}" maxlength="7" placeholder="000 000" style="font-size:22px;letter-spacing:4px;text-align:center">
+                    @error('code') <p class="fehler mt-1">{{ $message }}</p> @enderror
+                </div>
+                <div class="eingabe-knoepfe">
+                    <button type="submit" class="knopf knopf-breit"><i class="fa-solid fa-key"></i>Anmelden</button>
+                </div>
+            </form>
+        </details>
+
+        <details class="mt-3">
             <summary class="hinweis cursor-pointer">Lieber mit Passwort anmelden</summary>
             <form method="post" action="{{ route('anmelden.passwort') }}" class="eingabe mt-3">
                 @csrf

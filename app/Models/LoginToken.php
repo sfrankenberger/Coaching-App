@@ -14,7 +14,7 @@ class LoginToken extends Model
 {
     use BelongsToTenant;
 
-    protected $fillable = ['tenant_id', 'user_id', 'token_hash', 'weiter', 'ip', 'expires_at', 'used_at'];
+    protected $fillable = ['tenant_id', 'user_id', 'token_hash', 'code_hash', 'code_versuche', 'weiter', 'ip', 'expires_at', 'used_at'];
 
     protected function casts(): array
     {
@@ -32,5 +32,13 @@ class LoginToken extends Model
     public function isValid(): bool
     {
         return $this->used_at === null && $this->expires_at->isFuture();
+    }
+
+    /** Hoechstens so viele falsche Codes, dann ist der Token verbrannt. */
+    public const CODE_VERSUCHE = 5;
+
+    public function codeGueltig(): bool
+    {
+        return $this->isValid() && $this->code_hash !== null && $this->code_versuche < self::CODE_VERSUCHE;
     }
 }

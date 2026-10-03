@@ -25,19 +25,63 @@ class MagicLink
      */
     public function create(User $user, ?string $weiter = null, ?string $ip = null, ?int $minuten = null): string
     {
+        return $this->erzeugen($user, $weiter, $ip, $minuten)['url'];
+    }
+
+    /**
+     * Token mit Link und sechsstelligem Code. Der Code ist fuer die App auf dem Handy: der Link aus der Mail
+     * oeffnet dort den Browser, nicht die installierte App, der Code laesst sich in der App eintippen.
+     *
+     * @return array{url: string, code: string}
+     */
+    public function erzeugen(User $user, ?string $weiter = null, ?string $ip = null, ?int $minuten = null): array
+    {
         $tenant = $this->current->getOrFail();
         $plain = Str::random(48);
+        $code = str_pad((string) random_int(0, 999999), 6, '0', STR_PAD_LEFT);
 
         LoginToken::create([
             'tenant_id' => $tenant->id,
             'user_id' => $user->id,
             'token_hash' => hash('sha256', $plain),
+            'code_hash' => self::codeHash($tenant->id, $user->id, $code),
             'weiter' => $this->cleanWeiter($weiter),
             'ip' => $ip,
             'expires_at' => now()->addMinutes($minuten ?? self::MINUTEN),
         ]);
 
-        return route('anmelden.token', ['token' => $plain]);
+        return ['url' => route('anmelden.token', ['token' => $plain]), 'code' => $code];
+    }
+
+    protected static function codeHash(int $tenantId, int $userId, string $code): string
+    {
+        return hash('sha256', $tenantId.'|'.$userId.'|'.preg_replace('~\D~', '', $code));
+    }
+
+    /**
+     * Loest den Code zur Adresse ein (nur im Mandanten dieser Domain). Jeder falsche Versuch zaehlt auf allen
+     * offenen Tokens der Person, nach fuenf ist der Code verbrannt. Gibt den Token zurueck oder null.
+     */
+    public function consumeCode(string $email, string $code): ?LoginToken
+    {
+        $user = User::where('email', Str::lower(trim($email)))->first();
+        $code = preg_replace('~\D~', '', $code);
+        if (! $user || strlen($code) !== 6) {
+            return null;
+        }
+        $offen = LoginToken::query()->where('user_id', $user->id)->whereNotNull('code_hash')->whereNull('used_at')
+            ->where('expires_at', '>', now())->lockForUpdate()->get()->filter->codeGueltig();
+        $treffer = $offen->firstWhere('code_hash', self::codeHash($this->current->getOrFail()->id, $user->id, $code));
+        if (! $treffer) {
+            foreach ($offen as $t) {
+                $t->increment('code_versuche');
+            }
+
+            return null;
+        }
+        $treffer->forceFill(['used_at' => now()])->save();
+
+        return $treffer;
     }
 
     /**
@@ -52,9 +96,9 @@ class MagicLink
             return false;
         }
 
-        $url = $this->create($user, $weiter, $ip);
+        $t = $this->erzeugen($user, $weiter, $ip);
 
-        Mail::to($user->email, $user->name)->send(new MagicLinkMail($user, $url, self::MINUTEN));
+        Mail::to($user->email, $user->name)->send(new MagicLinkMail($user, $t['url'], self::MINUTEN, $t['code']));
 
         return true;
     }

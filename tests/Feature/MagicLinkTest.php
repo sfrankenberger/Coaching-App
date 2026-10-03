@@ -9,6 +9,7 @@ use App\Models\Tenant;
 use App\Models\User;
 use App\Tenancy\CurrentTenant;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Mail;
 use Tests\TestCase;
 
@@ -144,5 +145,56 @@ class MagicLinkTest extends TestCase
     public function test_gast_wird_zur_anmeldung_geschickt(): void
     {
         $this->get('http://a.test/profil')->assertRedirect('http://a.test/anmelden?weiter=%2Fprofil');
+    }
+
+    protected function codeAus(): string
+    {
+        $code = null;
+        Mail::assertSent(MagicLinkMail::class, function (MagicLinkMail $m) use (&$code) {
+            $code = $m->code;
+
+            return true;
+        });
+        $this->assertMatchesRegularExpression('~^\d{6}$~', (string) $code);
+
+        return $code;
+    }
+
+    public function test_code_aus_der_mail_meldet_in_der_app_an(): void
+    {
+        Mail::fake();
+        $this->post('http://a.test/anmelden/link', ['email' => 'anna@example.com', 'weiter' => '/profil'])->assertOk()->assertSee('Code aus der Mail');
+        $code = $this->codeAus();
+        $html = app(CurrentTenant::class)->run($this->a, fn () => view('mail.magic-link', ['user' => $this->anna, 'url' => 'http://a.test/anmelden/x', 'minuten' => 15, 'code' => $code])->render());
+        $this->assertStringContainsString(substr($code, 0, 3).' '.substr($code, 3), $html, 'Code steht lesbar in der Mail');
+
+        $this->post('http://a.test/anmelden/code', ['email' => 'anna@example.com', 'code' => '000000'])->assertRedirect()->assertSessionHasErrors('code');
+        $this->assertGuest();
+
+        $r = $this->post('http://a.test/anmelden/code', ['email' => 'anna@example.com', 'code' => substr($code, 0, 3).' '.substr($code, 3)]);
+        $r->assertRedirect('http://a.test/profil');
+        $this->assertAuthenticatedAs($this->anna);
+        $r->assertCookie(Auth::guard('web')->getRecallerName(), null, false);
+
+        // einmal verwendbar
+        Auth::logout();
+        $this->post('http://a.test/anmelden/code', ['email' => 'anna@example.com', 'code' => $code])->assertSessionHasErrors('code');
+        $this->assertGuest();
+    }
+
+    public function test_code_nach_fuenf_fehlversuchen_verbrannt_und_nur_im_eigenen_mandanten(): void
+    {
+        Mail::fake();
+        $this->post('http://a.test/anmelden/link', ['email' => 'anna@example.com'])->assertOk();
+        $code = $this->codeAus();
+
+        $this->post('http://b.test/anmelden/code', ['email' => 'anna@example.com', 'code' => $code])->assertSessionHasErrors('code');
+        $this->assertGuest();
+
+        foreach (range(1, 5) as $i) {
+            $this->post('http://a.test/anmelden/code', ['email' => 'anna@example.com', 'code' => '11111'.$i])->assertSessionHasErrors('code');
+        }
+        $this->post('http://a.test/anmelden/code', ['email' => 'anna@example.com', 'code' => $code])->assertSessionHasErrors('code');
+        $this->assertGuest();
     }
 }

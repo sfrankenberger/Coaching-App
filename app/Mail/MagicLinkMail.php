@@ -19,6 +19,7 @@ class MagicLinkMail extends Mailable
         public User $user,
         public string $url,
         public int $minuten,
+        public ?string $code = null,
     ) {}
 
     public function envelope(): Envelope
@@ -29,7 +30,7 @@ class MagicLinkMail extends Mailable
         return new Envelope(
             from: $from ? new Address($from, $tenant->setting('mail.from_name', $tenant->name)) : null,
             replyTo: ($reply = $tenant?->setting('mail.reply_to')) ? [new Address($reply)] : [],
-            subject: 'Dein Link zum Anmelden',
+            subject: $this->code ? 'Dein Code zum Anmelden: '.substr($this->code, 0, 3).' '.substr($this->code, 3) : 'Dein Link zum Anmelden',
         );
     }
 
@@ -39,6 +40,7 @@ class MagicLinkMail extends Mailable
             'user' => $this->user,
             'url' => $this->url,
             'minuten' => $this->minuten,
+            'code' => $this->code,
         ]);
     }
 }

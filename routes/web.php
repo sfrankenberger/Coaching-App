@@ -118,6 +118,7 @@ Route::get('/strecke/{program}/{user}/stopp', [StreckeController::class, 'stopp'
 Route::middleware('guest')->group(function () {
     Route::get('/anmelden', [LoginController::class, 'form'])->name('anmelden');
     Route::post('/anmelden/link', [LoginController::class, 'sendLink'])->name('anmelden.link');
+    Route::post('/anmelden/code', [LoginController::class, 'code'])->middleware('throttle:10,1')->name('anmelden.code');
     Route::post('/anmelden/passwort', [LoginController::class, 'password'])->name('anmelden.passwort');
     Route::get('/anmelden/dienst/{dienst}', [SocialController::class, 'redirect'])->middleware('throttle:20,1')->name('anmelden.dienst');
     Route::post('/passkeys/anmelden/optionen', [PasskeyController::class, 'loginOptions'])->middleware('throttle:30,1')->name('passkeys.anmelden.optionen');

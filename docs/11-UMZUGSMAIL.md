@@ -11,6 +11,9 @@ unterwegs, zuletzt am 2.10.). Dazu Martha (1:1) und Lea selbst als Kopie.
 Nicht dabei (Entscheid Sebastian, 3.10.): Nicole und Anke, die zwei Neuen im 1:1, haben vom alten Bereich und der App
 noch nichts gehoert und bekommen ihren Einstieg direkt von Lea. Andrea weiss Bescheid.
 
+Warum Code statt Link: Auf dem iPhone oeffnet der Link aus der Mail Safari, nicht die installierte App, und iOS
+trennt die Anmeldung beider. Der Code wird in der App selbst eingetippt und meldet genau dort an.
+
 Hinterlegt als Entwurf in der Rundnachricht (`/coach/rundnachricht`): Empfaenger, Titel, Text, Link, Mail an alle.
 Lea oder Sebastian oeffnen die Seite, lesen gegen, drücken Senden. Nach dem Senden ist der Entwurf weg.
 
@@ -32,13 +35,13 @@ anlegen.
 
 So kommst du rein:
 
-1. Oeffne app.leawernli.ch im Browser auf dem Handy (Safari oder Chrome).
-2. Tippe auf "Link schicken" und gib deine E-Mail-Adresse ein, dieselbe wie bisher. Kein Passwort noetig.
-3. Der Link kommt per Mail, antippen, du bist drin.
-4. Wenn die App fragt, ob du sie auf den Home-Bildschirm legen willst: ja. Dann hast du sie wie bisher als
-   Icon.
-5. Das alte Icon auf dem Home-Bildschirm kannst du loeschen. Es fuehrt zwar noch in die neue App, aber ohne
-   Vollbild und ohne eigenes Icon.
+1. Oeffne app.leawernli.ch im Browser auf dem Handy (Safari oder Chrome) und leg die App auf den
+   Home-Bildschirm, wenn sie dich fragt. Dann hast du sie wie bisher als Icon.
+2. Oeffne die App ueber das neue Icon, tippe auf "Code schicken" und gib deine E-Mail-Adresse ein, dieselbe wie
+   bisher. Kein Passwort noetig.
+3. In der Mail steht ein sechsstelliger Code. Den tippst du in der App ein, fertig. (Am Computer kannst du
+   stattdessen den Link in der Mail anklicken.)
+4. Das alte Icon auf dem Home-Bildschirm loeschen. Es fuehrt sonst jedes Mal auf die Anmeldeseite.
 
 Wenn die App dich nach Mitteilungen fragt: sag ja, dann bekommst du wie gewohnt Bescheid bei neuen Nachrichten
 und Terminen.
