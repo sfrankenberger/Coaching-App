@@ -1204,6 +1204,10 @@ details.karte[open] > summary::after { content: '\2013'; }
 
 /* Teilnehmer-Menue wie im alten Bereich: Gruppen als Ueberschrift, keine Leiste unten */
 .drawer li.gruppe span { display: flex; align-items: center; gap: 16px; padding: 15px 22px; font-size: 17px; color: var(--c-text); border-bottom: 1px solid var(--c-line-soft); }
+/* Sonderpunkte im Menue (Team, Admin): leicht abgesetzt, damit klar ist, was Teilnehmerinnen nicht sehen */
+.drawer li.sonder a, .drawer li.sonder button, .drawer li.sonder > span { background: color-mix(in srgb, var(--c-primary) 7%, var(--c-surface)); }
+.drawer li.gruppe.sonder span { font-size: var(--fs-xs); letter-spacing: .12em; text-transform: uppercase; color: var(--c-primary); padding: 12px 22px 8px; border-top: 1px solid var(--c-line-soft); border-bottom: 0; margin-top: 8px; }
+.drawer li.sonder a:hover, .drawer li.sonder button:hover { background: color-mix(in srgb, var(--c-primary) 12%, var(--c-surface)); }
 .drawer li.gruppe + li.unter a { border-top: 0; }
 .ohne-leiste .leiste { display: none; }
 .ohne-leiste .inhalt { padding-bottom: calc(96px + env(safe-area-inset-bottom)); }

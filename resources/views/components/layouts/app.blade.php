@@ -118,9 +118,6 @@
             <nav>
                 @if ($arbeitsplatz)
                     <ul>
-                        @if ($kannAls)
-                            <li><a href="{{ route('als') }}" @class(['aktiv' => $ist('als')])><i class="fa-solid fa-eye"></i>Ansehen als ...</a></li>
-                        @endif
                         <li><a href="{{ route('home') }}" @class(['aktiv' => $ist('home')])><i class="fa-solid fa-sun"></i>Heute</a></li>
                         <li><a href="{{ route('coachees.index') }}" @class(['aktiv' => $ist('coachees.*')])><i class="fa-solid fa-people-group"></i>Coachees</a></li>
                         <li><a href="{{ route('gespraech.index') }}" @class(['aktiv' => $ist('gespraech.*')])><i class="fa-solid fa-comments"></i>Gespräche @if ($ungelesen)<span class="zahl">{{ $ungelesen }}</span>@endif</a></li>
@@ -128,14 +125,20 @@
                         <li><a href="{{ route('nachschlagen.index') }}" @class(['aktiv' => $ist(['nachschlagen.*', 'themen.*', 'merkliste', 'werkzeuge.*', 'suche'])])><i class="fa-solid fa-magnifying-glass"></i>Nachschlagen</a></li>
                         <li><a href="{{ route('assistent') }}" @class(['aktiv' => $ist('assistent')])><i class="fa-solid fa-wand-magic-sparkles"></i>Assistent</a></li>
                         <li><a href="{{ route('kurse.index') }}" @class(['aktiv' => $ist('kurse.*')])><i class="fa-solid fa-graduation-cap"></i>Kurse</a></li>
-                        <li><a href="/coach"><i class="fa-solid fa-sliders"></i>Verwaltung</a></li>
                         <li><a href="{{ route('profil') }}" @class(['aktiv' => $ist('profil*')])><i class="fa-solid fa-user"></i>Profil</a></li>
-                        <li>
+                        <li><a href="{{ route('hilfe') }}" @class(['aktiv' => $ist('hilfe')])><i class="fa-solid fa-life-ring"></i>Hilfe</a></li>
+                        {{-- Sonderpunkte: nur Team und Admin, abgesetzt, damit klar ist, was Teilnehmerinnen nicht sehen --}}
+                        <li class="gruppe sonder"><span><i class="fa-solid fa-briefcase"></i>Nur für das Team</span></li>
+                        <li class="sonder">
                             <form method="post" action="{{ route('ansicht') }}">
                                 @csrf<input type="hidden" name="ansicht" value="teilnehmer">
                                 <button type="submit"><i class="fa-solid fa-eye"></i>Wie eine Teilnehmerin</button>
                             </form>
                         </li>
+                        @if ($kannAls)
+                            <li class="sonder"><a href="{{ route('als') }}" @class(['aktiv' => $ist('als')])><i class="fa-solid fa-user-secret"></i>Ansehen als ...</a></li>
+                        @endif
+                        <li class="sonder"><a href="/coach"><i class="fa-solid fa-sliders"></i>Verwaltung</a></li>
                         <li>
                             <form method="post" action="{{ route('abmelden') }}">
                                 @csrf
@@ -145,20 +148,6 @@
                     </ul>
                 @else
                     <ul>
-                        @if ($kannAls)
-                            <li><a href="{{ route('als') }}" @class(['aktiv' => $ist('als')])><i class="fa-solid fa-eye"></i>Ansehen als ...</a></li>
-                        @endif
-                        @if ($kannVerwalten)
-                            <li>
-                                <form method="post" action="{{ route('ansicht') }}">
-                                    @csrf<input type="hidden" name="ansicht" value="arbeitsplatz">
-                                    <button type="submit"><i class="fa-solid fa-briefcase"></i>Zurück zum Arbeitsplatz</button>
-                                </form>
-                            </li>
-                        @endif
-                        @if ($kannVerwalten || $person?->is_platform_admin)
-                            <li><a href="/coach"><i class="fa-solid fa-sliders"></i>Verwaltung</a></li>
-                        @endif
                         <li><a href="{{ route('home') }}" @class(['aktiv' => $ist('home')])><i class="fa-solid fa-house"></i>Übersicht</a></li>
                         <li><a href="{{ route('gespraech.index') }}" @class(['aktiv' => $ist('gespraech.*')])><i class="fa-solid fa-user-group"></i>1:1 Coaching mit {{ $branding->coachName() }} @if ($ungelesen)<span class="zahl">{{ $ungelesen }}</span>@endif</a></li>
                         <li><a href="{{ route('termine.index') }}" @class(['aktiv' => $ist('termine.*')])><i class="fa-solid fa-calendar"></i>Termine @if ($neuZahl['termine'] ?? 0)<span class="zahl">{{ $neuZahl['termine'] }}</span>@endif</a></li>
@@ -187,6 +176,24 @@
                         <li class="unter"><a href="{{ route('profil') }}#buchungen"><i class="fa-solid fa-bookmark"></i>Meine Buchungen</a></li>
                         <li class="unter"><a href="{{ route('profil') }}#benachrichtigungen"><i class="fa-solid fa-bell"></i>Benachrichtigungen</a></li>
                         <li><a href="{{ route('hilfe') }}" @class(['aktiv' => $ist('hilfe')])><i class="fa-solid fa-life-ring"></i>Hilfe</a></li>
+                        @if ($kannVerwalten || $kannAls || $person?->is_platform_admin)
+                            {{-- Sonderpunkte: nur Team und Admin, abgesetzt --}}
+                            <li class="gruppe sonder"><span><i class="fa-solid fa-briefcase"></i>Nur für das Team</span></li>
+                            @if ($kannVerwalten)
+                                <li class="sonder">
+                                    <form method="post" action="{{ route('ansicht') }}">
+                                        @csrf<input type="hidden" name="ansicht" value="arbeitsplatz">
+                                        <button type="submit"><i class="fa-solid fa-briefcase"></i>Zurück zum Arbeitsplatz</button>
+                                    </form>
+                                </li>
+                            @endif
+                            @if ($kannAls)
+                                <li class="sonder"><a href="{{ route('als') }}" @class(['aktiv' => $ist('als')])><i class="fa-solid fa-user-secret"></i>Ansehen als ...</a></li>
+                            @endif
+                            @if ($kannVerwalten || $person?->is_platform_admin)
+                                <li class="sonder"><a href="/coach"><i class="fa-solid fa-sliders"></i>Verwaltung</a></li>
+                            @endif
+                        @endif
                         <li>
                             <form method="post" action="{{ route('abmelden') }}">
                                 @csrf
