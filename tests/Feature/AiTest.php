@@ -95,7 +95,7 @@ class AiTest extends TestCase
         $n = $this->in(fn () => app(Summarizer::class)->createTasks($summary, [0, 1], $this->lea));
         $this->assertSame(3, $n, 'eine fuer alle (2 Personen) + eine fuer Bea');
         $this->in(function () {
-            $this->assertSame(2, Task::where('title', 'Jeden Morgen 5 Minuten still sitzen')->where('source', 'ai_summary')->count());
+            $this->assertSame(2, Task::where('title', 'Jeden Morgen 5 Minuten still sitzen')->where('source', 'program')->count(), 'fuer alle im Kurs: Kursaufgabe');
             $bea = Task::where('title', 'Brief an dich schreiben')->first();
             $this->assertSame($this->bea->id, $bea->user_id);
             $this->assertSame($this->lea->id, $bea->assigned_by);
@@ -114,6 +114,45 @@ class AiTest extends TestCase
         $this->actingAs($this->bea)->get('http://a.test/termine/'.$event->id)->assertForbidden();
         $this->actingAs($this->anna)->post('http://a.test/termine/'.$event->id.'/aufgabe', ['nr' => 0])->assertRedirect();
         $this->in(fn () => $this->assertSame(1, Task::where('user_id', $this->anna->id)->where('title', 'Spazieren gehen')->count()));
+    }
+
+    public function test_gruppencall_teilnehmerin_fuer_sich_und_team_fuer_alle_als_wochenaufgabe(): void
+    {
+        Http::fake(['api.anthropic.com/*' => Http::response($this->antwort(['zusammenfassung' => 'Der Call.', 'aufgaben' => [['titel' => 'Dein Umfeld aufschreiben', 'text' => 'Wer tut dir gut?', 'fuer' => 'alle']]]))]);
+        [$event, $kurs] = $this->in(function () {
+            $kurs = Program::create(['title' => 'Hybrid', 'slug' => 'hybrid', 'type' => 'hybrid', 'pacing' => 'weekly']);
+            $w = \App\Models\ProgramStep::create(['program_id' => $kurs->id, 'title' => 'Woche 2', 'position' => 2, 'unlocks_at' => now()->subDays(2)]);
+            ProgramMember::create(['program_id' => $kurs->id, 'user_id' => $this->anna->id]);
+            ProgramMember::create(['program_id' => $kurs->id, 'user_id' => $this->bea->id]);
+            $event = Event::create(['program_id' => $kurs->id, 'step_id' => $w->id, 'title' => 'Gruppencall Woche 2', 'starts_at' => now()->subDay(), 'transcript' => 'Text', 'is_published' => true]);
+
+            return [$event, $kurs];
+        });
+        $this->in(fn () => app(Summarizer::class)->event($event));
+
+        // Teilnehmerin: sieht die Vorschlaege und nimmt sie fuer sich, an der Woche
+        $this->actingAs($this->anna)->get('http://a.test/termine/'.$event->id)->assertOk()->assertSee('Dein Umfeld aufschreiben')->assertSee('Als Aufgabe');
+        $this->actingAs($this->anna)->post('http://a.test/termine/'.$event->id.'/aufgabe', ['nr' => 0])->assertRedirect();
+        $t = $this->in(fn () => Task::where('user_id', $this->anna->id)->where('title', 'Dein Umfeld aufschreiben')->first());
+        $this->assertNotNull($t);
+        $this->assertSame($event->step_id, $t->step_id, 'haengt an der Kurswoche');
+        $this->assertNull($t->assigned_by, 'selbst genommen');
+        $this->assertSame('ai_summary', $t->source);
+        $this->assertSame(0, $this->in(fn () => Task::where('user_id', $this->bea->id)->count()), 'Bea bekommt nichts, wenn Anna fuer sich nimmt');
+
+        // Team: fuer alle im Kurs, als Aufgabe der Woche; Anna hat sie schon, Bea bekommt sie
+        $this->actingAs($this->lea)->get('http://a.test/termine/'.$event->id)->assertOk()->assertSee('Für alle im Kurs');
+        $this->actingAs($this->lea)->post('http://a.test/termine/'.$event->id.'/aufgabe', ['nr' => 0, 'fuer' => 'alle'])->assertRedirect()->assertSessionHas('meldung');
+        $b = $this->in(fn () => Task::where('user_id', $this->bea->id)->where('title', 'Dein Umfeld aufschreiben')->first());
+        $this->assertNotNull($b);
+        $this->assertSame('program', $b->source);
+        $this->assertSame($this->lea->id, $b->assigned_by);
+        $this->assertSame($event->step_id, $b->step_id);
+        $this->assertSame(1, $this->in(fn () => Task::where('user_id', $this->anna->id)->where('title', 'Dein Umfeld aufschreiben')->count()), 'nicht doppelt');
+        // Fremde duerfen nicht
+        $mia = User::factory()->create(['email' => 'mia@test.ch']);
+        $this->a->users()->attach($mia, ['role' => Role::Member->value, 'status' => 'active']);
+        $this->actingAs($mia)->post('http://a.test/termine/'.$event->id.'/aufgabe', ['nr' => 0])->assertForbidden();
     }
 
     public function test_ohne_abschrift_oder_bei_fehler_bleibt_es_sauber(): void

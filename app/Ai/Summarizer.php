@@ -262,8 +262,13 @@ class Summarizer
             .'Nenne keine Namen von Teilnehmerinnen. Etwa 4000 bis 6000 Zeichen, lieber genau als knapp.';
     }
 
-    /** Aus den Vorschlaegen echte Aufgaben machen (Indizes der gewaehlten Vorschlaege). */
-    public function createTasks(AiSummary $summary, array $indices, User $by): int
+    /**
+     * Aus den Vorschlaegen echte Aufgaben machen (Indizes der gewaehlten Vorschlaege).
+     * $nur: feste Empfaenger (z. B. nur die Person selbst), sonst nach "fuer" (alle oder ein Vorname).
+     * Gehoert der Termin zu einer Kurswoche, haengt die Aufgabe an der Woche (Frist: Ende der Woche) und erscheint dort.
+     * Gibt die Coachin sie allen im Kurs, ist sie eine Kursaufgabe (source program), spaetere Teilnehmerinnen bekommen sie auch.
+     */
+    public function createTasks(AiSummary $summary, array $indices, User $by, ?array $nur = null): int
     {
         $event = $summary->summarizable;
         if (! $event instanceof Event) {
@@ -275,19 +280,22 @@ class Summarizer
             if (! $t) {
                 continue;
             }
-            $recipients = $this->recipientsFor($event, $t['fuer'] ?? 'alle');
+            $recipients = $nur ?? $this->recipientsFor($event, $t['fuer'] ?? 'alle');
+            $alle = $nur === null && ! $event->user_id && $event->program_id && mb_strtolower(trim((string) ($t['fuer'] ?? 'alle'))) === 'alle';
             foreach ($recipients as $uid) {
-                $exists = Task::where('user_id', $uid)->where('title', $t['titel'])->where('source', 'ai_summary')->exists();
+                $exists = Task::where('user_id', $uid)->where('title', $t['titel'])->where('settings->event_id', $event->id)->exists();
                 if ($exists) {
                     continue;
                 }
                 Task::create([
                     'user_id' => $uid,
-                    'assigned_by' => $by->id,
+                    'assigned_by' => $by->id !== (int) $uid ? $by->id : null,
                     'program_id' => $event->program_id,
+                    'step_id' => $event->step_id,
+                    'due_at' => $event->step_id ? $event->starts_at->copy()->addDays(6)->toDateString() : null,
                     'title' => $t['titel'],
                     'body' => $t['text'] ?: null,
-                    'source' => 'ai_summary',
+                    'source' => $alle ? 'program' : 'ai_summary',
                     'visibility' => 'coach',
                     'settings' => ['event_id' => $event->id],
                 ]);

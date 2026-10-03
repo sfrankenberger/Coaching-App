@@ -64,15 +64,21 @@
             @if ($event->hasRecording())<x-kapitel :text="$event->summary" />@endif
             <div class="prose-app">{{ \App\Support\Kapitel::html($event->summary) }}</div>
             @if ($vorschlaege?->tasks)
-                <p class="eyebrow" style="margin:18px 0 6px">Deine Aufgaben daraus</p>
+                @php $team = auth()->user()->canManageCurrentTenant(); @endphp
+                <p class="eyebrow" style="margin:18px 0 6px">{{ $team ? 'Aufgaben aus dem Gespräch' : 'Deine Aufgaben daraus' }}</p>
+                @if ($team)<p class="hinweis m-0 mb-2">{{ $event->user_id ? 'Ein Tipp gibt die Aufgabe '.$event->user->vorname().'.' : 'Ein Tipp gibt die Aufgabe allen im Kurs'.($event->step_id ? ', als Aufgabe dieser Woche' : '').'. Steht ein Name dran, bekommt sie nur diese Person.' }}</p>@endif
                 <ul class="divide-y divide-line">
                     @foreach ($vorschlaege->tasks as $i => $t)
                         <li class="flex items-start gap-3 py-2">
                             <div class="min-w-0 flex-1">
-                                <span class="block text-base">{{ $t['titel'] }}</span>
+                                <span class="block text-base">{{ $t['titel'] }}@if (($t['fuer'] ?? 'alle') !== 'alle') <span class="badge">für {{ $t['fuer'] }}</span>@endif</span>
                                 @if ($t['text'])<span class="hinweis block">{{ $t['text'] }}</span>@endif
                             </div>
-                            <form method="post" action="{{ route('termine.aufgabe', $event) }}">@csrf<input type="hidden" name="nr" value="{{ $i }}"><button class="knopf knopf-leise knopf-klein">Als Aufgabe</button></form>
+                            @if ($team)
+                                <form method="post" action="{{ route('termine.aufgabe', $event) }}">@csrf<input type="hidden" name="nr" value="{{ $i }}"><input type="hidden" name="fuer" value="alle"><button class="knopf knopf-leise knopf-klein"><i class="fa-solid fa-list-check"></i>{{ $event->user_id ? 'Für '.$event->user->vorname() : ((($t['fuer'] ?? 'alle') !== 'alle') ? 'Für '.$t['fuer'] : 'Für alle im Kurs') }}</button></form>
+                            @else
+                                <form method="post" action="{{ route('termine.aufgabe', $event) }}">@csrf<input type="hidden" name="nr" value="{{ $i }}"><button class="knopf knopf-leise knopf-klein">Als Aufgabe</button></form>
+                            @endif
                         </li>
                     @endforeach
                 </ul>

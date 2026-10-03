@@ -98,17 +98,29 @@ class TermineController extends Controller
             'mein' => $termin->attendees->firstWhere('user_id', $user->id),
             'absagen' => $termin->attendees->where('status', 'declined'),
             'dabei' => $termin->attendees->whereNotNull('invited_at')->map(fn ($a) => $a->user)->filter()->when($termin->user, fn ($c) => $c->prepend($termin->user))->unique('id')->values(),
-            'vorschlaege' => $termin->user_id === $user->id ? AiSummary::where('summarizable_type', 'event')->where('summarizable_id', $termin->id)->where('status', 'done')->first() : null,
+            'vorschlaege' => AiSummary::where('summarizable_type', 'event')->where('summarizable_id', $termin->id)->where('status', 'done')->first(),
         ]);
     }
 
     /** Aus der KI-Zusammenfassung der eigenen 1:1-Sitzung eine Aufgabe uebernehmen. */
+    /**
+     * Aufgabe aus der Zusammenfassung uebernehmen: eine Teilnehmerin fuer sich selbst, das Team fuer alle im Kurs
+     * (als Wochenaufgabe) oder fuer die Person der 1:1-Sitzung.
+     */
     public function aufgabe(Request $request, Event $termin, Summarizer $summarizer): RedirectResponse
     {
         $user = $request->user();
-        abort_unless($termin->user_id === $user->id, 403);
+        Gate::authorize('view', $termin);
         $summary = AiSummary::where('summarizable_type', 'event')->where('summarizable_id', $termin->id)->where('status', 'done')->firstOrFail();
-        $n = $summarizer->createTasks($summary, [(int) $request->input('nr')], $user);
+        $nr = [(int) $request->input('nr')];
+
+        if ($user->canManageCurrentTenant() && $request->input('fuer') === 'alle') {
+            $n = $summarizer->createTasks($summary, $nr, $user);
+
+            return back()->with('meldung', $n ? ($termin->user_id ? 'Als Aufgabe gegeben.' : "An $n Person".($n === 1 ? '' : 'en').' im Kurs gegeben'.($termin->step_id ? ', als Aufgabe dieser Woche' : '').'.') : 'Die haben alle schon.');
+        }
+        abort_unless($termin->user_id === $user->id || $termin->personenIds()->contains($user->id) || ($termin->program_id && ! $user->canManageCurrentTenant()), 403);
+        $n = $summarizer->createTasks($summary, $nr, $user, [$user->id]);
 
         return back()->with('meldung', $n ? 'In deine Aufgaben übernommen.' : 'Die Aufgabe hast du schon.');
     }
