@@ -75,7 +75,7 @@
                 @endforeach
             </details>
         @endif
-        @unless ($ich->canManageCurrentTenant())
+        @if (\App\Programs\Wochenaufgabe::teilnehmerin($ich))
             <form method="post" action="{{ route('aufgaben.store') }}" class="baustein mt-1">
                 @csrf
                 <input type="hidden" name="program_id" value="{{ $program->id }}">
@@ -89,7 +89,7 @@
                 </div>
                 <p class="hinweis m-0 mt-2">Deine Coachin sieht, was du dir vornimmst. Du kannst es im Journal ändern.</p>
             </form>
-        @endunless
+        @endif
 
         {{-- Material der Woche und ihrer Lektionen --}}
         @if ($material->isNotEmpty())
@@ -99,8 +99,8 @@
             @endforeach
         @endif
 
-        {{-- Reflexions- und Fragentag: Teilnehmerinnen haben sie als Aufgaben oben, das Team sieht die Tage hier --}}
-        @foreach ($ich->canManageCurrentTenant() ? $termine->filter(fn ($t) => in_array($t->type, \App\Models\Event::ALL_DAY_TYPES, true)) : collect() as $t)
+        {{-- Reflexions- und Fragentag: Teilnehmerinnen (und das Team in der Teilnehmer-Ansicht) haben sie als Aufgaben oben, nur der Arbeitsplatz sieht die Tage hier --}}
+        @foreach (! \App\Programs\Wochenaufgabe::teilnehmerin($ich) ? $termine->filter(fn ($t) => in_array($t->type, \App\Models\Event::ALL_DAY_TYPES, true)) : collect() as $t)
             @php $refl = $t->type === 'reflection_day'; $geschrieben = $refl && $reflexion; $gefragt = ! $refl && $fragen->isNotEmpty(); @endphp
             <a href="{{ $refl ? ($geschrieben ? route('reflexion.index').'#reflexion-'.$reflexion->id : route('reflexion.index')) : route('kurse.fragen', [$program, 'frage' => 1]) }}" class="zeile" style="margin-top:12px">
                 <span class="ic" @if ($geschrieben || $gefragt) style="background:var(--c-success-soft);color:var(--c-success)" @endif><i class="fa-solid fa-{{ $geschrieben || $gefragt ? 'circle-check' : ($refl ? 'pen-to-square' : 'circle-question') }}"></i></span>

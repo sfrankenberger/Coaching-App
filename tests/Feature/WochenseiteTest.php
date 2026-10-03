@@ -262,5 +262,7 @@ class WochenseiteTest extends TestCase
         $this->in(fn () => \App\Coach\Ansicht::setzen($this->lea, 'teilnehmer'));
         $this->actingAs($this->lea)->get('https://a.test/')->assertOk()->assertSee('Deine Wochenreflexion');
         $this->assertSame(2, $this->in(fn () => Task::where('user_id', $this->lea->id)->count()));
+        // Auf der Wochenseite nur die Aufgaben, nicht zusaetzlich die Tageszeilen (die sind fuer den Arbeitsplatz)
+        $this->actingAs($this->lea)->get('https://a.test/kurse/hybrid/schritt/'.$w1->id)->assertOk()->assertSee('Deine Wochenreflexion')->assertDontSee('Reflexion schreiben</b>', false);
     }
 }
