@@ -140,6 +140,15 @@ class KaufenTest extends TestCase
         $this->post('http://a.test/kaufen/der-anfang', ['name' => 'Mia', 'email' => 'mia@test.ch', 'zahlung' => 'gratis', 'agb' => 1])->assertRedirect();
         $v = app(CurrentTenant::class)->run($this->a, fn () => Verkauf::first());
         $this->assertSame('kostenlos', $v->zahlungsart);
+        // Ohne Haekchen kein Newsletter-Tag, mit Haekchen Tag plus Einwilligung (Kontakt ist ueber den Zugang schon bestaetigt)
+        $k = app(CurrentTenant::class)->run($this->a, fn () => \App\Models\Kontakt::where('email', 'mia@test.ch')->first());
+        $this->assertNotNull($k);
+        $this->assertNotContains('newsletter', $k->tags ?? []);
+        $this->post('http://a.test/kaufen/der-anfang', ['name' => 'Nora', 'email' => 'nora@test.ch', 'zahlung' => 'gratis', 'agb' => 1, 'newsletter' => 1])->assertRedirect();
+        $k2 = app(CurrentTenant::class)->run($this->a, fn () => \App\Models\Kontakt::where('email', 'nora@test.ch')->first());
+        $this->assertContains('newsletter', $k2->tags);
+        $this->assertSame('bestaetigt', $k2->status);
+        $this->assertSame('kasse:der-anfang', $k2->einwilligung['newsletter']['herkunft']);
         Http::assertNothingSent();
         Mail::assertSent(RechnungMail::class);
         // Unbekannt und fremder Mandant

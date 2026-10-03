@@ -66,6 +66,7 @@
             @endunless
             <label class="flex items-start gap-2 mb-2 text-md"><input type="checkbox" name="agb" value="1" required class="mt-1"> <span>Ich bestelle {{ $offer->is_free ? '' : 'zahlungspflichtig ' }}und akzeptiere die @if (! empty($links['agb']))<a href="{{ $links['agb'] }}" target="_blank" rel="noopener">AGB</a>@else AGB @endif@if (! empty($links['datenschutz'])) und die <a href="{{ $links['datenschutz'] }}" target="_blank" rel="noopener">Datenschutzerklärung</a>@endif.</span></label>
             @error('agb')<p class="fehler mb-2">{{ $message }}</p>@enderror
+            <label class="flex items-start gap-2 mb-2 text-md"><input type="checkbox" name="newsletter" value="1" class="mt-1" @checked(old('newsletter'))> <span>Ja, ich möchte den Newsletter von {{ $coach ?? app(\App\Tenancy\Branding::class)->coachName() }}: Impulse und Neues, ab und zu, jederzeit abbestellbar.</span></label>
             @unless ($offer->is_free)
                 <label class="flex items-start gap-2 mb-3 text-md"><input type="checkbox" name="widerruf" value="1" required class="mt-1"> <span>Ich möchte, dass es sofort losgeht, und weiss, dass ich damit auf mein Widerrufsrecht verzichte.@if (! empty($links['widerruf'])) <a href="{{ $links['widerruf'] }}" target="_blank" rel="noopener">Widerrufsbelehrung</a>@endif</span></label>
                 @error('widerruf')<p class="fehler mb-2">{{ $message }}</p>@enderror

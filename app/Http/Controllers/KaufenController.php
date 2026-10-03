@@ -7,6 +7,7 @@ use App\Models\Membership;
 use App\Models\Offer;
 use App\Models\User;
 use App\Models\Verkauf;
+use App\Newsletter\Kontakte;
 use App\Shop\Abo;
 use App\Shop\Buchhaltung;
 use App\Shop\Stripe;
@@ -67,6 +68,7 @@ class KaufenController extends Controller
             'ort' => [$offer->is_free ? 'nullable' : 'required', 'string', 'max:120'],
             'land' => ['nullable', 'string', 'max:2'],
             'website' => ['nullable', 'size:0'],   // Honigtopf
+            'newsletter' => ['nullable', 'boolean'],
         ], ['widerruf.accepted' => 'Bitte bestätige den Verzicht auf das Widerrufsrecht, sonst können wir nicht sofort freischalten.']);
         $preise = $offer->preise();
         $waehrung = $this->waehrung($request, $preise, $data['waehrung'] ?? null);
@@ -93,6 +95,16 @@ class KaufenController extends Controller
             'settings' => $recht,
         ]);
         $request->session()->put('kauf_'.$offer->id, $v->id);
+        // Newsletter nur mit Haekchen: der Kontakt ist ueber den Zugang schon bestaetigt, der Tag startet die Willkommensserie
+        if (! empty($data['newsletter'])) {
+            try {
+                $k = app(Kontakte::class)->ausMitglied($user, []);
+                $k->forceFill(['einwilligung' => array_merge($k->einwilligung ?? [], ['newsletter' => ['herkunft' => 'kasse:'.$offer->slug, 'zeit' => now()->toIso8601String(), 'ip' => $request->ip()]])])->save();
+                app(Kontakte::class)->taggen($k, ['newsletter']);
+            } catch (\Throwable $e) {
+                report($e);
+            }
+        }
 
         if ($zahlung === 'stripe') {
             try {
