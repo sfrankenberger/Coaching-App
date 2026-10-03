@@ -37,6 +37,7 @@ php84 artisan import:wordpress lea --only=users --dry-run -v   # auch programs, 
 php84 artisan push:keys lea                            # VAPID-Schluessel fuer Web Push
 php84 artisan bridge:secret lea                        # Geheimnis der SSO-Bruecke (in WordPress eintragen)
 php84 artisan benachrichtigungen:runde termine         # Laeufe (termine, nachfassen, aufgaben, abendmail), sonst Scheduler
+php84 artisan wochenaufgaben:anlegen lea               # Reflexion und Frage der Kurswoche als Aufgaben fuer alle im Kurs (taeglich 05:40)
 php84 artisan inhalte:feeds lea                        # Impulse und Podcast per RSS, sonst stuendlich
 php84 artisan aufzeichnungen:wache lea                 # Vimeo-Aufzeichnungen zuordnen, Abschrift, Zusammenfassung (alle 15 Min)
 php84 artisan zoom:anwesenheit lea --trocken           # wer war im Zoom-Call (stuendlich, ohne --trocken setzt es "live dabei")

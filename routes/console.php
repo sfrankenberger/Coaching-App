@@ -14,6 +14,7 @@ Schedule::call(fn () => MagicLink::prune())->daily()->name('login-tokens-aufraeu
 // Benachrichtigungen (Zeiten in der Zeitzone des Servers, Mandanten-Zeitzone im Lauf selbst)
 Schedule::command('benachrichtigungen:runde termine')->everyTenMinutes()->withoutOverlapping();
 Schedule::command('benachrichtigungen:runde nachfassen')->everyTenMinutes()->withoutOverlapping();
+Schedule::command('wochenaufgaben:anlegen')->dailyAt('05:40');   // Reflexion und Frage der Kurswoche fuer alle im Kurs
 Schedule::command('benachrichtigungen:runde aufgaben --wann=morgen')->dailyAt('08:00');
 Schedule::command('benachrichtigungen:runde aufgaben --wann=abend')->dailyAt('18:00');
 Schedule::command('benachrichtigungen:runde punkt')->everyFiveMinutes()->withoutOverlapping();   // "Jetzt dran" zur Uhrzeit der Aufgabe

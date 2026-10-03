@@ -149,10 +149,10 @@ class KursController extends Controller
         // Reflexions- und Fragentag als abhakbare Aufgaben der Woche; was schon geschrieben ist, gilt als erledigt
         $wa = app(Wochenaufgabe::class);
         $wa->sicherstellen($user, $program, $schritt);
-        $reflexion = $user->canManageCurrentTenant() ? null : Reflection::where('user_id', $user->id)->where(fn ($q) => $q->where('step_id', $schritt->id)
+        $reflexion = ! Wochenaufgabe::teilnehmerin($user) ? null : Reflection::where('user_id', $user->id)->where(fn ($q) => $q->where('step_id', $schritt->id)
             ->orWhere(fn ($w) => $w->whereNull('step_id')->where(fn ($x) => $x->where('program_id', $program->id)->orWhereNull('program_id'))->where($imFenster)))->latest()->first();
         $fragen = Question::where('user_id', $user->id)->where('program_id', $program->id)->where($imFenster)->withCount('answers')->latest()->get();
-        if (! $user->canManageCurrentTenant()) {
+        if (Wochenaufgabe::teilnehmerin($user)) {
             $reflexion && $wa->abhakenArt($user, 'reflexion', $schritt->id);
             $fragen->isNotEmpty() && $wa->abhakenArt($user, 'frage', $schritt->id);
         }

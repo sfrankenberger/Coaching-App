@@ -220,4 +220,47 @@ class WochenseiteTest extends TestCase
         $this->assertNull($this->in(fn () => MediaPosition::where('key', "resource-{$r->id}")->first()->watched_at));
         $this->assertSame(0, $this->in(fn () => MediaPosition::where('key', "resource-{$r->id}")->value('seconds')));
     }
+
+    public function test_reflexion_und_frage_der_woche_fuer_alle_im_kurs_auch_ohne_besuch(): void
+    {
+        $w1 = $this->in(fn () => $this->kurs->steps()->first());
+        $this->in(fn () => Event::create(['program_id' => $this->kurs->id, 'step_id' => $w1->id, 'title' => 'Fragentag', 'type' => 'question_day', 'all_day' => true, 'starts_at' => now()->addDays(2)]));
+        $bea = User::factory()->create();
+        $this->a->users()->attach($bea, ['role' => Role::Member->value, 'status' => 'active']);
+        $this->in(fn () => ProgramMember::create(['program_id' => $this->kurs->id, 'user_id' => $bea->id]));
+        $this->in(fn () => ProgramMember::create(['program_id' => $this->kurs->id, 'user_id' => $this->lea->id]));
+
+        // Lauf beim Wochenstart: alle Teilnehmerinnen, nicht das Team, beim zweiten Mal nichts Neues
+        $this->artisan('wochenaufgaben:anlegen', ['tenant' => 'a'])->expectsOutputToContain('Hybrid: 4 neu')->assertSuccessful();
+        $this->in(function () use ($bea, $w1) {
+            $this->assertSame(['frage', 'reflexion'], Task::where('user_id', $this->anna->id)->orderBy('kind')->pluck('kind')->all());
+            $this->assertSame(2, Task::where('user_id', $bea->id)->count());
+            $this->assertSame(0, Task::where('user_id', $this->lea->id)->count(), 'Team bekommt im Lauf nichts');
+            $t = Task::where('user_id', $this->anna->id)->where('kind', 'reflexion')->first();
+            $this->assertSame($w1->id, $t->step_id);
+            $this->assertSame('program', $t->source);
+            $this->assertSame((int) now()->addDays(3)->isoWeekday(), $t->weekday);
+        });
+        $this->artisan('wochenaufgaben:anlegen', ['tenant' => 'a'])->doesntExpectOutputToContain('neu')->assertSuccessful();
+
+        // Abhaken ohne etwas geschrieben zu haben, direkt an der Karte unter Meine Aufgaben
+        $t = $this->in(fn () => Task::where('user_id', $this->anna->id)->where('kind', 'reflexion')->first());
+        $this->actingAs($this->anna)->get('https://a.test/aufgaben')->assertOk()->assertSee('Deine Wochenreflexion')->assertSee('Deine Frage für den Fragentag');
+        $this->actingAs($this->anna)->post('https://a.test/aufgaben/'.$t->id.'/haken')->assertRedirect();
+        $this->assertNotNull($this->in(fn () => $t->fresh()->done_at));
+
+        // Neu dazugekommen, noch kein Lauf: Meine Aufgaben legt die Woche beim Oeffnen an
+        $cara = User::factory()->create();
+        $this->a->users()->attach($cara, ['role' => Role::Member->value, 'status' => 'active']);
+        $this->in(fn () => ProgramMember::create(['program_id' => $this->kurs->id, 'user_id' => $cara->id]));
+        $this->actingAs($cara)->get('https://a.test/aufgaben')->assertOk()->assertSee('Deine Wochenreflexion');
+        $this->assertSame(2, $this->in(fn () => Task::where('user_id', $cara->id)->count()));
+
+        // Team: im Arbeitsplatz nichts, in der Teilnehmer-Ansicht wie eine Teilnehmerin
+        $this->actingAs($this->lea)->get('https://a.test/aufgaben')->assertOk();
+        $this->assertSame(0, $this->in(fn () => Task::where('user_id', $this->lea->id)->count()));
+        $this->in(fn () => \App\Coach\Ansicht::setzen($this->lea, 'teilnehmer'));
+        $this->actingAs($this->lea)->get('https://a.test/')->assertOk()->assertSee('Deine Wochenreflexion');
+        $this->assertSame(2, $this->in(fn () => Task::where('user_id', $this->lea->id)->count()));
+    }
 }

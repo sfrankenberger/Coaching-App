@@ -7,6 +7,7 @@ use App\Http\Requests\AufgabeRequest;
 use App\Models\Projekt;
 use App\Models\Task;
 use App\Programs\ProgramAccess;
+use App\Programs\Wochenaufgabe;
 use App\Support\Anhaenge;
 use App\Support\Filter;
 use App\Support\Funktionen;
@@ -24,8 +25,10 @@ class AufgabenController extends Controller
     {
         $user = $request->user();
         $filter = Filter::aus($request);
+        // Reflexion und Frage der laufenden Kurswoche gehoeren hierher, auch wenn die Woche noch nicht geoeffnet wurde
+        app(Wochenaufgabe::class)->sicherstellenAlle($user, $this->access->programsFor($user));
 
-        $tasks = Task::where('user_id', $user->id)->with(['assigner:id,name', 'program:id,title', 'anhaenge.ziel', 'projekt:id,name,farbe,icon', 'comments'])
+        $tasks = Task::where('user_id', $user->id)->with(['assigner:id,name', 'program:id,title,slug', 'anhaenge.ziel', 'projekt:id,name,farbe,icon', 'comments'])
             ->orderByRaw('CASE WHEN done_at IS NULL THEN 0 ELSE 1 END')->orderByDesc('is_pinned')->orderBy('due_at')->orderByDesc('created_at')
             ->get()
             ->filter(fn (Task $t) => $filter->passt($t));
