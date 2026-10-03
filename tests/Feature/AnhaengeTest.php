@@ -121,6 +121,17 @@ class AnhaengeTest extends TestCase
 
         $this->actingAs($this->bea)->post('http://a.test/notizen', ['body' => 'Versuch', 'refs' => ['task:'.$this->annasAufgabe->id]])->assertRedirect();
         $this->assertSame(1, $this->in(fn () => Anhang::count()));
+
+        // Die Karte fuehrt Anna in ihre Liste, die Coachin ins Dossier von Anna (Reiter Aufgaben), Bea nirgendwohin
+        $karte = fn () => app(\App\Support\Anhaenge::class)->karte($this->annasAufgabe->fresh())['url'];
+        $this->actingAs($this->anna);
+        $this->assertStringEndsWith('/aufgaben#aufgabe-'.$this->annasAufgabe->id, $this->in($karte));
+        $this->actingAs($this->lea);
+        $m = $this->in(fn () => \App\Models\Membership::where('user_id', $this->anna->id)->first());
+        $this->assertStringEndsWith('/coachees/'.$m->id.'?r=aufgaben#aufgabe-'.$this->annasAufgabe->id, $this->in($karte));
+        $this->actingAs($this->lea)->get('http://a.test/coachees/'.$m->id.'?r=aufgaben')->assertOk()->assertSee('id="aufgabe-'.$this->annasAufgabe->id.'"', false);
+        $this->actingAs($this->bea);
+        $this->assertNull($this->in($karte));
     }
 
     public function test_suche_findet_termine_material_und_lektionen_nicht_fremdes(): void

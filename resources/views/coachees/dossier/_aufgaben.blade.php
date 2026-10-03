@@ -10,7 +10,7 @@
 </details>
 
 @forelse ($aufgaben as $t)
-    <div class="karte">
+    <div class="karte" id="aufgabe-{{ $t->id }}">
         <div class="flex items-start gap-2">
             <i class="fa-{{ $t->done_at ? 'solid fa-circle-check' : 'regular fa-circle' }} mt-1" style="color:var(--c-{{ $t->done_at ? 'success' : 'ghost' }})"></i>
             <div class="min-w-0 flex-1">

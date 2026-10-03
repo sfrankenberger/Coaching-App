@@ -4,6 +4,7 @@ namespace App\Support;
 
 use App\Models\Anhang;
 use App\Models\Event;
+use App\Models\Membership;
 use App\Models\Note;
 use App\Models\Reflection;
 use App\Models\Resource;
@@ -115,6 +116,23 @@ class Anhaenge
         $item->unsetRelation('anhaenge');
     }
 
+    /**
+     * Wohin ein persoenliches Element fuehrt: die Eigentuemerin in ihre eigene Liste, das Team ins Dossier der Person
+     * (dort lassen sich geteilte Aufgaben lesen und kommentieren), alle anderen nirgendwohin.
+     */
+    protected function zielUrl(?int $eigentuemerId, string $eigeneUrl, string $reiter, string $anker): ?string
+    {
+        $ich = auth()->user();
+        if (! $ich || ! $eigentuemerId || $eigentuemerId === $ich->id) {
+            return $eigeneUrl;
+        }
+        if ($ich->canManageCurrentTenant() && ($m = Membership::where('user_id', $eigentuemerId)->first())) {
+            return route('coachees.show', [$m, 'r' => $reiter]).'#'.$anker;
+        }
+
+        return null;
+    }
+
     /** Karte zum Anzeigen: Art, Bezeichnung, Symbol, Titel, Zusatz und Ziel. */
     public function karte(Model $ziel): array
     {
@@ -125,7 +143,7 @@ class Anhaenge
         if ($ziel instanceof Task) {
             $karte['titel'] = $ziel->title;
             $karte['zusatz'] = $ziel->due_at ? 'bis '.$ziel->due_at->translatedFormat('j. M') : $ziel->created_at?->translatedFormat('j. M');
-            $karte['url'] = route('aufgaben.index').'#aufgabe-'.$ziel->id;
+            $karte['url'] = $this->zielUrl($ziel->user_id, route('aufgaben.index').'#aufgabe-'.$ziel->id, 'aufgaben', 'aufgabe-'.$ziel->id);
         } elseif ($ziel instanceof Note) {
             $karte['titel'] = $ziel->title ?: Str::limit(trim((string) $ziel->body), 70);
             $karte['zusatz'] = $ziel->created_at?->translatedFormat('j. M');

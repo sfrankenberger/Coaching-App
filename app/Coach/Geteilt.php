@@ -3,7 +3,6 @@
 namespace App\Coach;
 
 use App\Chat\Chat;
-use App\Filament\Coach\Resources\Memberships\MembershipResource;
 use App\Models\Membership;
 use App\Models\Note;
 use App\Models\Program;
@@ -93,7 +92,7 @@ class Geteilt
         $this->notifier->send($this->chat->teamIds()->reject(fn ($id) => $id === $user->id), new Nachricht(
             titel: $user->vorname().' teilt eine '.$label.' mit dir',
             text: (string) $text,
-            url: $membership ? MembershipResource::getUrl('dossier', ['record' => $membership], panel: 'coach') : null,
+            url: $membership ? route('coachees.show', [$membership, 'r' => $item instanceof Task ? 'aufgaben' : 'geteilt']).($item instanceof Task ? '#aufgabe-'.$item->getKey() : '') : null,
             anlass: 'geteilt',
             tag: 'geteilt-'.$item->getMorphClass().'-'.$item->getKey(),
         ));
