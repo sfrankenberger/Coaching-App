@@ -78,11 +78,12 @@ class Rundnachricht extends Page
     {
         return $schema->components([
             Section::make('An wen')->schema([
-                Select::make('an')->label('Empfänger')->options(['alle' => 'Alle aktiven Personen', 'programm' => 'Ein Programm', 'einzelne' => 'Einzelne Personen'])->required()->native(false)->live(),
-                Select::make('user_ids')->label('Personen')->multiple()->searchable()->native(false)
+                Select::make('an')->label('Empfänger')->options(['alle' => 'Alle aktiven Personen', 'programm' => 'Alle in einem Kurs', 'begleitung' => 'Alle in der 1:1 Begleitung (jetzt oder früher)', 'einzelne' => 'Einzelne Personen'])->required()->native(false)->live(),
+                Select::make('user_ids')->label('Personen (mehrere möglich)')->multiple()->searchable()->native(false)
                     ->options(fn () => Membership::where('status', 'active')->whereIn('role', ['member', 'client'])->with('user:id,name')->get()->filter->user->mapWithKeys(fn ($m) => [$m->user_id => $m->user->name])->sort()->all())
                     ->visible(fn ($get) => $get('an') === 'einzelne')->required(fn ($get) => $get('an') === 'einzelne'),
-                Select::make('program_id')->label('Programm')->options(fn () => Program::orderBy('title')->pluck('title', 'id')->all())->native(false)
+                Select::make('program_id')->label('Kurs')->options(fn () => Rundsendung::kurse()->pluck('title', 'id')->all())->native(false)
+                    ->helperText('Nur Kurse mit Teilnehmerinnen. Die 1:1 Begleitungen stehen zusammen unter «Alle in der 1:1 Begleitung».')
                     ->visible(fn ($get) => $get('an') === 'programm')->required(fn ($get) => $get('an') === 'programm'),
                 Toggle::make('chat')->label('Auch als Nachricht ins Gruppengespräch')->visible(fn ($get) => $get('an') === 'programm' && ! $get('persoenlich')),
                 Toggle::make('persoenlich')->label('Als persönliche Nachricht ins 1:1-Gespräch')->live()

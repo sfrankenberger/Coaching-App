@@ -19,17 +19,27 @@ class Rundsendung
 {
     public function __construct(protected Notifier $notifier, protected Chat $chat) {}
 
-    /** Empfaenger-IDs (ohne Team und ohne die Absenderin). */
+    /**
+     * Empfaenger-IDs: nur aktive Teilnehmerinnen (Rolle member oder client), nie das Team, nie die Absenderin.
+     * an = alle | programm (ein Kurs) | begleitung (alle, die in einer 1:1 Begleitung sind oder waren) | einzelne.
+     */
     public function recipients(string $an, ?int $programId, User $von, array $einzelne = []): Collection
     {
-        $aktiv = Membership::where('status', 'active')->pluck('user_id');
+        $aktiv = Membership::where('status', 'active')->whereIn('role', ['member', 'client'])->pluck('user_id');
         $ids = match ($an) {
-            'programm' => $programId ? ProgramMember::where('program_id', $programId)->pluck('user_id') : collect(),
+            'programm' => $programId ? ProgramMember::where('program_id', $programId)->pluck('user_id')->intersect($aktiv) : collect(),
+            'begleitung' => ProgramMember::whereIn('program_id', Program::where('type', 'one_on_one')->select('id'))->pluck('user_id')->intersect($aktiv),
             'einzelne' => collect($einzelne)->map(fn ($id) => (int) $id)->intersect($aktiv),
-            default => Membership::where('status', 'active')->whereIn('role', ['member', 'client'])->pluck('user_id'),
+            default => $aktiv,
         };
 
         return $ids->unique()->reject(fn ($id) => (int) $id === $von->id)->values();
+    }
+
+    /** Kurse, die sich als Empfaengerkreis waehlen lassen: keine 1:1 Begleitung, nichts Internes, nur mit Teilnehmerinnen. */
+    public static function kurse(): Collection
+    {
+        return Program::where('type', '!=', 'one_on_one')->where('is_internal', false)->whereHas('members')->orderBy('title')->get();
     }
 
     /**

@@ -61,7 +61,8 @@ class Rundnachricht extends Model
     public function wohin(): string
     {
         return match ($this->an) {
-            'programm' => $this->program?->title ?? 'Programm',
+            'programm' => $this->program?->title ?? 'Kurs',
+            'begleitung' => '1:1 Begleitung',
             'einzelne' => count($this->user_ids ?? []).' Personen',
             default => 'Alle',
         };

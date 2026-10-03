@@ -210,4 +210,34 @@ class RundsendungTest extends TestCase
             $this->assertStringContainsString('/n/bild/'.basename($pfad), \App\Newsletter\Bausteine::html($e->bloecke, null));
         });
     }
+
+    public function test_kurse_ohne_1_zu_1_und_alle_in_der_begleitung(): void
+    {
+        $andrea = User::factory()->create(['name' => 'Andrea Team']);
+        $this->a->users()->attach($andrea, ['role' => Role::Team->value, 'status' => 'active']);
+        $ehemalig = User::factory()->create(['name' => 'Ehemalige']);
+        $this->a->users()->attach($ehemalig, ['role' => Role::Member->value, 'status' => 'inactive']);
+        $this->in(function () use ($andrea, $ehemalig) {
+            $hybrid = Program::create(['title' => 'Hybrid', 'slug' => 'hybrid', 'type' => 'hybrid']);
+            $intern = Program::create(['title' => 'Intern', 'slug' => 'intern', 'type' => 'selfpaced', 'is_internal' => true]);
+            $leer = Program::create(['title' => 'Leer', 'slug' => 'leer', 'type' => 'selfpaced']);
+            $eins = Program::create(['title' => '1:1 Anna', 'slug' => 'eins-anna', 'type' => 'one_on_one']);
+            $zwei = Program::create(['title' => '1:1 Ehemalige', 'slug' => 'eins-ehemalig', 'type' => 'one_on_one']);
+            foreach ([[$hybrid, $this->anna], [$hybrid, $andrea], [$hybrid, $this->lea], [$intern, $this->anna], [$eins, $this->anna], [$zwei, $ehemalig]] as [$p, $u]) {
+                ProgramMember::create(['program_id' => $p->id, 'user_id' => $u->id]);
+            }
+            $this->assertSame(['Hybrid'], Rundsendung::kurse()->pluck('title')->all(), 'keine 1:1, nichts Internes, nichts ohne Teilnehmerinnen');
+
+            $r = app(Rundsendung::class);
+            $this->assertSame([$this->anna->id], $r->recipients('programm', $hybrid->id, $this->lea)->all(), 'Team und Absenderin nicht, auch wenn sie im Kurs sind');
+            $this->assertSame([$this->anna->id], $r->recipients('begleitung', null, $this->lea)->all(), 'alle 1:1 zusammen, Ehemalige ohne aktives Konto nicht');
+            $this->assertSame([$this->anna->id, $this->bea->id], $r->recipients('alle', null, $this->lea)->sort()->values()->all());
+
+            $this->actingAs($this->lea);
+            Livewire::test(RundnachrichtSeite::class)->call('neu')
+                ->fillForm(['an' => 'begleitung', 'titel' => 'Für die 1:1', 'text' => 'Hallo', 'kanaele' => ['mail']])
+                ->callAction('senden')->assertNotified('An 1 Person geschickt');
+            $this->assertSame('1:1 Begleitung', Rundnachricht::where('status', 'gesendet')->first()->wohin());
+        });
+    }
 }

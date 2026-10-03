@@ -28,8 +28,8 @@ class RundnachrichtSenden extends Werkzeug
     public function schema(): array
     {
         return $this->str([
-            'an' => ['type' => 'string', 'enum' => ['alle', 'programm'], 'description' => 'Vorgabe: alle'],
-            'programm' => ['type' => 'string', 'description' => 'Titel oder Slug des Programms, wenn an=programm'],
+            'an' => ['type' => 'string', 'enum' => ['alle', 'programm', 'begleitung'], 'description' => 'Vorgabe: alle. begleitung = alle, die in einer 1:1 Begleitung sind oder waren'],
+            'programm' => ['type' => 'string', 'description' => 'Titel oder Slug des Kurses, wenn an=programm'],
             'titel' => ['type' => 'string'],
             'text' => ['type' => 'string'],
             'url' => ['type' => 'string', 'description' => 'Link hinter dem Knopf, sonst die Startseite'],
@@ -41,7 +41,7 @@ class RundnachrichtSenden extends Werkzeug
 
     public function ausfuehren(array $args, User $von): array
     {
-        $an = ($args['an'] ?? 'alle') === 'programm' ? 'programm' : 'alle';
+        $an = in_array($args['an'] ?? 'alle', ['programm', 'begleitung'], true) ? $args['an'] : 'alle';
         $program = null;
         if ($an === 'programm') {
             $s = trim((string) ($args['programm'] ?? ''));
