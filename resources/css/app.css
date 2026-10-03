@@ -989,17 +989,19 @@
     @media (min-width: 761px) { .chat-eingabe { margin: 0 -18px; padding-inline: 18px; } }
     .chat-eingabe-in { max-width: var(--page-width); margin: 0 auto; display: flex; flex-direction: column; gap: 8px; }
     .chat-eingabe textarea { border-radius: 22px; padding: 11px 16px; resize: none; }
+    /* Eingabe als Kasten: Feld oben ueber die ganze Breite, Knoepfe darunter */
+    .chat-zeile { display: flex; flex-direction: column; gap: 4px; background: #fff; border: 1px solid var(--c-card-border); border-radius: 20px; padding: 8px 8px 6px; }
+    .chat-zeile:focus-within { border-color: var(--c-primary); }
+    .chat-zeile textarea.feld { border: 0; border-radius: 0; background: transparent; padding: 4px 8px; min-height: 32px; line-height: 1.4; }
+    .chat-zeile textarea.feld:focus { outline: 0; }
+    .chat-knoepfe { display: flex; align-items: center; gap: 6px; }
     /* Eine Zeile: Anhaengen, Feld, Sprachnachricht, Diktat, Senden */
-    .chat-zeile { display: flex; align-items: flex-end; gap: 6px; }
-    .chat-zeile textarea { flex: 1; min-width: 0; line-height: 1.4; }
-    /* Mit Text im Feld weicht die Sprachaufnahme, das Feld bekommt mehr Breite; das Mikrofon zum Diktieren bleibt immer, auch um Text zu ergaenzen */
-    .chat-eingabe.hat-text [data-sprache] { display: none; }
-    .chat-rund { width: 40px; height: 40px; flex: none; border-radius: 50%; display: grid; place-items: center; background: var(--c-neutral); color: var(--c-text-soft); border: 0; cursor: pointer; font-size: 15px; margin-bottom: 2px; }
+    .chat-rund { width: 38px; height: 38px; flex: none; border-radius: 50%; display: grid; place-items: center; background: var(--c-neutral); color: var(--c-text-soft); border: 0; cursor: pointer; font-size: 15px; }
     .chat-rund:hover { color: var(--c-primary); }
     .chat-rund.text-danger { color: var(--c-danger); background: color-mix(in srgb, var(--c-danger) 12%, #fff); }
     .chat-rund .punkt { width: 12px; height: 12px; border-radius: 50%; background: var(--c-danger); display: block; }
     .chat-rund.text-danger .punkt { animation: pulse 1s infinite; }
-    .chat-senden { width: 44px; height: 44px; flex: none; border-radius: 50%; display: grid; place-items: center; background: var(--c-primary); color: #fff; border: 0; cursor: pointer; font-size: 16px; }
+    .chat-senden { width: 40px; height: 40px; flex: none; border-radius: 50%; display: grid; place-items: center; background: var(--c-primary); color: #fff; border: 0; cursor: pointer; font-size: 16px; }
     .chat-senden:hover { background: var(--c-primary-hover); }
     .chat-senden:disabled { opacity: .5; }
 }
