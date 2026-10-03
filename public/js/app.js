@@ -265,7 +265,6 @@
             var erk = null;
             diktat.addEventListener('click', function () {
                 if (erk) { erk.stop(); return; }
-                if (window.navigator.standalone) { window.leaDiktatHinweis(textarea); return; }
                 var hatte = false, los = Date.now();
                 erk = new SR(); erk.lang = document.documentElement.lang || 'de-CH'; erk.interimResults = false; erk.continuous = true;
                 erk.onresult = function (e) {
@@ -277,9 +276,9 @@
                     textarea.value += vor + neu.trim();
                     textarea.dispatchEvent(new Event('input', { bubbles: true }));
                 };
-                erk.onend = function () { erk = null; diktat.classList.remove('text-danger'); if (!hatte && Date.now() - los < 1500) window.leaDiktatHinweis(textarea); };
-                erk.onerror = function (e) { erk = null; diktat.classList.remove('text-danger'); window.leaDiktatHinweis(textarea, e && e.error); };
-                try { erk.start(); diktat.classList.add('text-danger'); } catch (e) { erk = null; window.leaDiktatHinweis(textarea); }
+                erk.onend = function () { erk = null; diktat.classList.remove('text-danger'); if (!hatte && Date.now() - los < 1500) window.leaDiktatHinweis(form); };
+                erk.onerror = function (e) { erk = null; diktat.classList.remove('text-danger'); window.leaDiktatHinweis(form, e && e.error); };
+                try { erk.start(); diktat.classList.add('text-danger'); } catch (e) { erk = null; window.leaDiktatHinweis(form, e && e.name); }
             });
         }
     }
@@ -651,16 +650,19 @@ document.addEventListener('medien:zeit', function (e) {
 
 /* Diktieren: auf dem iPhone geht die Spracherkennung nur in Safari, nicht in der installierten App (Home-Bildschirm).
    Dann bleibt der Knopf stumm, darum ein Hinweis mit dem Ausweg: Mikrofon auf der Tastatur. */
-window.leaDiktatHinweis = function (anker, grund) {
-    var alt = anker.parentNode.querySelector('.diktat-hinweis');
+window.leaDiktatHinweis = function (behaelter, grund) {
+    var alt = behaelter.querySelector('.diktat-hinweis');
     if (alt) alt.remove();
     var p = document.createElement('p');
     p.className = 'hinweis diktat-hinweis';
-    p.style.margin = '6px 0 0';
-    p.textContent = (window.navigator.standalone ? 'Diktieren geht in der installierten App auf dem iPhone nicht. ' : 'Diktieren hat nicht geklappt' + (grund ? ' (' + grund + ')' : '') + '. ')
-        + 'Tipp: das Mikrofon auf der Tastatur benutzen, das schreibt direkt ins Feld.';
-    anker.parentNode.appendChild(p);
-    setTimeout(function () { if (p.parentNode) p.remove(); }, 12000);
+    p.style.cssText = 'margin:6px 0 0;flex-basis:100%;width:100%';
+    var warum = grund === 'not-allowed' || grund === 'service-not-allowed' ? 'Mikrofon oder Spracherkennung ist für die App nicht erlaubt (iPhone: Einstellungen, Apps, Safari, Mikrofon)'
+        : grund === 'audio-capture' ? 'kein Mikrofon gefunden'
+        : grund === 'network' ? 'keine Verbindung zur Spracherkennung'
+        : (grund ? grund : 'die Spracherkennung hat nicht geantwortet');
+    p.textContent = 'Diktieren hat nicht geklappt: ' + warum + '. Tipp: das Mikrofon auf der Tastatur benutzen, das schreibt direkt ins Feld.';
+    behaelter.appendChild(p);
+    setTimeout(function () { if (p.parentNode) p.remove(); }, 15000);
 };
 
 /* ---------- Diktieren: Mikrofon an Textfeldern (Web Speech API) ---------- */
@@ -684,7 +686,6 @@ window.leaDiktatHinweis = function (anker, grund) {
         var rec = null;
         b.addEventListener('click', function () {
             if (rec) { rec.stop(); return; }
-            if (window.navigator.standalone) { window.leaDiktatHinweis(wrap); return; }
             var hatte = false, los = Date.now();
             rec = new SR(); rec.lang = sprache; rec.interimResults = false; rec.continuous = true;
             rec.onresult = function (e) {
@@ -698,7 +699,7 @@ window.leaDiktatHinweis = function (anker, grund) {
             };
             rec.onend = function () { rec = null; b.classList.remove('an'); t.dispatchEvent(new Event('focusout', { bubbles: true })); if (!hatte && Date.now() - los < 1500) window.leaDiktatHinweis(wrap); };
             rec.onerror = function (e) { rec = null; b.classList.remove('an'); window.leaDiktatHinweis(wrap, e && e.error); };
-            try { rec.start(); b.classList.add('an'); } catch (e) { rec = null; window.leaDiktatHinweis(wrap); }
+            try { rec.start(); b.classList.add('an'); } catch (e) { rec = null; window.leaDiktatHinweis(wrap, e && e.name); }
         });
     });
 })();
