@@ -1,9 +1,10 @@
 <x-mail.rahmen :profil="true">
-    <h1 style="margin:0 0 18px;font-size:24px;line-height:1.3;font-weight:400;font-family:{{ $branding->get('font_heading') }};">{{ $nachricht->titel }}</h1>
-    <p style="margin:0 0 14px;font-size:17px;line-height:1.6;">Hallo {{ $user->vorname() }}</p>
     @if ($nachricht->bloecke)
+        {{-- Mit Bausteinen bestimmt der Baukasten die ganze Mail: Titel und Anrede nur, wenn sie als Baustein drin sind. --}}
         {!! \App\Newsletter\Bausteine::html($nachricht->bloecke, (new \App\Models\Kontakt)->forceFill(['name' => $user->name, 'email' => $user->email])) !!}
     @else
+        <h1 style="margin:0 0 18px;font-size:24px;line-height:1.3;font-weight:400;font-family:{{ $branding->get('font_heading') }};">{{ $nachricht->titel }}</h1>
+        <p style="margin:0 0 14px;font-size:17px;line-height:1.6;">Hallo {{ $user->vorname() }}</p>
         <div style="margin:0 0 20px;font-size:17px;line-height:1.6;">{!! nl2br(e($nachricht->text)) !!}</div>
     @endif
     @if ($nachricht->html)
@@ -17,7 +18,7 @@
             @if (! empty($eintrag['url']))<a href="{{ $eintrag['url'] }}" style="display:inline-block;margin:8px 0 0;font-size:14px;font-weight:600;color:{{ $branding->get('primary') }};text-decoration:none;">{{ $eintrag['knopf'] ?? 'Ansehen und antworten' }} &rarr;</a>@endif
         </td></tr></table>
     @endforeach
-    @if ($nachricht->url)
+    @if ($nachricht->url && ! in_array('knopf', array_column($nachricht->bloecke ?? [], 'type'), true))
         <p style="margin:{{ $nachricht->liste ? '16px' : '0' }} 0 8px;text-align:center;">
             <a href="{{ $nachricht->url }}" style="display:inline-block;background:{{ $branding->get('primary') }};color:{{ $branding->get('primary_contrast') }};text-decoration:none;font-weight:600;font-size:16px;padding:13px 26px;border-radius:999px;">{{ $nachricht->knopf ?: 'Ansehen' }}</a>
         </p>

@@ -99,7 +99,7 @@ class Rundnachricht extends Page
                     ->helperText('Für Ankündigungen, die in den Posteingang gehören. Sonst bekommt eine Person mit Push nur den Push.'),
             ]),
             Section::make('Mail gestalten (optional)')
-                ->description('Leer: die Mail zeigt Titel, Anrede und den Text von oben. Mit Bausteinen zeigt die Mail stattdessen diese Bausteine, mit Bild, fett, Listen und Knopf. Push und App zeigen immer den kurzen Text.')
+                ->description('Leer: die Mail zeigt Titel, Anrede und den Text von oben. Mit Bausteinen besteht die Mail nur aus den Bausteinen: Bild, Überschrift, Text mit fett und Listen, Knopf. Titel und Anrede kommen dann nicht von selbst, «Text übernehmen» setzt sie als Bausteine ein ({vorname} wird ersetzt). Ohne eigenen Knopf hängt die App den Knopf «Zur App» an. Push und App zeigen immer den kurzen Text.')
                 ->visible(fn ($get) => ! $get('persoenlich'))->collapsible()
                 ->afterHeader([
                     Action::make('bild')->label('Bild erzeugen')->icon('heroicon-o-sparkles')->color('gray')->size('sm')
@@ -232,16 +232,21 @@ class Rundnachricht extends Page
         Notification::make()->title('Bild eingesetzt')->body('«'.$satz.'» steht jetzt als erster Baustein. Du kannst den Satz ändern und das Bild neu erzeugen.')->success()->send();
     }
 
-    /** Den kurzen Text als Textbaustein uebernehmen, damit er sich mit fett und Listen bearbeiten laesst. */
+    /** Titel, Anrede und den kurzen Text als Bausteine uebernehmen, damit sie sich mit fett und Listen bearbeiten lassen. */
     public function textAlsBaustein(): void
     {
-        $text = trim((string) ($this->form->getRawState()['text'] ?? ''));
+        $roh = $this->form->getRawState();
+        $text = trim((string) ($roh['text'] ?? ''));
+        $titel = trim((string) ($roh['titel'] ?? ''));
         if ($text === '') {
             Notification::make()->title('Kein Text da')->body('Schreib zuerst den Text oben.')->warning()->send();
 
             return;
         }
-        $this->bausteinEinsetzen(['type' => 'text', 'data' => ['html' => Bausteine::textZuHtml($text)]]);
+        if ($titel !== '') {
+            $this->bausteinEinsetzen(['type' => 'ueberschrift', 'data' => ['text' => $titel, 'groesse' => 'gross']]);
+        }
+        $this->bausteinEinsetzen(['type' => 'text', 'data' => ['html' => '<p>Hallo {vorname}</p>'.Bausteine::textZuHtml($text)]]);
     }
 
     /** Baustein in den Baukasten setzen, oben oder unten. Der Baukasten fuehrt seine Zeilen mit einer Kennung. */

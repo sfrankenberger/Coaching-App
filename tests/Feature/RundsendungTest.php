@@ -165,7 +165,11 @@ class RundsendungTest extends TestCase
         $this->assertStringContainsString('Liebe Anna', $html, '{vorname} aus den Bausteinen');
         $this->assertStringContainsString('<li', $html);
         $this->assertStringNotContainsString('Kurzer Pushtext', $html, 'mit Bausteinen zeigt die Mail den Text nicht');
-        $this->assertLessThan(strpos($html, 'Hallo Anna'), strpos($html, '<h1'), 'Titel steht ueber der Anrede');
+        $this->assertStringNotContainsString('<h1', $html, 'kein automatischer Titel');
+        $this->assertStringNotContainsString('Hallo Anna', $html, 'keine automatische Anrede');
+        $this->assertSame(1, substr_count($html, 'Zur App'), 'eigener Knopf, kein zweiter von der App');
+        $html = $this->in(fn () => view('mail.nachricht', ['user' => $this->anna, 'nachricht' => new Nachricht(titel: 'Umzug', text: 'Kurz', url: 'https://a.test/', knopf: 'Zur App', bloecke: [$bloecke[0]]), 'branding' => app(Branding::class), 'appName' => 'A'])->render());
+        $this->assertStringContainsString('Zur App', $html, 'ohne eigenen Knopf haengt die App ihren an');
 
         // ohne Bausteine: Text, Titel ueber der Anrede
         $html = $this->in(fn () => view('mail.nachricht', ['user' => $this->anna, 'nachricht' => new Nachricht(titel: 'Nur Text', text: 'Kurzer Pushtext'), 'branding' => app(Branding::class), 'appName' => 'A'])->render());
@@ -193,17 +197,18 @@ class RundsendungTest extends TestCase
                 ->call('textAlsBaustein')
                 ->call('bildErzeugen', ['satz' => 'Alles an einem neuen Ort', 'unterzeile' => 'Lea'])->assertNotified('Bild eingesetzt');
             $bloecke = array_values($c->get('data.bloecke'));
-            $this->assertSame(['bild', 'text'], array_column($bloecke, 'type'), 'Bild oben, Text darunter');
+            $this->assertSame(['bild', 'ueberschrift', 'text'], array_column($bloecke, 'type'), 'Bild oben, dann Titel und Text');
+            $this->assertSame('Umzug', $bloecke[1]['data']['text']);
             $this->assertSame('Alles an einem neuen Ort', $bloecke[0]['data']['alt']);
             $pfad = reset($bloecke[0]['data']['datei']);
             $this->assertStringStartsWith('tenants/'.$this->a->id.'/newsletter/karte-', $pfad);
             Storage::disk('local')->assertExists($pfad);
-            $this->assertStringContainsString('<p>Erster Absatz</p><p>Zweiter Absatz</p>', $bloecke[1]['data']['html']);
+            $this->assertStringContainsString('<p>Hallo {vorname}</p><p>Erster Absatz</p><p>Zweiter Absatz</p>', $bloecke[2]['data']['html']);
 
             // Entwurf speichern und wieder laden: Bausteine bleiben
             $c->callAction('entwurf')->assertNotified('Entwurf gespeichert');
             $e = Rundnachricht::where('status', 'entwurf')->first();
-            $this->assertSame(['bild', 'text'], array_column($e->bloecke, 'type'));
+            $this->assertSame(['bild', 'ueberschrift', 'text'], array_column($e->bloecke, 'type'));
             // Testmail traegt die Bausteine, das Bild ist ueber die App erreichbar
             Livewire::test(RundnachrichtSeite::class)->call('laden', $e->id)->callAction('test', ['an' => $this->lea->id])->assertNotified('Testmail unterwegs');
             Notification::assertSentTo($this->lea, AppNotification::class, fn (AppNotification $n) => ($n->nachricht->bloecke[0]['type'] ?? null) === 'bild');
