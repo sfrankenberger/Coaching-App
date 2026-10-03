@@ -14,6 +14,10 @@ use App\Notifications\Nachricht;
 use App\Support\Bildkarte;
 use App\Tenancy\Branding;
 use Illuminate\Support\Facades\Storage;
+use App\Jobs\RundnachrichtBild;
+use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Queue;
 use App\Notifications\Rundsendung;
 use App\Tenancy\CurrentTenant;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -243,6 +247,66 @@ class RundsendungTest extends TestCase
                 ->fillForm(['an' => 'begleitung', 'titel' => 'Für die 1:1', 'text' => 'Hallo', 'kanaele' => ['mail']])
                 ->callAction('senden')->assertNotified('An 1 Person geschickt');
             $this->assertSame('1:1 Begleitung', Rundnachricht::where('status', 'gesendet')->first()->wohin());
+        });
+    }
+
+    /** Eine kleine Illustration wie von OpenAI: cremefarben mit einer dunklen Flaeche rechts. */
+    protected function grafik(): string
+    {
+        $g = imagecreatetruecolor(600, 400);
+        imagefilledrectangle($g, 0, 0, 600, 400, imagecolorallocate($g, 243, 240, 233));
+        imagefilledrectangle($g, 350, 120, 520, 300, imagecolorallocate($g, 198, 208, 195));
+        ob_start();
+        imagepng($g);
+
+        return (string) ob_get_clean();
+    }
+
+    public function test_impulsbild_mit_illustration_im_hintergrund(): void
+    {
+        Storage::fake('local');
+        $png = $this->in(fn () => Bildkarte::impuls('Was hält dich wirklich zurück?', 'Deine App zieht um', 'Lea Wernli', $this->grafik()));
+        $this->assertSame([1200, 630], array_slice(getimagesizefromstring($png), 0, 2));
+        $bild = imagecreatefromstring($png);
+        $ecke = imagecolorsforindex($bild, imagecolorat($bild, 2, 2));
+        $this->assertSame([243, 240, 233], [$ecke['red'], $ecke['green'], $ecke['blue']], 'Hintergrund aus der Ecke der Illustration');
+
+        // Job: Bildidee von Anthropic, Illustration von OpenAI, Bild als erster Baustein im Entwurf
+        $this->a->forceFill(['settings' => array_merge($this->a->settings ?? [], ['ai' => ['anthropic_key' => 'sk-test'], 'audio' => ['openai_key' => 'sk-openai-test']])])->save();
+        Http::fake([
+            'api.anthropic.com/*' => Http::response(['content' => [['type' => 'text', 'text' => '{"motiv":"Eine Figur, die einen Koffer schliesst"}']], 'usage' => []]),
+            'api.openai.com/v1/images/generations' => Http::response(['data' => [['b64_json' => base64_encode($this->grafik())]]]),
+        ]);
+        $this->actingAs($this->lea);
+        $this->in(function () {
+            $e = Rundnachricht::create(['user_id' => $this->lea->id, 'status' => 'entwurf', 'an' => 'alle', 'titel' => 'Umzug', 'text' => 'Alles neu.', 'bloecke' => [['type' => 'text', 'data' => ['html' => '<p>Hallo</p>']]]]);
+            (new RundnachrichtBild($this->a->id, $e->id, 'Alles an einem Ort', null, 'Lea'))->handle(app(CurrentTenant::class), app(\App\Ai\Impulsbild::class));
+            $e->refresh();
+            $this->assertSame(['bild', 'text'], array_column($e->bloecke, 'type'));
+            Storage::disk('local')->assertExists($e->bloecke[0]['data']['datei']);
+            $this->assertSame('fertig', Cache::get(RundnachrichtBild::schluessel($e->id))['stand']);
+            $this->assertStringContainsString('Koffer', Cache::get(RundnachrichtBild::schluessel($e->id))['motiv']);
+            Http::assertSent(fn ($r) => str_contains($r->url(), 'openai') && str_contains($r['prompt'], 'Koffer') && $r->hasHeader('Authorization', 'Bearer sk-openai-test'));
+
+            // Seite: mit Illustration geht ein Job raus, die Seite holt das Bild spaeter in die Bausteine, ohne das Formular zu ueberschreiben
+            Queue::fake();
+            $c = Livewire::test(RundnachrichtSeite::class)->call('neu')
+                ->fillForm(['an' => 'alle', 'titel' => 'Umzug zwei', 'text' => 'Text zwei', 'kanaele' => ['mail']])
+                ->call('bildErzeugen', ['art' => 'illustration', 'satz' => 'Komm mit', 'motiv' => '', 'kennung' => 'Lea'])->assertNotified('Bild wird gebaut');
+            Queue::assertPushed(RundnachrichtBild::class, fn ($j) => $j->satz === 'Komm mit' && $j->motiv === null);
+            $neu = Rundnachricht::where('titel', 'Umzug zwei')->first();
+            $this->assertNotNull($neu, 'Entwurf wurde gespeichert');
+            $this->assertSame($neu->id, $c->get('wartetAufBild'));
+            $c->call('bildPruefen');
+            $this->assertSame($neu->id, $c->get('wartetAufBild'), 'noch nichts da');
+            $neu->update(['bloecke' => [['type' => 'bild', 'data' => ['datei' => 'tenants/'.$this->a->id.'/newsletter/karte-x.png', 'alt' => 'Komm mit', 'breite' => 'voll']]]]);
+            Cache::put(RundnachrichtBild::schluessel($neu->id), ['stand' => 'fertig', 'satz' => 'Komm mit', 'motiv' => 'Koffer'], 60);
+            $c->set('data.text', 'Text zwei, inzwischen geändert')->call('bildPruefen')->assertNotified('Bild eingesetzt');
+            $this->assertNull($c->get('wartetAufBild'));
+            $bloecke = array_values($c->get('data.bloecke'));
+            $this->assertSame('bild', $bloecke[0]['type']);
+            $this->assertSame('tenants/'.$this->a->id.'/newsletter/karte-x.png', reset($bloecke[0]['data']['datei']));
+            $this->assertSame('Text zwei, inzwischen geändert', $c->get('data.text'));
         });
     }
 }

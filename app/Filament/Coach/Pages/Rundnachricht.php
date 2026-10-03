@@ -2,7 +2,8 @@
 
 namespace App\Filament\Coach\Pages;
 
-use App\Ai\Anthropic;
+use App\Ai\Impulsbild;
+use App\Jobs\RundnachrichtBild;
 use App\Models\Membership;
 use App\Models\Program;
 use App\Models\Rundnachricht as Eintrag;
@@ -16,6 +17,7 @@ use App\Tenancy\CurrentTenant;
 use BackedEnum;
 use Filament\Actions\Action;
 use Filament\Forms\Components\CheckboxList;
+use Filament\Forms\Components\Radio;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\Textarea;
 use Filament\Forms\Components\TextInput;
@@ -26,6 +28,7 @@ use Filament\Schemas\Components\Section;
 use Filament\Schemas\Schema;
 use Filament\Support\Icons\Heroicon;
 use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Str;
 
 /**
@@ -50,6 +53,9 @@ class Rundnachricht extends Page
 
     /** Geladener Entwurf, wird beim Speichern aktualisiert und beim Senden zum Protokolleintrag. */
     public ?int $entwurfId = null;
+
+    /** Entwurf, fuer den gerade im Hintergrund ein Bild mit Illustration gebaut wird (die Seite fragt alle paar Sekunden nach). */
+    public ?int $wartetAufBild = null;
 
     public const LEER = ['an' => 'alle', 'program_id' => null, 'user_ids' => [], 'titel' => null, 'text' => null, 'url' => null, 'bloecke' => [], 'kanaele' => ['push', 'mail'], 'chat' => false, 'persoenlich' => false, 'mail_alle' => false];
 
@@ -104,12 +110,19 @@ class Rundnachricht extends Page
                 ->afterHeader([
                     Action::make('bild')->label('Bild erzeugen')->icon('heroicon-o-sparkles')->color('gray')->size('sm')
                         ->modalHeading('Bild aus dem Text erzeugen')
-                        ->modalDescription('Eine Textkarte in den Farben der App: ein Satz, darunter eine kleine Zeile. Sie kommt als erster Baustein oben in die Mail.')
+                        ->modalDescription('Wie die Bilder auf der Website: ein kurzer Satz in deiner Stimme, Kennzeile und Titel, auf Wunsch rechts eine flache Illustration zum Text. Das Bild kommt als erster Baustein oben in die Mail.')
                         ->modalSubmitActionLabel('Erzeugen')
                         ->form([
-                            Textarea::make('satz')->label('Satz auf dem Bild')->rows(3)->maxLength(160)
-                                ->helperText('Leer lassen: die App schlägt aus Titel und Text einen Satz vor.'),
-                            TextInput::make('unterzeile')->label('Kleine Zeile darunter')->maxLength(60)->default(fn () => app(Branding::class)->coachName()),
+                            Radio::make('art')->label('Art')->options(fn () => app(Impulsbild::class)->illustrationMoeglich()
+                                ? ['illustration' => 'Mit Illustration (dauert etwa eine Minute, läuft im Hintergrund)', 'text' => 'Nur Text, sofort']
+                                : ['text' => 'Nur Text, sofort'])
+                                ->descriptions(fn () => app(Impulsbild::class)->illustrationMoeglich() ? [] : ['text' => 'Für Illustrationen fehlt der OpenAI-Schlüssel (Verbindungen).'])
+                                ->default(fn () => app(Impulsbild::class)->illustrationMoeglich() ? 'illustration' : 'text')->live(),
+                            Textarea::make('satz')->label('Satz auf dem Bild')->rows(2)->maxLength(160)
+                                ->helperText('Leer lassen: die KI schlägt aus Titel und Text einen Satz vor, höchstens sechs Wörter.'),
+                            Textarea::make('motiv')->label('Bildidee')->rows(2)->maxLength(300)->visible(fn ($get) => $get('art') === 'illustration')
+                                ->helperText('Leer lassen: die KI findet ein Motiv zum Text. Sonst zum Beispiel: eine Figur, die einen Koffer packt.'),
+                            TextInput::make('kennung')->label('Kennzeile über dem Satz')->maxLength(40)->default(fn () => app(Branding::class)->coachName()),
                         ])
                         ->action(fn (array $data) => $this->bildErzeugen($data)),
                     Action::make('textBaustein')->label('Text übernehmen')->icon('heroicon-o-arrow-down-on-square')->color('gray')->size('sm')
@@ -124,15 +137,11 @@ class Rundnachricht extends Page
     {
         return Action::make('entwurf')->label('Als Entwurf speichern')->icon('heroicon-o-document')->color('gray')
             ->action(function () {
-                $data = $this->form->getRawState();
-                if (blank($data['text'] ?? null) && blank($data['titel'] ?? null)) {
+                if (! $this->entwurfSpeichern($this->form->getRawState())) {
                     Notification::make()->title('Nichts zu speichern')->body('Schreib zuerst einen Titel oder einen Text.')->warning()->send();
 
                     return;
                 }
-                $e = ($this->entwurfId ? Eintrag::where('status', 'entwurf')->find($this->entwurfId) : null) ?? new Eintrag(['user_id' => auth()->id(), 'status' => 'entwurf']);
-                $e->fill(Eintrag::ausFormular($data))->save();
-                $this->entwurfId = $e->id;
                 Notification::make()->title('Entwurf gespeichert')->body('Er wird beim nächsten Öffnen wieder geladen.')->success()->send();
             });
     }
@@ -211,18 +220,40 @@ class Rundnachricht extends Page
         $this->form->fill(array_merge(self::LEER, ['an' => $data['an'], 'program_id' => $data['program_id'] ?? null, 'user_ids' => $data['user_ids'] ?? [], 'kanaele' => $data['kanaele'] ?? ['push', 'mail']]));
     }
 
-    /** Textkarte erzeugen und als ersten Baustein einsetzen. Ohne Satz schlaegt die KI einen vor, sonst nimmt die App den Titel. */
+    /**
+     * Bild erzeugen und als ersten Baustein einsetzen. Nur Text: sofort. Mit Illustration: der Entwurf wird gespeichert,
+     * ein Hintergrundjob holt die Illustration und haengt das Bild an den Entwurf, die Seite laedt ihn dann neu.
+     */
     public function bildErzeugen(array $data): void
     {
         $roh = $this->form->getRawState();
-        $satz = trim((string) ($data['satz'] ?? '')) ?: $this->satzVorschlag((string) ($roh['titel'] ?? ''), (string) ($roh['text'] ?? ''));
+        $titel = trim((string) ($roh['titel'] ?? ''));
+        $text = trim((string) ($roh['text'] ?? ''));
+        $satz = trim((string) ($data['satz'] ?? '')) ?: $this->satzVorschlag($titel, $text);
         if ($satz === '') {
             Notification::make()->title('Kein Satz fürs Bild')->body('Schreib zuerst einen Titel oder einen Text, oder gib den Satz direkt ein.')->warning()->send();
 
             return;
         }
+        $kennung = trim((string) ($data['kennung'] ?? '')) ?: null;
+
+        if (($data['art'] ?? 'text') === 'illustration' && app(Impulsbild::class)->illustrationMoeglich()) {
+            $e = $this->entwurfSpeichern($roh);
+            if (! $e) {
+                Notification::make()->title('Erst Text, dann Bild')->body('Schreib zuerst einen Titel oder einen Text, die Illustration entsteht daraus.')->warning()->send();
+
+                return;
+            }
+            Cache::forget(RundnachrichtBild::schluessel($e->id));
+            RundnachrichtBild::dispatch(app(CurrentTenant::class)->id(), $e->id, $satz, trim((string) ($data['motiv'] ?? '')) ?: null, $kennung);
+            $this->wartetAufBild = $e->id;
+            Notification::make()->title('Bild wird gebaut')->body('«'.$satz.'». Die Illustration dauert etwa eine Minute, das Bild erscheint dann oben in den Bausteinen.')->success()->send();
+
+            return;
+        }
+
         try {
-            $pfad = Bildkarte::erzeugen($satz, $data['unterzeile'] ?? null);
+            $pfad = Bildkarte::speichern(Bildkarte::impuls($satz, $titel ?: null, $kennung, null));
         } catch (\Throwable $e) {
             Notification::make()->title('Bild nicht erzeugt')->body($e->getMessage())->danger()->send();
 
@@ -230,6 +261,45 @@ class Rundnachricht extends Page
         }
         $this->bausteinEinsetzen(['type' => 'bild', 'data' => ['datei' => [(string) Str::uuid() => $pfad], 'url' => null, 'link' => null, 'alt' => $satz, 'breite' => 'voll']], oben: true);
         Notification::make()->title('Bild eingesetzt')->body('«'.$satz.'» steht jetzt als erster Baustein. Du kannst den Satz ändern und das Bild neu erzeugen.')->success()->send();
+    }
+
+    /** Alle paar Sekunden von der Seite gerufen, solange ein Bild im Hintergrund entsteht. */
+    public function bildPruefen(): void
+    {
+        if (! $this->wartetAufBild) {
+            return;
+        }
+        $stand = Cache::get(RundnachrichtBild::schluessel($this->wartetAufBild));
+        if (! is_array($stand)) {
+            return;
+        }
+        $id = $this->wartetAufBild;
+        $this->wartetAufBild = null;
+        Cache::forget(RundnachrichtBild::schluessel($id));
+        if (($stand['stand'] ?? '') === 'fertig') {
+            // Nur das neue Bild uebernehmen, was inzwischen im Formular geschrieben wurde, bleibt
+            $block = Eintrag::find($id)?->bloecke[0] ?? null;
+            if (is_array($block) && ($block['type'] ?? '') === 'bild') {
+                $block['data']['datei'] = [(string) Str::uuid() => $block['data']['datei']];
+                $this->bausteinEinsetzen($block, oben: true);
+            }
+            Notification::make()->title('Bild eingesetzt')->body('«'.($stand['satz'] ?? '').'» mit Illustration: '.($stand['motiv'] ?? ''))->success()->send();
+        } else {
+            Notification::make()->title('Bild nicht erzeugt')->body((string) ($stand['text'] ?? 'Unbekannter Fehler'))->danger()->send();
+        }
+    }
+
+    /** Entwurf aus dem Rohzustand speichern oder aktualisieren; null, wenn weder Titel noch Text da ist. */
+    protected function entwurfSpeichern(array $data): ?Eintrag
+    {
+        if (blank($data['text'] ?? null) && blank($data['titel'] ?? null)) {
+            return null;
+        }
+        $e = ($this->entwurfId ? Eintrag::where('status', 'entwurf')->find($this->entwurfId) : null) ?? new Eintrag(['user_id' => auth()->id(), 'status' => 'entwurf']);
+        $e->fill(Eintrag::ausFormular($data))->save();
+        $this->entwurfId = $e->id;
+
+        return $e;
     }
 
     /** Titel, Anrede und den kurzen Text als Bausteine uebernehmen, damit sie sich mit fett und Listen bearbeiten lassen. */
@@ -260,19 +330,9 @@ class Rundnachricht extends Page
     /** Ein Satz fuers Bild: die KI aus Titel und Text, ohne Schluessel oder bei Fehler der Titel. */
     protected function satzVorschlag(string $titel, string $text): string
     {
-        $titel = trim($titel);
-        $text = trim($text);
         if ($text !== '') {
             try {
-                $r = app(Anthropic::class)->text(
-                    "Titel: {$titel}\n\nText:\n{$text}",
-                    'Du schreibst für eine Coachin. Aus Titel und Text einer Nachricht an ihre Teilnehmerinnen machst du einen einzigen kurzen Satz für ein Bild oben in der Mail: höchstens zwölf Wörter, warm, in der Du-Form, Schweizer Schreibweise (kein ß), kein Gedankenstrich, keine Anführungszeichen, kein Punkt am Ende. Antworte nur mit dem Satz.',
-                    120,
-                );
-                $satz = trim(trim((string) ($r['text'] ?? '')), "\"«»'.");
-                if ($satz !== '' && mb_strlen($satz) <= 160) {
-                    return $satz;
-                }
+                return app(Impulsbild::class)->satz($titel, $text);
             } catch (\Throwable) {
                 // ohne Schluessel oder bei Stoerung: Titel
             }

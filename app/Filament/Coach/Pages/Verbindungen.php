@@ -112,7 +112,7 @@ class Verbindungen extends Page
                 Select::make('audio_anbieter')->label('Dienst')->options(Transkript::ANBIETER)->placeholder('Kein Transkript')->native(false),
                 TextInput::make('audio_sprache')->label('Sprache')->maxLength(5)->placeholder('de'),
                 $this->geheim('assemblyai_key', 'AssemblyAI-Schlüssel', 'audio.assemblyai_key'),
-                $this->geheim('openai_key', 'OpenAI-Schlüssel', 'audio.openai_key'),
+                $this->geheim('openai_key', 'OpenAI-Schlüssel', 'audio.openai_key')->helperText('Auch für Illustrationen in Bildern (Rundnachricht, Bild erzeugen).'),
             ])->columns(2),
             Section::make('Vimeo')->description('Aufzeichnungen zuordnen und Abschriften holen.')->schema([
                 $this->geheim('vimeo_token', 'Zugriffstoken', 'vimeo.token'),

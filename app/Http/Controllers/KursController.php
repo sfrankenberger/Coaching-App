@@ -63,7 +63,7 @@ class KursController extends Controller
         $bald = Program::where('is_internal', false)->where('settings->kommt_bald', true)->whereNotIn('id', $meine)->orderBy('position')->get()
             ->reject(fn (Program $p) => $gesperrt->contains(fn (Offer $o) => $o->programs->contains('id', $p->id)));
 
-        return view('kurse.index', ['programs' => $programs, 'bis' => $bis, 'gesperrt' => $gesperrt, 'bald' => $bald, 'coach' => app(Branding::class)->coachName()]);
+        return view('kurse.index', ['programs' => $programs, 'bis' => $bis, 'gesperrt' => $gesperrt, 'bald' => $bald, 'coach' => app(Branding::class)->coachName(), 'team' => $user->canManageCurrentTenant()]);
     }
 
     /** Uebersicht eines Programms: Schritte, Fortschritt, naechste Einheit */

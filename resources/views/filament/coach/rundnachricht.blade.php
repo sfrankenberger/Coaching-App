@@ -1,4 +1,9 @@
 <x-filament-panels::page>
+    @if ($wartetAufBild)
+        <div wire:poll.5s="bildPruefen" class="rounded-xl border border-gray-200 bg-gray-50 px-4 py-3 text-sm text-gray-600">
+            Bild mit Illustration wird gebaut, das dauert etwa eine Minute. Du kannst weiterschreiben, das Bild kommt oben in die Bausteine.
+        </div>
+    @endif
     <form wire:submit.prevent="mountAction('senden')">
         {{ $this->form }}
         <div class="mt-6 flex flex-wrap items-center gap-3">

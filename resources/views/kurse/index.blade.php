@@ -24,6 +24,10 @@
                 <span class="kurs-text">
                     <span class="eyebrow">{{ $program->typeLabel() }}@if ($ende) · Freigeschaltet bis {{ $ende->translatedFormat('j. F Y') }}@endif</span>
                     <span class="kurs-titel">{{ $program->title }}</span>
+                    @if ($team && (! $program->is_published || $program->is_internal))
+                        {{-- nur fuer das Team: Teilnehmerinnen sehen Unveroeffentlichtes gar nicht --}}
+                        <span class="chip {{ $program->is_published ? '' : 'chip-warn' }} mt-1" style="align-self:flex-start"><i class="fa-solid fa-{{ $program->is_published ? 'user-lock' : 'eye-slash' }}"></i>{{ $program->is_published ? 'Nur intern' : 'Nicht veröffentlicht' }}</span>
+                    @endif
                     @if ($program->subtitle)<span class="x block mt-1">{{ \Illuminate\Support\Str::limit($program->subtitle, 110) }}</span>@endif
                     @if ($call)
                         <span class="chip mt-2" style="align-self:flex-start"><i class="fa-solid fa-video"></i>{{ $call->isLive() ? 'Call läuft gerade' : 'Nächster Call: '.$call->starts_at->translatedFormat('D, j. M, H:i').' Uhr' }}</span>

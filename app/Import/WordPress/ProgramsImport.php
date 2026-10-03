@@ -123,7 +123,7 @@ class ProgramsImport
                 'ends_at' => ($ts = (int) $m('laufzeit_bis')) ? date('Y-m-d', $ts) : null,
                 'color' => $m('kursfarbe') ?: null,
                 'icon' => ($i = (string) $m('kursicon')) ? preg_replace('~^fa-~', '', $i) : null,
-                'cover_url' => $m('cover_url') ?: null,
+                'cover_url' => $m('cover_url') ?: $this->coverAusBeitragsbild($id, $kurs->post_name ?: Str::slug($kurs->post_title)),
                 'is_published' => $kurs->post_status === 'publish',
                 'is_internal' => (bool) ($m('nur_intern') || $m('lea_nur_intern')),
                 'position' => (int) $m('reihenfolge', 0),
@@ -406,6 +406,33 @@ class ProgramsImport
             'values', 'choice' => is_string($value) && str_contains($value, '|') ? array_values(array_filter(array_map('trim', explode('|', $value)))) : $value,
             default => $value,
         };
+    }
+
+    /**
+     * Titelbild aus dem Beitragsbild des Kurses (_thumbnail_id): die Datei kommt in den Branding-Ordner des Mandanten
+     * und wird ueber /branding/{datei} ausgeliefert, damit sie nicht an der alten Website haengt. Ist der Upload-Ordner
+     * nicht erreichbar, bleibt die Adresse auf der Website.
+     */
+    protected function coverAusBeitragsbild(int $kursId, string $slug): ?string
+    {
+        $anhang = (int) $this->source->meta($kursId, '_thumbnail_id');
+        $datei = $anhang ? (string) $this->source->meta($anhang, '_wp_attached_file') : '';
+        if ($datei === '') {
+            return null;
+        }
+        $dir = rtrim((string) ($this->config['uploads_dir'] ?? ''), '/');
+        $quelle = $dir !== '' ? $dir.'/'.$datei : '';
+        if ($quelle !== '' && is_file($quelle)) {
+            $ziel = 'tenants/'.$this->tenant->id.'/branding/kurs-'.$slug.'.'.strtolower(pathinfo($datei, PATHINFO_EXTENSION) ?: 'jpg');
+            if (! Storage::exists($ziel)) {
+                Storage::put($ziel, file_get_contents($quelle));
+            }
+
+            return url('/branding/'.basename($ziel));
+        }
+        $base = rtrim((string) ($this->config['uploads_url'] ?? ''), '/');
+
+        return $base !== '' ? $base.'/'.$datei : null;
     }
 
     /** Aufnahme aus den WordPress-Uploads in den privaten Speicher des Mandanten kopieren. */
