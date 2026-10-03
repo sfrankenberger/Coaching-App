@@ -34,6 +34,9 @@ class Anthropic
         return (string) ($this->current->get()?->setting('ai.model') ?: config('ai.model'));
     }
 
+    /** Kleinster Ausgaberahmen: neuere Modelle denken vor der Antwort, und die Denk-Tokens zaehlen zum Limit. */
+    public const MIN_TOKENS = 1024;
+
     /** Eine Anfrage, eine Antwort. Gibt [text, model, tokens_in, tokens_out] zurueck. */
     public function text(string $prompt, ?string $system = null, ?int $maxTokens = null): array
     {
@@ -42,19 +45,29 @@ class Anthropic
             throw new RuntimeException('Kein Anthropic-Schlüssel hinterlegt (ANTHROPIC_API_KEY oder settings.ai.anthropic_key).');
         }
         $model = $this->model();
-        $r = Http::timeout((int) config('ai.timeout'))
-            ->withHeaders(['x-api-key' => $key, 'anthropic-version' => '2023-06-01'])
-            ->post('https://api.anthropic.com/v1/messages', array_filter([
-                'model' => $model,
-                'max_tokens' => $maxTokens ?? (int) config('ai.max_tokens'),
-                'system' => $system,
-                'messages' => [['role' => 'user', 'content' => $prompt]],
-            ]));
-        if (! $r->successful()) {
-            throw new RuntimeException('Anthropic: HTTP '.$r->status().' '.mb_substr((string) $r->body(), 0, 300));
+        $max = max((int) ($maxTokens ?? config('ai.max_tokens')), self::MIN_TOKENS);
+        for ($versuch = 1; ; $versuch++) {
+            $r = Http::timeout((int) config('ai.timeout'))
+                ->withHeaders(['x-api-key' => $key, 'anthropic-version' => '2023-06-01'])
+                ->post('https://api.anthropic.com/v1/messages', array_filter([
+                    'model' => $model,
+                    'max_tokens' => $max,
+                    'system' => $system,
+                    'messages' => [['role' => 'user', 'content' => $prompt]],
+                ]));
+            if (! $r->successful()) {
+                throw new RuntimeException('Anthropic: HTTP '.$r->status().' '.mb_substr((string) $r->body(), 0, 300));
+            }
+            $j = $r->json();
+            $text = collect($j['content'] ?? [])->where('type', 'text')->pluck('text')->implode("\n");
+            // Rahmen beim Denken aufgebraucht, noch kein Text: einmal mit dem vierfachen Rahmen nachfassen
+            if (trim($text) === '' && ($j['stop_reason'] ?? '') === 'max_tokens' && $versuch === 1) {
+                $max *= 4;
+
+                continue;
+            }
+            break;
         }
-        $j = $r->json();
-        $text = collect($j['content'] ?? [])->where('type', 'text')->pluck('text')->implode("\n");
         if (trim($text) === '') {
             throw new RuntimeException('Anthropic: leere Antwort');
         }
