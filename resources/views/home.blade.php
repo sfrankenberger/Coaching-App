@@ -16,7 +16,7 @@
                 @if ($w['punkte']->isNotEmpty())
                     <span class="punkte">
                         @foreach ($w['punkte']->take(5) as $pt)
-                            <span @class(['punkt', 'erledigt' => $pt['erledigt']])><i class="fa-solid fa-{{ $pt['erledigt'] ? 'circle-check' : $pt['icon'] }}"></i>{{ $pt['titel'] }}</span>
+                            <span @class(['punkt', 'erledigt' => $pt['erledigt']])><i class="fa-{{ ($pt['ausgelassen'] ?? false) ? 'regular fa-circle-xmark' : 'solid fa-'.($pt['erledigt'] ? 'circle-check' : $pt['icon']) }}"></i>{{ $pt['titel'] }}@if ($pt['ausgelassen'] ?? false) <small>ausgelassen</small>@endif</span>
                         @endforeach
                         @if ($w['punkte']->count() > 5)<span class="punkt"><i class="fa-solid fa-ellipsis"></i>{{ $w['punkte']->count() - 5 }} weitere</span>@endif
                     </span>

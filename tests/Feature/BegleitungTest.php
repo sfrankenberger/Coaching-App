@@ -79,6 +79,25 @@ class BegleitungTest extends TestCase
         $this->actingAs($this->anna)->postJson("http://a.test/termine/{$call->id}/gesehen")->assertOk()->assertJsonPath('status', 'watched');
     }
 
+    public function test_kursaufgabe_auslassen_und_wieder_aufnehmen(): void
+    {
+        $t = $this->in(fn () => \App\Models\Task::create(['user_id' => $this->anna->id, 'title' => 'Deine Wochenreflexion', 'kind' => 'reflexion', 'source' => 'program', 'due_at' => now()->subDay()->toDateString()]));
+        $this->actingAs($this->anna)->get('http://a.test/aufgaben')->assertOk()->assertSee('Diese Woche keine Reflexion');
+        $this->actingAs($this->anna)->post('http://a.test/aufgaben/'.$t->id.'/auslassen')->assertRedirect()->assertSessionHas('meldung');
+        $t->refresh();
+        $this->assertTrue($t->isSkipped());
+        $this->assertFalse($t->isDone());
+        $this->assertFalse($t->isOverdue(), 'ausgelassen ist nicht ueberfaellig');
+        $this->assertSame(0, $this->in(fn () => \App\Models\Task::where('user_id', $this->anna->id)->open()->count()), 'zaehlt nicht als offen');
+        $this->actingAs($this->anna)->get('http://a.test/aufgaben')->assertOk()->assertSee('Ausgelassen')->assertSee('Doch machen');
+        $this->actingAs($this->anna)->post('http://a.test/aufgaben/'.$t->id.'/auslassen')->assertRedirect();
+        $this->assertTrue($t->fresh()->isOffen());
+        // Abhaken hebt das Auslassen auf
+        $this->actingAs($this->anna)->post('http://a.test/aufgaben/'.$t->id.'/auslassen')->assertRedirect();
+        $this->actingAs($this->anna)->post('http://a.test/aufgaben/'.$t->id.'/haken')->assertRedirect();
+        $this->assertTrue($t->fresh()->isDone());
+    }
+
     public function test_material_aus_programm_termin_und_geteilt(): void
     {
         $this->in(function () {

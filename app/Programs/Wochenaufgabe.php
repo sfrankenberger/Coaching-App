@@ -51,7 +51,7 @@ class Wochenaufgabe
     {
         $id = (int) ($request->input('aufgabe_id') ?: $request->query('aufgabe', 0));
 
-        return $id ? Task::where('user_id', $user->id)->whereNull('done_at')->find($id) : null;
+        return $id ? Task::where('user_id', $user->id)->open()->find($id) : null;
     }
 
     /** Speichern und abhaken: die Aufgabe ist erledigt, sobald das Geschriebene gespeichert ist. */
@@ -100,7 +100,7 @@ class Wochenaufgabe
     public function derWoche(User $user, ProgramStep $step): Collection
     {
         return Task::where('user_id', $user->id)->where('step_id', $step->id)
-            ->orderByRaw('CASE WHEN done_at IS NULL THEN 0 ELSE 1 END')->orderBy('due_at')->orderBy('id')->get();
+            ->orderByRaw('CASE WHEN done_at IS NULL AND skipped_at IS NULL THEN 0 ELSE 1 END')->orderBy('due_at')->orderBy('id')->get();
     }
 
     /**
@@ -116,6 +116,7 @@ class Wochenaufgabe
             return null;
         }
         $t = Task::where('user_id', $user->id)->where('step_id', $stepId)->where('kind', $kind)->whereNull('done_at')->orderBy('id')->first();
+        $t?->forceFill(['skipped_at' => null]);
         $t?->forceFill(['done_at' => now()])->save();
 
         return $t;

@@ -156,6 +156,8 @@
     .karte.neu { background: #fff; border-color: var(--c-primary-line); border-left: 3px solid var(--c-primary); padding-left: 18px; }
     .karte.fertig { background: var(--c-done); opacity: .75; }
     .karte.fertig .t { text-decoration: line-through; text-decoration-color: var(--c-ghost); color: var(--c-muted); }
+    .karte.ausgelassen { opacity: .7; }
+    .karte.ausgelassen .t { color: var(--c-muted); }
     .karte.offen { border-left: 4px solid var(--c-danger); }
     .karte.heute { border-color: var(--c-primary); box-shadow: 0 0 0 1px var(--c-primary) inset; }
     .karte .t { display: block; font-size: var(--fs-base); line-height: 1.4; font-weight: 600; color: var(--c-text); }

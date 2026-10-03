@@ -49,7 +49,7 @@ class Lage
         $coachAufgaben = Task::where('user_id', $user->id)->whereNotNull('assigned_by');
         $aufgabenGesamt = (clone $coachAufgaben)->count();
         $aufgabenFertig = (clone $coachAufgaben)->whereNotNull('done_at')->count();
-        $ueberfaellig = Task::where('user_id', $user->id)->whereNull('done_at')->whereNotNull('due_at')->where('due_at', '<', now()->startOfDay())->count();
+        $ueberfaellig = Task::where('user_id', $user->id)->open()->whereNotNull('due_at')->where('due_at', '<', now()->startOfDay())->count();
         $verpasst = $this->verpassteCalls($user);
         $tage = $m->last_seen_at ? (int) $m->last_seen_at->diffInDays(now()) : null;
 

@@ -69,6 +69,7 @@ class Task extends Model
             'due_at' => 'date',
             'is_daily' => 'boolean',
             'done_at' => 'datetime',
+            'skipped_at' => 'datetime',
             'is_pinned' => 'boolean',
             'reminded_at' => 'datetime',
             'settings' => 'array',
@@ -115,9 +116,10 @@ class Task extends Model
         return $this->morphMany(Reaction::class, 'reactable');
     }
 
+    /** Offen: weder erledigt noch bewusst ausgelassen. */
     public function scopeOpen(Builder $q): Builder
     {
-        return $q->whereNull('done_at');
+        return $q->whereNull('done_at')->whereNull('skipped_at');
     }
 
     public function isDone(): bool
@@ -125,9 +127,30 @@ class Task extends Model
         return $this->done_at !== null;
     }
 
+    /** Bewusst ausgelassen ("diese Woche nicht"): zu, aber nicht erledigt. */
+    public function isSkipped(): bool
+    {
+        return $this->skipped_at !== null && $this->done_at === null;
+    }
+
+    public function isOffen(): bool
+    {
+        return $this->done_at === null && $this->skipped_at === null;
+    }
+
+    /** Text fuer den Auslassen-Knopf je Art. */
+    public function auslassenText(): string
+    {
+        return match ($this->kind) {
+            'reflexion' => 'Diese Woche keine Reflexion',
+            'frage' => 'Keine Frage diese Woche',
+            default => 'Diese Woche nicht',
+        };
+    }
+
     public function isOverdue(): bool
     {
-        return ! $this->isDone() && $this->due_at && $this->due_at->endOfDay()->isPast();
+        return $this->isOffen() && $this->due_at && $this->due_at->endOfDay()->isPast();
     }
 
     /** Bei taeglichen Aufgaben: welche Wochentage diese Woche abgehakt sind. */

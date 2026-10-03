@@ -1,5 +1,5 @@
 @php $tage = ['mo' => 'M', 'di' => 'D', 'mi' => 'M', 'do' => 'D', 'fr' => 'F', 'sa' => 'S', 'so' => 'S']; $done = $t->daysDone(); @endphp
-<article id="aufgabe-{{ $t->id }}" @class(['karte', 'fertig' => $t->isDone(), 'heute' => $t->is_pinned && ! $t->isDone(), 'offen' => $t->isOverdue()])>
+<article id="aufgabe-{{ $t->id }}" @class(['karte', 'fertig' => $t->isDone(), 'ausgelassen' => $t->isSkipped(), 'heute' => $t->is_pinned && $t->isOffen(), 'offen' => $t->isOverdue()])>
     <div class="flex items-start gap-3">
         <form method="post" action="{{ route('aufgaben.haken', $t) }}" data-haken>
             @csrf
@@ -18,10 +18,21 @@
             </span>
             @if ($t->body)<p class="lesetext mt-1 whitespace-pre-line text-md">{{ $t->body }}</p>@endif
             <x-anhaenge :item="$t" />
-            @if (($aktion = app(\App\Programs\Wochenaufgabe::class)->aktion($t)) && $t->user_id === auth()->id())
-                <a href="{{ $aktion['url'] }}" class="knopf knopf-klein mt-2"><i class="fa-solid fa-{{ $aktion['icon'] }}"></i>{{ $aktion['text'] }}</a>
+            @if ($t->isSkipped())
+                <span class="hinweis block mt-1"><i class="fa-regular fa-circle-xmark"></i> Ausgelassen{{ $t->skipped_at ? ' am '.$t->skipped_at->translatedFormat('j. F') : '' }}.
+                    @if ($t->user_id === auth()->id())<form method="post" action="{{ route('aufgaben.auslassen', $t) }}" class="inline">@csrf<button type="submit" class="underline" style="background:none;border:0;cursor:pointer;font:inherit;color:inherit">Doch machen</button></form>@endif
+                </span>
+            @elseif ($t->user_id === auth()->id() && $t->isOffen())
+                <span class="flex flex-wrap items-center gap-2 mt-2">
+                    @if ($aktion = app(\App\Programs\Wochenaufgabe::class)->aktion($t))
+                        <a href="{{ $aktion['url'] }}" class="knopf knopf-klein"><i class="fa-solid fa-{{ $aktion['icon'] }}"></i>{{ $aktion['text'] }}</a>
+                    @endif
+                    @if ($t->assigned_by || $t->source !== 'manual')
+                        <form method="post" action="{{ route('aufgaben.auslassen', $t) }}" class="inline">@csrf<button type="submit" class="knopf knopf-leise knopf-klein"><i class="fa-regular fa-circle-xmark"></i>{{ $t->auslassenText() }}</button></form>
+                    @endif
+                </span>
             @endif
-            @if ($t->is_daily && ! $t->isDone())
+            @if ($t->is_daily && $t->isOffen())
                 <div class="mt-2 flex flex-wrap items-center gap-1" data-tage="{{ route('aufgaben.tag', $t) }}">
                     <span class="hinweis w-full">Diese Woche <b>{{ count($done) }} von 7</b></span>
                     @foreach ($tage as $k => $l)

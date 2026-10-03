@@ -85,6 +85,20 @@ class AufgabenController extends Controller
         return back()->with('meldung', $an ? 'Erledigt.' : 'Wieder offen.');
     }
 
+    /** Bewusst auslassen ("diese Woche nicht") oder wieder aufnehmen. Zu, aber nicht erledigt. */
+    public function auslassen(Request $request, Task $aufgabe): JsonResponse|RedirectResponse
+    {
+        Gate::authorize('update', $aufgabe);
+        $aus = ! $aufgabe->isSkipped();
+        $aufgabe->forceFill(['skipped_at' => $aus ? now() : null, 'done_at' => null])->save();
+
+        if ($request->expectsJson()) {
+            return response()->json(['aus' => $aus]);
+        }
+
+        return back()->with('meldung', $aus ? 'Ausgelassen. Kein Problem, nächste Woche wieder.' : 'Wieder offen.');
+    }
+
     /** Tagesaufgabe: einen Wochentag abhaken. */
     public function tag(Request $request, Task $aufgabe): JsonResponse|RedirectResponse
     {

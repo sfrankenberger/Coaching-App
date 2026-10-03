@@ -265,6 +265,7 @@ Route::middleware(['auth', 'membership'])->group(function () {
     Route::post('/aufgaben', [AufgabenController::class, 'store'])->name('aufgaben.store');
     Route::post('/aufgaben/{aufgabe}', [AufgabenController::class, 'update'])->name('aufgaben.update');
     Route::post('/aufgaben/{aufgabe}/haken', [AufgabenController::class, 'haken'])->name('aufgaben.haken');
+    Route::post('/aufgaben/{aufgabe}/auslassen', [AufgabenController::class, 'auslassen'])->name('aufgaben.auslassen');
     Route::post('/aufgaben/{aufgabe}/tag', [AufgabenController::class, 'tag'])->name('aufgaben.tag');
     Route::delete('/aufgaben/{aufgabe}', [AufgabenController::class, 'destroy'])->name('aufgaben.destroy');
     Route::get('/anhaenge/suche', [AnhaengeController::class, 'suche'])->name('anhaenge.suche');

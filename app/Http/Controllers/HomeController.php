@@ -84,7 +84,7 @@ class HomeController extends Controller
                 $punkte->push(['titel' => $u->title, 'erledigt' => $erledigteUnits->contains($u->id), 'icon' => 'circle-play']);
             }
             foreach ($aufgaben as $t) {
-                $punkte->push(['titel' => $t->title, 'erledigt' => $t->isDone(), 'icon' => (Task::KINDS[$t->kind] ?? Task::KINDS['haken'])[1]]);
+                $punkte->push(['titel' => $t->title, 'erledigt' => $t->isDone() || $t->isSkipped(), 'ausgelassen' => $t->isSkipped(), 'icon' => (Task::KINDS[$t->kind] ?? Task::KINDS['haken'])[1]]);
             }
 
             return ['program' => $p, 'stand' => $stand, 'step' => $step, 'woche' => $woche, 'wochen' => $p->steps->count(), 'call' => $call, 'punkte' => $punkte,
