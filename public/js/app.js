@@ -203,7 +203,10 @@
     var dateiName = form.querySelector('[data-datei-name]');
     var anhangBox = form.querySelector('[data-chat-anhang]');
     var wahl = form.querySelector('[data-anhang-wahl]');
-    textarea.addEventListener('input', function () { textarea.style.height = 'auto'; textarea.style.height = Math.min(160, textarea.scrollHeight) + 'px'; });
+    /* Beim Schreiben bekommt das Feld die ganze Breite: Aufnahme und Diktat weichen, bis es wieder leer ist */
+    function hatText() { form.classList.toggle('hat-text', textarea.value.trim() !== ''); }
+    textarea.addEventListener('input', function () { textarea.style.height = 'auto'; textarea.style.height = Math.min(160, textarea.scrollHeight) + 'px'; hatText(); });
+    hatText();
     textarea.addEventListener('keydown', function (e) { if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) { e.preventDefault(); form.requestSubmit(); } });
     dateiInput.addEventListener('change', function () {
         if (dateiInput.files.length) { dateiName.hidden = false; dateiName.textContent = '📎 ' + dateiInput.files[0].name; } else { dateiName.hidden = true; }
@@ -211,7 +214,7 @@
     var plus = form.querySelector('[data-anhang-plus]');
     if (plus && anhangBox) plus.addEventListener('click', function () { anhangBox.hidden = !anhangBox.hidden; });
     function hatAnhang() { return dateiInput.files.length || form.querySelector('input[name="refs[]"]'); }
-    function aufraeumen() {
+    function aufraeumen() { form.classList.remove('hat-text');
         textarea.value = ''; textarea.style.height = 'auto'; dateiInput.value = ''; dateiName.hidden = true;
         if (wahl && wahl.leeren) wahl.leeren();
         if (anhangBox) anhangBox.hidden = true;
@@ -276,9 +279,9 @@
                     textarea.value += vor + neu.trim();
                     textarea.dispatchEvent(new Event('input', { bubbles: true }));
                 };
-                erk.onend = function () { erk = null; diktat.classList.remove('text-danger'); if (!hatte && Date.now() - los < 1500) window.leaDiktatHinweis(form); };
-                erk.onerror = function (e) { erk = null; diktat.classList.remove('text-danger'); window.leaDiktatHinweis(form, e && e.error); };
-                try { erk.start(); diktat.classList.add('text-danger'); } catch (e) { erk = null; window.leaDiktatHinweis(form, e && e.name); }
+                erk.onend = function () { erk = null; diktat.classList.remove('text-danger'); form.classList.remove('diktiert'); if (!hatte && Date.now() - los < 1500) window.leaDiktatHinweis(form); };
+                erk.onerror = function (e) { erk = null; diktat.classList.remove('text-danger'); form.classList.remove('diktiert'); window.leaDiktatHinweis(form, e && e.error); };
+                try { erk.start(); diktat.classList.add('text-danger'); form.classList.add('diktiert'); } catch (e) { erk = null; form.classList.remove('diktiert'); window.leaDiktatHinweis(form, e && e.name); }
             });
         }
     }
