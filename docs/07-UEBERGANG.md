@@ -93,7 +93,12 @@ nichts. `.htaccess`: `/shop/`, `/warenkorb/`, `/kasse/`, `/danke/` auf `/mit-mir
 (`shop.webhook_secret`) bleibt stehen, es kommt nichts mehr an. Wenn die App verkauft: `lea-verkauf-pause.php`
 abschalten, `[app_kaufen slug="..."]` auf die Seiten, Angebote mit Preisen und Sichtbarkeit.
 
-Offen: restliche Sandbox-Module (Website-Funktionen: Mailgun, Formular-Bruecke, Gratiskurs-Tuer, Altlinks, Blog,
+**3.10.2026, 02:15: Gratiskurs-Tuer auf die App.** `lea-anfang-anmeldung.php` ist aus (Marker), `lea-anfang-app.php`
+zeigt fuer `[lea_anfang_start]` einen Knopf auf `app.leawernli.ch/kaufen/der-anfang-wie-gedanken-funktionieren`
+(kostenlose Kasse: Name und Mail, Zugang per Link, Willkommensmail mit Text aus `programs.settings.willkommen_text`,
+danach die Strecke nach 2 und 7 Tagen und die Goldnuggets, dazu die Serie "Der Anfang: und jetzt?" nach 12 Tagen).
+
+Offen: restliche Sandbox-Module (Website-Funktionen: Mailgun, Formular-Bruecke, Altlinks, Blog,
 Podcast, Themen, Angebote-Shortcodes) bleiben, bis die Website neu gebaut ist; Wache 117 und WP-Cron 97 bleiben
 solange. Mail an die Teilnehmerinnen: `docs/11-UMZUGSMAIL.md`, als Entwurf in der Rundnachricht hinterlegt.
 
