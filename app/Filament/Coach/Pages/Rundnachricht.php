@@ -2,12 +2,16 @@
 
 namespace App\Filament\Coach\Pages;
 
+use App\Ai\Anthropic;
 use App\Models\Membership;
 use App\Models\Program;
 use App\Models\Rundnachricht as Eintrag;
 use App\Notifications\Nachricht;
 use App\Notifications\Notifier;
+use App\Newsletter\Bausteine;
 use App\Notifications\Rundsendung;
+use App\Support\Bildkarte;
+use App\Tenancy\Branding;
 use App\Tenancy\CurrentTenant;
 use BackedEnum;
 use Filament\Actions\Action;
@@ -22,11 +26,13 @@ use Filament\Schemas\Components\Section;
 use Filament\Schemas\Schema;
 use Filament\Support\Icons\Heroicon;
 use Illuminate\Support\Collection;
+use Illuminate\Support\Str;
 
 /**
  * Eine Nachricht an alle oder an ein Programm: Push, Mail, auf Wunsch ins Gruppengespraech.
  * Entwuerfe lassen sich speichern und spaeter laden, eine Testmail geht an die eigene Adresse,
- * verschickte Rundnachrichten stehen unten im Protokoll.
+ * verschickte Rundnachrichten stehen unten im Protokoll. Die Mail kann aus Bausteinen bestehen
+ * (Bild, Text mit fett und Listen, Knopf), ein Bild laesst sich aus dem Text erzeugen.
  */
 class Rundnachricht extends Page
 {
@@ -45,7 +51,7 @@ class Rundnachricht extends Page
     /** Geladener Entwurf, wird beim Speichern aktualisiert und beim Senden zum Protokolleintrag. */
     public ?int $entwurfId = null;
 
-    public const LEER = ['an' => 'alle', 'program_id' => null, 'user_ids' => [], 'titel' => null, 'text' => null, 'url' => null, 'kanaele' => ['push', 'mail'], 'chat' => false, 'persoenlich' => false, 'mail_alle' => false];
+    public const LEER = ['an' => 'alle', 'program_id' => null, 'user_ids' => [], 'titel' => null, 'text' => null, 'url' => null, 'bloecke' => [], 'kanaele' => ['push', 'mail'], 'chat' => false, 'persoenlich' => false, 'mail_alle' => false];
 
     public function mount(): void
     {
@@ -91,6 +97,24 @@ class Rundnachricht extends Page
                 Toggle::make('mail_alle')->label('Mail an alle, auch an wer Push hat')->visible(fn ($get) => ! $get('persoenlich'))
                     ->helperText('Für Ankündigungen, die in den Posteingang gehören. Sonst bekommt eine Person mit Push nur den Push.'),
             ]),
+            Section::make('Mail gestalten (optional)')
+                ->description('Leer: die Mail zeigt Titel, Anrede und den Text von oben. Mit Bausteinen zeigt die Mail stattdessen diese Bausteine, mit Bild, fett, Listen und Knopf. Push und App zeigen immer den kurzen Text.')
+                ->visible(fn ($get) => ! $get('persoenlich'))->collapsible()
+                ->afterHeader([
+                    Action::make('bild')->label('Bild erzeugen')->icon('heroicon-o-sparkles')->color('gray')->size('sm')
+                        ->modalHeading('Bild aus dem Text erzeugen')
+                        ->modalDescription('Eine Textkarte in den Farben der App: ein Satz, darunter eine kleine Zeile. Sie kommt als erster Baustein oben in die Mail.')
+                        ->modalSubmitActionLabel('Erzeugen')
+                        ->form([
+                            Textarea::make('satz')->label('Satz auf dem Bild')->rows(3)->maxLength(160)
+                                ->helperText('Leer lassen: die App schlägt aus Titel und Text einen Satz vor.'),
+                            TextInput::make('unterzeile')->label('Kleine Zeile darunter')->maxLength(60)->default(fn () => app(Branding::class)->coachName()),
+                        ])
+                        ->action(fn (array $data) => $this->bildErzeugen($data)),
+                    Action::make('textBaustein')->label('Text übernehmen')->icon('heroicon-o-arrow-down-on-square')->color('gray')->size('sm')
+                        ->action(fn () => $this->textAlsBaustein()),
+                ])
+                ->schema([Bausteine::feld('bloecke')]),
         ])->statePath('data');
     }
 
@@ -128,15 +152,18 @@ class Rundnachricht extends Page
                 $data = $this->form->getState();
                 $user = Membership::whereIn('role', ['owner', 'team'])->where('user_id', $an)->first()?->user ?? auth()->user();
                 $text = str_replace(['{vorname}', '{name}'], [$user->vorname(), $user->name], trim($data['text']));
+                $titel = trim((string) ($data['titel'] ?? '')) ?: mb_substr($text, 0, 60);
                 app(Notifier::class)->send([$user->id], new Nachricht(
-                    titel: '[Test] '.(trim((string) ($data['titel'] ?? '')) ?: mb_substr($text, 0, 60)),
+                    titel: $titel,
                     text: $text,
                     url: filled($data['url'] ?? null) ? $data['url'] : route('home'),
                     anlass: 'system',
                     tag: 'rundnachricht-test',
+                    mailBetreff: '[Test] '.$titel,
                     mailImmer: true,
                     inApp: false,
                     knopf: 'Zur App',
+                    bloecke: Eintrag::bloecke($data),
                 ));
                 Notification::make()->title('Testmail unterwegs')->body('An '.$user->name.', '.$user->email.($data['persoenlich'] ?? false ? '. Persönliche Nachrichten gehen als Chat, die Testmail zeigt nur den Text.' : '.'))->success()->send();
             });
@@ -181,6 +208,71 @@ class Rundnachricht extends Page
             ->success()->send();
         $this->entwurfId = null;
         $this->form->fill(array_merge(self::LEER, ['an' => $data['an'], 'program_id' => $data['program_id'] ?? null, 'user_ids' => $data['user_ids'] ?? [], 'kanaele' => $data['kanaele'] ?? ['push', 'mail']]));
+    }
+
+    /** Textkarte erzeugen und als ersten Baustein einsetzen. Ohne Satz schlaegt die KI einen vor, sonst nimmt die App den Titel. */
+    public function bildErzeugen(array $data): void
+    {
+        $roh = $this->form->getRawState();
+        $satz = trim((string) ($data['satz'] ?? '')) ?: $this->satzVorschlag((string) ($roh['titel'] ?? ''), (string) ($roh['text'] ?? ''));
+        if ($satz === '') {
+            Notification::make()->title('Kein Satz fürs Bild')->body('Schreib zuerst einen Titel oder einen Text, oder gib den Satz direkt ein.')->warning()->send();
+
+            return;
+        }
+        try {
+            $pfad = Bildkarte::erzeugen($satz, $data['unterzeile'] ?? null);
+        } catch (\Throwable $e) {
+            Notification::make()->title('Bild nicht erzeugt')->body($e->getMessage())->danger()->send();
+
+            return;
+        }
+        $this->bausteinEinsetzen(['type' => 'bild', 'data' => ['datei' => [(string) Str::uuid() => $pfad], 'url' => null, 'link' => null, 'alt' => $satz, 'breite' => 'voll']], oben: true);
+        Notification::make()->title('Bild eingesetzt')->body('«'.$satz.'» steht jetzt als erster Baustein. Du kannst den Satz ändern und das Bild neu erzeugen.')->success()->send();
+    }
+
+    /** Den kurzen Text als Textbaustein uebernehmen, damit er sich mit fett und Listen bearbeiten laesst. */
+    public function textAlsBaustein(): void
+    {
+        $text = trim((string) ($this->form->getRawState()['text'] ?? ''));
+        if ($text === '') {
+            Notification::make()->title('Kein Text da')->body('Schreib zuerst den Text oben.')->warning()->send();
+
+            return;
+        }
+        $this->bausteinEinsetzen(['type' => 'text', 'data' => ['html' => Bausteine::textZuHtml($text)]]);
+    }
+
+    /** Baustein in den Baukasten setzen, oben oder unten. Der Baukasten fuehrt seine Zeilen mit einer Kennung. */
+    protected function bausteinEinsetzen(array $baustein, bool $oben = false): void
+    {
+        $bisher = array_filter((array) ($this->data['bloecke'] ?? []), fn ($b) => is_array($b) && ! empty($b['type']));
+        $neu = [(string) Str::uuid() => $baustein];
+        $this->data['bloecke'] = $oben ? $neu + $bisher : $bisher + $neu;
+    }
+
+    /** Ein Satz fuers Bild: die KI aus Titel und Text, ohne Schluessel oder bei Fehler der Titel. */
+    protected function satzVorschlag(string $titel, string $text): string
+    {
+        $titel = trim($titel);
+        $text = trim($text);
+        if ($text !== '') {
+            try {
+                $r = app(Anthropic::class)->text(
+                    "Titel: {$titel}\n\nText:\n{$text}",
+                    'Du schreibst für eine Coachin. Aus Titel und Text einer Nachricht an ihre Teilnehmerinnen machst du einen einzigen kurzen Satz für ein Bild oben in der Mail: höchstens zwölf Wörter, warm, in der Du-Form, Schweizer Schreibweise (kein ß), kein Gedankenstrich, keine Anführungszeichen, kein Punkt am Ende. Antworte nur mit dem Satz.',
+                    120,
+                );
+                $satz = trim(trim((string) ($r['text'] ?? '')), "\"«»'.");
+                if ($satz !== '' && mb_strlen($satz) <= 160) {
+                    return $satz;
+                }
+            } catch (\Throwable) {
+                // ohne Schluessel oder bei Stoerung: Titel
+            }
+        }
+
+        return $titel;
     }
 
     /** Entwurf oder verschickte Nachricht ins Formular laden (verschickte als Vorlage, ohne Verknuepfung). */

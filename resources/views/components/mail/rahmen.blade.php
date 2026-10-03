@@ -7,6 +7,8 @@
     $fusszeile = $tenant?->setting('mail.fusszeile');
     $social = $newsletter ? array_filter((array) ($tenant?->setting('newsletter.social') ?? [])) : [];
     $socialNamen = ['instagram' => 'Instagram', 'facebook' => 'Facebook', 'linkedin' => 'LinkedIn', 'website' => 'Website', 'youtube' => 'YouTube', 'tiktok' => 'TikTok'];
+    // Lesetext in der Mail: die Leseschrift (Serifen), sonst die Ueberschriftenschrift. Die Textschrift (bei manchen Mandanten Mono) bleibt fuer Kopf und Fusszeile.
+    $lese = $branding->get('font_read') ?: $branding->get('font_heading');
     $knopf = 'display:inline-block;background:'.$branding->get('primary').';color:'.$branding->get('primary_contrast').';text-decoration:none;font-weight:600;font-size:16px;padding:13px 26px;border-radius:999px;';
     $knopfLeise = 'display:inline-block;border:1px solid '.$branding->get('primary').';color:'.$branding->get('primary').';text-decoration:none;font-weight:600;font-size:16px;padding:12px 26px;border-radius:999px;';
 @endphp
@@ -19,14 +21,14 @@
 </head>
 <body style="margin:0;padding:24px 12px;background:{{ $branding->get('bg') }};font-family:{{ $branding->get('font_body') }};color:{{ $branding->get('text') }};">
     <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="max-width:520px;margin:0 auto;">
-        <tr><td style="padding:0 0 16px;text-align:center;font-size:20px;font-family:{{ $branding->get('font_heading') }};">
+        <tr><td style="padding:0 0 20px;text-align:center;font-size:20px;font-family:{{ $branding->get('font_heading') }};">
             @if ($logo)
-                <a href="{{ url('/') }}" style="text-decoration:none;color:{{ $branding->get('text') }};"><img src="{{ $logo }}" alt="{{ $branding->appName() }}" height="44" style="height:44px;max-width:220px;border:0;vertical-align:middle;"></a>
+                <a href="{{ url('/') }}" style="text-decoration:none;color:{{ $branding->get('text') }};"><img src="{{ $logo }}" alt="{{ $branding->appName() }}" height="64" style="height:64px;max-width:280px;border:0;vertical-align:middle;"></a>
             @else
                 <a href="{{ url('/') }}" style="text-decoration:none;color:{{ $branding->get('text') }};">{{ $branding->appName() }}</a>
             @endif
         </td></tr>
-        <tr><td style="background:{{ $branding->get('card_bg') }};border:1px solid {{ $branding->get('card_border') }};border-radius:{{ (int) $branding->get('radius') }}px;padding:24px;">
+        <tr><td style="background:{{ $branding->get('card_bg') }};border:1px solid {{ $branding->get('card_border') }};border-radius:{{ (int) $branding->get('radius') }}px;padding:28px 26px;font-family:{{ $lese }};font-size:17px;line-height:1.6;">
             {{ $slot }}
         </td></tr>
         <tr><td style="padding:16px 8px 0;font-size:12px;line-height:1.6;color:{{ $branding->get('muted') }};text-align:center;">

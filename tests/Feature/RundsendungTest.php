@@ -10,6 +10,10 @@ use App\Models\PushSubscription;
 use App\Models\Tenant;
 use App\Models\User;
 use App\Notifications\AppNotification;
+use App\Notifications\Nachricht;
+use App\Support\Bildkarte;
+use App\Tenancy\Branding;
+use Illuminate\Support\Facades\Storage;
 use App\Notifications\Rundsendung;
 use App\Tenancy\CurrentTenant;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -100,7 +104,7 @@ class RundsendungTest extends TestCase
 
             // Testmail: nur an mich, immer per Mail, nicht in die Glocke
             Livewire::test(RundnachrichtSeite::class)->call('laden', $neu->id)->assertFormSet(['titel' => 'Entwurf eins'])->callAction('test', ['an' => $this->lea->id])->assertNotified('Testmail unterwegs');
-            Notification::assertSentTo($this->lea, AppNotification::class, fn (AppNotification $n) => str_starts_with($n->nachricht->titel, '[Test] Entwurf eins') && $n->nachricht->mailImmer && $n->nachricht->text === 'Hallo Lea');
+            Notification::assertSentTo($this->lea, AppNotification::class, fn (AppNotification $n) => $n->nachricht->titel === 'Entwurf eins' && $n->nachricht->mailBetreff === '[Test] Entwurf eins' && $n->nachricht->mailImmer && $n->nachricht->text === 'Hallo Lea');
             // An eine Person aus dem Team, nicht an eine Teilnehmerin
             $andrea = User::factory()->create(['name' => 'Andrea Team', 'email' => 'andrea@test.ch']);
             $this->a->users()->attach($andrea, ['role' => Role::Team->value, 'status' => 'active']);
@@ -144,5 +148,66 @@ class RundsendungTest extends TestCase
         Notification::assertSentToTimes($this->anna, AppNotification::class, 1);
         Notification::assertNotSentTo($this->bea, AppNotification::class);
         Notification::assertNotSentTo($andrea, AppNotification::class, 'das Team bekommt die eigene Nachricht nicht gemeldet');
+    }
+
+    public function test_mail_mit_bausteinen_titel_ueber_anrede_und_protokoll(): void
+    {
+        $bloecke = [
+            ['type' => 'text', 'data' => ['html' => '<p>Liebe {vorname}, das ist <strong>wichtig</strong>.</p><ul><li>eins</li></ul>']],
+            ['type' => 'knopf', 'data' => ['text' => 'Zur App', 'url' => 'https://a.test/', 'stil' => 'voll', 'ausrichtung' => 'mitte']],
+        ];
+        $html = $this->in(fn () => view('mail.nachricht', [
+            'user' => $this->anna,
+            'nachricht' => new Nachricht(titel: 'Umzug', text: 'Kurzer Pushtext', bloecke: $bloecke),
+            'branding' => app(Branding::class), 'appName' => 'A',
+        ])->render());
+        $this->assertStringContainsString('<strong>wichtig</strong>', $html);
+        $this->assertStringContainsString('Liebe Anna', $html, '{vorname} aus den Bausteinen');
+        $this->assertStringContainsString('<li', $html);
+        $this->assertStringNotContainsString('Kurzer Pushtext', $html, 'mit Bausteinen zeigt die Mail den Text nicht');
+        $this->assertLessThan(strpos($html, 'Hallo Anna'), strpos($html, '<h1'), 'Titel steht ueber der Anrede');
+
+        // ohne Bausteine: Text, Titel ueber der Anrede
+        $html = $this->in(fn () => view('mail.nachricht', ['user' => $this->anna, 'nachricht' => new Nachricht(titel: 'Nur Text', text: 'Kurzer Pushtext'), 'branding' => app(Branding::class), 'appName' => 'A'])->render());
+        $this->assertStringContainsString('Kurzer Pushtext', $html);
+        $this->assertLessThan(strpos($html, 'Hallo Anna'), strpos($html, 'Nur Text'));
+
+        // Versand: Bausteine gehen mit der Nachricht und stehen im Protokoll, leere Zeilen fallen weg
+        $this->in(fn () => app(Rundsendung::class)->send(['an' => 'alle', 'titel' => 'Umzug', 'text' => 'Kurz', 'kanaele' => ['mail'], 'bloecke' => ['x' => $bloecke[0], 'y' => ['type' => '', 'data' => []]]], $this->lea));
+        Notification::assertSentTo($this->anna, AppNotification::class, fn (AppNotification $n) => count($n->nachricht->bloecke ?? []) === 1 && $n->nachricht->text === 'Kurz');
+        $this->in(fn () => $this->assertCount(1, Rundnachricht::where('status', 'gesendet')->first()->bloecke));
+    }
+
+    public function test_bildkarte_und_bild_in_der_rundnachricht(): void
+    {
+        Storage::fake('local');
+        $png = $this->in(fn () => Bildkarte::png('Deine App zieht um, alles ist schon dort', 'Lea'));
+        $this->assertSame("\x89PNG", substr($png, 0, 4));
+        [$w, $h] = getimagesizefromstring($png);
+        $this->assertSame([1200, 630], [$w, $h]);
+
+        $this->actingAs($this->lea);
+        $this->in(function () {
+            $c = Livewire::test(RundnachrichtSeite::class)->call('neu')
+                ->fillForm(['an' => 'alle', 'titel' => 'Umzug', 'text' => "Erster Absatz\n\nZweiter Absatz", 'kanaele' => ['mail']])
+                ->call('textAlsBaustein')
+                ->call('bildErzeugen', ['satz' => 'Alles an einem neuen Ort', 'unterzeile' => 'Lea'])->assertNotified('Bild eingesetzt');
+            $bloecke = array_values($c->get('data.bloecke'));
+            $this->assertSame(['bild', 'text'], array_column($bloecke, 'type'), 'Bild oben, Text darunter');
+            $this->assertSame('Alles an einem neuen Ort', $bloecke[0]['data']['alt']);
+            $pfad = reset($bloecke[0]['data']['datei']);
+            $this->assertStringStartsWith('tenants/'.$this->a->id.'/newsletter/karte-', $pfad);
+            Storage::disk('local')->assertExists($pfad);
+            $this->assertStringContainsString('<p>Erster Absatz</p><p>Zweiter Absatz</p>', $bloecke[1]['data']['html']);
+
+            // Entwurf speichern und wieder laden: Bausteine bleiben
+            $c->callAction('entwurf')->assertNotified('Entwurf gespeichert');
+            $e = Rundnachricht::where('status', 'entwurf')->first();
+            $this->assertSame(['bild', 'text'], array_column($e->bloecke, 'type'));
+            // Testmail traegt die Bausteine, das Bild ist ueber die App erreichbar
+            Livewire::test(RundnachrichtSeite::class)->call('laden', $e->id)->callAction('test', ['an' => $this->lea->id])->assertNotified('Testmail unterwegs');
+            Notification::assertSentTo($this->lea, AppNotification::class, fn (AppNotification $n) => ($n->nachricht->bloecke[0]['type'] ?? null) === 'bild');
+            $this->assertStringContainsString('/n/bild/'.basename($pfad), \App\Newsletter\Bausteine::html($e->bloecke, null));
+        });
     }
 }

@@ -17,7 +17,7 @@ class Rundnachricht extends Model
 
     protected function casts(): array
     {
-        return ['user_ids' => 'array', 'kanaele' => 'array', 'mail_alle' => 'boolean', 'chat' => 'boolean', 'persoenlich' => 'boolean', 'sent_at' => 'datetime'];
+        return ['user_ids' => 'array', 'bloecke' => 'array', 'kanaele' => 'array', 'mail_alle' => 'boolean', 'chat' => 'boolean', 'persoenlich' => 'boolean', 'sent_at' => 'datetime'];
     }
 
     public function user(): BelongsTo
@@ -35,7 +35,7 @@ class Rundnachricht extends Model
     {
         return [
             'an' => $this->an, 'program_id' => $this->program_id, 'user_ids' => $this->user_ids ?? [],
-            'titel' => $this->titel, 'text' => $this->text, 'url' => $this->url,
+            'titel' => $this->titel, 'text' => $this->text, 'url' => $this->url, 'bloecke' => $this->bloecke ?? [],
             'kanaele' => $this->kanaele ?? ['push', 'mail'], 'mail_alle' => $this->mail_alle, 'chat' => $this->chat, 'persoenlich' => $this->persoenlich,
         ];
     }
@@ -45,9 +45,17 @@ class Rundnachricht extends Model
     {
         return [
             'an' => $data['an'] ?? 'alle', 'program_id' => $data['program_id'] ?? null, 'user_ids' => array_values(array_map('intval', (array) ($data['user_ids'] ?? []))) ?: null,
-            'titel' => filled($data['titel'] ?? null) ? trim($data['titel']) : null, 'text' => trim((string) ($data['text'] ?? '')), 'url' => filled($data['url'] ?? null) ? $data['url'] : null,
+            'titel' => filled($data['titel'] ?? null) ? trim($data['titel']) : null, 'text' => trim((string) ($data['text'] ?? '')), 'url' => filled($data['url'] ?? null) ? $data['url'] : null, 'bloecke' => self::bloecke($data),
             'kanaele' => array_values((array) ($data['kanaele'] ?? ['push', 'mail'])), 'mail_alle' => (bool) ($data['mail_alle'] ?? false), 'chat' => (bool) ($data['chat'] ?? false), 'persoenlich' => (bool) ($data['persoenlich'] ?? false),
         ];
+    }
+
+    /** Bausteine aus dem Formular, ohne leere Zeilen; null, wenn keine da sind (dann zeigt die Mail den Text). */
+    public static function bloecke(array $data): ?array
+    {
+        $b = array_values(array_filter((array) ($data['bloecke'] ?? []), fn ($b) => is_array($b) && ! empty($b['type'])));
+
+        return $b ?: null;
     }
 
     public function wohin(): string

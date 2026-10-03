@@ -63,6 +63,7 @@ class Rundsendung
             mailWennKeinPush: in_array('mail', $kanaele, true),
             mailImmer: ! empty($data['mail_alle']),
             knopf: 'Zur App',
+            bloecke: Rundnachricht::bloecke($data),
         )) : [];
 
         $chat = false;
