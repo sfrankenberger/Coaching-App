@@ -198,12 +198,22 @@ class BenachrichtigungenTest extends TestCase
     public function test_nachfassen_bei_ungelesener_nachricht(): void
     {
         Notification::fake();
+        $andrea = User::factory()->create(['name' => 'Andrea Team']);
+        $this->a->users()->attach($andrea, ['role' => Role::Team->value, 'status' => 'active']);
         $this->in(fn () => app(Chat::class)->send(app(Chat::class)->directFor($this->anna), $this->lea, ['body' => 'Liest du das?']));
         $this->assertSame(0, $this->in(fn () => app(Runden::class)->nachfassen()), 'noch keine 20 Minuten');
         $this->travel(25)->minutes();
-        $this->assertSame(1, $this->in(fn () => app(Runden::class)->nachfassen()));
+        $this->assertSame(1, $this->in(fn () => app(Runden::class)->nachfassen()), 'nur Anna, nicht das Team im Gespraech');
         Notification::assertSentTo($this->anna, AppNotification::class, fn (AppNotification $n, $channels) => $channels === ['mail'] && $n->nachricht->text === 'Liest du das?');
+        Notification::assertNotSentTo($andrea, AppNotification::class);
         $this->assertSame(0, $this->in(fn () => app(Runden::class)->nachfassen()), 'nur einmal');
+
+        // Schreibt die Person, erinnert die Mail die Coachin und das Team
+        $this->in(fn () => app(Chat::class)->send(app(Chat::class)->directFor($this->anna), $this->anna, ['body' => 'Ja, und du?']));
+        $this->travel(25)->minutes();
+        $this->assertSame(2, $this->in(fn () => app(Runden::class)->nachfassen()));
+        Notification::assertSentTo($this->lea, AppNotification::class, fn (AppNotification $n) => $n->nachricht->text === 'Ja, und du?');
+        Notification::assertSentTo($andrea, AppNotification::class, fn (AppNotification $n) => $n->nachricht->text === 'Ja, und du?');
     }
 
     public function test_push_abo_und_schluessel(): void

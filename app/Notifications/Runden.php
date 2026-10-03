@@ -145,6 +145,10 @@ class Runden
                 continue;
             }
             $empfaenger = $conv->participants->where('user_id', '!=', $msg->user_id);
+            // Schreibt das Team fuer die Person, geht die Erinnerung nur an sie, nicht an die Kolleginnen im Gespraech
+            if ($msg->user_id !== $conv->user_id) {
+                $empfaenger = $empfaenger->where('user_id', $conv->user_id);
+            }
             foreach ($empfaenger as $p) {
                 if ($p->last_read_at && $p->last_read_at->gte($msg->created_at)) {
                     continue;
