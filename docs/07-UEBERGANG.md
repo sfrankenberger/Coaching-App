@@ -129,6 +129,10 @@ solange. Mail an die Teilnehmerinnen: `docs/11-UMZUGSMAIL.md`, als Entwurf in de
    `/kaufen/{slug}` und von `/shop/`, `/warenkorb/`, `/kasse/`, `/mein-account/` auf die App, dann Woo-Plugins
    deaktivieren (woocommerce, -subscriptions, -gateway-stripe, -order-status-control, woo-update-manager,
    email-customizer-for-woocommerce). Abo-Umzug (4b, Punkt 3) entfaellt: es gibt kein laufendes Abo.
+8. 3.10., mittags: Lea arbeitet ab jetzt mit Claude ueber den App-Connector (`https://app.leawernli.ch/api/mcp`,
+   OAuth mit Anmeldecode). Der alte Website-Connector (Novamira, WordPress) verlangt zum Freigeben `manage_options`,
+   Leas WordPress-Konto hatte nur `lea_redaktion`, darum "You are not allowed to authorize". Lea (WP-User 2) hat
+   zusaetzlich die Rolle Administrator bekommen, Entscheid Sebastian.
 
 ## 5. Installierte App (Home-Bildschirm) und Push beim Umzug
 
