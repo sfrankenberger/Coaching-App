@@ -992,8 +992,8 @@
     /* Eine Zeile: Anhaengen, Feld, Sprachnachricht, Diktat, Senden */
     .chat-zeile { display: flex; align-items: flex-end; gap: 6px; }
     .chat-zeile textarea { flex: 1; min-width: 0; line-height: 1.4; }
-    /* Mit Text im Feld weichen Aufnahme und Diktat, das Feld bekommt die Breite; waehrend des Diktierens bleibt das Mikrofon zum Stoppen */
-    .chat-eingabe.hat-text [data-sprache], .chat-eingabe.hat-text:not(.diktiert) [data-diktat] { display: none; }
+    /* Mit Text im Feld weicht die Sprachaufnahme, das Feld bekommt mehr Breite; das Mikrofon zum Diktieren bleibt immer, auch um Text zu ergaenzen */
+    .chat-eingabe.hat-text [data-sprache] { display: none; }
     .chat-rund { width: 40px; height: 40px; flex: none; border-radius: 50%; display: grid; place-items: center; background: var(--c-neutral); color: var(--c-text-soft); border: 0; cursor: pointer; font-size: 15px; margin-bottom: 2px; }
     .chat-rund:hover { color: var(--c-primary); }
     .chat-rund.text-danger { color: var(--c-danger); background: color-mix(in srgb, var(--c-danger) 12%, #fff); }
