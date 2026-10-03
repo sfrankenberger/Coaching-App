@@ -29,6 +29,7 @@ use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Storage;
 use Livewire\Livewire;
+use App\Models\Program;
 use Tests\TestCase;
 
 /** Etappe 11: Kontakte mit Double-Opt-in, Tags, Newsletter in Wellen mit Zaehlung, Serien, Abmeldung, Isolation. */
@@ -41,6 +42,8 @@ class NewsletterTest extends TestCase
     protected Tenant $b;
 
     protected User $lea;
+
+    protected User $anna;
 
     protected function setUp(): void
     {
@@ -121,6 +124,50 @@ class NewsletterTest extends TestCase
         // JSON-Anmeldung ueber die API, sofort (Veranstaltung)
         $this->postJson('http://a.test/api/anmelden', ['email' => 'live@test.ch', 'name' => 'Live', 'tag' => 'live-abend', 'einwilligung' => true, 'sofort' => true])->assertOk()->assertJson(['ok' => true, 'stand' => 'dabei']);
         $this->assertSame('bestaetigt', $this->in(fn () => Kontakt::where('email', 'live@test.ch')->first()->status));
+    }
+
+    public function test_serie_mit_bedingungen_anmeldelink_und_tags_nach_art(): void
+    {
+        $this->anna = User::factory()->create(['name' => 'Anna Muster', 'email' => 'anna@test.ch']);
+        $this->a->users()->attach($this->anna, ['role' => Role::Member->value, 'status' => 'active']);
+        $kurs = $this->in(fn () => Program::create(['title' => 'Der Anfang', 'slug' => 'der-anfang', 'is_published' => true]));
+        $offer = $this->in(fn () => Offer::create(['title' => 'Der Anfang', 'slug' => 'der-anfang', 'type' => 'free', 'is_free' => true, 'is_active' => true]));
+        $this->in(fn () => $offer->programs()->attach($kurs, ['tenant_id' => $this->a->id]));
+        $this->in(fn () => Serie::create(['titel' => 'Gratiskurs', 'tag' => 'gratiskurs', 'aktiv' => true, 'settings' => ['program_id' => $kurs->id], 'schritte' => [
+            ['tage' => 0, 'betreff' => 'Dein Einstieg', 'text' => 'Hier ist dein Link: {anmeldelink}'],
+            ['tage' => 1, 'betreff' => 'Noch nicht drin?', 'text' => 'Komm rein.', 'bedingung' => 'nicht_angemeldet'],
+            ['tage' => 1, 'betreff' => 'Fertig!', 'text' => 'Gratuliere.', 'bedingung' => 'kurs_fertig'],
+            ['tage' => 1, 'betreff' => 'Reden?', 'text' => 'Klarheitsgespräch.', 'bedingung' => 'kein_gespraech'],
+        ]]));
+
+        // Zugang zum Gratiskurs: Kontakt bekommt Angebots-Tag und "gratiskurs", die Serie startet mit frischem Link
+        $this->in(fn () => app(\App\Shop\Zugang::class)->grant($this->anna, $offer, 'manual', 'test', now(), null, false));
+        $k = $this->in(fn () => Kontakt::where('email', $this->anna->email)->first());
+        $this->assertContains('gratiskurs', $k->tags);
+        $this->assertContains('der-anfang', $k->tags);
+        $this->assertSame($this->anna->id, $k->user_id);
+        Mail::assertSent(NewsletterMail::class, fn (NewsletterMail $m) => $m->newsletter->betreff === 'Dein Einstieg' && str_contains($m->newsletter->text, 'http://a.test/') && ! str_contains($m->newsletter->text, '{anmeldelink}'));
+
+        // Anna war schon in der App: Schritt 2 wird uebersprungen, Kurs nicht fertig: Schritt 3 auch, kein Gespraech: Schritt 4 kommt
+        $this->in(fn () => $this->anna->membershipIn()->forceFill(['last_seen_at' => now()])->save());
+        $this->travel(1)->days();
+        $this->in(fn () => app(Serien::class)->lauf());
+        Mail::assertNotSent(NewsletterMail::class, fn (NewsletterMail $m) => $m->newsletter->betreff === 'Noch nicht drin?');
+        $lauf = $this->in(fn () => SerienLauf::where('kontakt_id', $k->id)->first());
+        $this->assertSame(2, $lauf->schritt, 'uebersprungen, naechster Schritt geplant');
+        $this->travel(1)->days();
+        $this->in(fn () => app(Serien::class)->lauf());
+        Mail::assertNotSent(NewsletterMail::class, fn (NewsletterMail $m) => $m->newsletter->betreff === 'Fertig!');
+        $this->travel(1)->days();
+        $this->in(fn () => app(Serien::class)->lauf());
+        Mail::assertSent(NewsletterMail::class, fn (NewsletterMail $m) => $m->newsletter->betreff === 'Reden?');
+        $this->assertNotNull($lauf->fresh()->fertig_at);
+
+        // 1:1-Angebot: Tag "1-1-coaching"
+        $einzel = $this->in(fn () => Offer::create(['title' => '1:1', 'slug' => 'einzel', 'type' => 'one_on_one', 'is_active' => true]));
+        $this->in(fn () => app(\App\Shop\Zugang::class)->grant($this->anna, $einzel, 'manual', 'x', now(), null, false));
+        $this->assertContains('1-1-coaching', $k->fresh()->tags);
+        $this->travelBack();
     }
 
     public function test_newsletter_in_wellen_mit_zaehlung_und_webversion(): void

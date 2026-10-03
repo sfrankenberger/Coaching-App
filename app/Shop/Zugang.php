@@ -67,7 +67,8 @@ class Zugang
 
         // Als Kontakt mit Angebots-Tag fuehren (Newsletter, Serien je Kurs), still bei Stoerung
         try {
-            app(Kontakte::class)->ausMitglied($user, [$offer->slug ?: 'angebot-'.$offer->id]);
+            $art = self::willkommenArt($offer);
+            app(Kontakte::class)->ausMitglied($user, array_filter([$offer->slug ?: 'angebot-'.$offer->id, $art === 'one_on_one' ? '1-1-coaching' : null, $offer->is_free ? 'gratiskurs' : null]));
         } catch (\Throwable $ex) {
             report($ex);
         }

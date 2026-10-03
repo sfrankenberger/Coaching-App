@@ -9,11 +9,14 @@ use App\Models\Kontakt;
 use App\Models\Serie;
 use App\Newsletter\Bausteine;
 use App\Newsletter\Kontakte;
+use App\Newsletter\Serien;
+use App\Models\Program;
 use BackedEnum;
 use Filament\Actions\Action;
 use Filament\Actions\EditAction;
 use Filament\Forms\Components\Placeholder;
 use Filament\Forms\Components\Repeater;
+use Filament\Forms\Components\Select;
 use Filament\Forms\Components\TextInput;
 use Filament\Forms\Components\Toggle;
 use Filament\Resources\Resource;
@@ -54,6 +57,8 @@ class SerieResource extends Resource
                 TextInput::make('tag')->label('Auslösender Tag')->required()->maxLength(80)->datalist(fn () => array_keys(app(Kontakte::class)->alleTags()))->dehydrateStateUsing(fn ($state) => Kontakt::tagSauber((string) $state))
                     ->helperText('Bestehenden Tag wählen oder einen neuen schreiben (klein, ohne Leerzeichen).'),
                 Toggle::make('aktiv')->label('Aktiv')->default(true)->inline(false),
+                Select::make('settings.program_id')->label('Kurs der Serie (für Bedingungen)')->options(fn () => Program::orderBy('title')->pluck('title', 'id')->all())->native(false)->nullable()
+                    ->helperText('Nur nötig, wenn ein Schritt vom Stand im Kurs abhängt.'),
                 Placeholder::make('anleitung')->label('So bekommt jemand den Tag')->columnSpanFull()->content(fn (Get $get) => new HtmlString(self::anleitung(Kontakt::tagSauber((string) ($get('tag') ?: 'mein-tag'))))),
             ])->columns(3)->columnSpanFull(),
             Section::make('Die Mails')->description('Schritt mit 0 Tagen geht sofort raus. Jede Mail hat denselben Baukasten wie ein Newsletter. Zum Prüfen: speichern, dann "Vorschau" am Schritt.')->schema([
@@ -62,6 +67,8 @@ class SerieResource extends Resource
                         TextInput::make('tage')->label('Tage nach dem vorigen Schritt')->numeric()->minValue(0)->maxValue(365)->default(0)->required()->live(onBlur: true),
                         TextInput::make('betreff')->label('Betreff')->required()->maxLength(150)->live(onBlur: true)->columnSpan(2),
                         TextInput::make('vorschautext')->label('Vorschautext')->maxLength(150),
+                        Select::make('bedingung')->label('Nur schicken, wenn')->options(Serien::BEDINGUNGEN)->default('')->native(false)->columnSpan(2)
+                            ->helperText('Trifft es nicht zu, wird der Schritt übersprungen. Im Text steht {anmeldelink} für einen frischen Einstiegslink.'),
                     ]),
                     Bausteine::feld('bloecke'),
                 ])->addActionLabel('Mail hinzufügen')->reorderableWithButtons()->collapsible()->cloneable()
