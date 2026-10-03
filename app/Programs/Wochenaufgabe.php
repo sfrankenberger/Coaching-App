@@ -8,8 +8,11 @@ use App\Models\Membership;
 use App\Models\Program;
 use App\Models\ProgramMember;
 use App\Models\ProgramStep;
+use App\Models\Question;
+use App\Models\Reflection;
 use App\Models\Task;
 use App\Models\User;
+use Illuminate\Database\Eloquent\Model;
 use Illuminate\Http\Request;
 use Illuminate\Support\Collection;
 
@@ -158,6 +161,26 @@ class Wochenaufgabe
         }
 
         return $n;
+    }
+
+    /**
+     * Was zur Aufgabe geschrieben wurde: die Reflexion oder die Frage dieser Woche, sonst null (dann wurde nur abgehakt).
+     * Das Dossier zeigt dem Team damit, ob hinter dem Haken ein Text steht.
+     */
+    public function geschrieben(Task $t): ?Model
+    {
+        if (! in_array($t->kind, ['reflexion', 'frage'], true) || ! $t->user_id) {
+            return null;
+        }
+        $von = ($t->due_at ?? $t->created_at)->copy()->subDays(7)->startOfDay()->utc();
+        $bis = ($t->due_at ?? $t->created_at)->copy()->addDays(2)->endOfDay()->utc();
+        if ($t->kind === 'reflexion') {
+            return Reflection::where('user_id', $t->user_id)->where(fn ($q) => $q->where('step_id', $t->step_id ?? 0)
+                ->orWhere(fn ($w) => $w->whereNull('step_id')->whereBetween('created_at', [$von, $bis])))->latest()->first();
+        }
+
+        return Question::where('user_id', $t->user_id)->when($t->program_id, fn ($q) => $q->where('program_id', $t->program_id))
+            ->whereBetween('created_at', [$von, $bis])->latest()->first();
     }
 
     /** Aufgaben der Woche fuer die Startseite: offen zuerst, dann erledigt. */

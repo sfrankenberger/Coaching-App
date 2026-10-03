@@ -22,6 +22,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\View\View;
+use Symfony\Component\HttpFoundation\BinaryFileResponse;
 use Symfony\Component\HttpFoundation\StreamedResponse;
 
 class GespraechController extends Controller
@@ -179,7 +180,7 @@ class GespraechController extends Controller
     }
 
     /** Datei oder Sprachnachricht ausliefern (nur fuer Beteiligte). */
-    public function datei(Request $request, Message $nachricht, string $art): StreamedResponse
+    public function datei(Request $request, Message $nachricht, string $art): BinaryFileResponse
     {
         $conv = $nachricht->conversation;
         abort_unless($conv, 404);
@@ -187,7 +188,14 @@ class GespraechController extends Controller
         $path = $art === 'audio' ? $nachricht->audio_path : $nachricht->attachment_path;
         abort_unless($path && Storage::exists($path), 404);
 
-        return Storage::response($path, $art === 'audio' ? basename($path) : ($nachricht->attachment_name ?: basename($path)));
+        // Als Datei mit Laenge und Bereichsanfragen (206): das iPhone spielt Audio sonst nicht ab
+        $mime = match (strtolower(pathinfo($path, PATHINFO_EXTENSION))) {
+            'm4a', 'mp4' => 'audio/mp4', 'webm' => 'audio/webm', 'ogg', 'oga', 'opus' => 'audio/ogg', 'mp3' => 'audio/mpeg',
+            default => Storage::mimeType($path) ?: 'application/octet-stream',
+        };
+        $name = $art === 'audio' ? basename($path) : ($nachricht->attachment_name ?: basename($path));
+
+        return response()->file(Storage::path($path), ['Content-Type' => $mime, 'Content-Disposition' => 'inline; filename="'.addslashes($name).'"', 'Accept-Ranges' => 'bytes']);
     }
 
     protected function render(Conversation $conv, Message $m, $user): string

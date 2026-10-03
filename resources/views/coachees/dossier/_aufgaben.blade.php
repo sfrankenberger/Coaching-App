@@ -17,6 +17,22 @@
                 <b class="t" @if ($t->done_at) style="text-decoration:line-through;opacity:.7" @endif>{{ $t->title }}</b>
                 <span class="hinweis block">{{ $t->assigned_by ? 'von dir' : 'eigene' }}{{ $t->due_at ? ' · bis '.\App\Support\Zeit::datum($t->due_at) : '' }}{{ $t->done_at ? ' · erledigt '.\App\Support\Zeit::relativ($t->done_at) : '' }}</span>
                 @if ($t->body)<p class="lesetext text-md mt-1 mb-0 whitespace-pre-line">{{ $t->body }}</p>@endif
+                @if (in_array($t->kind, ['reflexion', 'frage'], true))
+                    {{-- Steht hinter dem Haken ein Text? Reflexion im Reiter Geteilt (wenn geteilt), Frage auf ihrer Seite --}}
+                    @php $g = app(\App\Programs\Wochenaufgabe::class)->geschrieben($t); @endphp
+                    <span class="hinweis block mt-1">
+                        @if ($g instanceof \App\Models\Reflection)
+                            <i class="fa-solid fa-pen-to-square"></i> Reflexion geschrieben {{ \App\Support\Zeit::relativ($g->created_at) }}:
+                            @if ($g->visibility !== 'private')<a href="{{ route('coachees.show', [$m, 'r' => 'geteilt']) }}">lesen unter Geteilt</a>@else nur für {{ $person->vorname() }} sichtbar @endif
+                        @elseif ($g instanceof \App\Models\Question)
+                            <i class="fa-solid fa-circle-question"></i> Frage gestellt {{ \App\Support\Zeit::relativ($g->created_at) }}: <a href="{{ route('fragen.show', $g) }}">{{ \Illuminate\Support\Str::limit($g->title ?: $g->body, 60) }}</a>
+                        @elseif ($t->done_at)
+                            <i class="fa-regular fa-circle-check"></i> Abgehakt, ohne {{ $t->kind === 'reflexion' ? 'Reflexion' : 'Frage' }} zu schreiben.
+                        @elseif ($t->skipped_at)
+                            <i class="fa-regular fa-circle-xmark"></i> Diese Woche ausgelassen.
+                        @endif
+                    </span>
+                @endif
             </div>
         </div>
         @include('coachees.dossier._kommentar', ['item' => $t, 'typ' => 'task'])

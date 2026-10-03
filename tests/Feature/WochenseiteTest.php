@@ -265,4 +265,38 @@ class WochenseiteTest extends TestCase
         // Auf der Wochenseite nur die Aufgaben, nicht zusaetzlich die Tageszeilen (die sind fuer den Arbeitsplatz)
         $this->actingAs($this->lea)->get('https://a.test/kurse/hybrid/schritt/'.$w1->id)->assertOk()->assertSee('Deine Wochenreflexion')->assertDontSee('Reflexion schreiben</b>', false);
     }
+
+    public function test_dossier_zeigt_ob_hinter_dem_haken_ein_text_steht(): void
+    {
+        $w1 = $this->in(fn () => $this->kurs->steps()->first());
+        $m = $this->in(fn () => \App\Models\Membership::where('user_id', $this->anna->id)->first());
+        $this->in(function () use ($w1) {
+            Task::create(['user_id' => $this->anna->id, 'program_id' => $this->kurs->id, 'step_id' => $w1->id, 'title' => 'Deine Wochenreflexion', 'kind' => 'reflexion', 'source' => 'program', 'visibility' => 'coach', 'due_at' => now()->addDays(3)->toDateString(), 'done_at' => now()]);
+            Task::create(['user_id' => $this->anna->id, 'program_id' => $this->kurs->id, 'step_id' => $w1->id, 'title' => 'Deine Frage für den Fragentag', 'kind' => 'frage', 'source' => 'program', 'visibility' => 'coach', 'due_at' => now()->addDays(2)->toDateString(), 'done_at' => now()]);
+        });
+        $this->actingAs($this->lea)->get('https://a.test/coachees/'.$m->id.'?r=aufgaben')->assertOk()
+            ->assertSee('Abgehakt, ohne Reflexion zu schreiben')->assertSee('Abgehakt, ohne Frage zu schreiben');
+
+        $this->in(function () use ($w1) {
+            \App\Models\Reflection::create(['user_id' => $this->anna->id, 'step_id' => $w1->id, 'went_well' => 'Lief gut', 'visibility' => 'coach', 'shared_at' => now()]);
+            \App\Models\Question::create(['program_id' => $this->kurs->id, 'user_id' => $this->anna->id, 'title' => 'Wie geht es weiter?']);
+        });
+        $this->actingAs($this->lea)->get('https://a.test/coachees/'.$m->id.'?r=aufgaben')->assertOk()
+            ->assertSee('Reflexion geschrieben')->assertSee('lesen unter Geteilt')->assertSee('Wie geht es weiter?')
+            ->assertDontSee('Abgehakt, ohne');
+    }
+
+    public function test_sprachnachricht_kommt_als_datei_mit_laenge_und_bereich(): void
+    {
+        \Illuminate\Support\Facades\Storage::fake('local');
+        $conv = $this->in(fn () => app(\App\Chat\Chat::class)->directFor($this->anna));
+        $msg = $this->in(fn () => app(\App\Chat\Chat::class)->send($conv, $this->anna, ['body' => '']));
+        $this->in(function () use ($msg) {
+            \Illuminate\Support\Facades\Storage::put('tenants/'.$this->a->id.'/chat/x/sprache-test.m4a', str_repeat('A', 5000));
+            $msg->forceFill(['audio_path' => 'tenants/'.$this->a->id.'/chat/x/sprache-test.m4a'])->save();
+        });
+        $r = $this->actingAs($this->lea)->get('https://a.test/nachricht/'.$msg->id.'/audio');
+        $r->assertOk()->assertHeader('Content-Type', 'audio/mp4')->assertHeader('Content-Length', '5000')->assertHeader('Accept-Ranges', 'bytes');
+        $this->actingAs($this->lea)->get('https://a.test/nachricht/'.$msg->id.'/audio', ['Range' => 'bytes=0-99'])->assertStatus(206)->assertHeader('Content-Length', '100');
+    }
 }
