@@ -280,7 +280,7 @@
                     textarea.dispatchEvent(new Event('input', { bubbles: true }));
                 };
                 erk.onend = function () { erk = null; diktat.classList.remove('text-danger'); form.classList.remove('diktiert'); if (!hatte && Date.now() - los < 1500) window.leaDiktatHinweis(form); };
-                erk.onerror = function (e) { erk = null; diktat.classList.remove('text-danger'); form.classList.remove('diktiert'); window.leaDiktatHinweis(form, e && e.error); };
+                erk.onerror = function (e) { erk = null; diktat.classList.remove('text-danger'); form.classList.remove('diktiert'); if (!e || (e.error !== 'aborted' && e.error !== 'no-speech')) window.leaDiktatHinweis(form, e && e.error); };
                 try { erk.start(); diktat.classList.add('text-danger'); form.classList.add('diktiert'); } catch (e) { erk = null; form.classList.remove('diktiert'); window.leaDiktatHinweis(form, e && e.name); }
             });
         }
@@ -307,7 +307,7 @@
         if (rec && rec.state === 'recording') { stopp(false); return; }
         probeWeg();
         navigator.mediaDevices.getUserMedia({ audio: true }).then(function (stream) {
-            var typ = ['audio/webm;codecs=opus', 'audio/webm', 'audio/mp4', 'audio/ogg'].find(function (t) { return MediaRecorder.isTypeSupported(t); }) || '';
+            var typ = ['audio/mp4', 'audio/webm;codecs=opus', 'audio/webm', 'audio/ogg'].find(function (t) { return MediaRecorder.isTypeSupported(t); }) || '';
             rec = new MediaRecorder(stream, typ ? { mimeType: typ } : {});
             teile = []; verwerfen = false; start = Date.now();
             rec.ondataavailable = function (e) { if (e.data.size) teile.push(e.data); };
@@ -316,6 +316,8 @@
                 clearInterval(uhr); leiste.hidden = true; knopf.classList.remove('text-danger');
                 if (verwerfen || !teile.length) return;
                 probeBlob = new Blob(teile, { type: rec.mimeType || 'audio/webm' });
+                // Leere Aufnahme (iPhone liefert bei manchen Formaten nur ein paar Bytes): nicht schicken, sondern sagen
+                if (probeBlob.size < 1000) { probeBlob = null; window.leaDiktatHinweis(form, 'die Aufnahme war leer, bitte nochmals versuchen'); return; }
                 probeSek = Math.round((Date.now() - start) / 1000);
                 probeUrl = URL.createObjectURL(probeBlob);
                 probeAudio.src = probeUrl; probeDauer.textContent = mmss(probeSek);
@@ -701,7 +703,7 @@ window.leaDiktatHinweis = function (behaelter, grund) {
                 t.dispatchEvent(new Event('input', { bubbles: true }));
             };
             rec.onend = function () { rec = null; b.classList.remove('an'); t.dispatchEvent(new Event('focusout', { bubbles: true })); if (!hatte && Date.now() - los < 1500) window.leaDiktatHinweis(wrap); };
-            rec.onerror = function (e) { rec = null; b.classList.remove('an'); window.leaDiktatHinweis(wrap, e && e.error); };
+            rec.onerror = function (e) { rec = null; b.classList.remove('an'); if (!e || (e.error !== 'aborted' && e.error !== 'no-speech')) window.leaDiktatHinweis(wrap, e && e.error); };
             try { rec.start(); b.classList.add('an'); } catch (e) { rec = null; window.leaDiktatHinweis(wrap, e && e.name); }
         });
     });
